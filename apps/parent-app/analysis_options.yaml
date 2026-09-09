@@ -1,0 +1,12 @@
+include: package:very_good_analysis/analysis_options.yaml
+
+# CONVENTIONS_FLUTTER.md §1 — 린트는 very_good_analysis 로 고정한다.
+# 개별 규칙 예외는 이 파일에서 최소한으로만 둔다.
+linter:
+  rules:
+    public_member_api_docs: false
+
+analyzer:
+  exclude:
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
