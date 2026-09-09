@@ -4,6 +4,17 @@
 /// 에러 매핑, 토큰 저장을 공유한다. 구조는 `CONVENTIONS_FLUTTER.md §2` 를 따른다.
 library;
 
+export 'auth/account_role.dart';
+export 'auth/account_status.dart';
+export 'auth/auth_api.dart';
+export 'auth/models/academy_ref.dart';
+export 'auth/models/academy_summary.dart';
+export 'auth/models/device_registration.dart';
+export 'auth/models/login_response.dart';
+export 'auth/models/me_response.dart';
+export 'auth/models/reapply_response.dart';
+export 'auth/models/signup_models.dart';
+export 'auth/models/signup_status_response.dart';
 export 'error/failure.dart';
 export 'network/api_client.dart';
 export 'network/dio_error_mapper.dart';
