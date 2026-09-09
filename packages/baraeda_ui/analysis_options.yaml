@@ -1,0 +1,14 @@
+include: package:very_good_analysis/analysis_options.yaml
+
+# CONVENTIONS_FLUTTER.md §1 — 린트는 very_good_analysis 로 고정한다.
+# 개별 규칙 예외는 이 파일에서 최소한으로만 둔다.
+linter:
+  rules:
+    # 토큰 파일은 CSS 원본과 1:1 대응이 값 관리의 핵심이라
+    # public 상수를 한 파일에 모아 두는 구조를 그대로 쓴다.
+    public_member_api_docs: false
+
+analyzer:
+  exclude:
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"

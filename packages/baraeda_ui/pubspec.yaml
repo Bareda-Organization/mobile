@@ -1,0 +1,48 @@
+name: baraeda_ui
+description: "바래다 공용 위젯 패키지 — 디자인 토큰 · 테마 · 위젯. apps/parent-app · apps/manager-app 가 이 패키지 하나에 의존한다."
+version: 0.0.1
+homepage:
+
+environment:
+  sdk: ^3.12.2
+  flutter: ">=1.17.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  very_good_analysis: ^7.0.0
+
+# For information on the generic Dart part of this file, see the
+# following page: https://dart.dev/tools/pub/pubspec
+
+# The following section is specific to Flutter packages.
+flutter:
+
+  # 나눔명조·Noto Sans KR 바이너리는 이 저장소에 없다 (다운로드 금지 지시).
+  # 패밀리 이름만 여기 고정해 둔다 — 위젯 코드는 이 이름을 그대로 참조하므로
+  # 파일을 나중에 넣어도 위젯 쪽은 고칠 필요가 없다.
+  # 실제로 켜려면 아래 주석을 풀고 assets/fonts/ 에 각 weight 의 .ttf(또는 .otf)를 넣는다.
+  # 상세 안내는 lib/tokens/typography.dart 주석 참조.
+  # fonts:
+  #   - family: Nanum Myeongjo
+  #     fonts:
+  #       - asset: assets/fonts/NanumMyeongjo-Regular.ttf
+  #         weight: 400
+  #       - asset: assets/fonts/NanumMyeongjo-Bold.ttf
+  #         weight: 700
+  #       - asset: assets/fonts/NanumMyeongjo-ExtraBold.ttf
+  #         weight: 800
+  #   - family: Noto Sans KR
+  #     fonts:
+  #       - asset: assets/fonts/NotoSansKR-Light.ttf
+  #         weight: 300
+  #       - asset: assets/fonts/NotoSansKR-Regular.ttf
+  #         weight: 400
+  #       - asset: assets/fonts/NotoSansKR-Medium.ttf
+  #         weight: 500
+  #       - asset: assets/fonts/NotoSansKR-Bold.ttf
+  #         weight: 700
