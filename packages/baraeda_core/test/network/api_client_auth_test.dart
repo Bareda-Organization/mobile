@@ -124,12 +124,22 @@ void main() {
         () => _json(401, {
           'error': {'code': 'TOKEN_EXPIRED', 'message': '만료'},
         }),
-        () => _json(200, {'id': 1, 'name': '학생'}),
+        // 성공 응답은 API_SPEC §1.1 봉투로 감싸져 온다 — 클라이언트는
+        // `data` 안쪽만 보게 된다(아래 `expect(response.data, ...)` 참고).
+        () => _json(200, {
+          'success': true,
+          'data': {'id': 1, 'name': '학생'},
+          'message': null,
+        }),
       ],
       '/auth/refresh': [
         () => _json(200, {
-          'access_token': 'new-access',
-          'refresh_token': 'new-refresh',
+          'success': true,
+          'data': {
+            'access_token': 'new-access',
+            'refresh_token': 'new-refresh',
+          },
+          'message': null,
         }),
       ],
     });
@@ -226,4 +236,97 @@ void main() {
     expect(captured?.headers['Authorization'], 'Bearer valid-token');
     expect(captured?.headers['X-Client-Type'], 'app');
   });
+
+  test('성공 응답의 data 봉투를 벗겨 돌려준다', () async {
+    // api_client.dart 의 실제 진단된 결함 — 서버는 2xx 를
+    // `{success, data, message}` 로 감싸는데 예전 코드는 이 봉투를 벗기지
+    // 않고 루트에서 필드를 읽었다. 이 시험은 그 결함을 refresh 흐름과
+    // 무관하게 일반 GET 응답 하나로 독립 검증한다.
+    final storage = tokenStorage();
+    await storage.saveTokens(accessToken: 'valid', refreshToken: 'r1');
+
+    final adapter = _ScriptedAdapter({
+      '/academies': [
+        () => _json(200, {
+          'success': true,
+          'data': {
+            'items': [
+              {'id': 'a1', 'name': '바래다학원'},
+            ],
+          },
+          'message': null,
+        }),
+      ],
+    });
+
+    final client = _clientWith(storage, adapter);
+    final response = await client.dio.get<Map<String, dynamic>>('/academies');
+
+    expect(response.data, {
+      'items': [
+        {'id': 'a1', 'name': '바래다학원'},
+      ],
+    });
+  });
+
+  test(
+    '403 AUTH_PENDING 을 받으면 어느 화면의 호출이든 gateEvents 로 신호를 보낸다',
+    () async {
+      final storage = tokenStorage();
+      await storage.saveTokens(accessToken: 'valid', refreshToken: 'r1');
+
+      final adapter = _ScriptedAdapter({
+        '/schedule': [
+          () => _json(403, {
+            'error': {'code': 'AUTH_PENDING', 'message': '승인 대기 중'},
+          }),
+        ],
+      });
+
+      final client = _clientWith(storage, adapter);
+      final events = <AccountGateReason>[];
+      final sub = client.gateEvents.listen(events.add);
+
+      await expectLater(
+        client.dio.get<dynamic>('/schedule'),
+        throwsA(isA<DioException>()),
+      );
+      // 스트림은 비동기 브로드캐스트라 리스너에 닿을 때까지 한 틱 필요.
+      await Future<void>.delayed(Duration.zero);
+
+      expect(events, [AccountGateReason.pending]);
+      await sub.cancel();
+      client.dispose();
+    },
+  );
+
+  test(
+    '403 AUTH_REJECTED 를 받으면 rejected 신호를 보낸다',
+    () async {
+      final storage = tokenStorage();
+      await storage.saveTokens(accessToken: 'valid', refreshToken: 'r1');
+
+      final adapter = _ScriptedAdapter({
+        '/schedule': [
+          () => _json(403, {
+            'error': {'code': 'AUTH_REJECTED', 'message': '가입이 거절됨'},
+          }),
+        ],
+      });
+
+      final client = _clientWith(storage, adapter);
+      final events = <AccountGateReason>[];
+      final sub = client.gateEvents.listen(events.add);
+
+      await expectLater(
+        client.dio.get<dynamic>('/schedule'),
+        throwsA(isA<DioException>()),
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      expect(events, [AccountGateReason.rejected]);
+      await sub.cancel();
+      client.dispose();
+    },
+  );
 }
