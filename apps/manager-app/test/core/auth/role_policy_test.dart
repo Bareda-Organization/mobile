@@ -38,8 +38,20 @@ void main() {
     });
   });
 
-  test('UserRole.fromWireValue 는 서버 role 문자열을 왕복 변환한다', () {
-    expect(UserRole.fromWireValue('driver'), UserRole.driver);
-    expect(UserRole.fromWireValue('escort'), UserRole.escort);
+  test('UserRole.fromWireValueOrNull 은 서버 role 문자열을 왕복 변환한다', () {
+    expect(UserRole.fromWireValueOrNull('driver'), UserRole.driver);
+    expect(UserRole.fromWireValueOrNull('escort'), UserRole.escort);
   });
+
+  test(
+    'UserRole.fromWireValueOrNull 은 이 앱이 모르는 role 에 null 을 돌려준다 '
+    '(학부모 앱 계정으로 잘못 로그인해도 죽지 않아야 한다)',
+    () {
+      expect(UserRole.fromWireValueOrNull('parent'), isNull);
+      expect(UserRole.fromWireValueOrNull('student'), isNull);
+      expect(UserRole.fromWireValueOrNull('staff'), isNull);
+      expect(UserRole.fromWireValueOrNull('system_admin'), isNull);
+      expect(UserRole.fromWireValueOrNull('no_such_role'), isNull);
+    },
+  );
 }
