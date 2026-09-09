@@ -16,9 +16,8 @@ abstract final class BaraedaDuration {
   /// `@media (prefers-reduced-motion: reduce)` 대응.
   /// `MediaQuery.disableAnimations` 가 켜져 있으면 CSS 원본과 같이 1ms 로 낮춘다.
   static Duration resolve(BuildContext context, Duration duration) {
-    final disableAnimations = MediaQuery.maybeOf(
-      context,
-    )?.disableAnimations ?? false;
+    final disableAnimations =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
     return disableAnimations ? const Duration(milliseconds: 1) : duration;
   }
 }

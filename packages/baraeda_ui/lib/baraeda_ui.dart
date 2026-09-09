@@ -13,5 +13,9 @@ export 'tokens/motion.dart';
 export 'tokens/shape.dart';
 export 'tokens/spacing.dart';
 export 'tokens/typography.dart';
-
-// 위젯 — 다음 라운드(29개 구현)까지 비어 있다.
+// 위젯 29종 — 디자인 시스템 components/ 의 Dart 구현.
+export 'widgets/core/core.dart';
+export 'widgets/feedback/feedback.dart';
+export 'widgets/forms/forms.dart';
+export 'widgets/navigation/navigation.dart';
+export 'widgets/transit/transit.dart';

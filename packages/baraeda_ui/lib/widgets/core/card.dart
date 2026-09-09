@@ -1,0 +1,106 @@
+// 원본 `design-system/components/core/Card.jsx` 대응.
+// readme.md VISUAL FOUNDATIONS: 카드는 흰 배경 + 그린 톤 섀도우이며 보더가
+// 없다. 강조는 "왼쪽 컬러 보더"가 아니라 "위쪽 3px 액센트 라인"이다
+// (prompt.md: "왼쪽 컬러 보더 패턴은 브랜드에 없습니다").
+
+import 'package:baraeda_ui/theme/baraeda_colors.dart';
+import 'package:baraeda_ui/tokens/shape.dart';
+import 'package:baraeda_ui/tokens/spacing.dart';
+import 'package:baraeda_ui/widgets/core/baraeda_status.dart';
+import 'package:flutter/material.dart';
+
+/// 카드 배경 톤. base=기본 흰 배경 · mist=옅은 브랜드 배경(선택 강조) ·
+/// outline=배경 없이 보더만(중첩 카드) · inverse=어두운 배경.
+enum BaraedaCardTone { base, mist, outline, inverse }
+
+/// 바래다 기본 카드 컨테이너.
+///
+/// [accent]를 주면 카드 위쪽에 상태색 3px 라인이 붙는다 — 왼쪽 보더가
+/// 아니라 위쪽 라인인 것이 브랜드 규칙이다. `missed`는 한 화면에 카드
+/// 하나에만 쓴다(prompt.md).
+class BaraedaCard extends StatelessWidget {
+  const BaraedaCard({
+    required this.child,
+    super.key,
+    this.tone = BaraedaCardTone.base,
+    this.accent,
+    this.padding = const EdgeInsets.all(BaraedaSpacing.cardPadding),
+  });
+
+  final Widget child;
+  final BaraedaCardTone tone;
+
+  /// 카드 위쪽 3px 상태 액센트 라인. null이면 라인 없음.
+  final BaraedaStatus? accent;
+  final EdgeInsetsGeometry padding;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final background = _backgroundFor(tone, colors);
+    final border = tone == BaraedaCardTone.outline
+        ? Border.all(color: colors.borderDefault)
+        : null;
+    final shadow =
+        tone == BaraedaCardTone.outline || tone == BaraedaCardTone.inverse
+        ? const <BoxShadow>[]
+        : BaraedaShadows.cardLight;
+
+    final content = Container(
+      padding: padding,
+      decoration: BoxDecoration(
+        color: background,
+        border: border,
+        borderRadius: BorderRadius.circular(BaraedaRadius.card),
+        boxShadow: shadow,
+      ),
+      child: child,
+    );
+
+    if (accent == null) return content;
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(BaraedaRadius.card),
+      child: Stack(
+        children: [
+          content,
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              height: 3,
+              color: _accentColorFor(accent!, colors),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+Color _backgroundFor(BaraedaCardTone tone, BaraedaColors c) {
+  switch (tone) {
+    case BaraedaCardTone.base:
+      return c.surfaceCard;
+    case BaraedaCardTone.mist:
+      return c.accentPrimarySoft;
+    case BaraedaCardTone.outline:
+      return Colors.transparent;
+    case BaraedaCardTone.inverse:
+      return c.surfaceInverse;
+  }
+}
+
+Color _accentColorFor(BaraedaStatus status, BaraedaColors c) {
+  switch (status) {
+    case BaraedaStatus.boarded:
+      return c.statusBoarded;
+    case BaraedaStatus.moving:
+      return c.statusMoving;
+    case BaraedaStatus.missed:
+      return c.statusMissed;
+    case BaraedaStatus.idle:
+      return c.statusIdle;
+  }
+}

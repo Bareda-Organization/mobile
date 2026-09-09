@@ -10,15 +10,11 @@ import 'package:flutter/material.dart';
 
 /// 라이트/다크 `ThemeData` 를 만드는 정적 팩토리 모음.
 abstract final class BaraedaTheme {
-  static ThemeData light() => _build(
-    brightness: Brightness.light,
-    semantic: BaraedaColors.light,
-  );
+  static ThemeData light() =>
+      _build(brightness: Brightness.light, semantic: BaraedaColors.light);
 
-  static ThemeData dark() => _build(
-    brightness: Brightness.dark,
-    semantic: BaraedaColors.dark,
-  );
+  static ThemeData dark() =>
+      _build(brightness: Brightness.dark, semantic: BaraedaColors.dark);
 
   static ThemeData _build({
     required Brightness brightness,
@@ -40,27 +36,17 @@ abstract final class BaraedaTheme {
       displayLarge: BaraedaTypography.display.copyWith(
         color: semantic.textPrimary,
       ),
-      headlineLarge: BaraedaTypography.h1.copyWith(
-        color: semantic.textPrimary,
-      ),
+      headlineLarge: BaraedaTypography.h1.copyWith(color: semantic.textPrimary),
       headlineMedium: BaraedaTypography.h2.copyWith(
         color: semantic.textPrimary,
       ),
-      headlineSmall: BaraedaTypography.h3.copyWith(
-        color: semantic.textPrimary,
-      ),
-      bodyLarge: BaraedaTypography.bodyLg.copyWith(
-        color: semantic.textPrimary,
-      ),
-      bodyMedium: BaraedaTypography.body.copyWith(
-        color: semantic.textPrimary,
-      ),
+      headlineSmall: BaraedaTypography.h3.copyWith(color: semantic.textPrimary),
+      bodyLarge: BaraedaTypography.bodyLg.copyWith(color: semantic.textPrimary),
+      bodyMedium: BaraedaTypography.body.copyWith(color: semantic.textPrimary),
       bodySmall: BaraedaTypography.bodySm.copyWith(
         color: semantic.textSecondary,
       ),
-      labelLarge: BaraedaTypography.label.copyWith(
-        color: semantic.textPrimary,
-      ),
+      labelLarge: BaraedaTypography.label.copyWith(color: semantic.textPrimary),
       labelSmall: BaraedaTypography.labelSm.copyWith(
         color: semantic.textSecondary,
       ),
@@ -101,7 +87,10 @@ abstract final class BaraedaTheme {
         style: ElevatedButton.styleFrom(
           backgroundColor: semantic.accentPrimary,
           foregroundColor: semantic.textInverse,
-          minimumSize: const Size.fromHeight(BaraedaSpacing.tapMin),
+          // 세로만 최소 터치 영역(48)으로 잡는다. Size.fromHeight 는 가로를
+          // double.infinity 로 두어 Row 안에 놓으면 무한 폭 예외가 난다 —
+          // 가로 100% 는 화면이 정할 일이지 테마 기본값이 아니다.
+          minimumSize: const Size(0, BaraedaSpacing.tapMin),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(BaraedaRadius.control),
           ),

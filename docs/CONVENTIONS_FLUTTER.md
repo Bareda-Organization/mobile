@@ -42,8 +42,15 @@ lib/
         └── presentation/   screen · widget · provider(상태)
 ```
 
-**기능 하나가 폴더 하나.** 기능 이름은 `docs/FEATURE_SPEC` 의 도메인을 따름
-(`auth` · `run` · `roster` · `route` · `notification` · `emergency` …).
+**기능 하나가 폴더 하나.** 이름은 **`frontend/IMPLEMENTATION_PLAN.md` §3.1·§3.2 의 화면**을 따름
+(`auth` · `home` · `live_map` · `route` · `schedule` · `settings` /
+`auth` · `home` · `drive_mode` · `roster` · `delay` · `route_map` · `run_end` · `emergency` · `offline_queue`).
+
+⚠ **`docs/FEATURE_SPEC` 의 도메인 이름을 쓰지 않는다** (2026-09-10 정정).
+화면 하나가 도메인 경계를 넘나드는 자리가 실재한다 — 매니저 앱의 명단 화면은
+승차·하차·승인을 한 화면에서 다룬다. 도메인으로 쪼개면 **화면과 폴더가 1:1 로 안 붙어**
+어느 폴더를 열어야 하는지 알 수 없게 된다. 웹(`CONVENTIONS.md`)은 반대로 도메인 이름을 쓰는데,
+그쪽은 화면이 아니라 라우트 단위라 경계가 겹치지 않기 때문이다.
 
 ### 지켜야 할 의존 방향
 
