@@ -1,5 +1,5 @@
+import 'package:baraeda_core/error/failure.dart';
 import 'package:dio/dio.dart';
-import 'package:manager_app/core/error/failure.dart';
 
 /// `DioException` → `Failure` 변환을 한 곳에 모은다 (CONVENTIONS_FLUTTER.md §6).
 /// 화면·repository 는 이 함수를 거친 `Failure` 만 본다.

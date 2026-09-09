@@ -1,7 +1,13 @@
+import 'package:baraeda_core/storage/token_storage.dart';
 import 'package:dio/dio.dart';
-import 'package:manager_app/core/constants/api_constants.dart';
-import 'package:manager_app/core/storage/token_storage.dart';
 import 'package:uuid/uuid.dart';
+
+/// API_SPEC §1 공통 규약의 헤더 이름 — 두 앱이 같은 값을 쓰므로 이 패키지에
+/// 고정한다. 앱마다 달라지는 것은 `baseUrl`·`clientType` 뿐이라
+/// `ApiClient` 생성자로 그 둘만 받는다(`api_constants.dart` 는 앱에 남는다).
+const _headerAuthorization = 'Authorization';
+const _headerClientType = 'X-Client-Type';
+const _headerRequestId = 'X-Request-Id';
 
 /// API_SPEC §1 공통 규약을 한곳에서 처리하는 dio 설정.
 ///
@@ -14,21 +20,41 @@ import 'package:uuid/uuid.dart';
 /// 다루지 않는다 — 그 값을 채우는 곳은 승하차 처리 · 비상 발신을 호출하는
 /// repository 쪽이다(`IdempotencyKeys.generate()` 만 이 파일이 제공).
 class ApiClient {
-  ApiClient({required this._tokenStorage, Dio? dio})
-    : _dio =
-          dio ??
-          Dio(
-            BaseOptions(
-              baseUrl: ApiConstants.baseUrl,
-              contentType: 'application/json',
-            ),
-          ) {
-    _dio.interceptors.add(_AuthInterceptor(_tokenStorage, _dio));
+  /// [baseUrl]·[clientType] 은 앱마다 다를 수 있어 주입받는다
+  /// (`api_constants.dart` 는 앱에 남아 있다).
+  ApiClient({
+    required this._tokenStorage,
+    required String baseUrl,
+    String clientType = 'app',
+    Dio? dio,
+    Dio? refreshDio,
+  }) : _dio =
+           dio ??
+           Dio(
+             BaseOptions(baseUrl: baseUrl, contentType: 'application/json'),
+           ) {
+    // ⚠ refresh 는 **인터셉터가 붙지 않은 별도 인스턴스**로 보낸다.
+    // 같은 dio 로 보내면 refresh 응답이 401 일 때 이 인터셉터가 refresh 요청
+    // 자신에게 다시 걸려 무한 재귀가 된다 — access·refresh 가 둘 다 만료된
+    // 실제 상황이 정확히 그 경우다. 웹(`shared/lib/http/refreshClient.ts`)도
+    // 같은 이유로 클라이언트를 분리해 둔다.
+    final refresh =
+        refreshDio ??
+        Dio(BaseOptions(baseUrl: baseUrl, contentType: 'application/json'));
+    _dio.interceptors.add(
+      _AuthInterceptor(
+        _tokenStorage,
+        _dio,
+        refresh,
+        clientType: clientType,
+      ),
+    );
   }
 
   final TokenStorage _tokenStorage;
   final Dio _dio;
 
+  /// 인터셉터가 붙은 dio 인스턴스. repository 는 이것으로 요청한다.
   Dio get dio => _dio;
 }
 
@@ -36,10 +62,20 @@ class ApiClient {
 /// 원 요청을 **한 번만** 재시도한다. 재시도까지 실패하면 그대로 던져
 /// `dio_error_mapper.dart` 가 `Failure.unauthenticated()` 로 옮기게 둔다.
 class _AuthInterceptor extends Interceptor {
-  _AuthInterceptor(this._tokenStorage, this._dio);
+  _AuthInterceptor(
+    this._tokenStorage,
+    this._dio,
+    this._refreshDio, {
+    required this.clientType,
+  });
 
   final TokenStorage _tokenStorage;
   final Dio _dio;
+
+  /// 인터셉터가 붙지 않은 인스턴스 — refresh 응답이 401 일 때
+  /// 이 인터셉터가 자기 자신에게 다시 걸리는 것을 구조적으로 막는다.
+  final Dio _refreshDio;
+  final String clientType;
 
   static const _retriedKey = 'retried_after_refresh';
 
@@ -50,10 +86,10 @@ class _AuthInterceptor extends Interceptor {
   ) async {
     final accessToken = await _tokenStorage.readAccessToken();
     if (accessToken != null) {
-      options.headers[ApiConstants.headerAuthorization] = 'Bearer $accessToken';
+      options.headers[_headerAuthorization] = 'Bearer $accessToken';
     }
-    options.headers[ApiConstants.headerClientType] = ApiConstants.clientType;
-    options.headers[ApiConstants.headerRequestId] = IdempotencyKeys.generate();
+    options.headers[_headerClientType] = clientType;
+    options.headers[_headerRequestId] = IdempotencyKeys.generate();
     handler.next(options);
   }
 
@@ -77,12 +113,10 @@ class _AuthInterceptor extends Interceptor {
     }
 
     try {
-      final refreshResponse = await _dio.post<Map<String, dynamic>>(
+      final refreshResponse = await _refreshDio.post<Map<String, dynamic>>(
         '/auth/refresh',
         data: {'refresh_token': refreshToken},
-        options: Options(
-          headers: {ApiConstants.headerClientType: ApiConstants.clientType},
-        ),
+        options: Options(headers: {_headerClientType: clientType}),
       );
       final body = refreshResponse.data;
       final newAccessToken = body?['access_token'] as String?;
@@ -97,7 +131,7 @@ class _AuthInterceptor extends Interceptor {
       );
 
       final retryOptions = err.requestOptions
-        ..headers[ApiConstants.headerAuthorization] = 'Bearer $newAccessToken'
+        ..headers[_headerAuthorization] = 'Bearer $newAccessToken'
         ..extra[_retriedKey] = true;
       final retryResponse = await _dio.fetch<dynamic>(retryOptions);
       handler.resolve(retryResponse);
@@ -110,6 +144,7 @@ class _AuthInterceptor extends Interceptor {
 
 /// `client_key`(§1.7) · `X-Request-Id`(§1.3) 로 쓸 단말 발급 UUID.
 abstract final class IdempotencyKeys {
+  /// UUID v4 문자열 하나를 새로 발급한다.
   static String generate() => _uuid.v4();
 
   static const _uuid = Uuid();

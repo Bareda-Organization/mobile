@@ -1,0 +1,10 @@
+/// 바래다 공용 네트워크·에러·토큰 저장 패키지 — 앱은 이 파일 하나만 import 한다.
+///
+/// `apps/parent-app` · `apps/manager-app` 가 이 패키지에 의존해 dio 설정,
+/// 에러 매핑, 토큰 저장을 공유한다. 구조는 `CONVENTIONS_FLUTTER.md §2` 를 따른다.
+library;
+
+export 'error/failure.dart';
+export 'network/api_client.dart';
+export 'network/dio_error_mapper.dart';
+export 'storage/token_storage.dart';

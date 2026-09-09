@@ -29,6 +29,8 @@ environment:
 # versions available, run `flutter pub outdated`.
 # 린트는 very_good_analysis 로 고정 (CONVENTIONS_FLUTTER.md §1) — flutter_lints 는 쓰지 않는다.
 dependencies:
+  baraeda_core:
+    path: ../../packages/baraeda_core
   baraeda_ui:
     path: ../../packages/baraeda_ui
   cupertino_icons: ^1.0.8
