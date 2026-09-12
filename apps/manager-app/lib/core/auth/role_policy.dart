@@ -21,6 +21,7 @@ class RoleCapabilities {
     required this.canOperateRun,
     required this.canSendDelayNotification,
     required this.canDecideBoardingStatus,
+    required this.canTransmitPosition,
   });
 
   factory RoleCapabilities.of(UserRole role) => switch (role) {
@@ -28,11 +29,13 @@ class RoleCapabilities {
       canOperateRun: true,
       canSendDelayNotification: false,
       canDecideBoardingStatus: false,
+      canTransmitPosition: true,
     ),
     UserRole.escort => const RoleCapabilities._(
       canOperateRun: false,
       canSendDelayNotification: true,
       canDecideBoardingStatus: true,
+      canTransmitPosition: false,
     ),
   };
 
@@ -45,4 +48,11 @@ class RoleCapabilities {
 
   /// 개인별 승하차 상태 결정(§4.6) — 동승자만. 기사 호출 시 `403 ESCORT_ONLY`.
   final bool canDecideBoardingStatus;
+
+  /// 위치 업로드(§4.12, LOC-01) — 기사만. 동승자 호출 시 서버는
+  /// `403 DRIVER_ONLY` 를 준다. `canOperateRun` 과 값이 같지만 게이트하는
+  /// 동작이 다른 별개 항목이라 필드를 나눴다 — `canOperateRun` 의 문서
+  /// 주석이 대상을 "운행 시작·도착 처리" 로 못 박고 있어, 재사용하면
+  /// 위치 업로드가 그 설명 밖의 동작인데도 같은 이름 아래 숨는다.
+  final bool canTransmitPosition;
 }
