@@ -8,9 +8,15 @@ import 'package:parent_app/features/home/presentation/home_providers.dart';
 /// §3.12 알림 1페이지를 홈 화면에 압축해 보여준다(§1.8 — 무한 스크롤이
 /// 아니라 1페이지). 항목을 누르면 §3.13 로 읽음 처리한다.
 class NotificationList extends ConsumerWidget {
-  const NotificationList({required this.page, super.key});
+  const NotificationList({required this.page, required this.now, super.key});
 
   final NotificationPage page;
+
+  /// 상대 시각(`n분 전`) 계산 기준 시각 — 위젯 안에서 `DateTime.now()` 를
+  /// 직접 부르지 않는다(CONVENTIONS_FLUTTER.md §6). 호출부(`home_screen.dart`)
+  /// 가 한 곳에서만 실 시각을 주입해, 이 위젯은 시험에서 고정 시각으로
+  /// 검증할 수 있다.
+  final DateTime now;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -34,7 +40,7 @@ class NotificationList extends ConsumerWidget {
       title: item.title,
       sub: item.body,
       meta: item.studentName,
-      time: _relativeTime(item.sentAt),
+      time: _relativeTime(item.sentAt, now),
       unread: item.isUnread,
       onTap: item.isUnread ? () => _markRead(ref, item.notificationId) : null,
     );
@@ -46,8 +52,8 @@ class NotificationList extends ConsumerWidget {
   }
 }
 
-String _relativeTime(DateTime sentAt) {
-  final diff = DateTime.now().difference(sentAt);
+String _relativeTime(DateTime sentAt, DateTime now) {
+  final diff = now.difference(sentAt);
   if (diff.inMinutes < 1) return '방금 전';
   if (diff.inMinutes < 60) return '${diff.inMinutes}분 전';
   if (diff.inHours < 24) return '${diff.inHours}시간 전';

@@ -156,7 +156,7 @@ class _NotificationSection extends ConsumerWidget {
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stack) =>
           const AlertBanner(tone: AlertTone.missed, body: '알림을 불러오지 못했습니다'),
-      data: (page) => NotificationList(page: page),
+      data: (page) => NotificationList(page: page, now: DateTime.now()),
     );
   }
 }
