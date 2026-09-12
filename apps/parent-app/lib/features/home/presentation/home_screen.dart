@@ -9,12 +9,15 @@ import 'package:parent_app/features/home/presentation/home_providers.dart';
 import 'package:parent_app/features/home/presentation/widgets/notification_list.dart';
 import 'package:parent_app/features/home/presentation/widgets/run_card.dart';
 
-/// P-02·P-03·P-04 홈 화면 — 오늘 회차(§3.5) · 등원 여부 토글(§3.6) ·
-/// 알림(§3.12).
+/// P-03·P-04·P-09 홈 화면 — 오늘 회차(§3.5) · 등원 여부 토글(§3.6) ·
+/// 알림 목록(§3.12·§3.13). (`P-02` 가 아니다 — 그것은 자녀 연결 화면의
+/// ID 이고, 이 화면이 보여주는 것은 P-09 알림 목록이다. FEATURE_SPEC ·
+/// USER_FLOWS 직접 대조로 정정, 2026-09-12.)
 ///
 /// 역할 분기는 문자열이 아니라 `roleCapabilitiesProvider.canToggleAttendance`
-/// 하나로만 한다(§1.1) — 학부모는 연결 자녀 중 선택(UF-P-02), 학생은 본인
-/// `student_id` 하나만 쓴다.
+/// 하나로만 한다(§1.1) — 학부모는 연결 자녀 중 선택(UF-P-02), 자녀별 탑승
+/// 토글(UF-P-04, ②구간 승인 대기는 UF-P-05), 알림 목록(UF-P-08). 학생은
+/// 본인 `student_id` 하나만 쓴다(UF-S-01 조회 전용).
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
