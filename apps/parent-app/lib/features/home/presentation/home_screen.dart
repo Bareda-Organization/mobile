@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:parent_app/app/app_routes.dart';
+import 'package:parent_app/app/di.dart';
 import 'package:parent_app/core/auth/auth_providers.dart';
 import 'package:parent_app/core/students/presentation/selected_student.dart';
 import 'package:parent_app/features/home/presentation/home_providers.dart';
@@ -161,7 +162,8 @@ class _NotificationSection extends ConsumerWidget {
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stack) =>
           const AlertBanner(tone: AlertTone.missed, body: '알림을 불러오지 못했습니다'),
-      data: (page) => NotificationList(page: page, now: DateTime.now()),
+      data: (page) =>
+          NotificationList(page: page, now: ref.watch(clockProvider).now()),
     );
   }
 }

@@ -6,6 +6,7 @@ import 'package:parent_app/core/change_requests/data/change_request_api.dart';
 import 'package:parent_app/core/change_requests/data/change_request_repository_impl.dart';
 import 'package:parent_app/core/change_requests/domain/change_request_repository.dart';
 import 'package:parent_app/core/constants/api_constants.dart';
+import 'package:parent_app/core/devices/data/device_registration_storage.dart';
 import 'package:parent_app/core/runs/data/run_api.dart';
 import 'package:parent_app/core/runs/data/run_repository_impl.dart';
 import 'package:parent_app/core/runs/domain/run_repository.dart';
@@ -21,7 +22,6 @@ import 'package:parent_app/features/home/domain/notification_repository.dart';
 import 'package:parent_app/features/schedule/data/weekly_address_api.dart';
 import 'package:parent_app/features/schedule/data/weekly_address_repository_impl.dart';
 import 'package:parent_app/features/schedule/domain/weekly_address_repository.dart';
-import 'package:parent_app/features/settings/data/device_registration_storage.dart';
 import 'package:parent_app/features/settings/data/notification_settings_api.dart';
 import 'package:parent_app/features/settings/data/notification_settings_repository_impl.dart';
 import 'package:parent_app/features/settings/domain/notification_settings_repository.dart';
@@ -39,6 +39,12 @@ final tokenStorageProvider = Provider<TokenStorage>(
     refreshTokenKey: 'refresh_token',
   ),
 );
+
+/// 이월 항목 — 위젯이 `DateTime.now()` 를 직접 부르지 않게 하는 주입점
+/// (CONVENTIONS_FLUTTER.md §9). 프로덕션은 항상 [SystemClock] 이라 실
+/// 시각을 그대로 쓰고, 시험만 이 provider 를 고정 시각 가짜 구현으로
+/// override 한다.
+final clockProvider = Provider<Clock>((ref) => const SystemClock());
 
 final apiClientProvider = Provider<ApiClient>((ref) {
   // ApiConstants.clientType 은 항상 'app' 이라 ApiClient 의 기본값과 같다
