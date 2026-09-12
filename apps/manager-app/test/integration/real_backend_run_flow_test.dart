@@ -4,6 +4,7 @@ import 'package:baraeda_core/baraeda_core.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage_platform_interface/flutter_secure_storage_platform_interface.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:manager_app/core/constants/api_constants.dart';
 import 'package:manager_app/features/delay/data/delay_api.dart';
 import 'package:manager_app/features/delay/data/delay_repository_impl.dart';
 import 'package:manager_app/features/delay/data/models/delay_request.dart';
@@ -63,31 +64,28 @@ class _FakeSecureStoragePlatform
   );
 }
 
-/// `localhost:8083`(M1 전용 백엔드·`schoolbus_m1`)을 실제로 때리는 계약
-/// 시험 — R1 목표 3항(자기 포트의 실제 백엔드로 1회 이상 호출). 시드 계정
-/// `driverA1`·`escortA1`/`password`(BRIEF-m1.md §5). 이 DB 는 이 좌석만
-/// 쓰므로 회차 상태를 실제로 바꿔도 된다.
+/// 실제 백엔드를 때리는 계약 시험 — R1 목표 3항(자기 포트의 실제 백엔드로
+/// 1회 이상 호출). 시드 계정 `driverA1`·`escortA1`/`password`(BRIEF-m1.md
+/// §5). 대상 서버는 `ApiConstants.baseUrl`(`--dart-define=API_BASE_URL`)이
+/// 정한다 — `auto_login_test.dart` 와 같은 이유로 하드코딩하지 않는다.
 ///
-/// ⚠ §4.1(`ManagerRunApi.fetchRuns`)·§4.2(`RosterApi.fetchRoster`)는 이
-/// 백엔드 인스턴스의 실제 응답으로 재현되는 두 가지 결함 때문에 프로덕션
-/// 클라이언트 코드를 그대로 통과시킬 수 없다 — 클라이언트 코드는
-/// `API_SPEC.md` 대로 작성됐고 문제는 백엔드 쪽이다(보고서 참고):
+/// §4.1(`ManagerRunApi.fetchRuns`)·§4.2(`RosterApi.fetchRoster`)는 한때 이
+/// 백엔드가 스펙과 어긋난 응답을 내려 프로덕션 클라이언트 코드를 그대로
+/// 통과시킬 수 없었다(보고서 참고 — F3 R2 B1 좌석이 서버를 고쳤다):
 ///
-/// 1. `GET /manager/runs` 의 `data` 가 스펙이 요구하는 `{items:[...]}` 가
-///    아니라 **맨 배열**이다 — `ManagerRunApi.fetchRuns` 는 `items` 키를
-///    찾다가 빈 목록을 반환하는 게 아니라 `response.data` 자체가 Map 캐스트
-///    에서 죽는다(실측: List 를 Map 으로 캐스트할 수 없다는 타입 오류).
-/// 2. `run_id`·`stop_id`·`rider_id`·`student_id` 가 스펙(`string`)과 달리
-///    **정수**로 온다 — `RosterResponse.fromJson` 의 `json['run_id'] as
-///    String` 이 `type 'int' is not a subtype of type 'String'` 로 죽는다.
+/// 1. `GET /manager/runs` 의 `data` 는 스펙(§4.1)대로 `{items:[...]}` 다.
+/// 2. `run_id`·`stop_id`·`rider_id`·`student_id` 는 스펙(§1.1 "식별자는
+///    서버 발급 문자열")대로 전부 문자열이다.
 ///
-/// 그래서 이 파일은 그 두 엔드포인트에는 **원재료 `Dio` 로 직접 호출**해
-/// "백엔드가 실제로 응답하는가"(목표 3항)와 "그 응답의 실제 모양"(결함
-/// 근거)만 확인하고, 클라이언트 모델 파싱을 통과하는 §4.9(지연 알림, ID
-/// 필드가 없어 이 결함의 영향을 받지 않는다)는 실제 프로덕션 코드
-/// (`DelayApi`+`DelayRepositoryImpl`+`guardDio`)로 끝까지 호출한다.
+/// 그래서 이 파일은 그 두 엔드포인트에도 프로덕션 모델(`ManagerRunApi`·
+/// `RosterApi`)을 그대로 쓸 수 있지만, "백엔드가 실제로 응답하는가"(목표
+/// 3항)와 "그 응답의 실제 모양이 스펙과 맞는가"를 함께 확인하기 위해 계속
+/// 원재료 `Dio` 로 직접 호출해 JSON 형태를 눈으로 본다. 클라이언트 모델
+/// 파싱을 통과하는 §4.9(지연 알림, ID 필드가 없어 이 결함의 영향을 받지
+/// 않았다)는 실제 프로덕션 코드(`DelayApi`+`DelayRepositoryImpl`+
+/// `guardDio`)로 끝까지 호출한다.
 void main() {
-  const baseUrl = 'http://localhost:8083/api/v1';
+  const baseUrl = ApiConstants.baseUrl;
   late bool backendReachable;
 
   setUpAll(() async {
@@ -119,11 +117,11 @@ void main() {
 
   test(
     '§4.1 — 기사 로그인 후 GET /manager/runs 를 실제로 호출해 응답을 받는다 '
-    '(원재료 dio — 이유는 파일 주석 참고). 응답이 스펙의 items[] 래핑이 '
-    '아니라 맨 배열인 것도 이 자리에서 함께 확인한다',
+    '(원재료 dio — 이유는 파일 주석 참고). 응답이 스펙대로 items[] 로 '
+    '감싸져 있고 run_id 가 문자열인 것도 이 자리에서 함께 확인한다',
     () async {
       if (!backendReachable) {
-        markTestSkipped('환경 문제: localhost:8083(schoolbus_m1) 백엔드 미기동');
+        markTestSkipped('환경 문제: 백엔드 미기동($baseUrl)');
         return;
       }
 
@@ -133,55 +131,68 @@ void main() {
       final response = await dio.get<dynamic>('/manager/runs');
 
       expect(response.statusCode, 200);
-      // 결함 1 — 스펙(§4.1)은 `{items: [...]}` 를 요구하지만 실제로는
-      // 봉투를 벗긴 `data` 자체가 List 다.
+      // §4.1 — data 는 배열이 아니라 items[] 를 담은 객체다.
       expect(
         response.data,
-        isA<List<dynamic>>(),
-        reason:
-            'API_SPEC §4.1 은 {items:[...]} 를 요구하는데 실제 백엔드는 '
-            '맨 배열을 반환한다 — ManagerRunController.list 결함(보고서 참고)',
+        isA<Map<String, dynamic>>(),
+        reason: 'API_SPEC §4.1 은 data 를 {items:[...]} 로 요구한다',
       );
-      final runs = (response.data as List<dynamic>).cast<
-        Map<String, dynamic>
-      >();
+      final runs = ((response.data as Map<String, dynamic>)['items'] as List)
+          .cast<Map<String, dynamic>>();
       expect(runs, isNotEmpty);
-      // 결함 2 — run_id 가 string 이 아니라 int.
+      // §1.1 — 식별자는 서버 발급 문자열이다.
       expect(
         runs.first['run_id'],
-        isA<int>(),
-        reason: 'API_SPEC §4.1 은 run_id: string 을 요구한다',
+        isA<String>(),
+        reason: 'API_SPEC §4.1·§1.1 은 run_id: string 을 요구한다',
       );
     },
   );
 
   test(
-    '§4.2 — GET /runs/1/roster 를 실제로 호출해 응답을 받는다 (원재료 dio) — '
-    'run_id 는 curl 로 미리 확인한 값(1, driverA1 배정 회차)을 직접 넣는다 '
-    '(§4.1 이 맨 배열이라 목록에서 얻을 수 없다)',
+    '§4.2 — GET /runs/{runId}/roster 를 실제로 호출해 응답을 받는다 (원재료 dio) — '
+    'run_id 는 이 시험 안에서 GET /manager/runs 로 매번 새로 찾는다. 이 회차의 '
+    'confirmed 여부는 시드의 상대 시각(출발 30분 전 확정)이 실제 시계 경과에 따라 '
+    '바뀌므로 고정값을 박으면 시간이 지나면서 idle 로 넘어가 깨진다',
     () async {
       if (!backendReachable) {
-        markTestSkipped('환경 문제: localhost:8083(schoolbus_m1) 백엔드 미기동');
+        markTestSkipped('환경 문제: 백엔드 미기동($baseUrl)');
         return;
       }
 
       final (:auth, :dio) = buildClient();
       await auth.login(loginId: 'driverA1', password: 'password');
 
-      final response = await dio.get<Map<String, dynamic>>('/runs/1/roster');
+      final runsResponse = await dio.get<Map<String, dynamic>>(
+        '/manager/runs',
+      );
+      final runs = (runsResponse.data!['items'] as List<dynamic>)
+          .cast<Map<String, dynamic>>();
+      final confirmedRun = runs.firstWhere(
+        (run) => run['run_status'] == 'confirmed',
+        orElse: () => throw StateError(
+          '확정(confirmed) 상태인 회차가 없다 — 시드 데이터의 상대 시각을 확인해야 한다',
+        ),
+      );
+      final runId = confirmedRun['run_id'] as String;
+
+      final response = await dio.get<Map<String, dynamic>>(
+        '/runs/$runId/roster',
+      );
 
       expect(response.statusCode, 200);
-      expect(response.data!['run_id'], 1);
-      // 결함 2 의 두 번째 근거 — stop_id·rider_id·student_id 도 전부 int.
+      // §1.1 — 식별자는 서버 발급 문자열이다. run_id·stop_id·rider_id·
+      // student_id 전부 String.
+      expect(response.data!['run_id'], runId);
       final stops = (response.data!['stops'] as List<dynamic>).cast<
         Map<String, dynamic>
       >();
-      expect(stops.first['stop_id'], isA<int>());
+      expect(stops.first['stop_id'], isA<String>());
       final students = (stops.first['students'] as List<dynamic>).cast<
         Map<String, dynamic>
       >();
-      expect(students.first['rider_id'], isA<int>());
-      expect(students.first['student_id'], isA<int>());
+      expect(students.first['rider_id'], isA<String>());
+      expect(students.first['student_id'], isA<String>());
     },
   );
 
@@ -192,7 +203,7 @@ void main() {
     '(DelayApi→DelayRepositoryImpl→guardDio) 를 그대로 끝까지 쓴다',
     () async {
       if (!backendReachable) {
-        markTestSkipped('환경 문제: localhost:8083(schoolbus_m1) 백엔드 미기동');
+        markTestSkipped('환경 문제: 백엔드 미기동($baseUrl)');
         return;
       }
 
@@ -227,7 +238,7 @@ void main() {
     '§4.9 — 기사 계정으로 호출하면 역할 게이트(ESCORT_ONLY)에서 막힌다',
     () async {
       if (!backendReachable) {
-        markTestSkipped('환경 문제: localhost:8083(schoolbus_m1) 백엔드 미기동');
+        markTestSkipped('환경 문제: 백엔드 미기동($baseUrl)');
         return;
       }
 
