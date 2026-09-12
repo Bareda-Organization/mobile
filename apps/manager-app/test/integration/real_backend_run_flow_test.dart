@@ -75,9 +75,8 @@ class _FakeSecureStoragePlatform
 ///
 /// 1. `GET /manager/runs` 의 `data` 가 스펙이 요구하는 `{items:[...]}` 가
 ///    아니라 **맨 배열**이다 — `ManagerRunApi.fetchRuns` 는 `items` 키를
-///    찾다가 빈 목록을 반환하는 게 아니라 `response.data` 자체가
-///    `Map<String,dynamic>` 캐스트에서 죽는다(실측: `type 'List<dynamic>'
-///    is not a subtype of type 'Map<String, dynamic>?'`).
+///    찾다가 빈 목록을 반환하는 게 아니라 `response.data` 자체가 Map 캐스트
+///    에서 죽는다(실측: List 를 Map 으로 캐스트할 수 없다는 타입 오류).
 /// 2. `run_id`·`stop_id`·`rider_id`·`student_id` 가 스펙(`string`)과 달리
 ///    **정수**로 온다 — `RosterResponse.fromJson` 의 `json['run_id'] as
 ///    String` 이 `type 'int' is not a subtype of type 'String'` 로 죽는다.
@@ -158,7 +157,7 @@ void main() {
 
   test(
     '§4.2 — GET /runs/1/roster 를 실제로 호출해 응답을 받는다 (원재료 dio) — '
-    'run_id 는 curl 로 미리 확인한 값(1, driverA1 배정 회차)을 직접 넣는다'
+    'run_id 는 curl 로 미리 확인한 값(1, driverA1 배정 회차)을 직접 넣는다 '
     '(§4.1 이 맨 배열이라 목록에서 얻을 수 없다)',
     () async {
       if (!backendReachable) {
