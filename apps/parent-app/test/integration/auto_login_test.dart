@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:parent_app/app/app.dart';
 import 'package:parent_app/app/di.dart';
+import 'package:parent_app/core/constants/api_constants.dart';
 import 'package:parent_app/features/auth/presentation/login_screen.dart';
 import 'package:parent_app/features/home/presentation/home_screen.dart';
 
@@ -23,7 +24,13 @@ import '../support/fake_token_storage.dart';
 /// 진짜 프로세스 재시작 확인은 iOS 시뮬레이터 실행으로 별도 수행한다(보고서
 /// § 실측 참고).
 void main() {
-  const baseUrl = 'http://localhost:8080/api/v1';
+  // ⚠ 여기 박아 두면 안 된다 — 앱 내부(`di.dart`)는 `ApiConstants.baseUrl`
+  // 을 통해 `--dart-define=API_BASE_URL` 값을 그대로 쓴다. 이 시험이 다른
+  // 값을 박아 두면 로그인 토큰을 발급받은 서버와 앱이 실제로 붙는 서버가
+  // 갈려, `--dart-define` 으로 다른 포트(예: 8082)를 줬을 때 A 서버가 발급한
+  // 토큰을 B 서버에 들고 가는 셈이 되어 항상 실패한다(manager-app 과 같은
+  // 원인, f766c27 로 이미 확정).
+  const baseUrl = ApiConstants.baseUrl;
   late bool backendReachable;
 
   setUpAll(() async {
