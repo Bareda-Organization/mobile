@@ -51,7 +51,7 @@ dependencies:
 dev_dependencies:
   build_runner: ^2.15.1
   drift_dev: ^2.34.6
-  flutter_secure_storage_platform_interface: ^2.0.3
+  flutter_secure_storage_platform_interface: '>=2.1.0 <3.0.0'  # 시험용 가짜 구현체가 2.1.0 의 checkUpgradeStatus 를 구현한다 — 하한을 낮추면 그 타입이 없어 컴파일이 깨진다
   flutter_test:
     sdk: flutter
   freezed: ^4.0.0-dev.3

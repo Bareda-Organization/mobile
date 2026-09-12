@@ -49,6 +49,16 @@ class _FakeSecureStoragePlatform
   Future<void> deleteAll({required Map<String, String> options}) async {
     data.clear();
   }
+
+  // flutter_secure_storage_platform_interface 2.1.0 이 더한 추상 메서드. 이 가짜는 저장소
+  // 동작만 흉내 내므로 이관이 필요 없다는 뜻의 ok 를 돌려준다.
+  @override
+  Future<SecureStorageUpgradeStatus> checkUpgradeStatus({
+    required Map<String, String> options,
+  }) async => const SecureStorageUpgradeStatus(
+    state: SecureStorageUpgradeState.ok,
+  );
+
 }
 
 void main() {
