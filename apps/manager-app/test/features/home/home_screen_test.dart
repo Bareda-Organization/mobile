@@ -1,0 +1,144 @@
+import 'dart:async';
+
+import 'package:baraeda_ui/baraeda_ui.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
+import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
+import 'package:manager_app/app/app_routes.dart';
+import 'package:manager_app/core/auth/auth_providers.dart';
+import 'package:manager_app/core/auth/user_role.dart';
+import 'package:manager_app/core/run/run_enums.dart';
+import 'package:manager_app/features/home/data/models/manager_run.dart';
+import 'package:manager_app/features/home/presentation/home_providers.dart';
+import 'package:manager_app/features/home/presentation/home_screen.dart';
+
+/// `ManagerHomeScreen` 3갈래(로딩·성공·실패)와 역할별 이동 대상(§4.1, M-02·
+/// M-07)을 직접 무는 시험 — 지금까지 이 화면을 검사하는 파일이 없었다.
+///
+/// 실제 `driveMode`·`roster` 화면 대신 표식 문구만 그리는 가짜 라우트를
+/// 붙인다 — 이 시험의 관심사는 "탭했을 때 *어느 경로로* 넘어가는가" 하나뿐이고,
+/// 실제 화면을 붙이면 그 화면이 요구하는 다른 provider 까지 채워야 해서
+/// 관심사가 흐려진다(`router_redirect_test.dart` 는 반대로 계정 상태 게이트가
+/// 관심사라 실제 화면이 필요했던 경우다).
+void main() {
+  ManagerRun confirmedRun() {
+    final now = DateTime(2026, 9, 12, 8);
+    return ManagerRun(
+      runId: 'run-1',
+      busNo: '3호차',
+      direction: RunDirection.toAcademy,
+      departTime: now,
+      origin: '기점',
+      destination: '학원',
+      estDurationMin: 30,
+      runStatus: RunStatus.confirmed,
+      confirmed: true,
+      startWindowFrom: now.subtract(const Duration(minutes: 10)),
+      startWindowTo: now.add(const Duration(minutes: 10)),
+      addedCount: 0,
+      removedCount: 0,
+      ackRequired: false,
+    );
+  }
+
+  GoRouter buildRouter() => GoRouter(
+    initialLocation: AppRoutes.home,
+    routes: [
+      GoRoute(
+        path: AppRoutes.home,
+        builder: (context, state) => const ManagerHomeScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.driveMode,
+        builder: (context, state) => const Text('DRIVE_MODE_SCREEN_MARKER'),
+      ),
+      GoRoute(
+        path: AppRoutes.roster,
+        builder: (context, state) => const Text('ROSTER_SCREEN_MARKER'),
+      ),
+    ],
+  );
+
+  Widget wrap(List<Override> overrides) {
+    return ProviderScope(
+      overrides: overrides,
+      child: MaterialApp.router(routerConfig: buildRouter()),
+    );
+  }
+
+  testWidgets('로딩 중에는 진행 표시기를 보여준다', (tester) async {
+    final neverCompletes = Completer<List<ManagerRun>>().future;
+    await tester.pumpWidget(
+      wrap([todayRunsProvider.overrideWith((ref) => neverCompletes)]),
+    );
+    await tester.pump();
+
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+  });
+
+  testWidgets('불러오기 실패 시 실패 사유를 보여준다', (tester) async {
+    await tester.pumpWidget(
+      wrap([
+        todayRunsProvider.overrideWith(
+          (ref) async => throw Exception('네트워크 오류'),
+        ),
+      ]),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('오늘 운행을 불러오지 못했습니다'), findsOneWidget);
+  });
+
+  testWidgets('기사 역할이면 확정된 회차를 눌렀을 때 운행 모드로 이동한다', (tester) async {
+    await tester.pumpWidget(
+      wrap([
+        todayRunsProvider.overrideWith((ref) async => [confirmedRun()]),
+        currentUserRoleProvider.overrideWith((ref) => UserRole.driver),
+      ]),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byType(RunSummaryCard));
+    await tester.pumpAndSettle();
+
+    expect(find.text('DRIVE_MODE_SCREEN_MARKER'), findsOneWidget);
+    expect(find.text('ROSTER_SCREEN_MARKER'), findsNothing);
+  });
+
+  testWidgets('동승자 역할이면 확정된 회차를 눌렀을 때 승하차 명단으로 이동한다', (tester) async {
+    await tester.pumpWidget(
+      wrap([
+        todayRunsProvider.overrideWith((ref) async => [confirmedRun()]),
+        currentUserRoleProvider.overrideWith((ref) => UserRole.escort),
+      ]),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byType(RunSummaryCard));
+    await tester.pumpAndSettle();
+
+    expect(find.text('ROSTER_SCREEN_MARKER'), findsOneWidget);
+    expect(find.text('DRIVE_MODE_SCREEN_MARKER'), findsNothing);
+  });
+
+  testWidgets(
+    '역할이 미상(null)이면 운행 시작 쪽이 아니라 닫힌 쪽(승하차 명단)으로 간다 '
+    '— 모르면 막는 쪽이 기본값이어야 한다',
+    (tester) async {
+      await tester.pumpWidget(
+        // currentUserRoleProvider 를 override 하지 않는다 — 기본값 null 로
+        // roleCapabilitiesProvider 도 null 이 된다.
+        wrap([todayRunsProvider.overrideWith((ref) async => [confirmedRun()])]),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(RunSummaryCard));
+      await tester.pumpAndSettle();
+
+      expect(find.text('ROSTER_SCREEN_MARKER'), findsOneWidget);
+      expect(find.text('DRIVE_MODE_SCREEN_MARKER'), findsNothing);
+    },
+  );
+}
