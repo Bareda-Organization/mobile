@@ -8,17 +8,26 @@ import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/core/network/failure_messages.dart';
 import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
+import 'package:manager_app/features/home/presentation/home_providers.dart';
 import 'package:manager_app/features/roster/data/models/boarding_update_request.dart';
 import 'package:manager_app/features/roster/data/models/no_show_contact_request.dart';
 import 'package:manager_app/features/roster/data/models/roster_response.dart';
 import 'package:manager_app/features/roster/presentation/roster_providers.dart';
 
 /// StopRoster — 정류장별 탑승자 명단 (§4.2 M-03 · §4.6 M-12 · §4.7 M-13 ·
-/// §4.8 M-14).
+/// §4.8 M-14 · §4.11 M-04 변경 확인).
 ///
 /// 기사·동승자 둘 다 조회하지만(API_SPEC "버스기사(조회)"), 승하차 상태를
 /// 바꾸는 버튼은 `canDecideBoardingStatus`(동승자 전용, role_policy.dart)
 /// 로만 노출된다 — 같은 화면에서 버튼 노출이 갈리는 또 다른 예시(§1.1).
+/// §4.11 변경 확인 응답은 기사·동승자 둘 다 호출 가능해 capability 분기를
+/// 두지 않았다(정본 "권한 버스기사 · 동승자" 그대로). 배너 노출 여부는
+/// `selectedManagerRunProvider`(§4.1 `ack_required`, RUN-07)를 근거로
+/// 삼는다 — `GET /roster`(§4.2) 응답에는 이 플래그가 없어, 확인 응답이
+/// 성공하면 `todayRunsProvider` 를 무효화해 서버 값을 다시 받는다. 재요청이
+/// 끝나기 전 화면이 깜빡이지 않도록 `_changesAcked` 로 즉시 숨김도 함께
+/// 건다. 서버 쪽 미확인 표시는 관계자 대시보드(MON-05)의 몫이라 이 화면이
+/// 다시 확인하지 않는다.
 class RosterScreen extends ConsumerStatefulWidget {
   const RosterScreen({super.key});
 
@@ -29,6 +38,26 @@ class RosterScreen extends ConsumerStatefulWidget {
 class _RosterScreenState extends ConsumerState<RosterScreen> {
   String? _pendingRiderId;
   String? _errorMessage;
+  bool _acking = false;
+  bool _changesAcked = false;
+
+  Future<void> _ackChanges(String runId) async {
+    setState(() {
+      _acking = true;
+      _errorMessage = null;
+    });
+    try {
+      await ref.read(rosterRepositoryProvider).ackChanges(runId: runId);
+      ref.invalidate(todayRunsProvider);
+      if (!mounted) return;
+      setState(() => _changesAcked = true);
+    } on Failure catch (failure) {
+      if (!mounted) return;
+      setState(() => _errorMessage = describeFailure(failure));
+    } finally {
+      if (mounted) setState(() => _acking = false);
+    }
+  }
 
   Future<void> _updateStatus({
     required String runId,
@@ -127,72 +156,94 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
     final rosterAsync = ref.watch(rosterProvider);
     final capabilities = ref.watch(roleCapabilitiesProvider);
     final canDecide = capabilities?.canDecideBoardingStatus ?? false;
+    final run = ref.watch(selectedManagerRunProvider);
+    final hasChanges = !_changesAcked && (run?.ackRequired ?? false);
 
     return rosterAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, _) => Center(child: Text('명단을 불러오지 못했습니다: $error')),
-      data: (roster) => ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: StatCard(
-                  label: '탑승',
-                  value: '${roster.counts.boarded}',
-                  tone: StatCardTone.boarded,
-                ),
+      data: (roster) {
+        return ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            if (hasChanges) ...[
+              const AlertBanner(
+                tone: AlertTone.moving,
+                body: '승하차지·명단이 변경됐습니다 — 확인 후 계속 진행하세요',
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: StatCard(label: '대기', value: '${roster.counts.waiting}'),
+              const SizedBox(height: 8),
+              BaraedaButton(
+                label: '변경 목록 확인',
+                onPressed: _acking ? null : () => _ackChanges(runId),
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: StatCard(
-                  label: '미탑승',
-                  value: '${roster.counts.noShow}',
-                  tone: StatCardTone.missed,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: StatCard(label: '결석', value: '${roster.counts.absentN}'),
-              ),
+              const SizedBox(height: 16),
             ],
-          ),
-          const SizedBox(height: 16),
-          if (_errorMessage != null) ...[
-            AlertBanner(tone: AlertTone.missed, body: _errorMessage),
-            const SizedBox(height: 12),
-          ],
-          for (final stop in roster.stops)
-            _StopSection(
-              stop: stop,
-              canDecide: canDecide,
-              pendingRiderId: _pendingRiderId,
-              onBoard: (riderId) => _updateStatus(
-                runId: runId,
-                riderId: riderId,
-                status: RiderStatus.boarded,
-              ),
-              onAlight: (riderId) => _updateStatus(
-                runId: runId,
-                riderId: riderId,
-                status: RiderStatus.alighted,
-              ),
-              onNoShow: (riderId) => _updateStatus(
-                runId: runId,
-                riderId: riderId,
-                status: RiderStatus.noShow,
-              ),
-              onRevert: (riderId) =>
-                  _revertStatus(runId: runId, riderId: riderId),
-              onRecordContact: (riderId) =>
-                  _recordNoShowContact(runId: runId, riderId: riderId),
+            Row(
+              children: [
+                Expanded(
+                  child: StatCard(
+                    label: '탑승',
+                    value: '${roster.counts.boarded}',
+                    tone: StatCardTone.boarded,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: StatCard(
+                    label: '대기',
+                    value: '${roster.counts.waiting}',
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: StatCard(
+                    label: '미탑승',
+                    value: '${roster.counts.noShow}',
+                    tone: StatCardTone.missed,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: StatCard(
+                    label: '결석',
+                    value: '${roster.counts.absentN}',
+                  ),
+                ),
+              ],
             ),
-        ],
-      ),
+            const SizedBox(height: 16),
+            if (_errorMessage != null) ...[
+              AlertBanner(tone: AlertTone.missed, body: _errorMessage),
+              const SizedBox(height: 12),
+            ],
+            for (final stop in roster.stops)
+              _StopSection(
+                stop: stop,
+                canDecide: canDecide,
+                pendingRiderId: _pendingRiderId,
+                onBoard: (riderId) => _updateStatus(
+                  runId: runId,
+                  riderId: riderId,
+                  status: RiderStatus.boarded,
+                ),
+                onAlight: (riderId) => _updateStatus(
+                  runId: runId,
+                  riderId: riderId,
+                  status: RiderStatus.alighted,
+                ),
+                onNoShow: (riderId) => _updateStatus(
+                  runId: runId,
+                  riderId: riderId,
+                  status: RiderStatus.noShow,
+                ),
+                onRevert: (riderId) =>
+                    _revertStatus(runId: runId, riderId: riderId),
+                onRecordContact: (riderId) =>
+                    _recordNoShowContact(runId: runId, riderId: riderId),
+              ),
+          ],
+        );
+      },
     );
   }
 }
@@ -226,6 +277,7 @@ class _StopSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final skipped = stop.change == StopChange.skipped;
+    final added = stop.change == StopChange.added;
     final arrivedAt = stop.arrivedAt;
     final headerTrailing = skipped
         ? (stop.skipNotice ?? '경유하지 않음')
@@ -247,6 +299,7 @@ class _StopSection extends StatelessWidget {
                       context,
                     ).textTheme.titleSmall?.copyWith(
                       decoration: skipped ? TextDecoration.lineThrough : null,
+                      color: added ? Colors.green.shade700 : null,
                     ),
               ),
               const Spacer(),
@@ -260,6 +313,7 @@ class _StopSection extends StatelessWidget {
             StudentRow(
               name: student.name,
               meta: [
+                if (student.change == RiderChange.added) '신규',
                 student.className,
                 student.guardianPhone,
               ].whereType<String>().join(' · '),

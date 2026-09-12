@@ -15,10 +15,14 @@ import 'package:manager_app/features/run_end/data/models/report_result.dart';
 ///
 /// §4.10 이 명시하는 "전용 종료 API 부재" 때문에, 이 화면은 종료 상태를
 /// 서버에서 다시 조회하지 않고 DriveMode 의 §4.5 도착 처리 응답
-/// ([lastArriveResultProvider])을 그대로 재구성해 보여준다 — §4.11(변경
-/// 확인) 은 범위 밖이라 이 화면이 대신 보여줄 수 있는 것은 그 응답 하나뿐
-/// 이다. 보고 작성(§4.13)은 기사·동승자 둘 다 가능해 role_policy.dart 에
-/// capability 를 두지 않았다(`ReportsRepository` 주석과 같은 판단).
+/// ([lastArriveResultProvider])을 그대로 재구성해 보여준다. 보고 작성
+/// (§4.13)은 기사·동승자 둘 다 가능해 role_policy.dart 에 capability 를
+/// 두지 않았다(`ReportsRepository` 주석과 같은 판단).
+///
+/// §4.11(변경 확인, M-04)은 이 화면이 아니라 StopRoster 의 몫이다
+/// (`roster_screen.dart` · `USER_FLOWS.md UF-D-02`) — 종료 시점의 변경
+/// 확인이 아니라 확정 후 운행 중 변경 발생 시 확인하는 흐름이라 화면이
+/// 다르다. 이전 판단은 여기를 "범위 밖" 으로 잘못 적었던 것을 정정한다.
 class RunEndScreen extends ConsumerStatefulWidget {
   const RunEndScreen({super.key});
 

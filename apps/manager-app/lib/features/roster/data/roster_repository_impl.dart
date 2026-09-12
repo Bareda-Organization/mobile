@@ -1,4 +1,5 @@
 import 'package:manager_app/core/network/guard.dart';
+import 'package:manager_app/features/roster/data/models/ack_changes_result.dart';
 import 'package:manager_app/features/roster/data/models/boarding_update_request.dart';
 import 'package:manager_app/features/roster/data/models/no_show_contact_request.dart';
 import 'package:manager_app/features/roster/data/models/revert_result.dart';
@@ -59,4 +60,10 @@ class RosterRepositoryImpl implements RosterRepository {
       request: request,
     ),
   );
+
+  @override
+  Future<AckChangesResult> ackChanges({
+    required String runId,
+    List<String>? changeIds,
+  }) => guardDio(() => _api.ackChanges(runId: runId, changeIds: changeIds));
 }

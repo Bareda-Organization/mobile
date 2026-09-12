@@ -73,7 +73,10 @@ class ManagerRun {
   final int addedCount;
   final int removedCount;
 
-  /// 노선 변경 확인 응답 미완료 여부(RUN-07, §4.11 — 이번 라운드 범위 밖).
+  /// 노선 변경 확인 응답 미완료 여부(RUN-07). §4.11 `ack-changes` 호출이
+  /// 성공하면 `false` 로 바뀐다 — StopRoster(`roster_screen.dart`)가 이
+  /// 값을 배너 노출 근거로 쓴다(정정: 과거 주석은 §4.11 을 범위 밖으로
+  /// 잘못 적었었다).
   final bool ackRequired;
 
   /// `null` 이면 서버가 이 앱이 모르는 역할을 줬다는 뜻 — 화면 구성은
