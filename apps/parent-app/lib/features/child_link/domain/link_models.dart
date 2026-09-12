@@ -4,6 +4,8 @@
 /// 이 파일·화면의 주석은 정본 기준 P-02 로 적는다(보고서 §2 참고).
 library;
 
+import 'package:parent_app/core/common/json_id.dart';
+
 /// §3.2 — 학부모가 자녀 연결을 요청한 결과.
 class LinkRequestResult {
   const LinkRequestResult({
@@ -13,7 +15,7 @@ class LinkRequestResult {
 
   factory LinkRequestResult.fromJson(Map<String, dynamic> json) =>
       LinkRequestResult(
-        linkRequestId: json['link_request_id'] as String,
+        linkRequestId: asIdString(json['link_request_id']),
         expiresAt: DateTime.parse(json['expires_at'] as String),
       );
 
@@ -41,7 +43,7 @@ class LinkConfirmResult {
 
   factory LinkConfirmResult.fromJson(Map<String, dynamic> json) =>
       LinkConfirmResult(
-        studentId: json['student_id'] as String,
+        studentId: asIdString(json['student_id']),
         name: json['name'] as String,
       );
 

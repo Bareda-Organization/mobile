@@ -1,3 +1,4 @@
+import 'package:parent_app/core/common/json_id.dart';
 import 'package:parent_app/core/common/run_direction.dart';
 
 /// `GET /students/{id}/runs` 응답 항목 (API_SPEC §3.5).
@@ -42,7 +43,7 @@ class RunStop {
   const RunStop({required this.stopId, required this.name, this.address});
 
   factory RunStop.fromJson(Map<String, dynamic> json) => RunStop(
-    stopId: json['stop_id'] as String,
+    stopId: asIdString(json['stop_id']),
     name: json['name'] as String,
     address: json['address'] as String?,
   );
@@ -67,7 +68,7 @@ class StudentRun {
   });
 
   factory StudentRun.fromJson(Map<String, dynamic> json) => StudentRun(
-    runId: json['run_id'] as String,
+    runId: asIdString(json['run_id']),
     direction: RunDirection.fromWireValue(json['direction'] as String),
     busNo: json['bus_no'] as String,
     departTime: DateTime.parse(json['depart_time'] as String),

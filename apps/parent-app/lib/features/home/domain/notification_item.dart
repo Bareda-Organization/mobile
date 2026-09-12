@@ -1,3 +1,5 @@
+import 'package:parent_app/core/common/json_id.dart';
+
 /// `GET /notifications` 응답 항목 (API_SPEC §3.12).
 ///
 /// [type] 은 §9.7 알림 종류를 문자열 그대로 보관한다 — 이 화면 범위에서는
@@ -19,11 +21,13 @@ class NotificationItem {
 
   factory NotificationItem.fromJson(Map<String, dynamic> json) =>
       NotificationItem(
-        notificationId: json['notification_id'] as String,
+        notificationId: asIdString(json['notification_id']),
         type: json['type'] as String,
         title: json['title'] as String,
         body: json['body'] as String,
-        studentId: json['student_id'] as String?,
+        studentId: json['student_id'] == null
+            ? null
+            : asIdString(json['student_id']),
         studentName: json['student_name'] as String?,
         sentAt: DateTime.parse(json['sent_at'] as String),
         readAt: json['read_at'] == null

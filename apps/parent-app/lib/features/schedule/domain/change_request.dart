@@ -1,3 +1,5 @@
+import 'package:parent_app/core/common/json_id.dart';
+
 /// `POST`·`GET /students/{id}/change-requests` 모델 (API_SPEC §3.8·§3.9).
 enum ChangeRequestType {
   relocate,
@@ -40,11 +42,11 @@ class ChangeRequest {
   });
 
   factory ChangeRequest.fromJson(Map<String, dynamic> json) => ChangeRequest(
-    changeRequestId: json['change_request_id'] as String,
+    changeRequestId: asIdString(json['change_request_id']),
     type: ChangeRequestType.fromWireValue(json['type'] as String),
     status: ChangeRequestStatus.fromWireValue(json['status'] as String),
     rejectReason: json['reject_reason'] as String?,
-    runId: json['run_id'] as String?,
+    runId: json['run_id'] == null ? null : asIdString(json['run_id']),
     requestedAt: json['requested_at'] == null
         ? null
         : DateTime.parse(json['requested_at'] as String),
@@ -94,7 +96,7 @@ class ChangeRequestCreateResult {
 
   factory ChangeRequestCreateResult.fromJson(Map<String, dynamic> json) =>
       ChangeRequestCreateResult(
-        changeRequestId: json['change_request_id'] as String,
+        changeRequestId: asIdString(json['change_request_id']),
         status: ChangeRequestStatus.fromWireValue(json['status'] as String),
         result: json['result'] as String,
         deadlineAt: json['deadline_at'] == null
