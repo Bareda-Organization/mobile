@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:manager_app/app/app.dart';

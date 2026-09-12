@@ -3,6 +3,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:manager_app/core/constants/api_constants.dart';
 import 'package:manager_app/features/auth/data/auth_repository_impl.dart';
 import 'package:manager_app/features/auth/domain/auth_repository.dart';
+import 'package:manager_app/features/delay/data/delay_api.dart';
+import 'package:manager_app/features/delay/data/delay_repository_impl.dart';
+import 'package:manager_app/features/delay/domain/delay_repository.dart';
+import 'package:manager_app/features/drive_mode/data/drive_mode_api.dart';
+import 'package:manager_app/features/drive_mode/data/drive_mode_repository_impl.dart';
+import 'package:manager_app/features/drive_mode/domain/drive_mode_repository.dart';
+import 'package:manager_app/features/home/data/manager_run_api.dart';
+import 'package:manager_app/features/home/data/manager_run_repository_impl.dart';
+import 'package:manager_app/features/home/domain/manager_run_repository.dart';
+import 'package:manager_app/features/roster/data/roster_api.dart';
+import 'package:manager_app/features/roster/data/roster_repository_impl.dart';
+import 'package:manager_app/features/roster/domain/roster_repository.dart';
+import 'package:manager_app/features/run_end/data/reports_api.dart';
+import 'package:manager_app/features/run_end/data/reports_repository_impl.dart';
+import 'package:manager_app/features/run_end/domain/reports_repository.dart';
 
 /// 앱 전역 의존성 조립 지점. `features/*/data` 는 이 provider 들을 거쳐
 /// `ApiClient` 를 받는다 — 전역 싱글턴을 직접 참조하지 않는다
@@ -47,4 +62,49 @@ final authApiProvider = Provider<AuthApi>((ref) {
 /// (CONVENTIONS_FLUTTER.md §2 "presentation 이 data 를 직접 import 하지 않음").
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   return AuthRepositoryImpl(authApi: ref.watch(authApiProvider));
+});
+
+/// API_SPEC §4.1 — ManagerHome 이 오늘의 회차 목록을 읽는 통로.
+final managerRunApiProvider = Provider<ManagerRunApi>((ref) {
+  return ManagerRunApi(dio: ref.watch(apiClientProvider).dio);
+});
+
+final managerRunRepositoryProvider = Provider<ManagerRunRepository>((ref) {
+  return ManagerRunRepositoryImpl(api: ref.watch(managerRunApiProvider));
+});
+
+/// API_SPEC §4.4·§4.5 — 운행 시작·승하차지 도착(기사 전용).
+final driveModeApiProvider = Provider<DriveModeApi>((ref) {
+  return DriveModeApi(dio: ref.watch(apiClientProvider).dio);
+});
+
+final driveModeRepositoryProvider = Provider<DriveModeRepository>((ref) {
+  return DriveModeRepositoryImpl(api: ref.watch(driveModeApiProvider));
+});
+
+/// API_SPEC §4.2·§4.6·§4.7·§4.8 — 명단 조회 + 개인별 승하차 처리.
+final rosterApiProvider = Provider<RosterApi>((ref) {
+  return RosterApi(dio: ref.watch(apiClientProvider).dio);
+});
+
+final rosterRepositoryProvider = Provider<RosterRepository>((ref) {
+  return RosterRepositoryImpl(api: ref.watch(rosterApiProvider));
+});
+
+/// API_SPEC §4.9 — 지연 알림(동승자 전용).
+final delayApiProvider = Provider<DelayApi>((ref) {
+  return DelayApi(dio: ref.watch(apiClientProvider).dio);
+});
+
+final delayRepositoryProvider = Provider<DelayRepository>((ref) {
+  return DelayRepositoryImpl(api: ref.watch(delayApiProvider));
+});
+
+/// API_SPEC §4.13 — 현장 상황 보고(RunEndScreen 이 종료 리포트로 쓴다).
+final reportsApiProvider = Provider<ReportsApi>((ref) {
+  return ReportsApi(dio: ref.watch(apiClientProvider).dio);
+});
+
+final reportsRepositoryProvider = Provider<ReportsRepository>((ref) {
+  return ReportsRepositoryImpl(api: ref.watch(reportsApiProvider));
 });
