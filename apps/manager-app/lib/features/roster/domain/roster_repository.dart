@@ -1,3 +1,4 @@
+import 'package:manager_app/features/offline_queue/domain/send_outcome.dart';
 import 'package:manager_app/features/roster/data/models/ack_changes_result.dart';
 import 'package:manager_app/features/roster/data/models/boarding_update_request.dart';
 import 'package:manager_app/features/roster/data/models/no_show_contact_request.dart';
@@ -12,7 +13,11 @@ import 'package:manager_app/features/roster/data/models/roster_response.dart';
 abstract interface class RosterRepository {
   Future<RosterResponse> fetchRoster(String runId);
 
-  Future<RiderUpdateResult> updateRiderStatus({
+  /// §4.6 승하차 상태 갱신 — §1.7 M-06 오프라인 큐 대상(UF-E-07 "동승자
+  /// 승하차 처리" 가 그 예시로 명시된 항목). 통신 두절이면 [Queued] 로
+  /// 돌아오고, 호출부가 넘긴 `request.clientKey` 가 즉시 전송·재생 양쪽에
+  /// 그대로 쓰여 서버 쪽 중복 처리를 막는다.
+  Future<SendOutcome<RiderUpdateResult>> updateRiderStatus({
     required String runId,
     required String riderId,
     required BoardingUpdateRequest request,

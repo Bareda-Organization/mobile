@@ -1,6 +1,7 @@
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:manager_app/core/constants/api_constants.dart';
+import 'package:manager_app/core/location/position_source.dart';
 import 'package:manager_app/features/auth/data/auth_repository_impl.dart';
 import 'package:manager_app/features/auth/domain/auth_repository.dart';
 import 'package:manager_app/features/delay/data/delay_api.dart';
@@ -9,9 +10,18 @@ import 'package:manager_app/features/delay/domain/delay_repository.dart';
 import 'package:manager_app/features/drive_mode/data/drive_mode_api.dart';
 import 'package:manager_app/features/drive_mode/data/drive_mode_repository_impl.dart';
 import 'package:manager_app/features/drive_mode/domain/drive_mode_repository.dart';
+import 'package:manager_app/features/emergency/data/emergency_api.dart';
+import 'package:manager_app/features/emergency/data/emergency_repository_impl.dart';
+import 'package:manager_app/features/emergency/domain/emergency_repository.dart';
 import 'package:manager_app/features/home/data/manager_run_api.dart';
 import 'package:manager_app/features/home/data/manager_run_repository_impl.dart';
 import 'package:manager_app/features/home/domain/manager_run_repository.dart';
+import 'package:manager_app/features/offline_queue/data/offline_queue_database.dart';
+import 'package:manager_app/features/offline_queue/data/offline_queue_repository_impl.dart';
+import 'package:manager_app/features/offline_queue/domain/offline_queue_repository.dart';
+import 'package:manager_app/features/position/data/position_api.dart';
+import 'package:manager_app/features/position/data/position_repository_impl.dart';
+import 'package:manager_app/features/position/domain/position_repository.dart';
 import 'package:manager_app/features/roster/data/roster_api.dart';
 import 'package:manager_app/features/roster/data/roster_repository_impl.dart';
 import 'package:manager_app/features/roster/domain/roster_repository.dart';
@@ -32,6 +42,12 @@ final tokenStorageProvider = Provider<TokenStorage>(
     refreshTokenKey: 'refresh_token',
   ),
 );
+
+/// 위젯 안에서 `DateTime.now()` 를 직접 부르지 않기 위한 주입 지점
+/// (CONVENTIONS_FLUTTER.md §9, 이월 11 · Ruling 266). 운영 기본값은
+/// [SystemClock] 이고, 테스트는 이 provider 를 override 해 시각을 고정한다 —
+/// 값을 여기서 얼리지 않는다(운행 시작 창 판정은 실제 "지금" 이 필요하다).
+final clockProvider = Provider<Clock>((ref) => const SystemClock());
 
 final apiClientProvider = Provider<ApiClient>((ref) {
   // ApiConstants.clientType 은 항상 'app' 이라 ApiClient 의 기본값과 같다
@@ -88,7 +104,10 @@ final rosterApiProvider = Provider<RosterApi>((ref) {
 });
 
 final rosterRepositoryProvider = Provider<RosterRepository>((ref) {
-  return RosterRepositoryImpl(api: ref.watch(rosterApiProvider));
+  return RosterRepositoryImpl(
+    api: ref.watch(rosterApiProvider),
+    offlineQueue: ref.watch(offlineQueueRepositoryProvider),
+  );
 });
 
 /// API_SPEC §4.9 — 지연 알림(동승자 전용).
@@ -107,4 +126,50 @@ final reportsApiProvider = Provider<ReportsApi>((ref) {
 
 final reportsRepositoryProvider = Provider<ReportsRepository>((ref) {
   return ReportsRepositoryImpl(api: ref.watch(reportsApiProvider));
+});
+
+/// API_SPEC §1.7 오프라인 큐(M-06) — drift 로컬 DB 하나를 앱 전역에서
+/// 공유한다(승하차 처리·비상 발신 재생이 같은 큐를 쓴다).
+final offlineQueueDatabaseProvider = Provider<OfflineQueueDatabase>((ref) {
+  final database = OfflineQueueDatabase();
+  ref.onDispose(database.close);
+  return database;
+});
+
+final offlineQueueRepositoryProvider = Provider<OfflineQueueRepository>((ref) {
+  return OfflineQueueRepositoryImpl(
+    database: ref.watch(offlineQueueDatabaseProvider),
+    dio: ref.watch(apiClientProvider).dio,
+  );
+});
+
+/// LOC-01 — 좌표 획득 소스. 위치 플러그인이 아직 연동되지 않아 기본값은
+/// 항상 `null` 을 돌려주는 [UnavailablePositionSource] 다
+/// (`core/location/position_source.dart` 문서 주석 참고).
+final positionSourceProvider = Provider<PositionSource>(
+  (ref) => const UnavailablePositionSource(),
+);
+
+/// API_SPEC §4.12 — 위치 업로드(기사 전용). §1.7 대상이 아니라 오프라인
+/// 큐를 거치지 않는다(재시도가 오래된 좌표를 나중에 보내면 오히려
+/// 근접 판정을 그르친다 — 실패하면 다음 주기 전송이 대신한다).
+final positionApiProvider = Provider<PositionApi>((ref) {
+  return PositionApi(dio: ref.watch(apiClientProvider).dio);
+});
+
+final positionRepositoryProvider = Provider<PositionRepository>((ref) {
+  return PositionRepositoryImpl(api: ref.watch(positionApiProvider));
+});
+
+/// API_SPEC §4.14·§4.15 — 비상 발신·취소·목록. 역할 제한 없음(기사·동승자
+/// 둘 다 호출 가능).
+final emergencyApiProvider = Provider<EmergencyApi>((ref) {
+  return EmergencyApi(dio: ref.watch(apiClientProvider).dio);
+});
+
+final emergencyRepositoryProvider = Provider<EmergencyRepository>((ref) {
+  return EmergencyRepositoryImpl(
+    api: ref.watch(emergencyApiProvider),
+    offlineQueue: ref.watch(offlineQueueRepositoryProvider),
+  );
 });

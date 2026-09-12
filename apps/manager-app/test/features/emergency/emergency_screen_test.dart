@@ -1,0 +1,354 @@
+import 'package:baraeda_core/baraeda_core.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
+import 'package:flutter_test/flutter_test.dart';
+import 'package:manager_app/app/di.dart';
+import 'package:manager_app/core/run/selected_run_provider.dart';
+import 'package:manager_app/features/emergency/data/models/emergency_item.dart';
+import 'package:manager_app/features/emergency/data/models/emergency_raise_request.dart';
+import 'package:manager_app/features/emergency/data/models/emergency_raise_result.dart';
+import 'package:manager_app/features/emergency/data/models/emergency_type.dart';
+import 'package:manager_app/features/emergency/domain/emergency_repository.dart';
+import 'package:manager_app/features/emergency/presentation/emergency_screen.dart';
+import 'package:manager_app/features/offline_queue/domain/send_outcome.dart';
+
+/// 시각을 고정해 취소 가능 창 판정을 결정적으로 만드는 가짜 시계
+/// (`drive_mode_screen_test.dart` 와 같은 패턴, 이월 11 · Ruling 266).
+class _FixedClock implements Clock {
+  const _FixedClock(this._now);
+
+  final DateTime _now;
+
+  @override
+  DateTime now() => _now;
+}
+
+/// 테스트 전용 대역 — §4.14(발신·취소)·§4.15(목록) 호출 여부·인자·횟수만
+/// 기록한다.
+class _FakeEmergencyRepository implements EmergencyRepository {
+  _FakeEmergencyRepository({
+    this.raiseOutcome,
+    this.raiseFailure,
+    this.cancelFailure,
+    this.list,
+  });
+
+  final SendOutcome<EmergencyRaiseResult>? raiseOutcome;
+  final Failure? raiseFailure;
+  final Failure? cancelFailure;
+  final EmergencyListResponse? list;
+
+  int raiseCallCount = 0;
+  EmergencyRaiseRequest? lastRequest;
+  String? lastCanceledEmergencyId;
+
+  @override
+  Future<SendOutcome<EmergencyRaiseResult>> raise({
+    required String runId,
+    required EmergencyRaiseRequest request,
+  }) async {
+    raiseCallCount++;
+    lastRequest = request;
+    // Failure 는 의도적으로 Exception/Error 를 상속하지 않는다
+    // (baraeda_core/error/failure.dart 참고) — delay_screen_test.dart 와
+    // 같은 패턴.
+    // ignore: only_throw_errors
+    if (raiseFailure != null) throw raiseFailure!;
+    return raiseOutcome!;
+  }
+
+  @override
+  Future<void> cancel({
+    required String runId,
+    required String emergencyId,
+  }) async {
+    lastCanceledEmergencyId = emergencyId;
+    // Failure 는 의도적으로 Exception/Error 를 상속하지 않는다(위 raise
+    // 주석과 같은 이유).
+    // ignore: only_throw_errors
+    if (cancelFailure != null) throw cancelFailure!;
+  }
+
+  @override
+  Future<EmergencyListResponse> fetchList({required String runId}) async {
+    return list ?? const EmergencyListResponse(items: []);
+  }
+}
+
+Widget _wrap(Widget child, List<Override> overrides) {
+  return ProviderScope(
+    overrides: overrides,
+    child: MaterialApp(home: child),
+  );
+}
+
+void main() {
+  const runId = 'run-1';
+  final raisedAt = DateTime(2026, 9, 12, 9);
+  final cancelableUntil = raisedAt.add(const Duration(minutes: 1));
+
+  List<Override> overridesFor({
+    required _FakeEmergencyRepository fakeRepo,
+    DateTime? now,
+  }) {
+    return [
+      selectedRunIdProvider.overrideWith((ref) => runId),
+      emergencyRepositoryProvider.overrideWithValue(fakeRepo),
+      clockProvider.overrideWithValue(_FixedClock(now ?? raisedAt)),
+    ];
+  }
+
+  testWidgets('선택된 운행이 없으면 안내만 보여준다', (tester) async {
+    await tester.pumpWidget(
+      _wrap(const EmergencyScreen(), [
+        selectedRunIdProvider.overrideWith((ref) => null),
+      ]),
+    );
+
+    expect(find.text('선택된 운행이 없습니다 — 홈에서 운행을 선택하세요'), findsOneWidget);
+  });
+
+  testWidgets('유형이 기타인데 메모가 비어 있으면 서버 호출 없이 막는다', (tester) async {
+    final fakeRepo = _FakeEmergencyRepository(
+      list: const EmergencyListResponse(items: []),
+    );
+
+    await tester.pumpWidget(
+      _wrap(const EmergencyScreen(), overridesFor(fakeRepo: fakeRepo)),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('기타'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('비상 알림 보내기'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('기타 유형은 상황 메모가 필요합니다'), findsOneWidget);
+    expect(fakeRepo.raiseCallCount, 0);
+  });
+
+  testWidgets('발신이 즉시 성공하면(Sent) 알림 대상 수와 취소 가능 시각을 보여준다', (tester) async {
+    final fakeRepo = _FakeEmergencyRepository(
+      raiseOutcome: Sent(
+        EmergencyRaiseResult(
+          emergencyId: 'e1',
+          raisedAt: raisedAt,
+          cancelableUntil: cancelableUntil,
+          notified: 3,
+        ),
+      ),
+      list: const EmergencyListResponse(items: []),
+    );
+
+    await tester.pumpWidget(
+      _wrap(const EmergencyScreen(), overridesFor(fakeRepo: fakeRepo)),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('비상 알림 보내기'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('3명에게 전달'), findsOneWidget);
+    expect(find.text('처리되지 않았습니다 · 대기 중'), findsNothing);
+    // raise 는 client_key 를 반드시 채워 보낸다(§1.7 멱등 대상 ②).
+    expect(fakeRepo.lastRequest?.clientKey, isNotEmpty);
+  });
+
+  testWidgets('발신이 통신 두절로 큐에 쌓이면 대기 안내를 보여준다', (tester) async {
+    // §1.7 M-06 — sendOrQueue 가 Queued 를 돌려주는 경우(UF-E-07).
+    final fakeRepo = _FakeEmergencyRepository(
+      raiseOutcome: const Queued<EmergencyRaiseResult>(),
+      list: const EmergencyListResponse(items: []),
+    );
+
+    await tester.pumpWidget(
+      _wrap(const EmergencyScreen(), overridesFor(fakeRepo: fakeRepo)),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('비상 알림 보내기'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('처리되지 않았습니다 · 대기 중'), findsOneWidget);
+  });
+
+  testWidgets('발신이 서버 거절(403 FORBIDDEN)로 실패하면 단일 사유를 보여준다', (tester) async {
+    // §4.15 의 403 은 배치되지 않은 회차·타 학원 회차·존재하지 않는 회차를
+    // 한 코드로 묶는다(Ruling 259(b)) — 404 로 분리하지 않는다.
+    final fakeRepo = _FakeEmergencyRepository(
+      raiseFailure: const ApiFailure(
+        statusCode: 403,
+        code: 'FORBIDDEN',
+        message: '권한 없음',
+      ),
+      list: const EmergencyListResponse(items: []),
+    );
+
+    await tester.pumpWidget(
+      _wrap(const EmergencyScreen(), overridesFor(fakeRepo: fakeRepo)),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('비상 알림 보내기'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('이 회차를 이용할 권한이 없습니다'), findsOneWidget);
+    // 존재하지 않는 회차만을 위한 별도 문구는 없다 — 하나로 묶여 있다.
+    expect(find.textContaining('찾을 수 없습니다'), findsNothing);
+  });
+
+  testWidgets('중복 발신을 막지 않는다 — 연속으로 두 번 보내도 둘 다 성공한다', (tester) async {
+    final fakeRepo = _FakeEmergencyRepository(
+      raiseOutcome: Sent(
+        EmergencyRaiseResult(
+          emergencyId: 'e1',
+          raisedAt: raisedAt,
+          cancelableUntil: cancelableUntil,
+          notified: 2,
+        ),
+      ),
+      list: const EmergencyListResponse(items: []),
+    );
+
+    await tester.pumpWidget(
+      _wrap(const EmergencyScreen(), overridesFor(fakeRepo: fakeRepo)),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('비상 알림 보내기'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('비상 알림 보내기'));
+    await tester.pumpAndSettle();
+
+    expect(fakeRepo.raiseCallCount, 2);
+    expect(find.textContaining('보냈습니다'), findsOneWidget);
+  });
+
+  testWidgets('취소 가능 창은 서버가 준 cancelable_until 만으로 판단한다', (tester) async {
+    // 서버가 짧은 창(발신 후 30초)을 내려줬는데도 클라이언트가 "발신
+    // 시각 + 1분" 을 스스로 계산해 취소 버튼을 더 오래 보여주면 안 된다 —
+    // 그래서 시계를 45초 뒤로 고정해(30초 창은 지났지만 클라이언트가
+    // 임의로 계산한 1분 창 안에는 있는 시각) 버튼이 사라지는지 본다.
+    final shortWindow = raisedAt.add(const Duration(seconds: 30));
+    final fakeRepo = _FakeEmergencyRepository(
+      raiseOutcome: Sent(
+        EmergencyRaiseResult(
+          emergencyId: 'e1',
+          raisedAt: raisedAt,
+          cancelableUntil: shortWindow,
+          notified: 1,
+        ),
+      ),
+      list: const EmergencyListResponse(items: []),
+    );
+
+    await tester.pumpWidget(
+      _wrap(const EmergencyScreen(), overridesFor(fakeRepo: fakeRepo)),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('비상 알림 보내기'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('취소'), findsOneWidget);
+
+    // 시계를 45초 뒤로 되감아 다시 그린다 — Provider override 는 위젯
+    // 재생성이 필요하니 pumpWidget 을 다시 호출한다.
+    await tester.pumpWidget(
+      _wrap(
+        const EmergencyScreen(),
+        overridesFor(
+          fakeRepo: fakeRepo,
+          now: raisedAt.add(const Duration(seconds: 45)),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('비상 알림 보내기'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('취소'), findsNothing);
+  });
+
+  testWidgets('발신 이력이 없으면 빈 상태를 보여준다', (tester) async {
+    final fakeRepo = _FakeEmergencyRepository(
+      list: const EmergencyListResponse(items: []),
+    );
+
+    await tester.pumpWidget(
+      _wrap(const EmergencyScreen(), overridesFor(fakeRepo: fakeRepo)),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('발신한 비상 알림이 없습니다'), findsOneWidget);
+  });
+
+  testWidgets('목록 항목은 각자의 cancelable_until 기준으로 취소 버튼을 보여준다', (tester) async {
+    final fakeRepo = _FakeEmergencyRepository(
+      list: EmergencyListResponse(
+        items: [
+          // 취소 창이 아직 열려 있고 미확인 — 취소 버튼이 보여야 한다.
+          EmergencyItem(
+            emergencyId: 'e1',
+            type: EmergencyType.accident,
+            raisedAt: raisedAt,
+            cancelableUntil: raisedAt.add(const Duration(minutes: 1)),
+            acked: false,
+          ),
+          // 창이 지났음 — 취소 버튼이 없어야 한다.
+          EmergencyItem(
+            emergencyId: 'e2',
+            type: EmergencyType.vehicleFault,
+            raisedAt: raisedAt.subtract(const Duration(minutes: 5)),
+            cancelableUntil: raisedAt.subtract(const Duration(minutes: 4)),
+            acked: false,
+          ),
+        ],
+      ),
+    );
+
+    await tester.pumpWidget(
+      _wrap(const EmergencyScreen(), overridesFor(fakeRepo: fakeRepo)),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('취소'), findsOneWidget);
+    expect(find.text('확인 대기 중'), findsNWidgets(2));
+  });
+
+  testWidgets('취소가 창 종료(409)로 실패하면 실패 사유를 보여준다', (tester) async {
+    final fakeRepo = _FakeEmergencyRepository(
+      cancelFailure: const ApiFailure(
+        statusCode: 409,
+        code: 'EMERGENCY_CANCEL_WINDOW_CLOSED',
+        message: '창 종료',
+      ),
+      list: EmergencyListResponse(
+        items: [
+          EmergencyItem(
+            emergencyId: 'e1',
+            type: EmergencyType.accident,
+            raisedAt: raisedAt,
+            cancelableUntil: raisedAt.add(const Duration(minutes: 1)),
+            acked: false,
+          ),
+        ],
+      ),
+    );
+
+    await tester.pumpWidget(
+      _wrap(const EmergencyScreen(), overridesFor(fakeRepo: fakeRepo)),
+    );
+    await tester.pumpAndSettle();
+
+    // 목록이 폼 아래에 있어 화면 밖으로 밀릴 수 있다 — 스크롤해 노출한다.
+    await tester.ensureVisible(find.text('취소'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('취소'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('비상 알림 취소 가능 시간(발신 후 1분)이 지났습니다'), findsOneWidget);
+    expect(fakeRepo.lastCanceledEmergencyId, 'e1');
+  });
+}

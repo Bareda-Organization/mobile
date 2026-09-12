@@ -13,6 +13,14 @@ String describeFailure(Failure failure) => switch (failure) {
   ApiFailure(code: 'DRIVER_ONLY') => '버스기사만 처리할 수 있습니다',
   ApiFailure(code: 'ESCORT_ONLY') => '동승자만 처리할 수 있습니다',
   ApiFailure(code: 'DELAY_DUPLICATE') => '직전과 같은 지연 알림은 다시 보낼 수 없습니다',
+  // §4.15 403 은 배치되지 않은 회차·타 학원 회차·존재하지 않는 회차 세
+  // 경우를 한 코드로 묶는다(2026-09-09 문면 정정, Ruling 259(b)) — 회차
+  // 존재 여부를 코드로 구별하면 배치되지 않은 매니저에게 그 회차가
+  // 있다는 사실 자체가 새어 나간다. 그래서 이 문구도 하나만 둔다.
+  ApiFailure(code: 'FORBIDDEN') => '이 회차를 이용할 권한이 없습니다',
+  ApiFailure(code: 'EMERGENCY_CANCEL_WINDOW_CLOSED') =>
+    '비상 알림 취소 가능 시간(발신 후 1분)이 지났습니다',
+  ApiFailure(code: 'EMERGENCY_NOT_FOUND') => '비상 알림을 찾을 수 없습니다',
   ApiFailure(code: 'VALIDATION_FAILED', :final message) => message,
   ApiFailure(:final message) => message,
   NetworkFailure() => '네트워크 상태를 확인해 주세요',

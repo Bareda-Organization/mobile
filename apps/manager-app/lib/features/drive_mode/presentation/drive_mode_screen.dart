@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:manager_app/app/app_routes.dart';
 import 'package:manager_app/app/di.dart';
+import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/core/network/failure_messages.dart';
 import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/core/run/run_termination_provider.dart';
@@ -14,6 +15,7 @@ import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/features/drive_mode/presentation/drive_mode_providers.dart';
 import 'package:manager_app/features/home/data/models/manager_run.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
+import 'package:manager_app/features/position/data/models/position_request.dart';
 import 'package:manager_app/features/roster/data/models/roster_response.dart';
 
 /// DriveMode — 운행 시작(§4.4) · 승하차지 도착 처리(§4.5), 기사 전용
@@ -33,6 +35,60 @@ class DriveModeScreen extends ConsumerStatefulWidget {
 class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
   bool _submitting = false;
   String? _errorMessage;
+
+  /// §4.12 위치 전송 주기 타이머 — `_syncPositionTransmission` 이 운행 중
+  /// 여부·역할에 맞춰 시작·정지를 맡는다. `null` 이면 지금은 전송하지 않는
+  /// 상태.
+  Timer? _positionTimer;
+
+  @override
+  void dispose() {
+    _positionTimer?.cancel();
+    super.dispose();
+  }
+
+  /// [build] 가 매번 호출해도 안전하도록 멱등으로 짰다 — 이미 원하는
+  /// 상태(타이머 있음/없음)면 아무 것도 하지 않는다.
+  void _syncPositionTransmission({
+    required String? runId,
+    required bool shouldTransmit,
+  }) {
+    final wantTimer = shouldTransmit && runId != null;
+    if (wantTimer && _positionTimer == null) {
+      _positionTimer = Timer.periodic(
+        const Duration(seconds: 8),
+        (_) => unawaited(_sendPositionTick(runId)),
+      );
+    } else if (!wantTimer && _positionTimer != null) {
+      _positionTimer!.cancel();
+      _positionTimer = null;
+    }
+  }
+
+  /// 주기마다 좌표를 읽어 §4.12 로 올린다. 화면 액션이 아니라 배경
+  /// 텔레메트리라 실패해도 `_errorMessage` 를 세우지 않는다 — 다음 주기
+  /// 전송이 실패를 대신 만회하고, 매번 배너를 띄우면 운전 중 방해만 된다.
+  Future<void> _sendPositionTick(String runId) async {
+    final sample = ref.read(positionSourceProvider).sample();
+    if (sample == null) return;
+    try {
+      await ref
+          .read(positionRepositoryProvider)
+          .sendPosition(
+            runId: runId,
+            request: PositionRequest(
+              lat: sample.lat,
+              lng: sample.lng,
+              recordedAt: sample.recordedAt,
+              speed: sample.speed,
+              heading: sample.heading,
+            ),
+          );
+    } on Failure {
+      // 배경 전송 실패 — 다음 주기가 대신한다(§1.9 는 화면 액션의 낙관적
+      // 표시를 금지할 뿐, 이 텔레메트리는 화면 액션이 아니다).
+    }
+  }
 
   Future<void> _startRun(String runId) async {
     setState(() {
@@ -81,6 +137,12 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
   Widget build(BuildContext context) {
     final runId = ref.watch(selectedRunIdProvider);
     final run = ref.watch(driveModeRunProvider);
+    final canTransmitPosition =
+        ref.watch(roleCapabilitiesProvider)?.canTransmitPosition ?? false;
+    _syncPositionTransmission(
+      runId: runId,
+      shouldTransmit: canTransmitPosition && run?.runStatus == RunStatus.moving,
+    );
 
     return Scaffold(
       appBar: AppBar(title: const Text('운행 모드')),
@@ -148,10 +210,11 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
       // 있어(failure_messages.dart) 실패 문구로도 알 수 있지만, 미리
       // 버튼을 눌러 두게 두면 매번 실패 왕복이 생긴다. `run` 에 이미
       // 창 정보가 있어(§4.1) 화면에서도 같은 판정을 미리 보여준다.
-      final now = DateTime.now();
+      // 시각은 `clockProvider` 로 주입받는다 — 위젯 안에서 `DateTime.now()`
+      // 를 직접 부르지 않는다(CONVENTIONS_FLUTTER.md §9, 이월 11).
+      final now = ref.watch(clockProvider).now();
       final withinWindow =
-          !now.isBefore(run.startWindowFrom) &&
-          !now.isAfter(run.startWindowTo);
+          !now.isBefore(run.startWindowFrom) && !now.isAfter(run.startWindowTo);
       if (!withinWindow) {
         return const Text('운행 시작 가능 시간(출발 ±10분)이 아닙니다');
       }

@@ -1,4 +1,5 @@
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
@@ -10,6 +11,7 @@ import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/features/home/data/models/manager_run.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
+import 'package:manager_app/features/offline_queue/domain/send_outcome.dart';
 import 'package:manager_app/features/roster/data/models/ack_changes_result.dart';
 import 'package:manager_app/features/roster/data/models/boarding_update_request.dart';
 import 'package:manager_app/features/roster/data/models/no_show_contact_request.dart';
@@ -20,23 +22,32 @@ import 'package:manager_app/features/roster/domain/roster_repository.dart';
 import 'package:manager_app/features/roster/presentation/roster_screen.dart';
 
 /// 테스트 전용 대역 — §4.11 ack-changes 호출 여부·인자만 기록하고, §4.7
-/// 되돌리기(`revertRiderStatus`)도 성공·실패를 주입할 수 있다. 나머지 쓰기
-/// 2종(승하차 갱신·미탑승 연락 기록)은 이 파일의 시험 대상이 아니라 호출되면
-/// 실패하도록 둔다.
+/// 되돌리기(`revertRiderStatus`)·§4.6 승하차 갱신(`updateRiderStatus`)도
+/// 성공·실패를 주입할 수 있다. 미탑승 연락 기록만 이 파일의 시험 대상이
+/// 아니라 호출되면 실패하도록 둔다.
 class _FakeRosterRepository implements RosterRepository {
   _FakeRosterRepository({
     required this.roster,
     this.ackResult,
     this.ackFailure,
     this.revertFailure,
+    this.updateOutcome,
+    this.updateFailure,
   });
 
   final RosterResponse roster;
   final AckChangesResult? ackResult;
   final Failure? ackFailure;
   final Failure? revertFailure;
+
+  /// §1.7 오프라인 큐 시험용 — [Sent]·[Queued] 중 어느 쪽을 돌려줄지.
+  final SendOutcome<RiderUpdateResult>? updateOutcome;
+  final Failure? updateFailure;
   String? lastAckRunId;
   List<String>? lastAckChangeIds;
+
+  /// 즉시 전송·재생이 같은 client_key 를 쓰는지 검증하는 시험이 읽는다.
+  String? lastUpdateClientKey;
 
   @override
   Future<RosterResponse> fetchRoster(String runId) async => roster;
@@ -57,11 +68,18 @@ class _FakeRosterRepository implements RosterRepository {
   }
 
   @override
-  Future<RiderUpdateResult> updateRiderStatus({
+  Future<SendOutcome<RiderUpdateResult>> updateRiderStatus({
     required String runId,
     required String riderId,
     required BoardingUpdateRequest request,
-  }) => throw UnimplementedError('이 파일의 시험 대상이 아니다');
+  }) async {
+    lastUpdateClientKey = request.clientKey;
+    // Failure 는 의도적으로 Exception/Error 를 상속하지 않는다(위 ackChanges
+    // 주석과 같은 이유).
+    // ignore: only_throw_errors
+    if (updateFailure != null) throw updateFailure!;
+    return updateOutcome!;
+  }
 
   @override
   Future<RevertResult> revertRiderStatus({
@@ -301,5 +319,95 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('되돌리기 가능 시간이 지났습니다'), findsOneWidget);
+  });
+
+  testWidgets('승하차 상태 갱신이 통신 두절로 큐에 쌓이면 대기 안내를 보여준다', (tester) async {
+    // §1.7 M-06 — sendOrQueue 가 Queued 를 돌려주는 경우(UF-E-07). "탑승"
+    // 버튼은 canDecide(동승자 전용) + waiting 상태에서만 그려진다.
+    final fakeRepo = _FakeRosterRepository(
+      roster: _roster(),
+      updateOutcome: const Queued<RiderUpdateResult>(),
+    );
+
+    await tester.pumpWidget(
+      _wrap(const RosterScreen(), [
+        selectedRunIdProvider.overrideWith((ref) => runId),
+        rosterRepositoryProvider.overrideWithValue(fakeRepo),
+        currentUserRoleProvider.overrideWith((ref) => UserRole.escort),
+        todayRunsProvider.overrideWith(
+          (ref) async => [_managerRun(ackRequired: false)],
+        ),
+      ]),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.widgetWithText(BaraedaButton, '탑승'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('처리되지 않았습니다 · 대기 중'), findsOneWidget);
+  });
+
+  testWidgets('승하차 상태 갱신이 즉시 성공하면 대기 안내를 보여주지 않는다', (tester) async {
+    final fakeRepo = _FakeRosterRepository(
+      roster: _roster(),
+      updateOutcome: Sent(
+        RiderUpdateResult(
+          riderId: 'r1',
+          status: RiderStatus.boarded,
+          changedAt: DateTime(2026, 9, 12, 9),
+          stopSkipped: false,
+        ),
+      ),
+    );
+
+    await tester.pumpWidget(
+      _wrap(const RosterScreen(), [
+        selectedRunIdProvider.overrideWith((ref) => runId),
+        rosterRepositoryProvider.overrideWithValue(fakeRepo),
+        currentUserRoleProvider.overrideWith((ref) => UserRole.escort),
+        todayRunsProvider.overrideWith(
+          (ref) async => [_managerRun(ackRequired: false)],
+        ),
+      ]),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.widgetWithText(BaraedaButton, '탑승'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('처리되지 않았습니다 · 대기 중'), findsNothing);
+    expect(fakeRepo.lastUpdateClientKey, isNotNull);
+  });
+
+  testWidgets('승하차 상태 갱신이 서버 거절(4xx)로 실패하면 실패 사유를 보여준다', (tester) async {
+    // NetworkFailure 가 아니라 ApiFailure 라 sendOrQueue 가 그대로 다시
+    // 던진다(재시도해도 같은 응답이라 큐 대상이 아니다) — 화면은 기존
+    // Failure 처리 경로(_errorMessage)를 그대로 탄다.
+    final fakeRepo = _FakeRosterRepository(
+      roster: _roster(),
+      updateFailure: const ApiFailure(
+        statusCode: 409,
+        code: 'RUN_NOT_MOVING',
+        message: '운행 중이 아닙니다',
+      ),
+    );
+
+    await tester.pumpWidget(
+      _wrap(const RosterScreen(), [
+        selectedRunIdProvider.overrideWith((ref) => runId),
+        rosterRepositoryProvider.overrideWithValue(fakeRepo),
+        currentUserRoleProvider.overrideWith((ref) => UserRole.escort),
+        todayRunsProvider.overrideWith(
+          (ref) async => [_managerRun(ackRequired: false)],
+        ),
+      ]),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.widgetWithText(BaraedaButton, '탑승'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('처리되지 않았습니다 · 대기 중'), findsNothing);
+    expect(find.textContaining('운행 중'), findsWidgets);
   });
 }

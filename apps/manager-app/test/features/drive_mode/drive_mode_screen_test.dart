@@ -1,13 +1,26 @@
+import 'package:baraeda_core/baraeda_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/features/drive_mode/presentation/drive_mode_providers.dart';
 import 'package:manager_app/features/drive_mode/presentation/drive_mode_screen.dart';
 import 'package:manager_app/features/home/data/models/manager_run.dart';
 import 'package:manager_app/features/roster/data/models/roster_response.dart';
+
+/// 시각을 고정해 판정을 결정적으로 만드는 가짜 시계
+/// ([clockProvider] override 대상, 이월 11 · Ruling 266).
+class _FixedClock implements Clock {
+  const _FixedClock(this._now);
+
+  final DateTime _now;
+
+  @override
+  DateTime now() => _now;
+}
 
 Widget _wrap(Widget child, List<Override> overrides) {
   return ProviderScope(
@@ -28,8 +41,9 @@ const _emptyRoster = RosterResponse(
 
 /// 서버가 `START_WINDOW_CLOSED`(§4.4)로 막는 것과 같은 창을
 /// [ManagerRun.startWindowFrom]·[startWindowTo] 로 미리 화면에서도
-/// 판정한다 — 판정 기준 시각은 실제 `DateTime.now()` 다(이 코드베이스에
-/// 시계 주입 추상화가 아직 없어 프로덕션과 같은 방식으로 잰다).
+/// 판정한다 — 판정 기준 시각은 [clockProvider] 를 [_FixedClock] 으로
+/// override 해 고정한다(이월 11 · Ruling 266, `DateTime.now()` 직접 호출
+/// 금지).
 ManagerRun _managerRun({
   required DateTime startWindowFrom,
   required DateTime startWindowTo,
@@ -56,9 +70,10 @@ void main() {
   const runId = 'run-1';
 
   testWidgets('출발 시간 창 안이면 운행 시작 버튼을 보여준다', (tester) async {
-    final now = DateTime.now();
+    final now = DateTime(2026, 9, 12, 8);
     await tester.pumpWidget(
       _wrap(const DriveModeScreen(), [
+        clockProvider.overrideWithValue(_FixedClock(now)),
         selectedRunIdProvider.overrideWith((ref) => runId),
         driveModeRunProvider.overrideWithValue(
           _managerRun(
@@ -76,9 +91,10 @@ void main() {
   });
 
   testWidgets('출발 시간 창 밖이면 운행 시작 버튼 대신 안내 문구를 보여준다', (tester) async {
-    final now = DateTime.now();
+    final now = DateTime(2026, 9, 12, 8);
     await tester.pumpWidget(
       _wrap(const DriveModeScreen(), [
+        clockProvider.overrideWithValue(_FixedClock(now)),
         selectedRunIdProvider.overrideWith((ref) => runId),
         driveModeRunProvider.overrideWithValue(
           _managerRun(

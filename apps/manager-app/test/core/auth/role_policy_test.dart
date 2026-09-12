@@ -26,6 +26,10 @@ void main() {
     test('개인별 승하차 상태 결정 불가 — 동승자 전용 (§4.6)', () {
       expect(capabilities.canDecideBoardingStatus, isFalse);
     });
+
+    test('위치 업로드 가능 (§4.12, LOC-01)', () {
+      expect(capabilities.canTransmitPosition, isTrue);
+    });
   });
 
   group('RoleCapabilities.of(escort)', () {
@@ -41,6 +45,10 @@ void main() {
 
     test('개인별 승하차 상태 결정 가능 (§4.6)', () {
       expect(capabilities.canDecideBoardingStatus, isTrue);
+    });
+
+    test('위치 업로드 불가 — 기사 전용 (§4.12, LOC-01)', () {
+      expect(capabilities.canTransmitPosition, isFalse);
     });
   });
 
