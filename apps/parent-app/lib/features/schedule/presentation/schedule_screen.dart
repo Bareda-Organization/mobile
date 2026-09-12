@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:parent_app/app/app_routes.dart';
 import 'package:parent_app/core/auth/auth_providers.dart';
 import 'package:parent_app/core/students/presentation/selected_student.dart';
-import 'package:parent_app/features/home/presentation/home_providers.dart';
+import 'package:parent_app/core/students/presentation/student_providers.dart';
 import 'package:parent_app/features/schedule/presentation/schedule_providers.dart';
 import 'package:parent_app/features/schedule/presentation/widgets/change_request_panel.dart';
 import 'package:parent_app/features/schedule/presentation/widgets/weekly_address_editor.dart';

@@ -92,4 +92,36 @@ void main() {
 
     expect(find.text('운행 중에는 이 변경을 되돌릴 수 없습니다'), findsOneWidget);
   });
+
+  testWidgets('canToggle 이 false 면 등원 여부 토글 스위치 자체가 렌더링되지 않는다', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          runRepositoryProvider.overrideWithValue(
+            _ThrowingRunRepository(
+              const Failure.api(
+                statusCode: 500,
+                code: 'UNUSED',
+                message: '사용되지 않음 — 이 테스트는 토글을 누르지 않는다',
+              ),
+            ),
+          ),
+        ],
+        child: MaterialApp(
+          home: Scaffold(
+            body: RunCard(
+              studentId: 's-1',
+              run: _fixtureRun(),
+              canToggle: false,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byType(BaraedaSwitch), findsNothing);
+    expect(find.text('오늘 탑승'), findsNothing);
+  });
 }

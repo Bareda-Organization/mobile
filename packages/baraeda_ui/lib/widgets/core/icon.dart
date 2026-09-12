@@ -42,6 +42,12 @@ const Map<String, IconData> _kBaraedaIconGlyphs = {
   'layout-dashboard': Icons.dashboard,
   'log-out': Icons.logout,
   'house': Icons.home,
+  // 학부모·학생 앱의 자녀 연결 화면(S-05)이 쓰는 아이콘 2종 — 기존 매핑에
+  // 빠져 있어 그 화면을 렌더링하는 즉시 `assert(glyph != null)` 로 죽었다
+  // (F3 R1 게이트 리뷰 🔴-2 테스트 추가 중 발견, 역할 분기와는 무관한
+  // 별도 결함).
+  'link': Icons.link,
+  'user-plus': Icons.person_add,
 };
 
 /// Lucide 아이콘 래퍼 — 바래다의 모든 아이콘은 이걸 통해 쓴다.
