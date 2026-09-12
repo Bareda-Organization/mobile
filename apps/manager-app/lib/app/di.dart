@@ -33,6 +33,12 @@ final tokenStorageProvider = Provider<TokenStorage>(
   ),
 );
 
+/// 위젯 안에서 `DateTime.now()` 를 직접 부르지 않기 위한 주입 지점
+/// (CONVENTIONS_FLUTTER.md §9, 이월 11 · Ruling 266). 운영 기본값은
+/// [SystemClock] 이고, 테스트는 이 provider 를 override 해 시각을 고정한다 —
+/// 값을 여기서 얼리지 않는다(운행 시작 창 판정은 실제 "지금" 이 필요하다).
+final clockProvider = Provider<Clock>((ref) => const SystemClock());
+
 final apiClientProvider = Provider<ApiClient>((ref) {
   // ApiConstants.clientType 은 항상 'app' 이라 ApiClient 의 기본값과 같다
   // (avoid_redundant_argument_values) — 값이 갈릴 일이 생기면 그때 명시한다.

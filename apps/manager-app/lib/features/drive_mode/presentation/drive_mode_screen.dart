@@ -148,7 +148,9 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
       // 있어(failure_messages.dart) 실패 문구로도 알 수 있지만, 미리
       // 버튼을 눌러 두게 두면 매번 실패 왕복이 생긴다. `run` 에 이미
       // 창 정보가 있어(§4.1) 화면에서도 같은 판정을 미리 보여준다.
-      final now = DateTime.now();
+      // 시각은 `clockProvider` 로 주입받는다 — 위젯 안에서 `DateTime.now()`
+      // 를 직접 부르지 않는다(CONVENTIONS_FLUTTER.md §9, 이월 11).
+      final now = ref.watch(clockProvider).now();
       final withinWindow =
           !now.isBefore(run.startWindowFrom) &&
           !now.isAfter(run.startWindowTo);
