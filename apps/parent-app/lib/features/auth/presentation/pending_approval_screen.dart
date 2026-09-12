@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:parent_app/app/di.dart';
 import 'package:parent_app/core/auth/account_session.dart';
 import 'package:parent_app/core/auth/auth_providers.dart';
+import 'package:parent_app/core/devices/presentation/device_registration_panel.dart';
 import 'package:parent_app/features/auth/presentation/widgets/academy_picker.dart';
 
 /// UF-X-02 — 승인 대기 · 거절 안내.
@@ -14,6 +15,14 @@ import 'package:parent_app/features/auth/presentation/widgets/academy_picker.dar
 /// 밖으로 못 나가게 고정한다(허용 목록 밖 호출은 서버가 어차피
 /// `403 AUTH_PENDING`/`AUTH_REJECTED` 로 막지만, 화면단에서도 미리
 /// 막아 불필요한 실패 요청을 줄인다).
+///
+/// Ruling 267(P2 게이트 조건 ②) — §2.11 단말 등록은 `pending` 계정도
+/// 호출 가능한데(`API_SPEC §1.4` "pending: … `POST`·`DELETE /me/devices`"),
+/// 이 화면 말고는 `pending`·`rejected` 계정이 갈 수 있는 화면이 없다.
+/// `router.dart` 를 고쳐 예외를 추가하는 대신(Option A 채택, B·C·D 는
+/// 기각) 이 화면이 `DeviceRegistrationPanel`(`core/devices`, 승격됨)을
+/// 직접 품는다 — router 의 "허용 목록 밖은 전부 대기 화면으로" 라는
+/// 불변식을 그대로 둔 채로 접근성만 채운다.
 class PendingApprovalScreen extends ConsumerStatefulWidget {
   /// `/pending-approval`.
   const PendingApprovalScreen({super.key});
@@ -196,6 +205,10 @@ class _StatusBody extends StatelessWidget {
           ),
           _InfoRow(label: '현재 상태', value: _isRejected ? '거절됨' : '승인 대기'),
           _InfoRow(label: '학원 문의처', value: status.academyContact),
+          const SizedBox(height: BaraedaSpacing.space6),
+          const Text('단말', style: BaraedaTypography.h3),
+          const SizedBox(height: BaraedaSpacing.space2),
+          const DeviceRegistrationPanel(),
           const SizedBox(height: BaraedaSpacing.space6),
           if (_isRejected && !reapplying)
             BaraedaButton(

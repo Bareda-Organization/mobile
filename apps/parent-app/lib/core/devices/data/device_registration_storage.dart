@@ -10,9 +10,11 @@ import 'package:uuid/uuid.dart';
 /// 구체 클래스" 패턴을 그대로 따른다 — 시험에서 하위 클래스로 대역을
 /// 만들 수 있어야 하므로 메서드를 전부 override 가능하게 둔다.
 ///
-/// `baraeda_core` 가 아니라 이 앱(`features/settings`)에 두는 이유 —
-/// 아직 이 기능을 쓰는 feature 가 하나뿐이다(promotion 기준 미충족,
-/// `CONVENTIONS_FLUTTER.md` §2).
+/// `core/devices` 에 두는 이유 — 처음엔 `features/settings` 소유였으나,
+/// `features/auth`(§2.11 pending 계정의 단말 등록 화면)도 이 저장소가
+/// 필요해져 2개 feature 가 공유하게 됐다(`core/auth`·`core/students` 와
+/// 같은 승격 기준, `CONVENTIONS_FLUTTER.md` §2 — feature 는 서로 직접
+/// import 하지 않는다).
 class DeviceRegistrationStorage {
   DeviceRegistrationStorage({FlutterSecureStorage? storage})
     : _storage = storage ?? const FlutterSecureStorage();
