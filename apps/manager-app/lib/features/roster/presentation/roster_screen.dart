@@ -9,6 +9,7 @@ import 'package:manager_app/core/network/failure_messages.dart';
 import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
+import 'package:manager_app/features/offline_queue/domain/send_outcome.dart';
 import 'package:manager_app/features/roster/data/models/boarding_update_request.dart';
 import 'package:manager_app/features/roster/data/models/no_show_contact_request.dart';
 import 'package:manager_app/features/roster/data/models/roster_response.dart';
@@ -41,6 +42,12 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
   bool _acking = false;
   bool _changesAcked = false;
 
+  /// §1.7 M-06 — 통신 두절로 큐에 쌓인 승하차 처리를 알리는 문구
+  /// ("처리되지 않았습니다 · 대기 중"). §1.9 는 성공을 미리 보여주는 것을
+  /// 금지할 뿐이라, 실패(`_errorMessage`)와는 다른 어조(`AlertTone.info`)로
+  /// 따로 보여준다 — 대기 중은 실패가 아니다.
+  String? _queueNotice;
+
   Future<void> _ackChanges(String runId) async {
     setState(() {
       _acking = true;
@@ -67,9 +74,13 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
     setState(() {
       _pendingRiderId = riderId;
       _errorMessage = null;
+      _queueNotice = null;
     });
     try {
-      await ref
+      // 즉시 전송과 재생(큐 재시도) 양쪽이 같은 client_key 를 쓰도록 여기서
+      // 한 번만 만든다 — repository 가 재생 시 새로 만들지 않고 이 값을
+      // 그대로 들고 있는다(payload 에 실려 drift 에 저장되므로).
+      final outcome = await ref
           .read(rosterRepositoryProvider)
           .updateRiderStatus(
             runId: runId,
@@ -79,7 +90,15 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
               clientKey: IdempotencyKeys.generate(),
             ),
           );
-      ref.invalidate(rosterProvider);
+      if (!mounted) return;
+      switch (outcome) {
+        case Sent():
+          ref.invalidate(rosterProvider);
+        case Queued():
+          // 서버에 아직 반영되지 않았으니 명단을 다시 불러오지 않는다 —
+          // §1.9 낙관적 표시 금지와 같은 이유.
+          setState(() => _queueNotice = '처리되지 않았습니다 · 대기 중');
+      }
     } on Failure catch (failure) {
       if (!mounted) return;
       setState(() => _errorMessage = describeFailure(failure));
@@ -214,6 +233,10 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
             const SizedBox(height: 16),
             if (_errorMessage != null) ...[
               AlertBanner(tone: AlertTone.missed, body: _errorMessage),
+              const SizedBox(height: 12),
+            ],
+            if (_queueNotice != null) ...[
+              AlertBanner(tone: AlertTone.info, body: _queueNotice),
               const SizedBox(height: 12),
             ],
             for (final stop in roster.stops)

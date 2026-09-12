@@ -10,6 +10,7 @@ import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/features/home/data/models/manager_run.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
+import 'package:manager_app/features/offline_queue/domain/send_outcome.dart';
 import 'package:manager_app/features/roster/data/models/ack_changes_result.dart';
 import 'package:manager_app/features/roster/data/models/boarding_update_request.dart';
 import 'package:manager_app/features/roster/data/models/no_show_contact_request.dart';
@@ -57,7 +58,7 @@ class _FakeRosterRepository implements RosterRepository {
   }
 
   @override
-  Future<RiderUpdateResult> updateRiderStatus({
+  Future<SendOutcome<RiderUpdateResult>> updateRiderStatus({
     required String runId,
     required String riderId,
     required BoardingUpdateRequest request,

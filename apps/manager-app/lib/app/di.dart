@@ -104,7 +104,10 @@ final rosterApiProvider = Provider<RosterApi>((ref) {
 });
 
 final rosterRepositoryProvider = Provider<RosterRepository>((ref) {
-  return RosterRepositoryImpl(api: ref.watch(rosterApiProvider));
+  return RosterRepositoryImpl(
+    api: ref.watch(rosterApiProvider),
+    offlineQueue: ref.watch(offlineQueueRepositoryProvider),
+  );
 });
 
 /// API_SPEC §4.9 — 지연 알림(동승자 전용).
