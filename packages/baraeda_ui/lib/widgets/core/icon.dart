@@ -48,6 +48,12 @@ const Map<String, IconData> _kBaraedaIconGlyphs = {
   // 별도 결함).
   'link': Icons.link,
   'user-plus': Icons.person_add,
+  // `AlertTone.info`(`alert_banner.dart`)가 쓰는 아이콘 — 가입 승인 대기
+  // 화면(`pending_approval_screen.dart`)의 `pending` 상태 배너를 그리는
+  // 순간 `assert(glyph != null)` 로 죽었다(P2 게이트 조건 ② 시험 작성 중
+  // 발견, 역할 분기와는 무관한 별도 결함 — 위 `link`·`user-plus` 와 같은
+  // 형태).
+  'info': Icons.info,
 };
 
 /// Lucide 아이콘 래퍼 — 바래다의 모든 아이콘은 이걸 통해 쓴다.

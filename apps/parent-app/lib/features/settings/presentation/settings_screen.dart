@@ -2,7 +2,7 @@ import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:parent_app/app/app_routes.dart';
-import 'package:parent_app/features/settings/presentation/widgets/device_registration_panel.dart';
+import 'package:parent_app/core/devices/presentation/device_registration_panel.dart';
 import 'package:parent_app/features/settings/presentation/widgets/notification_settings_panel.dart';
 
 /// 설정 화면 — P-09 (IMPLEMENTATION_PLAN.md §3.1, §3.14 · §2.11 · §2.8).

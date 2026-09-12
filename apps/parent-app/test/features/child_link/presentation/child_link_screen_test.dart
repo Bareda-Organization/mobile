@@ -16,21 +16,19 @@ import 'package:parent_app/features/child_link/presentation/child_link_screen.da
 /// 확인한다.
 class _StubLinkRepository implements LinkRepository {
   _StubLinkRepository({
-    Failure? requestLinkFailure,
-    Failure? confirmLinkFailure,
-    Failure? generateLinkCodeFailure,
-  }) : _requestLinkFailure = requestLinkFailure,
-       _confirmLinkFailure = confirmLinkFailure,
-       _generateLinkCodeFailure = generateLinkCodeFailure;
+    this.requestLinkFailure,
+    this.confirmLinkFailure,
+    this.generateLinkCodeFailure,
+  });
 
-  final Failure? _requestLinkFailure;
-  final Failure? _confirmLinkFailure;
-  final Failure? _generateLinkCodeFailure;
+  final Failure? requestLinkFailure;
+  final Failure? confirmLinkFailure;
+  final Failure? generateLinkCodeFailure;
 
   @override
   Future<LinkRequestResult> requestLink(String studentLoginId) async {
-    final failure = _requestLinkFailure;
-    if (failure != null) throw failure;
+    final failure = requestLinkFailure;
+    if (failure != null) return Future.error(failure);
     return LinkRequestResult(
       linkRequestId: 'link-1',
       expiresAt: DateTime(2026, 9, 12),
@@ -39,15 +37,15 @@ class _StubLinkRepository implements LinkRepository {
 
   @override
   Future<LinkConfirmResult> confirmLink(String code) async {
-    final failure = _confirmLinkFailure;
-    if (failure != null) throw failure;
+    final failure = confirmLinkFailure;
+    if (failure != null) return Future.error(failure);
     return const LinkConfirmResult(studentId: 's-1', name: '홍길동');
   }
 
   @override
   Future<LinkCodeResult> generateLinkCode() async {
-    final failure = _generateLinkCodeFailure;
-    if (failure != null) throw failure;
+    final failure = generateLinkCodeFailure;
+    if (failure != null) return Future.error(failure);
     return LinkCodeResult(code: '123456', expiresAt: DateTime(2026, 9, 12));
   }
 }
