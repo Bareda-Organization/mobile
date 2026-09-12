@@ -1,0 +1,10 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:parent_app/app/di.dart';
+import 'package:parent_app/core/students/domain/student.dart';
+
+/// §3.1 — 학부모의 연결 자녀 목록. `home`·`schedule` 두 feature 가 학생
+/// 선택 UI 에 함께 쓰므로 `core/` 에 둔다(CONVENTIONS_FLUTTER.md §2).
+/// 학생 계정은 이 provider 를 쓰지 않는다("권한 학부모" — 호출하면 403).
+final myStudentsProvider = FutureProvider<List<Student>>((ref) {
+  return ref.watch(studentRepositoryProvider).getMyStudents();
+});
