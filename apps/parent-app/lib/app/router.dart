@@ -9,6 +9,7 @@ import 'package:parent_app/features/auth/presentation/blocked_screen.dart';
 import 'package:parent_app/features/auth/presentation/login_screen.dart';
 import 'package:parent_app/features/auth/presentation/pending_approval_screen.dart';
 import 'package:parent_app/features/auth/presentation/signup_screen.dart';
+import 'package:parent_app/features/child_link/presentation/child_link_screen.dart';
 import 'package:parent_app/features/home/presentation/home_screen.dart';
 import 'package:parent_app/features/live_map/presentation/live_map_screen.dart';
 import 'package:parent_app/features/route/presentation/route_detail_screen.dart';
@@ -97,6 +98,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.settings,
         builder: (context, state) => const SettingsScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.childLink,
+        builder: (context, state) => const ChildLinkScreen(),
       ),
     ],
   );

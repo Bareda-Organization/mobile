@@ -1,0 +1,27 @@
+import 'package:dio/dio.dart';
+import 'package:parent_app/features/home/domain/notification_item.dart';
+
+/// API_SPEC §3.12·§3.13.
+class NotificationApi {
+  NotificationApi({required this._dio});
+
+  final Dio _dio;
+
+  /// §3.12 — §1.8 페이징(`page` 기본 0 · `size` 기본 20, 최대 100).
+  /// 무한 스크롤은 만들지 않는다(BRIEF).
+  Future<NotificationPage> getNotifications({
+    int page = 0,
+    int size = 20,
+  }) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      '/notifications',
+      queryParameters: {'page': page, 'size': size},
+    );
+    return NotificationPage.fromJson(response.data!);
+  }
+
+  /// §3.13 — `204`.
+  Future<void> markRead(String notificationId) async {
+    await _dio.patch<void>('/notifications/$notificationId/read');
+  }
+}
