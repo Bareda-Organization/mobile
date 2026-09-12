@@ -1,6 +1,6 @@
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:dio/dio.dart';
-import 'package:parent_app/features/auth/domain/auth_repository.dart';
+import 'package:parent_app/core/auth/domain/auth_repository.dart';
 
 /// [AuthRepository] 의 `data` 계층 구현 — `baraeda_core` 의 [AuthApi] 를
 /// 그대로 감싼다. 조립(provider 로 이 클래스를 [AuthRepository] 타입에
@@ -30,8 +30,7 @@ class AuthRepositoryImpl implements AuthRepository {
       _guard(() => _authApi.signup(request));
 
   @override
-  Future<SignupStatusResponse> signupStatus() =>
-      _guard(_authApi.signupStatus);
+  Future<SignupStatusResponse> signupStatus() => _guard(_authApi.signupStatus);
 
   @override
   Future<ReapplyResponse> reapply({required String academyId}) =>
@@ -47,7 +46,40 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<void> logout() => _guard(_authApi.logout);
 
   @override
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) => _guard(
+    () => _authApi.changePassword(
+      currentPassword: currentPassword,
+      newPassword: newPassword,
+    ),
+  );
+
+  @override
+  Future<void> recover({
+    required String type,
+    required String phone,
+    String? verificationCode,
+  }) => _guard(
+    () => _authApi.recover(
+      type: type,
+      phone: phone,
+      verificationCode: verificationCode,
+    ),
+  );
+
+  @override
   Future<MeResponse> me() => _guard(_authApi.me);
+
+  @override
+  Future<DeviceRegistrationResponse> registerDevice(
+    DeviceRegistrationRequest request,
+  ) => _guard(() => _authApi.registerDevice(request));
+
+  @override
+  Future<void> unregisterDevice(String token) =>
+      _guard(() => _authApi.unregisterDevice(token));
 
   /// `DioException` → [Failure] 변환 지점 하나 — 메서드마다 반복하지 않는다.
   /// `Failure` 는 의도적으로 `Exception`/`Error` 를 상속하지 않는
