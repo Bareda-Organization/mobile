@@ -3,8 +3,8 @@ import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:parent_app/app/di.dart';
+import 'package:parent_app/core/change_requests/domain/change_request.dart';
 import 'package:parent_app/core/runs/presentation/run_providers.dart';
-import 'package:parent_app/features/schedule/domain/change_request.dart';
 import 'package:parent_app/features/schedule/presentation/schedule_providers.dart';
 
 /// §3.8·§3.9 — 일일 변경 신청. 회차 선택은 `core/runs` 의 §3.5 조회 결과를

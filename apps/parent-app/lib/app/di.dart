@@ -1,5 +1,8 @@
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:parent_app/core/change_requests/data/change_request_api.dart';
+import 'package:parent_app/core/change_requests/data/change_request_repository_impl.dart';
+import 'package:parent_app/core/change_requests/domain/change_request_repository.dart';
 import 'package:parent_app/core/constants/api_constants.dart';
 import 'package:parent_app/core/runs/data/run_api.dart';
 import 'package:parent_app/core/runs/data/run_repository_impl.dart';
@@ -15,11 +18,8 @@ import 'package:parent_app/features/child_link/domain/link_repository.dart';
 import 'package:parent_app/features/home/data/notification_api.dart';
 import 'package:parent_app/features/home/data/notification_repository_impl.dart';
 import 'package:parent_app/features/home/domain/notification_repository.dart';
-import 'package:parent_app/features/schedule/data/change_request_api.dart';
-import 'package:parent_app/features/schedule/data/change_request_repository_impl.dart';
 import 'package:parent_app/features/schedule/data/weekly_address_api.dart';
 import 'package:parent_app/features/schedule/data/weekly_address_repository_impl.dart';
-import 'package:parent_app/features/schedule/domain/change_request_repository.dart';
 import 'package:parent_app/features/schedule/domain/weekly_address_repository.dart';
 
 /// 앱 전역 의존성 조립 지점. `features/*/data` 는 이 provider 들을 거쳐

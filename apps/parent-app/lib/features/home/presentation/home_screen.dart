@@ -7,6 +7,7 @@ import 'package:parent_app/core/auth/auth_providers.dart';
 import 'package:parent_app/core/students/presentation/selected_student.dart';
 import 'package:parent_app/features/home/presentation/home_providers.dart';
 import 'package:parent_app/features/home/presentation/widgets/notification_list.dart';
+import 'package:parent_app/features/home/presentation/widgets/pending_change_badge.dart';
 import 'package:parent_app/features/home/presentation/widgets/run_card.dart';
 
 /// P-03·P-04·P-09 홈 화면 — 오늘 회차(§3.5) · 등원 여부 토글(§3.6) ·
@@ -90,6 +91,7 @@ class _ParentSection extends ConsumerWidget {
               ),
               const SizedBox(height: BaraedaSpacing.space4),
             ],
+            PendingChangeBadge(studentId: selectedId),
             _RunsSection(studentId: selectedId, canToggle: true),
           ],
         );
