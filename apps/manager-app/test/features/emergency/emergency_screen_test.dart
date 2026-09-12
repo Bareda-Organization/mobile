@@ -155,6 +155,38 @@ void main() {
     expect(fakeRepo.lastRequest?.clientKey, isNotEmpty);
   });
 
+  testWidgets(
+    '발신 요청에 occurred_at 이 clockProvider 가 준 시각 그대로 실린다',
+    (tester) async {
+      // §4.14 는 occurred_at 을 "오프라인 발신분의 실제 시각"으로 규정하고
+      // 비상 발신은 §1.7 오프라인 큐 대상이다 — 통신이 끊겼다 복구됐을 때
+      // 서버가 실제 발생 시각을 알 수 있어야 한다. `clockProvider` 를
+      // `raisedAt` 으로 고정해 그 값이 그대로(가짜 시계 값과 다른 값이
+      // 아니라) 나가는지 본다.
+      final fakeRepo = _FakeEmergencyRepository(
+        raiseOutcome: Sent(
+          EmergencyRaiseResult(
+            emergencyId: 'e1',
+            raisedAt: raisedAt,
+            cancelableUntil: cancelableUntil,
+            notified: 1,
+          ),
+        ),
+        list: const EmergencyListResponse(items: []),
+      );
+
+      await tester.pumpWidget(
+        _wrap(const EmergencyScreen(), overridesFor(fakeRepo: fakeRepo)),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('비상 알림 보내기'));
+      await tester.pumpAndSettle();
+
+      expect(fakeRepo.lastRequest?.occurredAt, raisedAt);
+    },
+  );
+
   testWidgets('발신이 통신 두절로 큐에 쌓이면 대기 안내를 보여준다', (tester) async {
     // §1.7 M-06 — sendOrQueue 가 Queued 를 돌려주는 경우(UF-E-07).
     final fakeRepo = _FakeEmergencyRepository(

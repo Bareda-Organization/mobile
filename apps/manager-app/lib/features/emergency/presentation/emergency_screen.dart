@@ -80,6 +80,19 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
               type: _type,
               clientKey: IdempotencyKeys.generate(),
               memo: memo.isEmpty ? null : memo,
+              // §4.14 는 occurred_at 을 "오프라인 발신분의 실제 시각"으로
+              // 규정하고, 비상 발신은 §1.7 오프라인 큐 대상이다 — 통신이
+              // 끊겼다 나중에 복구되면 서버는 수신 시각만 갖게 돼 실제
+              // 발생 시각을 잃는다. 위젯 안에서 `DateTime.now()` 를 직접
+              // 부르지 않는다(CONVENTIONS_FLUTTER.md §9, 이월 11) —
+              // clockProvider 로 주입받는다.
+              occurredAt: ref.read(clockProvider).now(),
+              // lat·lng 는 생략한다 — §4.14 가 미전달 시 서버의 최신 수신
+              // 좌표 대체를 규정하고, 위치 소스(GPS)가 이번 라운드에
+              // 아직 배선되지 않았다(§4.12 도 같은 이유로
+              // UnavailablePositionSource 스텁, positionSourceProvider
+              // 참고). 다음 라운드에 위치 소스가 배선되면 여기서
+              // positionSourceProvider.sample() 을 읽어 채운다.
             ),
           );
       if (!mounted) return;

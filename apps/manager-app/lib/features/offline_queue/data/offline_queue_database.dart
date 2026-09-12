@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
+import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
@@ -19,6 +20,14 @@ class PendingRequests extends Table {
   /// 실패해 큐에 들어갈 때도, 큐를 재생할 때도 이 값 그대로 다시 보낸다
   /// — 재시도마다 새로 발급하면 서버가 같은 요청을 다른 시도로 봐
   /// 멱등성이 깨진다(M-06 브리프의 명시적 경고).
+  ///
+  /// ⚠ 실제 멱등성은 이 컬럼이 아니라 `payload` 안에 직렬화된
+  /// `client_key` 값으로 동작한다(`replayPending()` 이 `jsonDecode(row.
+  /// payload)` 를 그대로 재전송한다, `offline_queue_repository_impl.dart`).
+  /// 이 컬럼은 **쓰기만 되고 어디서도 읽히지 않는다** — 로컬 DB 를 직접
+  /// 열어 요청을 식별할 때 쓰는 조회용 인덱스로 남겨 뒀다(제거하려면
+  /// 스키마 버전을 올려야 해 이번 라운드에서는 손대지 않았다). 새로
+  /// 이 값을 근거로 중복 판정 로직을 짜지 마라 — payload 쪽이 정본이다.
   TextColumn get clientKey => text()();
 
   /// 호출할 엔드포인트 경로.
@@ -40,6 +49,11 @@ class PendingRequests extends Table {
 @DriftDatabase(tables: [PendingRequests])
 class OfflineQueueDatabase extends _$OfflineQueueDatabase {
   OfflineQueueDatabase() : super(_openConnection());
+
+  /// 시험 전용 — 파일 대신 주입받은 실행기(보통 `NativeDatabase.memory()`)를
+  /// 쓴다. `path_provider` 플랫폼 채널이 없는 단위 시험 환경에서 필요하다.
+  @visibleForTesting
+  OfflineQueueDatabase.forTesting(super.e);
 
   @override
   int get schemaVersion => 2;
