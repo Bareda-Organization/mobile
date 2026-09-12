@@ -44,8 +44,12 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
 
   /// §1.7 M-06 — 통신 두절로 큐에 쌓인 승하차 처리를 알리는 문구
   /// ("처리되지 않았습니다 · 대기 중"). §1.9 는 성공을 미리 보여주는 것을
-  /// 금지할 뿐이라, 실패(`_errorMessage`)와는 다른 어조(`AlertTone.info`)로
-  /// 따로 보여준다 — 대기 중은 실패가 아니다.
+  /// 금지할 뿐이라, 실패(`_errorMessage`, `AlertTone.missed`)와는 다른
+  /// 어조로 따로 보여준다 — 대기 중은 실패가 아니다. `AlertTone.info` 는
+  /// 쓰지 않는다 — baraeda_ui 의 아이콘 매핑표(icon.dart)에 'info' 글리프가
+  /// 없어 디버그 모드에서 단언 실패로 렌더링이 죽는다(run_end_screen.dart
+  /// 도 같은 이유로 우회함 — baraeda_ui 는 이번 라운드 범위 밖). 이 화면
+  /// 위쪽의 "변경 목록 확인" 안내와 같은 `AlertTone.moving` 을 재사용한다.
   String? _queueNotice;
 
   Future<void> _ackChanges(String runId) async {
@@ -236,7 +240,7 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
               const SizedBox(height: 12),
             ],
             if (_queueNotice != null) ...[
-              AlertBanner(tone: AlertTone.info, body: _queueNotice),
+              AlertBanner(tone: AlertTone.moving, body: _queueNotice),
               const SizedBox(height: 12),
             ],
             for (final stop in roster.stops)
