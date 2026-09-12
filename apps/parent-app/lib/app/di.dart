@@ -21,6 +21,10 @@ import 'package:parent_app/features/home/domain/notification_repository.dart';
 import 'package:parent_app/features/schedule/data/weekly_address_api.dart';
 import 'package:parent_app/features/schedule/data/weekly_address_repository_impl.dart';
 import 'package:parent_app/features/schedule/domain/weekly_address_repository.dart';
+import 'package:parent_app/features/settings/data/device_registration_storage.dart';
+import 'package:parent_app/features/settings/data/notification_settings_api.dart';
+import 'package:parent_app/features/settings/data/notification_settings_repository_impl.dart';
+import 'package:parent_app/features/settings/domain/notification_settings_repository.dart';
 
 /// 앱 전역 의존성 조립 지점. `features/*/data` 는 이 provider 들을 거쳐
 /// `ApiClient` 를 받는다 — 전역 싱글턴을 직접 참조하지 않는다
@@ -133,3 +137,23 @@ final linkApiProvider = Provider<LinkApi>((ref) {
 final linkRepositoryProvider = Provider<LinkRepository>((ref) {
   return LinkRepositoryImpl(linkApi: ref.watch(linkApiProvider));
 });
+
+/// API_SPEC §3.14 — `settings`.
+final notificationSettingsApiProvider = Provider<NotificationSettingsApi>((
+  ref,
+) {
+  return NotificationSettingsApi(dio: ref.watch(apiClientProvider).dio);
+});
+
+final notificationSettingsRepositoryProvider =
+    Provider<NotificationSettingsRepository>((ref) {
+      return NotificationSettingsRepositoryImpl(
+        notificationSettingsApi: ref.watch(notificationSettingsApiProvider),
+      );
+    });
+
+/// API_SPEC §2.11 — `settings`. `TokenStorage` 와 달리 `AuthRepository`
+/// 를 통해 서버와 통신하므로 여기서는 로컬 상태만 감싼다.
+final deviceRegistrationStorageProvider = Provider<DeviceRegistrationStorage>(
+  (ref) => DeviceRegistrationStorage(),
+);

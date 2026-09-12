@@ -5,6 +5,7 @@ import 'package:parent_app/app/app_routes.dart';
 import 'package:parent_app/core/auth/account_session.dart';
 import 'package:parent_app/core/auth/auth_providers.dart';
 import 'package:parent_app/core/auth/user_role.dart';
+import 'package:parent_app/features/auth/presentation/account_recovery_screen.dart';
 import 'package:parent_app/features/auth/presentation/blocked_screen.dart';
 import 'package:parent_app/features/auth/presentation/login_screen.dart';
 import 'package:parent_app/features/auth/presentation/pending_approval_screen.dart';
@@ -14,6 +15,7 @@ import 'package:parent_app/features/home/presentation/home_screen.dart';
 import 'package:parent_app/features/live_map/presentation/live_map_screen.dart';
 import 'package:parent_app/features/route/presentation/route_detail_screen.dart';
 import 'package:parent_app/features/schedule/presentation/schedule_screen.dart';
+import 'package:parent_app/features/settings/presentation/password_change_screen.dart';
 import 'package:parent_app/features/settings/presentation/settings_screen.dart';
 
 /// 라우트 경로 상수는 [AppRoutes](`app_routes.dart`)를 본다 — 순환 참조
@@ -37,7 +39,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       final loggedIn = role != null;
       final location = state.matchedLocation;
       final onAuthScreen =
-          location == AppRoutes.login || location == AppRoutes.signup;
+          location == AppRoutes.login ||
+          location == AppRoutes.signup ||
+          location == AppRoutes.accountRecovery;
 
       // 차단 안내는 redirect 가 아니라 로그인 화면의 명시적 push 로만
       // 들어온다 — 여기서 벗어나게 하지 않는다(사용자가 로그아웃 안내를
@@ -72,6 +76,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const SignupScreen(),
       ),
       GoRoute(
+        path: AppRoutes.accountRecovery,
+        builder: (context, state) => const AccountRecoveryScreen(),
+      ),
+      GoRoute(
         path: AppRoutes.pendingApproval,
         builder: (context, state) => const PendingApprovalScreen(),
       ),
@@ -98,6 +106,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.settings,
         builder: (context, state) => const SettingsScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.passwordChange,
+        builder: (context, state) => const PasswordChangeScreen(),
       ),
       GoRoute(
         path: AppRoutes.childLink,

@@ -13,6 +13,9 @@
 abstract final class AppRoutes {
   static const login = '/login';
   static const signup = '/signup';
+
+  /// AUTH-08 · API_SPEC §2.9 — 비인증 진입점(로그인 화면에서만 `push`).
+  static const accountRecovery = '/account-recovery';
   static const pendingApproval = '/pending-approval';
   static const blockedAccount = '/blocked-account';
   static const home = '/home';
@@ -20,6 +23,9 @@ abstract final class AppRoutes {
   static const routeDetail = '/route-detail';
   static const schedule = '/schedule';
   static const settings = '/settings';
+
+  /// AUTH-07 · API_SPEC §2.8 — [settings] 화면에서 `push`.
+  static const passwordChange = '/password-change';
 
   /// 자녀 연결 (FEATURE_SPEC §5.1 색인 기준 P-02, BRIEF 표기 "P-01" 은
   /// 정본과 어긋남 — 보고서 §2 참고) · 학생 코드 생성(S-05).

@@ -160,6 +160,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 variant: BaraedaButtonVariant.ghost,
                 onPressed: () => context.go(AppRoutes.signup),
               ),
+              BaraedaButton(
+                label: '아이디 · 비밀번호를 잊으셨나요?',
+                size: BaraedaButtonSize.sm,
+                variant: BaraedaButtonVariant.ghost,
+                onPressed: () => context.push(AppRoutes.accountRecovery),
+              ),
             ],
           ),
         ),
