@@ -1,5 +1,7 @@
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:parent_app/core/auth/data/auth_repository_impl.dart';
+import 'package:parent_app/core/auth/domain/auth_repository.dart';
 import 'package:parent_app/core/change_requests/data/change_request_api.dart';
 import 'package:parent_app/core/change_requests/data/change_request_repository_impl.dart';
 import 'package:parent_app/core/change_requests/domain/change_request_repository.dart';
@@ -10,8 +12,6 @@ import 'package:parent_app/core/runs/domain/run_repository.dart';
 import 'package:parent_app/core/students/data/student_api.dart';
 import 'package:parent_app/core/students/data/student_repository_impl.dart';
 import 'package:parent_app/core/students/domain/student_repository.dart';
-import 'package:parent_app/features/auth/data/auth_repository_impl.dart';
-import 'package:parent_app/features/auth/domain/auth_repository.dart';
 import 'package:parent_app/features/child_link/data/link_api.dart';
 import 'package:parent_app/features/child_link/data/link_repository_impl.dart';
 import 'package:parent_app/features/child_link/domain/link_repository.dart';
