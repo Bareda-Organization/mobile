@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:parent_app/core/map/frame_ticker.dart';
@@ -91,6 +92,18 @@ class _NaverMapAdapterState extends State<NaverMapAdapter> {
     _frameTicker.stop();
     unawaited(_authFailedSub?.cancel());
     super.dispose();
+  }
+
+  /// 위젯 시험 전용 훅 — 실제 SDK 의 `onMapReady` 는 위젯 시험 환경(플랫폼
+  /// 채널 부재)에서 오지 않아 `_frameTicker` 가 정상 경로(`_syncMarkers` →
+  /// `_syncFrameTicker`)로 시작될 수 없다. `dispose()` 가 이 타이머를
+  /// 멈추는 배선을 검사하려면 먼저 돌고 있는 상태를 만들어야 하는데,
+  /// 시작 경로 자체는 이 검사의 대상이 아니므로(대상은 `dispose()`)
+  /// 같은 `_frameTicker` 인스턴스를 직접 돌리는 것으로 대신한다.
+  /// (`test/core/map/naver/naver_map_adapter_dispose_test.dart` 전용)
+  @visibleForTesting
+  void debugStartFrameTickerForTest(VoidCallback onTick) {
+    _frameTicker.start(onTick);
   }
 
   @override
