@@ -7,13 +7,42 @@ import 'package:parent_app/app/di.dart';
 import 'package:parent_app/features/live_map/domain/live_map_status.dart';
 
 /// `studentId` 별 실시간 위치 화면 상태 — `/topic/students/{studentId}/run`
-/// 하나만 구독한다(공용 `webSocketClientProvider`, §1 판단 근거: 학부모가
-/// 한 번에 볼 수 있는 자녀는 `selectedStudentIdProvider` 로 정확히 하나라
-/// 여러 목적지를 동시에 구독할 일이 설계상 없다 — COMMON.md 의 과다신고
-/// 조항이 걸리지 않는다).
+/// 하나만 구독한다(공용 `webSocketClientProvider`, §1 판단 근거: 학부모는
+/// `selectedStudentIdProvider` 로, 학생은 `myStudentIdProvider`
+/// (`features/home`)로 각각 정확히 하나의 `studentId` 만 얻는다 — 두
+/// 갈래 다 여러 목적지를 동시에 구독할 일이 설계상 없어 COMMON.md 의
+/// 과다신고 조항이 걸리지 않는다). 이 provider 의 인자 타입이 `String`
+/// (nullable 아님)이라, `selectedStudentIdProvider` 가 아직 `null` 인
+/// 동안에는 이 notifier 자체가 만들어지지 않는다 — `live_map_screen.dart`
+/// 의 두 화면 모두 `studentId` 를 확정한 뒤에만 `_LiveMapBody` 를 만든다.
 ///
 /// `autoDispose.family` — 화면을 벗어나거나 자녀를 전환하면 이전
-/// `studentId` 의 인스턴스가 해제되며 구독도 함께 해지된다.
+/// `studentId` 의 인스턴스가 해제되며 구독도 함께 해지된다. **실측
+/// (`live_map_screen_test.dart` "자녀를 전환하면..." — 팀 리드 우려 3)**
+/// 위젯 빌드가 새 `studentId` 로 다시 `ref.watch` 하는 시점에 새
+/// 인스턴스의 구독이 먼저 걸리고, 더는 아무도 읽지 않는 이전 인스턴스는
+/// 그 뒤 `dispose()` 로 해지된다 — 겹치지 않는다는 가정은 틀렸고, 실제로
+/// 같은 프레임 안에서 두 목적지가 잠깐 겹친다. 이 겹침은 서버 쪽에서
+/// 문제가 되지 않는다 — 두 목적지 모두 같은 학부모 **본인** 자녀 목적지라
+/// FORBIDDEN 판정 대상이 아니다. 위험한 조합(남의 자녀 목적지가 섞이는
+/// 것)은 애초에 `selectedStudentIdProvider` 값이 그 학부모의
+/// `myStudentsProvider` 목록에서만 나오므로 이 provider 앞단에서 이미
+/// 막힌다.
+///
+/// **거부(forbidden) 이후 복구 — 팀 리드 우려 4.** `BaraedaWebSocketClient`
+/// 는 서버가 SUBSCRIBE 를 거부하면 세션 전체를 `4403` 으로 닫고, 그 뒤
+/// `_manuallyDisconnected` 가 `false` 라 자동으로 재연결을 시도한다(다른
+/// 화면의 실시간 기능이 계속 쓰는 공용 연결이라 이 자동 재연결 자체는
+/// 유지해야 한다). 문제는 재연결이 성공하면 이 notifier 가 다시
+/// `connected` 이벤트를 받는다는 것 — 아무 조치 없이 그 이벤트로
+/// 재구독을 걸면 같은 거부 목적지를 다시 SUBSCRIBE 해 서버가 세션을 또
+/// 닫는 반복(거부→종료→재연결→거부)이 생긴다. 그래서 `_onForbidden` 이
+/// `_forbidden` 플래그를 세운 뒤로는 이 인스턴스가 연결 상태 이벤트를
+/// 완전히 무시한다 — 화면은 "조회 권한 없음" 배너를 계속 보여주고,
+/// 사용자가 다른 자녀로 전환하거나 화면을 벗어났다 돌아와야만(=
+/// `autoDispose` 로 새 인스턴스가 생겨야만) 다시 시도한다. 같은 연결을
+/// 쓰는 다른 `studentId` 인스턴스는 각자의 `_forbidden` 이 그대로
+/// `false` 라 정상적으로 재구독한다.
 // `StateNotifierProviderFamily<...>` 는 `flutter_riverpod` 가 공개 API 로
 // export 하지 않는 내부 타입이라 명시할 수 없다 — `run_providers.dart` 의
 // `runsForStudentProvider` 와 같은 사정.
@@ -37,6 +66,11 @@ class LiveMapNotifier extends StateNotifier<LiveMapState> {
   StreamSubscription<WsConnectionState>? _connectionSub;
   StreamSubscription<String>? _forbiddenSub;
 
+  /// 이 `studentId` 목적지가 이미 거부당한 적이 있다 — 클래스 문서
+  /// "거부 이후 복구" 참고. 한 번 서면 이 인스턴스는 다시 내려가지
+  /// 않는다(새 인스턴스만 재시도한다).
+  bool _forbidden = false;
+
   BaraedaWebSocketClient get _client => _ref.read(webSocketClientProvider);
 
   void _init() {
@@ -56,6 +90,13 @@ class LiveMapNotifier extends StateNotifier<LiveMapState> {
   }
 
   void _onConnectionState(WsConnectionState wsState) {
+    // 이미 거부당한 목적지다 — 연결이 되살아나도 반응하지 않는다
+    // (클래스 문서 "거부 이후 복구"). 여기서 return 하지 않으면
+    // `_applyConnectionState` 가 `state.connection` 을 `connected` 로
+    // 덮어써 "조회 권한 없음" 배너가 사라지고, 그다음 조건이 같은
+    // 거부 목적지로 재구독을 걸어 거부→세션 종료→재연결 반복이 생긴다.
+    if (_forbidden) return;
+
     _applyConnectionState(wsState);
     if (wsState == WsConnectionState.connected && _unsubscribe == null) {
       _subscribe(_client);
@@ -86,6 +127,7 @@ class LiveMapNotifier extends StateNotifier<LiveMapState> {
   void _onForbidden(String destination) {
     if (destination != WsChannel.studentRun(_studentId)) return;
     _unsubscribe = null;
+    _forbidden = true;
     state = state.copyWith(connection: LiveMapConnection.forbidden);
   }
 

@@ -9,6 +9,7 @@ import 'package:parent_app/core/auth/auth_providers.dart';
 import 'package:parent_app/core/auth/role_policy.dart';
 import 'package:parent_app/core/auth/user_role.dart';
 import 'package:parent_app/core/students/domain/student.dart';
+import 'package:parent_app/core/students/presentation/selected_student.dart';
 import 'package:parent_app/features/home/presentation/home_providers.dart';
 import 'package:parent_app/features/live_map/presentation/live_map_screen.dart';
 // `Override` 는 `flutter_riverpod.dart` 배럴이 재노출하지 않는다(3.4.3 확인 —
@@ -43,6 +44,11 @@ class _FakeWsClient extends BaraedaWebSocketClient {
   final List<void Function(WebSocketEnvelope)> _listeners = [];
   final List<String> subscribedDestinations = [];
 
+  /// `subscribe`·해지 콜백 호출을 시각 순서대로 남긴다 — "자녀를 전환할
+  /// 때 해지가 구독보다 먼저인가"(팀 리드 우려 3)는 최종 상태만 보면
+  /// 안 갈리고 순서를 봐야 갈린다.
+  final List<String> callLog = [];
+
   @override
   WsConnectionState get state => _fakeState;
 
@@ -71,9 +77,11 @@ class _FakeWsClient extends BaraedaWebSocketClient {
     void Function(WebSocketEnvelope) onEnvelope,
   ) {
     subscribedDestinations.add(destination);
+    callLog.add('subscribe:$destination');
     _listeners.add(onEnvelope);
     return ({Map<String, String>? unsubscribeHeaders}) {
       subscribedDestinations.remove(destination);
+      callLog.add('unsubscribe:$destination');
       _listeners.remove(onEnvelope);
     };
   }
@@ -209,6 +217,80 @@ void main() {
     });
   });
 
+  group('학부모 갈래 — 자녀 선택·전환과 구독(완료 조건 5)', () {
+    Future<void> pumpConnectedParent(
+      WidgetTester tester, {
+      required List<Student> students,
+    }) async {
+      await pumpScreen(
+        tester,
+        extraOverrides: [
+          roleCapabilitiesProvider.overrideWithValue(
+            RoleCapabilities.of(UserRole.parent),
+          ),
+          myStudentsProvider.overrideWith((ref) async => students),
+        ],
+      );
+      // myStudentsProvider 의 FutureProvider 가 해소될 때까지 한 프레임.
+      await tester.pump();
+      await tester.pump();
+      client.emit(WsConnectionState.connected);
+      await tester.pump();
+    }
+
+    final studentA = Student(studentId: 's-A', name: 'A', linkedAt: _linkedAt);
+    final studentB = Student(studentId: 's-B', name: 'B', linkedAt: _linkedAt);
+
+    testWidgets(
+      '자녀를 아직 고르지 않아도(selectedStudentIdProvider == null) 첫 자녀 '
+      '목적지로만 구독하고 null 목적지는 만들지 않는다(팀 리드 우려 2)',
+      (tester) async {
+        await pumpConnectedParent(tester, students: [studentA, studentB]);
+
+        expect(client.subscribedDestinations, [WsChannel.studentRun('s-A')]);
+        expect(
+          client.subscribedDestinations.any((d) => d.contains('null')),
+          isFalse,
+        );
+      },
+    );
+
+    testWidgets(
+      '자녀를 전환하면 새 목적지 구독이 먼저 걸리고 이전 목적지 해지가 '
+      '뒤따른다 — 팀 리드 우려 3 실측: `autoDispose` 는 위젯 재빌드가 새 '
+      '목적지를 구독한 *뒤에* 더는 안 읽히는 이전 인스턴스를 해지하므로 '
+      '한 프레임 동안 두 목적지가 겹친다. 이 겹침은 둘 다 같은 학부모 '
+      '본인 자녀 목적지라 서버 인가상 안전하다(거부 대상이 아니다) — '
+      '문제는 남의 자녀 목적지가 섞일 때인데 그 경로는 이 provider 가 '
+      '애초에 만들지 않는다.',
+      (tester) async {
+        await pumpConnectedParent(tester, students: [studentA, studentB]);
+        client.callLog.clear();
+
+        // BaraedaSelect.onChanged 가 실제로 부르는 지점과 같은 provider
+        // 갱신을 직접 호출한다 — 화면 트리거를 거치든 이 경로를 거치든
+        // `_ParentLiveMap.build` 가 읽는 값은 같다.
+        ProviderScope.containerOf(
+          tester.element(find.byType(LiveMapScreen)),
+          listen: false,
+        ).read(selectedStudentIdProvider.notifier).state = 's-B';
+        await tester.pump();
+
+        final unsubA = client.callLog.indexOf(
+          'unsubscribe:${WsChannel.studentRun('s-A')}',
+        );
+        final subB = client.callLog.indexOf(
+          'subscribe:${WsChannel.studentRun('s-B')}',
+        );
+
+        expect(unsubA, greaterThanOrEqualTo(0));
+        expect(subB, greaterThanOrEqualTo(0));
+        expect(subB, lessThan(unsubA));
+        expect(client.subscribedDestinations, [WsChannel.studentRun('s-B')]);
+      },
+    );
+  });
+
   group('연결·이벤트 반영 — 완료 조건 9(데이터 없음 vs 연결 끊김 구분)', () {
     Future<void> pumpConnected(WidgetTester tester) async {
       await pumpScreen(
@@ -280,6 +362,33 @@ void main() {
 
         expect(find.text('조회 권한 없음'), findsOneWidget);
         expect(find.text('아직 위치 정보가 없습니다'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      '거부(forbidden) 후 연결이 되살아나도 같은 목적지를 다시 구독하지 '
+      '않고 "조회 권한 없음"을 유지한다(팀 리드 우려 4 — 재구독 반복 방지)',
+      (tester) async {
+        await pumpConnected(tester);
+        client.forbid(WsChannel.studentRun('s-1'));
+        await tester.pump();
+        client.callLog.clear();
+
+        // baraeda_core 는 4403 세션 종료 뒤에도 자동 재연결을 시도한다
+        // (공용 연결이 앱 전역 싱글턴이라 다른 화면을 위해 계속됨) — 그
+        // 재연결 성공을 흉내낸다.
+        client.emit(WsConnectionState.reconnecting);
+        await tester.pump();
+        client.emit(WsConnectionState.connected);
+        await tester.pump();
+
+        expect(find.text('조회 권한 없음'), findsOneWidget);
+        expect(
+          client.callLog.contains(
+            'subscribe:${WsChannel.studentRun('s-1')}',
+          ),
+          isFalse,
+        );
       },
     );
 
