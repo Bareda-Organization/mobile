@@ -17,6 +17,7 @@ import 'package:manager_app/features/position/data/position_repository_impl.dart
 import 'package:manager_app/features/roster/data/models/boarding_update_request.dart';
 import 'package:manager_app/features/roster/data/models/no_show_contact_request.dart';
 import 'package:manager_app/features/roster/data/models/rider_update_result.dart';
+import 'package:manager_app/features/roster/data/models/roster_response.dart';
 import 'package:manager_app/features/roster/data/roster_api.dart';
 import 'package:manager_app/features/route_map/data/route_api.dart';
 import 'package:manager_app/features/run_end/data/models/report_request.dart';
@@ -98,6 +99,13 @@ void main() {
       backendReachable = e.response != null;
     } finally {
       probe.close();
+    }
+    // F5 M3 목표 — §4.5(도착 처리 소모)·§4.4(출발 창 시각 의존) 재현이
+    // 항상 성립하도록 필요할 때만 시드를 되돌린다(real_backend_target.dart
+    // 의 함수 주석 참고). 백엔드가 죽어 있으면(!backendReachable) 이 호출도
+    // 조용히 실패해 넘어가고, 그 판정은 각 시험의 backendReachable 분기가 한다.
+    if (backendReachable) {
+      await ensureManagerSeedIsSafeForTiming(baseUrl);
     }
   });
 
@@ -436,20 +444,33 @@ void main() {
         // 이 호출 자체가 크래시했다(실측: rider 3 김영희, photo_url: null).
         // 지금은 프로덕션 RosterApi 를 그대로 써서 그 수정이 실제로
         // 캐스팅 실패 없이 명단을 읽어내는지도 함께 확인한다.
-        final roster = await RosterApi(dio: dio).fetchRoster('3');
-        final lastSeq = roster.stops
-            .map((s) => s.seq)
-            .reduce((a, b) => a > b ? a : b);
-        final candidateStops =
-            roster.stops
-                .where((s) => s.arrivedAt == null && s.seq != lastSeq)
-                .toList()
-              ..sort((a, b) => a.seq.compareTo(b.seq));
+        var roster = await RosterApi(dio: dio).fetchRoster('3');
+        List<RosterStop> selectCandidates(List<RosterStop> stops) {
+          final lastSeq = stops
+              .map((s) => s.seq)
+              .reduce((a, b) => a > b ? a : b);
+          return stops
+              .where((s) => s.arrivedAt == null && s.seq != lastSeq)
+              .toList()
+            ..sort((a, b) => a.seq.compareTo(b.seq));
+        }
+
+        var candidateStops = selectCandidates(roster.stops);
+        // F5 M3 목표 — setUpAll 이 이미 이 조건을 확인·필요시 리셋했지만
+        // (real_backend_target.dart 참고), 이 자리에도 한 번 더 안전판을
+        // 둔다(브리프 후보 (a)) — setUpAll 과 이 시험 실행 사이에 상태가
+        // 바뀌었을 가능성(예: 예상 밖의 동시 실행)까지 방어한다. 그래도
+        // 없으면 그때는 진짜 "환경 문제"로 건너뛴다 — 재시도까지 실패한
+        // 것이므로 더는 이 시험의 책임이 아니다.
+        if (candidateStops.isEmpty) {
+          await ensureManagerSeedIsSafeForTiming(baseUrl);
+          roster = await RosterApi(dio: dio).fetchRoster('3');
+          candidateStops = selectCandidates(roster.stops);
+        }
         if (candidateStops.isEmpty) {
           markTestSkipped(
-            '환경 문제: run3 에 next_stop 이 있는 미도착 정류장이 더는 '
-            '없다(도착 처리는 영구·불가역이라 이전 실행들이 이미 소모했다). '
-            'schoolbus_f5_m 을 재시드하거나 다른 run 으로 옮겨야 재현 가능하다',
+            '환경 문제: run3 에 next_stop 이 있는 미도착 정류장이 `/dev/reset` '
+            '재시도 후에도 없다 — schoolbus_f5_m 자체가 손상됐을 가능성',
           );
           return;
         }

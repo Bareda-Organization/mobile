@@ -105,6 +105,14 @@ void main() {
     } finally {
       probe.close();
     }
+    // F5 M3 목표 — 아래 §4.2 는 confirmed 회차가 최소 1개 있어야 하는데,
+    // `real_backend_manager_endpoints_test.dart` 의 §4.4 가 시각이 맞지
+    // 않으면 그 회차(run2)를 moving 으로 영구히 옮겨 버린다. 어느 파일이
+    // 먼저 실행되는지 고정할 수 없어(파일 탐색 순서) 이 파일도 같은 확인을
+    // 반복한다 — 상세 이유는 real_backend_target.dart 의 함수 주석 참고.
+    if (backendReachable) {
+      await ensureManagerSeedIsSafeForTiming(baseUrl);
+    }
   });
 
   ({AuthApi auth, Dio dio}) buildClient() {

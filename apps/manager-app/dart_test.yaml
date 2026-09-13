@@ -1,3 +1,13 @@
+# F5 M3 목표 — 파일 간 동시 실행(기본 concurrency > 1)을 끈다. real_backend
+# 파일들의 setUpAll 이 `POST /dev/reset`(Flyway clean+migrate, 순간적이지
+# 않다)을 조건부로 호출하는데(test/support/real_backend_target.dart 의
+# ensureManagerSeedIsSafeForTiming), 다른 real_backend 파일이 그 재구성 도중
+# 같은 스키마를 동시에 읽으면 테이블 없음·부분 시드 같은 전이 상태를 관측해
+# 코드 결함과 구별되지 않는 실패가 난다. 대가는 전체 실행 시간 증가이며,
+# 이 저장소 규모(시험 수백 건)에서는 수용 가능하다고 판단했다(F5 M3 보고서
+# 1항 — 브리프 후보 (b) 채택).
+concurrency: 1
+
 # 시험 태그 선언 — 선언이 없으면 `--exclude-tags` 가 아무것도 거르지 않는 빈 플래그가 된다
 # (2026-09-13 실측: 좌석이 "실서버 시험을 제외했다" 고 믿었는데 전부 돌아 시드 DB 를 오염시켰다).
 tags:
