@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/core/auth/user_role.dart';
+import 'package:manager_app/core/constants/position_constants.dart';
 import 'package:manager_app/core/location/position_source.dart';
 import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
@@ -118,11 +119,14 @@ void main() {
     positionRepositoryProvider.overrideWithValue(positionRepository),
   ];
 
-  testWidgets('기사·이동 중 상태면 8초 주기로 위치를 전송한다', (tester) async {
+  testWidgets('기사·이동 중 상태면 PositionConstants.transmissionInterval 주기로 위치를 전송한다', (
+    tester,
+  ) async {
     final source = _FakePositionSource(
       PositionSample(lat: 37.5, lng: 127, recordedAt: recordedAt),
     );
     final repository = _RecordingPositionRepository();
+    const interval = PositionConstants.transmissionInterval;
 
     await tester.pumpWidget(
       _wrap(
@@ -137,20 +141,32 @@ void main() {
     );
     await tester.pump();
 
-    // 8초가 지나기 전에는 아직 전송이 없어야 주기가 "0초마다"가 아님을
-    // 함께 확인한다.
-    await tester.pump(const Duration(seconds: 7));
+    // 주기가 지나기 전에는 아직 전송이 없어야 "0초마다"가 아님을
+    // 함께 확인한다. 값을 상수에서 읽으므로 주기가 바뀌어도 이 시험은
+    // 그대로 유효하다 — 값 자체를 고정하는 것은 아래 별도 시험의 몫.
+    await tester.pump(interval - const Duration(milliseconds: 1));
     expect(repository.calls, isEmpty);
 
-    await tester.pump(const Duration(seconds: 1));
+    await tester.pump(const Duration(milliseconds: 1));
     expect(repository.calls, hasLength(1));
     // 서버로 나가는 recorded_at 은 전송 시각(clockProvider 의 `now`)이
     // 아니라 위치 소스가 준 단말 측정 시각 그대로다.
     expect(repository.calls.single.recordedAt, recordedAt);
 
-    // 주기 타이머임을 확인 — 8초를 한 번 더 지나면 두 번째 전송이 있다.
-    await tester.pump(const Duration(seconds: 8));
+    // 주기 타이머임을 확인 — 한 주기를 더 지나면 두 번째 전송이 있다.
+    await tester.pump(interval);
     expect(repository.calls, hasLength(2));
+  });
+
+  test('위치 전송 주기 상수는 2초로 고정한다 (2026-09-14 사용자 결정)', () {
+    // ⚠ 값 자체를 하드코딩해 대조한다 — 위 위젯 시험처럼 상수를 그대로
+    // 읽어 쓰면 상수가 조용히 바뀌어도 아무 시험도 잡지 못한다. 방송량이
+    // 이 값에 산술적으로 비례하므로(COMMON-B2 §2), 바뀌면 이 시험이
+    // 먼저 깨져 리뷰를 강제해야 한다.
+    expect(
+      PositionConstants.transmissionInterval,
+      const Duration(seconds: 2),
+    );
   });
 
   testWidgets('동승자면 이동 중이어도 위치를 전송하지 않는다', (tester) async {
