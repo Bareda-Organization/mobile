@@ -30,7 +30,6 @@ class _FakeOfflineQueueRepository implements OfflineQueueRepository {
 
   @override
   Future<SendOutcome<T>> sendOrQueue<T>({
-    required String clientKey,
     required String endpoint,
     required String method,
     required Map<String, dynamic> payload,

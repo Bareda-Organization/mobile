@@ -41,7 +41,6 @@ class RosterRepositoryImpl implements RosterRepository {
     required String riderId,
     required BoardingUpdateRequest request,
   }) => _offlineQueue.sendOrQueue(
-    clientKey: request.clientKey,
     endpoint: '/runs/$runId/riders/$riderId',
     method: 'PATCH',
     payload: request.toJson(),

@@ -32,7 +32,6 @@ class OfflineQueueRepositoryImpl implements OfflineQueueRepository {
 
   @override
   Future<SendOutcome<T>> sendOrQueue<T>({
-    required String clientKey,
     required String endpoint,
     required String method,
     required Map<String, dynamic> payload,
@@ -50,7 +49,6 @@ class OfflineQueueRepositoryImpl implements OfflineQueueRepository {
           .into(_database.pendingRequests)
           .insert(
             PendingRequestsCompanion.insert(
-              clientKey: clientKey,
               endpoint: endpoint,
               // `method` 컬럼에 기본값(`PATCH`)이 있어 생성된 `.insert()` 는
               // 이 필드를 `Value<String>` 로 받는다 — 기본값이 없는 다른

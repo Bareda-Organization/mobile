@@ -115,10 +115,17 @@ void main() {
     return (auth: auth, dio: client.dio);
   }
 
+  // FE-R2 목표 12 — 이 시험은 "목록 엔드포인트가 응답하고 스펙대로 생겼는가"
+  // 만 본다. 회차 상태(run_status)는 일부러 보지 않는다 — 그것은 §4.2 가
+  // 전담한다(겹침이 아니라 계층: 이 시험은 모양, §4.2 는 그 안의 상태값).
+  // `runs, isNotEmpty` 만으로는 전 회차가 idle 이어도 통과하지만, 그것은
+  // 이 시험의 책임이 아니다 — status 를 검사하려는 시도는 §4.2 와 같은
+  // 것을 두 번 확인하는 중복이 된다.
   test(
     '§4.1 — 기사 로그인 후 GET /manager/runs 를 실제로 호출해 응답을 받는다 '
     '(원재료 dio — 이유는 파일 주석 참고). 응답이 스펙대로 items[] 로 '
-    '감싸져 있고 run_id 가 문자열인 것도 이 자리에서 함께 확인한다',
+    '감싸져 있고 run_id 가 문자열인 것도 이 자리에서 함께 확인한다 — '
+    'run_status 값 자체는 §4.2 가 전담하므로 여기서는 보지 않는다',
     () async {
       if (!backendReachable) {
         markTestSkipped('환경 문제: 백엔드 미기동($baseUrl)');
@@ -153,7 +160,10 @@ void main() {
     '§4.2 — GET /runs/{runId}/roster 를 실제로 호출해 응답을 받는다 (원재료 dio) — '
     'run_id 는 이 시험 안에서 GET /manager/runs 로 매번 새로 찾는다. 이 회차의 '
     'confirmed 여부는 시드의 상대 시각(출발 30분 전 확정)이 실제 시계 경과에 따라 '
-    '바뀌므로 고정값을 박으면 시간이 지나면서 idle 로 넘어가 깨진다',
+    '바뀌므로 고정값을 박으면 시간이 지나면서 idle 로 넘어가 깨진다. '
+    'FE-R2 목표 12 — 이 시험은 §4.1 이 일부러 보지 않는 run_status 를 전담해서 '
+    '검사한다: confirmed 상태인 회차가 하나도 없으면(= BE-R1 이 고친 결함이 다시 '
+    '나면) 아래 expect 가 그 자리에서 실패해야 한다',
     () async {
       if (!backendReachable) {
         markTestSkipped('환경 문제: 백엔드 미기동($baseUrl)');
@@ -168,13 +178,18 @@ void main() {
       );
       final runs = (runsResponse.data!['items'] as List<dynamic>)
           .cast<Map<String, dynamic>>();
-      final confirmedRun = runs.firstWhere(
-        (run) => run['run_status'] == 'confirmed',
-        orElse: () => throw StateError(
-          '확정(confirmed) 상태인 회차가 없다 — 시드 데이터의 상대 시각을 확인해야 한다',
-        ),
+      final confirmedRuns = runs
+          .where((run) => run['run_status'] == 'confirmed')
+          .toList();
+      // §4.1 은 목록이 비어 있지 않은 것만 보고 통과하므로, "confirmed 가
+      // 소실됐다(전부 idle)"는 여기서 명시적으로 잡지 않으면 아무도 안 잡는다.
+      expect(
+        confirmedRuns,
+        isNotEmpty,
+        reason: '확정(confirmed) 상태인 회차가 없다 — 시드 데이터의 상대 시각을 '
+            '확인해야 한다',
       );
-      final runId = confirmedRun['run_id'] as String;
+      final runId = confirmedRuns.first['run_id'] as String;
 
       final response = await dio.get<Map<String, dynamic>>(
         '/runs/$runId/roster',

@@ -29,7 +29,6 @@ class EmergencyRepositoryImpl implements EmergencyRepository {
     required String runId,
     required EmergencyRaiseRequest request,
   }) => _offlineQueue.sendOrQueue(
-    clientKey: request.clientKey,
     endpoint: '/runs/$runId/emergency',
     method: 'POST',
     payload: request.toJson(),
