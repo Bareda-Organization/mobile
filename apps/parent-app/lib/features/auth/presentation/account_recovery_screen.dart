@@ -155,6 +155,13 @@ class _AccountRecoveryScreenState
                 AlertBanner(tone: _bannerTone, body: _banner),
               ],
               const SizedBox(height: BaraedaSpacing.space6),
+              // 버튼 비활성화만으로는 제출이 진행 중임이 드러나지 않는다 —
+              // password_change_screen.dart 와 동일한 표시로 맞춘다(둘 다
+              // 기능 결함이 아니라 표시 일관성 문제).
+              if (_submitting) ...[
+                const Center(child: CircularProgressIndicator()),
+                const SizedBox(height: BaraedaSpacing.space4),
+              ],
               BaraedaButton(
                 label: _codeRequested ? '확인하기' : '인증번호 받기',
                 size: BaraedaButtonSize.lg,

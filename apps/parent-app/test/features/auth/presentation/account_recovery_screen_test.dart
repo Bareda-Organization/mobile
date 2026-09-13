@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
@@ -56,6 +58,69 @@ class _FailingAuthRepository implements AuthRepository {
   }) => Future.error(
     Failure.api(statusCode: 404, code: _code, message: '서버 원본 메시지($_code)'),
   );
+
+  @override
+  Future<MeResponse> me() => throw UnimplementedError();
+
+  @override
+  Future<DeviceRegistrationResponse> registerDevice(
+    DeviceRegistrationRequest request,
+  ) => throw UnimplementedError();
+
+  @override
+  Future<void> unregisterDevice(String token) => throw UnimplementedError();
+}
+
+/// FE-R2 목표 10 — 제출 중 표시. `recover()` 가 끝나는 시점을 이
+/// `Completer` 로 직접 쥐고 있어야 "제출 중" 인 프레임을 관측할 수 있다
+/// (`pumpAndSettle` 로는 그 순간을 지나쳐 버린다). password_change_screen
+/// 과 달리 이 화면은 실패 시에도 `_submitting` 을 내리므로(§ 클래스의
+/// `_requestCode` 참고) 실패로 끝내도 "사라진다" 를 그대로 관측할 수 있다.
+class _StallingAuthRepository implements AuthRepository {
+  final recoverCalled = Completer<void>();
+  final _recoverResult = Completer<void>();
+
+  void failRecover() =>
+      _recoverResult.completeError(const Failure.network());
+
+  @override
+  Future<List<AcademySummary>> searchAcademies(String query) async => [];
+
+  @override
+  Future<SignupResponse> signup(SignupRequest request) =>
+      throw UnimplementedError();
+
+  @override
+  Future<SignupStatusResponse> signupStatus() => throw UnimplementedError();
+
+  @override
+  Future<ReapplyResponse> reapply({required String academyId}) =>
+      throw UnimplementedError();
+
+  @override
+  Future<LoginResponse> login({
+    required String loginId,
+    required String password,
+  }) => throw UnimplementedError();
+
+  @override
+  Future<void> logout() => throw UnimplementedError();
+
+  @override
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) => throw UnimplementedError();
+
+  @override
+  Future<void> recover({
+    required String type,
+    required String phone,
+    String? verificationCode,
+  }) async {
+    recoverCalled.complete();
+    await _recoverResult.future;
+  }
 
   @override
   Future<MeResponse> me() => throw UnimplementedError();
@@ -142,5 +207,35 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('인증번호 받기'), findsOneWidget);
+  });
+
+  // FE-R2 목표 10 — password_change_screen.dart 와 동일한 표시(버튼
+  // 비활성화 + `CircularProgressIndicator`)를 이 화면에도 확인한다.
+  testWidgets('제출 중에는 진행 표시기가 뜨고, 끝나면 사라진다', (tester) async {
+    final repository = _StallingAuthRepository();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [authRepositoryProvider.overrideWithValue(repository)],
+        child: const MaterialApp(home: AccountRecoveryScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+
+    await tester.enterText(find.byType(TextField).first, '01000000000');
+    await tester.tap(find.text('인증번호 받기'));
+    // API 호출이 나갔지만 아직 응답이 오지 않은 시점까지만 프레임을 민다.
+    await tester.pump();
+    await repository.recoverCalled.future;
+    await tester.pump();
+
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+    repository.failRecover();
+    await tester.pumpAndSettle();
+
+    expect(find.byType(CircularProgressIndicator), findsNothing);
   });
 }

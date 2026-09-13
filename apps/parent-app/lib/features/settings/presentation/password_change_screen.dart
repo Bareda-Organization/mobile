@@ -119,6 +119,17 @@ class _PasswordChangeScreenState extends ConsumerState<PasswordChangeScreen> {
                 AlertBanner(tone: AlertTone.missed, body: _formError),
               ],
               const SizedBox(height: BaraedaSpacing.space6),
+              // 버튼 비활성화만으로는 제출이 진행 중임이 드러나지 않는다 —
+              // 이 앱의 다른 화면이 데이터 로딩 중에 쓰는 것과 같은
+              // `CircularProgressIndicator` 를 제출 중에도 보여준다
+              // (`pending_approval_screen.dart`·
+              // `device_registration_panel.dart` 의 로딩 표시와 같은 형태,
+              // `account_recovery_screen.dart` 와도 동일하게 맞춘다 —
+              // 기능 결함이 아니라 표시 일관성 문제다).
+              if (_submitting) ...[
+                const Center(child: CircularProgressIndicator()),
+                const SizedBox(height: BaraedaSpacing.space4),
+              ],
               BaraedaButton(
                 label: '변경하기',
                 size: BaraedaButtonSize.lg,
