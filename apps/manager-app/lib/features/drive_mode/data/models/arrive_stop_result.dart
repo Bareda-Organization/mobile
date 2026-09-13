@@ -1,3 +1,4 @@
+import 'package:baraeda_core/baraeda_core.dart';
 import 'package:manager_app/core/run/run_enums.dart';
 
 /// `remaining[]` 항목 — 하원 종료 보류 중 아직 안 내린 탑승자.
@@ -10,7 +11,8 @@ class RemainingRider {
 
   factory RemainingRider.fromJson(Map<String, dynamic> json) {
     return RemainingRider(
-      riderId: json['rider_id'] as String,
+      // `Ruling 275` — 서버가 rider_id 를 int 로 내려도 흡수한다(직접 캐스트 금지).
+      riderId: asIdString(json['rider_id']),
       name: json['name'] as String,
       stopName: json['stop_name'] as String,
     );
@@ -27,8 +29,14 @@ class NextStopRef {
 
   factory NextStopRef.fromJson(Map<String, dynamic> json) {
     return NextStopRef(
-      stopId: json['stop_id'] as String,
-      name: json['name'] as String,
+      // `Ruling 275` — 서버가 stop_id 를 int 로 내려도 흡수한다(직접 캐스트 금지).
+      stopId: asIdString(json['stop_id']),
+      // 별도 결함(Ruling 275 와 다른 축, F5 M2 보고서 1항) — 실제 서버 응답의
+      // 키는 `name` 이 아니라 `stop_name` 이다(실측: POST .../arrive 원문
+      // 응답). 수정 전에는 마지막 지점이 아닌 모든 도착 처리가 항상
+      // TypeError 로 크래시했다(널 캐스트 실패) — Ruling 275 의 int/String
+      // 불일치보다 더 넓게 도달하는 결함이었다.
+      name: json['stop_name'] as String,
     );
   }
 

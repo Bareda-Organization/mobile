@@ -1,3 +1,4 @@
+import 'package:baraeda_core/baraeda_core.dart';
 import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/features/roster/data/models/roster_response.dart';
 
@@ -14,7 +15,8 @@ class RiderUpdateResult {
   factory RiderUpdateResult.fromJson(Map<String, dynamic> json) {
     final noShowCaseJson = json['no_show_case'] as Map<String, dynamic>?;
     return RiderUpdateResult(
-      riderId: json['rider_id'] as String,
+      // `Ruling 275` — 서버가 rider_id 를 int 로 내려도 흡수한다(직접 캐스트 금지).
+      riderId: asIdString(json['rider_id']),
       status:
           RiderStatus.fromWireValueOrNull(json['status'] as String?) ??
           RiderStatus.waiting,

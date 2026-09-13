@@ -136,12 +136,11 @@ void main() {
     );
 
     test(
-      '⚠ 발견된 결함 — 프로덕션 RouteApi.fetchRoute 는 stop_id 를 String 으로 '
-      '캐스팅하는데(route_response.dart), 이 백엔드는 §4.3 의 stop_id 를 '
-      'int(또는 null, 추가된 임시 집결지)로 내려 캐스팅이 실패한다. '
-      '§1.1 은 "식별자는 서버 발급 문자열" 을 요구하므로 서버 쪽이 어긋난 '
-      '것으로 보이지만, 이 라운드는 검증 전담이라 고치지 않고 실측만 남긴다 '
-      '(보고서 2항). 이 시험은 그 실패가 실제로 재현됨을 기록한다',
+      '결함 수정 확인(F5 M2 목표 A-1, `Ruling 275`) — 프로덕션 '
+      'RouteApi.fetchRoute 는 이제 route_response.dart 의 asIdString 으로 '
+      'stop_id 를 흡수한다. 이 백엔드는 §4.3 의 stop_id 를 int(또는 null, '
+      '추가된 임시 집결지)로 내려보내지만, 더는 TypeError 를 던지지 않고 '
+      'stopId 값을 옳게 문자열로 읽어야 한다',
       () async {
         if (!backendReachable) {
           markTestSkipped('환경 문제: 백엔드 미기동($baseUrl)');
@@ -151,24 +150,19 @@ void main() {
         await auth.login(loginId: 'driverA2', password: 'password');
 
         final api = RouteApi(dio: dio);
-        Object? caught;
-        try {
-          await api.fetchRoute('3');
-          // 어떤 예외든(TypeError 포함) 잡아서 아래에서 종류를 단언한다.
-          // ignore: avoid_catches_without_on_clauses
-        } catch (e) {
-          caught = e;
-        }
+        final route = await api.fetchRoute('3');
 
-        expect(
-          caught,
-          isA<TypeError>(),
-          reason:
-              'stop_id 가 int 로 오면 RouteStop.fromJson 의 '
-              "json['stop_id'] as String 이 TypeError 를 던져야 한다 — "
-              '던지지 않는다면 서버 응답 형태가 바뀐 것이므로 이 시험이 '
-              '먼저 실패해 알려야 한다',
-        );
+        expect(route.stops, isNotEmpty);
+        for (final stop in route.stops) {
+          expect(
+            stop.stopId,
+            isA<String>(),
+            reason: 'asIdString 이 서버의 int stop_id 를 문자열로 흡수해야 '
+                '한다 — 캐스팅 실패 없이 여기까지 도달한 것 자체가 수정 '
+                '증거이지만, 값 타입도 명시적으로 확인한다',
+          );
+          expect(stop.stopId, isNotEmpty);
+        }
       },
     );
   });
@@ -292,10 +286,10 @@ void main() {
     );
 
     test(
-      '⚠ 발견된 결함 — 위 시험이 실제로 받은 응답을 그대로 '
-      'RiderUpdateResult.fromJson 에 먹이면(추가 네트워크 호출 없이) '
-      '캐스팅이 실패한다. 즉 프로덕션 StopRoster 화면의 승하차 처리 응답 '
-      '해석 경로가 이 백엔드에 대해 항상 깨진다',
+      '결함 수정 확인(F5 M2 목표 A-3, `Ruling 275`) — 위 시험이 실제로 받은 '
+      '응답을 그대로 RiderUpdateResult.fromJson 에 먹이면(추가 네트워크 '
+      '호출 없이) 이제 asIdString 이 rider_id 를 흡수해 캐스팅이 성공하고 '
+      '값도 옳게 읽혀야 한다',
       () async {
         if (!backendReachable) {
           markTestSkipped('환경 문제: 백엔드 미기동($baseUrl)');
@@ -320,12 +314,10 @@ void main() {
           data: request.toJson(),
         );
 
-        expect(
-          () => RiderUpdateResult.fromJson(response.data!),
-          throwsA(isA<TypeError>()),
-          reason: 'rider_id 가 int 로 오면 RiderUpdateResult.fromJson 의 '
-              "json['rider_id'] as String 이 TypeError 를 던져야 한다",
-        );
+        final result = RiderUpdateResult.fromJson(response.data!);
+
+        expect(result.riderId, '3');
+        expect(result.status, RiderStatus.alighted);
       },
     );
   });
@@ -404,25 +396,28 @@ void main() {
 
   group('§4.5 POST /runs/{runId}/stops/{stopId}/arrive — 목표 8', () {
     test(
+      '결함 수정 확인(F5 M2 목표 A-2·A-5, `Ruling 275` + 널 허용성) — '
       '기사(driverA2, run3 배치)가 아직 미도착인 정류장에 도착 처리하면 '
       '성공하고, 같은 정류장에 다시 도착 처리를 호출하면 403 '
-      'DUPLICATE_ARRIVE 를 받는다 — 원재료 dio 로 직접 호출한다. '
+      'DUPLICATE_ARRIVE 를 받는다. '
       '⚠ 도착 처리는 영구·불가역이라(취소 API 부재) run3 의 정류장을 '
       '하나씩 소모한다 — 그래서 대상을 하드코딩하지 않고 매 실행마다 '
-      '원재료 dio 로 그 시점의 실제 미도착 정류장을 골라 쓴다(아래에서 '
-      '설명하듯 프로덕션 RosterApi.fetchRoster 자체가 photo_url 널 값에 '
-      '크래시해 쓸 수 없다). '
+      '프로덕션 RosterApi.fetchRoster 로 그 시점의 실제 미도착 정류장을 '
+      '골라 쓴다. photo_url 널 허용 수정 전에는 이 호출 자체가 크래시해 '
+      '원재료 dio 로 우회해야 했다 — 지금은 정류장 선택 경로 자체가 그 '
+      '수정의 재현 검사를 겸한다(보고서 1항). '
       '(고정 stopId 를 썼던 이전 버전은 두 번째 전체 실행에서 이미 소모된 '
       '정류장을 다시 호출해 "첫 도착"이 아니라 곧바로 403 을 받는 형태로 '
       '깨졌다 — 보고서 1항). 이어서 그 첫 성공 응답을 추가 네트워크 호출 '
-      '없이 그대로 ArriveStopResult.fromJson 에 먹여, ⚠ 발견된 결함(응답의 '
-      'next_stop.stop_id 가 int 로 오는데 NextStopRef.fromJson 은 String '
-      '으로 캐스팅해 프로덕션 DriveModeApi.arriveStop 경로가 이 백엔드에 '
-      '대해 항상 깨지는 것)을 실제 값으로 재현한다. ⚠ 이 시험은 고른 '
-      '정류장 하나를 영구히 "도착 처리됨" 으로 만든다 — 그 뒤 회차가 같은 '
-      'DB 를 재사용한다면 이 상태를 그대로 물려받는다(보고서 2항). run3 은 '
-      '정류장 4개(2·3·1·4 순)뿐이라 이 시험을 4번 넘게 돌리면 미도착 '
-      '정류장이 바닥나 "환경 문제"로 건너뛴다',
+      '없이 그대로 ArriveStopResult.fromJson 에 먹여, next_stop.stop_id 가 '
+      'int 로 와도 asIdString 이 흡수해 캐스팅이 성공하고 값도 옳게 읽히는지 '
+      '확인한다(수정 전에는 NextStopRef.fromJson 의 직접 캐스팅이 여기서 '
+      'TypeError 를 던졌다). ⚠ 이 시험은 고른 정류장 하나를 영구히 '
+      '"도착 처리됨" 으로 만든다 — 그 뒤 회차가 같은 DB 를 재사용한다면 이 '
+      '상태를 그대로 물려받는다(보고서 2항). run3 은 정류장 4개(2·3·1·4 순) '
+      '뿐이라 이 시험을 4번 넘게 돌리면 미도착 정류장이 바닥나 "환경 문제"로 '
+      '건너뛴다 — F5 M2 목표 B 가 이 소모를 매 실행 전 `/dev/reset` 으로 '
+      '되돌려 막는다(보고서 1항)',
       () async {
         if (!backendReachable) {
           markTestSkipped('환경 문제: 백엔드 미기동($baseUrl)');
@@ -433,35 +428,23 @@ void main() {
 
         // 실행 시점의 실제 명단을 읽어 아직 도착 처리되지 않은 정류장 중
         // — 노선상 마지막 정류장(seq 최댓값)은 next_stop 이 null 이라
-        // 아래 결함 재현이 성립하지 않으므로 제외하고 — seq 가 가장 작은
-        // 것을 고른다.
+        // 아래 확인이 성립하지 않으므로 제외하고 — seq 가 가장 작은 것을
+        // 고른다.
         //
-        // ⚠ 발견된 또 다른 결함 — 프로덕션 RosterApi.fetchRoster (§4.2)를
-        // 그대로 쓰면 이 자리에서도 크래시한다: RosterStudent.fromJson 이
-        // `photo_url` 을 `as String`(비 nullable)으로 캐스팅하는데, 이
-        // 백엔드는 photo_url 이 없는 학생에게 `null` 을 내려 그 캐스팅이
-        // 실패한다(실측: rider 3 김영희, photo_url: null). §4.3·§4.5·§4.6·
-        // §4.13 의 ID 캐스팅 결함과는 다른 종류(널 허용성 불일치)의 별도
-        // 결함이다(보고서 2항) — 그래서 이 정류장 선택 자체도 원재료 dio
-        // 로 우회한다.
-        final rosterResponse = await dio.get<Map<String, dynamic>>(
-          '/runs/3/roster',
-        );
-        final stopsJson =
-            rosterResponse.data!['stops'] as List<dynamic>? ?? [];
-        final stops = stopsJson.cast<Map<String, dynamic>>();
-        final lastSeq = stops
-            .map((s) => s['seq'] as int)
+        // photo_url 널 허용 수정(F5 M2 목표 A-5) 전에는 RosterStudent
+        // .fromJson 이 `photo_url` 을 `as String`(비 nullable)으로 캐스팅해
+        // 이 호출 자체가 크래시했다(실측: rider 3 김영희, photo_url: null).
+        // 지금은 프로덕션 RosterApi 를 그대로 써서 그 수정이 실제로
+        // 캐스팅 실패 없이 명단을 읽어내는지도 함께 확인한다.
+        final roster = await RosterApi(dio: dio).fetchRoster('3');
+        final lastSeq = roster.stops
+            .map((s) => s.seq)
             .reduce((a, b) => a > b ? a : b);
         final candidateStops =
-            stops
-                .where(
-                  (s) => s['arrived_at'] == null && s['seq'] as int != lastSeq,
-                )
+            roster.stops
+                .where((s) => s.arrivedAt == null && s.seq != lastSeq)
                 .toList()
-              ..sort(
-                (a, b) => (a['seq'] as int).compareTo(b['seq'] as int),
-              );
+              ..sort((a, b) => a.seq.compareTo(b.seq));
         if (candidateStops.isEmpty) {
           markTestSkipped(
             '환경 문제: run3 에 next_stop 이 있는 미도착 정류장이 더는 '
@@ -470,7 +453,7 @@ void main() {
           );
           return;
         }
-        final targetStopId = candidateStops.first['stop_id'];
+        final targetStopId = candidateStops.first.stopId;
 
         final firstResponse = await dio.post<Map<String, dynamic>>(
           '/runs/3/stops/$targetStopId/arrive',
@@ -496,14 +479,13 @@ void main() {
           expect(error?['code'], 'DUPLICATE_ARRIVE');
         }
 
-        // ⚠ 발견된 결함 재현 — 추가 네트워크 호출 없이, 위에서 이미 받은
-        // 첫 성공 응답을 그대로 프로덕션 파싱기에 먹인다.
-        expect(
-          () => ArriveStopResult.fromJson(firstResponse.data!),
-          throwsA(isA<TypeError>()),
-          reason: 'next_stop.stop_id 가 int 로 오면 NextStopRef.fromJson 의 '
-              "json['stop_id'] as String 이 TypeError 를 던져야 한다",
-        );
+        // 결함 수정 확인 — 추가 네트워크 호출 없이, 위에서 이미 받은 첫
+        // 성공 응답을 그대로 프로덕션 파싱기에 먹인다. next_stop.stop_id 가
+        // int 로 와도 asIdString 이 흡수해 캐스팅이 성공해야 한다.
+        final arriveResult = ArriveStopResult.fromJson(firstResponse.data!);
+        expect(arriveResult.nextStop, isNotNull);
+        expect(arriveResult.nextStop!.stopId, isA<String>());
+        expect(arriveResult.nextStop!.stopId, isNotEmpty);
       },
     );
   });
@@ -536,12 +518,11 @@ void main() {
 
   group('§4.13 POST /runs/{runId}/reports', () {
     test(
-      '동승자(escortA2, run3 배치)가 기타 사유 보고서를 제출한다 — '
-      '원재료 dio 로 직접 호출한다. ⚠ 프로덕션 ReportsApi.submitReport 는 '
-      '응답의 report_id 를 String 으로 캐스팅하는데(report_result.dart) '
-      '이 백엔드는 int 로 내려 캐스팅이 실패한다 — 그래서 실제 제출 확인은 '
-      '원재료 dio 로 하고, 그 응답을 추가 네트워크 호출 없이 그대로 '
-      'ReportResult.fromJson 에 먹여 그 실패를 실제 값으로 재현한다. '
+      '결함 수정 확인(F5 M2 목표 A-4, `Ruling 275`) — 동승자(escortA2, '
+      'run3 배치)가 기타 사유 보고서를 제출하면 프로덕션 '
+      'ReportResult.fromJson 이 report_id 를 asIdString 으로 흡수해 캐스팅이 '
+      '성공하고 값도 옳게 읽혀야 한다(수정 전에는 이 백엔드가 report_id 를 '
+      "int 로 내려 `json['report_id'] as String` 이 TypeError 를 던졌다). "
       '⚠ 이 호출은 run3 에 보고서 레코드를 영구히 남긴다(삭제 API 부재, '
       '보고서 2항)',
       () async {
@@ -561,17 +542,13 @@ void main() {
         );
 
         expect(response.statusCode, 201);
-        expect(response.data!['report_id'], isNotNull);
-        expect(response.data!['reported_at'], isNotNull);
 
-        // ⚠ 발견된 결함 재현 — 추가 네트워크 호출 없이, 위에서 이미 받은
-        // 응답을 그대로 프로덕션 파싱기에 먹인다.
-        expect(
-          () => ReportResult.fromJson(response.data!),
-          throwsA(isA<TypeError>()),
-          reason: 'report_id 가 int 로 오면 ReportResult.fromJson 의 '
-              "json['report_id'] as String 이 TypeError 를 던져야 한다",
-        );
+        // 결함 수정 확인 — 추가 네트워크 호출 없이, 위에서 이미 받은 응답을
+        // 그대로 프로덕션 파싱기에 먹인다.
+        final reportResult = ReportResult.fromJson(response.data!);
+        expect(reportResult.reportId, isA<String>());
+        expect(reportResult.reportId, isNotEmpty);
+        expect(reportResult.reportedAt, isNotNull);
       },
     );
   });
