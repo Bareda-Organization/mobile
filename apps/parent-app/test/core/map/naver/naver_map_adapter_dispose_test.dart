@@ -39,7 +39,6 @@ void main() {
     await tester.pump();
 
     var tickCount = 0;
-    // ignore: avoid_dynamic_calls
     (key.currentState! as dynamic).debugStartFrameTickerForTest(
       () => tickCount++,
     );
