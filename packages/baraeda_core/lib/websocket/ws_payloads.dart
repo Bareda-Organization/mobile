@@ -1,0 +1,266 @@
+/// `API_SPEC §7.1` 이벤트별 payload 모델. 봉투(`WebSocketEnvelope`)의
+/// `payload` 는 원문 `Map<String, dynamic>` 으로 남기고, 호출부가 `event` 값에
+/// 맞는 `Ws*Payload.fromJson(payload)` 로 다시 파싱한다 — 이벤트마다 필드
+/// 모양이 전혀 달라 하나의 클래스로 합칠 수 없다.
+///
+/// 여기 있는 id 필드(`stop_id` · `rider_id` · `student_id` · `emergency_id` ·
+/// `run_id` · `next_stop_id`)는 전부 `asIdString` 을 거친다 — `run_id` 하나만
+/// 흔들리는 게 아니라 payload 안의 식별자 전부가 같은 사정이다(Ruling 275,
+/// `as_id_string.dart` 참고).
+library;
+
+import 'package:baraeda_core/id/as_id_string.dart';
+
+/// `position` — 학부모·학생 채널은 [eta] 가 항상 `null`(C-08), 관제 채널만 값이 온다.
+class WsPositionPayload {
+  const WsPositionPayload({
+    required this.lat,
+    required this.lng,
+    required this.receivedAt,
+    required this.currentStopName,
+    this.eta,
+  });
+
+  factory WsPositionPayload.fromJson(Map<String, dynamic> json) =>
+      WsPositionPayload(
+        lat: (json['lat'] as num).toDouble(),
+        lng: (json['lng'] as num).toDouble(),
+        receivedAt: DateTime.parse(json['received_at'] as String),
+        currentStopName: json['current_stop_name'] as String?,
+        // 사양이 eta 의 구체 타입을 명시하지 않는다 — 값이 오면 원문 그대로
+        // 문자열로 보존하고, 형태 해석(초 단위 남은 시간인지 절대 시각인지)은
+        // 이 함수의 범위 밖이다(관제 채널 소비자가 그때 가서 결정할 문제).
+        eta: json['eta']?.toString(),
+      );
+
+  final double lat;
+  final double lng;
+  final DateTime receivedAt;
+  final String? currentStopName;
+  final String? eta;
+}
+
+/// `stop_arrived` — 기사 포인터 전진의 방송. 동승자 처리 명단은 이 이벤트로
+/// 바뀌지 않는다(`rider_changed` 가 별도로 온다).
+class WsStopArrivedPayload {
+  const WsStopArrivedPayload({
+    required this.stopId,
+    required this.seq,
+    required this.name,
+    required this.arrivedAt,
+    required this.nextStopId,
+  });
+
+  factory WsStopArrivedPayload.fromJson(Map<String, dynamic> json) =>
+      WsStopArrivedPayload(
+        stopId: asIdString(json['stop_id']),
+        seq: json['seq'] as int,
+        name: json['name'] as String,
+        arrivedAt: DateTime.parse(json['arrived_at'] as String),
+        // 마지막 승하차지 도착이면 다음이 없다 — null 허용.
+        nextStopId: json['next_stop_id'] == null
+            ? null
+            : asIdString(json['next_stop_id']),
+      );
+
+  final String stopId;
+  final int seq;
+  final String name;
+  final DateTime arrivedAt;
+  final String? nextStopId;
+}
+
+/// `rider_changed` — 5초 이내 반영. `counts`·`status` 의 정확한 하위 구조는
+/// 사양이 값 사전을 별도로 두지 않아 원문 그대로 넘긴다.
+class WsRiderChangedPayload {
+  const WsRiderChangedPayload({
+    required this.riderId,
+    required this.studentId,
+    required this.studentName,
+    required this.status,
+    required this.stopId,
+    required this.changedAt,
+    required this.counts,
+    required this.stopSkipped,
+  });
+
+  factory WsRiderChangedPayload.fromJson(Map<String, dynamic> json) =>
+      WsRiderChangedPayload(
+        riderId: asIdString(json['rider_id']),
+        studentId: asIdString(json['student_id']),
+        studentName: json['student_name'] as String,
+        // `RunRider.status` — waiting·boarded·alighted·absent·no_show
+        // (§9.4). enum 화는 이 패키지가 아니라 소비 화면 쪽 관심사다.
+        status: json['status'] as String,
+        stopId: asIdString(json['stop_id']),
+        changedAt: DateTime.parse(json['changed_at'] as String),
+        counts: (json['counts'] as Map).cast<String, dynamic>(),
+        stopSkipped: json['stop_skipped'] as bool,
+      );
+
+  final String riderId;
+  final String studentId;
+  final String studentName;
+  final String status;
+  final String stopId;
+  final DateTime changedAt;
+  final Map<String, dynamic> counts;
+  final bool stopSkipped;
+}
+
+/// `run_started` — `run_status` 는 `moving` 고정(§9.3).
+class WsRunStartedPayload {
+  const WsRunStartedPayload({
+    required this.runStatus,
+    required this.startedAt,
+    required this.autoBoardedCount,
+  });
+
+  factory WsRunStartedPayload.fromJson(Map<String, dynamic> json) =>
+      WsRunStartedPayload(
+        runStatus: json['run_status'] as String,
+        startedAt: DateTime.parse(json['started_at'] as String),
+        autoBoardedCount: json['auto_boarded_count'] as int,
+      );
+
+  final String runStatus;
+  final DateTime startedAt;
+  final int autoBoardedCount;
+}
+
+/// `run_ended` — `run_status` 는 `finished` 고정(§9.3).
+class WsRunEndedPayload {
+  const WsRunEndedPayload({
+    required this.runStatus,
+    required this.finishedAt,
+    required this.autoAlightedCount,
+  });
+
+  factory WsRunEndedPayload.fromJson(Map<String, dynamic> json) =>
+      WsRunEndedPayload(
+        runStatus: json['run_status'] as String,
+        finishedAt: DateTime.parse(json['finished_at'] as String),
+        autoAlightedCount: json['auto_alighted_count'] as int,
+      );
+
+  final String runStatus;
+  final DateTime finishedAt;
+  final int autoAlightedCount;
+}
+
+/// [WsEmergencyRaisedPayload.raisedBy] 하위 객체.
+class WsEmergencyRaisedBy {
+  const WsEmergencyRaisedBy({
+    required this.name,
+    required this.role,
+    required this.phone,
+  });
+
+  factory WsEmergencyRaisedBy.fromJson(Map<String, dynamic> json) =>
+      WsEmergencyRaisedBy(
+        name: json['name'] as String,
+        role: json['role'] as String,
+        phone: json['phone'] as String,
+      );
+
+  final String name;
+  final String role;
+  final String phone;
+}
+
+/// [WsEmergencyRaisedPayload.position] 하위 객체 — 발신 시점 좌표.
+class WsEmergencyPosition {
+  const WsEmergencyPosition({required this.lat, required this.lng});
+
+  factory WsEmergencyPosition.fromJson(Map<String, dynamic> json) =>
+      WsEmergencyPosition(
+        lat: (json['lat'] as num).toDouble(),
+        lng: (json['lng'] as num).toDouble(),
+      );
+
+  final double lat;
+  final double lng;
+}
+
+/// `emergency_raised` — 관계자·메인 관리자 채널 전용(C-17).
+class WsEmergencyRaisedPayload {
+  const WsEmergencyRaisedPayload({
+    required this.emergencyId,
+    required this.type,
+    required this.busNo,
+    required this.raisedBy,
+    required this.position,
+    required this.riderCount,
+    required this.raisedAt,
+  });
+
+  factory WsEmergencyRaisedPayload.fromJson(Map<String, dynamic> json) =>
+      WsEmergencyRaisedPayload(
+        emergencyId: asIdString(json['emergency_id']),
+        type: json['type'] as String,
+        busNo: json['bus_no'] as String,
+        raisedBy: WsEmergencyRaisedBy.fromJson(
+          (json['raised_by'] as Map).cast<String, dynamic>(),
+        ),
+        position: WsEmergencyPosition.fromJson(
+          (json['position'] as Map).cast<String, dynamic>(),
+        ),
+        // 발신 시점 회차에 배정된 라이더 전원 수 — 승하차 상태 무관.
+        riderCount: json['rider_count'] as int,
+        raisedAt: DateTime.parse(json['raised_at'] as String),
+      );
+
+  final String emergencyId;
+  final String type;
+  final String busNo;
+  final WsEmergencyRaisedBy raisedBy;
+  final WsEmergencyPosition position;
+  final int riderCount;
+  final DateTime raisedAt;
+}
+
+/// `emergency_acked` — 매니저 채널 전용. 발신자 앱에 "학원이 확인했습니다" 표시(A-16).
+class WsEmergencyAckedPayload {
+  const WsEmergencyAckedPayload({
+    required this.emergencyId,
+    required this.ackedByName,
+    required this.ackedAt,
+  });
+
+  factory WsEmergencyAckedPayload.fromJson(Map<String, dynamic> json) =>
+      WsEmergencyAckedPayload(
+        emergencyId: asIdString(json['emergency_id']),
+        ackedByName: json['acked_by_name'] as String,
+        ackedAt: DateTime.parse(json['acked_at'] as String),
+      );
+
+  final String emergencyId;
+  final String ackedByName;
+  final DateTime ackedAt;
+}
+
+/// `approval_requested` — 관계자 채널 전용(REQ-05).
+class WsApprovalRequestedPayload {
+  const WsApprovalRequestedPayload({
+    required this.approvalId,
+    required this.studentName,
+    required this.runId,
+    required this.stopName,
+    required this.deadlineAt,
+  });
+
+  factory WsApprovalRequestedPayload.fromJson(Map<String, dynamic> json) =>
+      WsApprovalRequestedPayload(
+        approvalId: asIdString(json['approval_id']),
+        studentName: json['student_name'] as String,
+        runId: asIdString(json['run_id']),
+        stopName: json['stop_name'] as String,
+        deadlineAt: DateTime.parse(json['deadline_at'] as String),
+      );
+
+  final String approvalId;
+  final String studentName;
+  final String runId;
+  final String stopName;
+  final DateTime deadlineAt;
+}

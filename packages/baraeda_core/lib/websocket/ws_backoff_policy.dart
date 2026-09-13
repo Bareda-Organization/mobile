@@ -1,0 +1,53 @@
+import 'dart:math';
+
+/// 재연결 대기 간격 정책 — 지수 백오프 + 상한 + 포기(give-up) 조건.
+///
+/// `stomp_dart_client` 의 `StompConfig.reconnectDelay` 는 **고정 지연 하나뿐**
+/// 이다 — 내부 구현이 `Timer(config.reconnectDelay, () => _connect())` 라
+/// 재시도 횟수와 무관하게 매번 같은 간격으로, 무한히 재시도한다. 그대로
+/// 쓰면 서버가 죽었을 때 배터리를 계속 쓰면서 서버에도 같은 간격으로
+/// 부하를 준다. 그래서 `BaraedaWebSocketClient` 는 `reconnectDelay` 를
+/// `Duration.zero` 로 줘 라이브러리의 내장 재연결을 비활성화하고
+/// (`stomp_handler.dart`·`stomp.dart` 양쪽 다 `reconnectDelay.inMilliseconds
+/// > 0` 일 때만 재연결을 스케줄한다), 대신 이 정책이 계산한 지연으로 직접
+/// `Timer` 를 건다.
+///
+/// 순수 계산 클래스로 둔 이유 — `Timer` 를 직접 다루면 단위 시험이 실제
+/// 시간만큼 기다려야 하거나 `fake_async` 가 필요해진다. 간격 계산만
+/// 분리해 두면 "3번째 재시도의 대기가 정확히 몇 ms 인가"를 `Timer` 없이
+/// 바로 검사할 수 있다.
+class WsBackoffPolicy {
+  const WsBackoffPolicy({
+    this.initialDelay = const Duration(seconds: 1),
+    this.maxDelay = const Duration(seconds: 30),
+    this.multiplier = 2,
+    this.maxAttempts = 6,
+  });
+
+  /// 1회차 재연결 대기.
+  final Duration initialDelay;
+
+  /// 대기 상한 — 계산값이 이보다 크면 이 값으로 잘린다.
+  final Duration maxDelay;
+
+  /// 회차마다 곱하는 배수.
+  final num multiplier;
+
+  /// 이 횟수를 넘기면 [shouldGiveUp] 이 `true` — 더 이상 자동 재시도하지 않는다.
+  /// 1·2·4·8·16·30(상한 도달) 초로 6회 시도 후 포기하면 마지막 시도까지
+  /// 누적 대기가 약 61초다 — 화면 하나를 띄워 둔 채 무한정 기다리게 하지
+  /// 않으면서도, 순간적인 서버 재기동(수 초~수십 초)은 흡수한다.
+  final int maxAttempts;
+
+  /// `attempt` 는 1부터 시작(첫 재연결 시도). `initialDelay * multiplier^(attempt-1)`
+  /// 을 계산하고 [maxDelay] 로 자른다.
+  Duration delayFor(int attempt) {
+    assert(attempt >= 1, 'attempt 는 1부터 시작한다 (첫 재연결 시도 = 1)');
+    final rawMs = initialDelay.inMilliseconds * pow(multiplier, attempt - 1);
+    final cappedMs = min(rawMs, maxDelay.inMilliseconds.toDouble());
+    return Duration(milliseconds: cappedMs.round());
+  }
+
+  /// `attempt` 번째 시도를 하기 전에 이미 포기 조건에 도달했는가.
+  bool shouldGiveUp(int attempt) => attempt > maxAttempts;
+}
