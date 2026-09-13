@@ -115,18 +115,29 @@ class _RouteMapScreenState extends ConsumerState<RouteMapScreen> {
 
   /// 마커 — `stops[]` 전부를 [MapMarkerKind.stop] 으로 찍는다.
   ///
-  /// `current_stop` 은 같은 좌표에 [MapMarkerKind.bus] 마커를 하나 더
-  /// 찍어 "버스가 지금 있는 자리" 를 근사한다 — §4.3 에는 버스의 실시간
-  /// GPS 좌표가 없다(그건 §4.12 위치 업로드 전용 API 라 조회용이
-  /// 아니다). 정확한 위치를 그리려면 새 조회 API 가 필요한데 이번
-  /// 범위에서 백엔드 API 를 추가하지 않기로 했으므로, `current_stop` 을
-  /// 근사값으로 쓰는 것으로 남긴다(정확한 GPS 위치가 아니라는 점은
-  /// 보고서에도 남긴다).
+  /// ⚠ **`current_stop` 에 [MapMarkerKind.bus] 마커를 얹지 않는다**
+  /// (F4-B 2단계 M2 판정 — 1단계가 근사로 찍었던 것을 되돌림). 이유는
+  /// 이름표와 실제 값의 불일치다 — [MapMarkerKind.bus] 의 계약은
+  /// "운행 중인 버스의 현재 위치"([MapMarkerKind] 문서, `map_surface.dart`)
+  /// 인데, `current_stop` 은 백엔드에서 "`arrivedAt` 이 있는 것 중 `seq`
+  /// 최댓값" — 즉 **방금 들른 승하차지**로 계산된다(`RunRouteQueryService.
+  /// buildFromVersion`), 실시간 GPS 가 전혀 아니다. 이 화면이 구독하는
+  /// `/ws/manager/runs/{id}` 채널에도 `position` 필드가 없어(§7) 실시간
+  /// 좌표를 받을 길 자체가 없다.
+  ///
+  /// 이 화면의 사용자는 기사·동승자 자신이다 — 자기가 탄 버스의 위치를
+  /// "버스" 라는 이름표로 잘못 보여주면, 방금 지나온 지점을 지금 위치로
+  /// 오인해 다음 승하차지까지 남은 거리를 잘못 판단할 수 있다. 근거
+  /// 확인 — `docs/USER_FLOWS.md` 의 기사·동승자 플로우(`UF-D-02`·
+  /// `UF-D-03`)는 이 화면에 "버스 마커" 를 요구하지 않고, 실시간 버스
+  /// 위치 마커를 쓰는 유일한 플로우(`UF-P-07`)는 학부모·학생 전용
+  /// 엔드포인트(`GET /students/{id}/bus-position`)를 쓴다 — **이
+  /// 화면(기사·동승자)에 버스 마커를 둘 근거가 없다.**
   ///
   /// [MapMarkerKind.student] 는 이 응답에 개별 학생 좌표가 없어 쓰지
   /// 않는다 — `student_count` 는 숫자일 뿐 위치 정보가 아니다.
   List<MapMarker> _markersFor(RouteResponse route) {
-    final markers = <MapMarker>[
+    return [
       for (final stop in route.stops)
         MapMarker(
           id: stop.stopId,
@@ -135,17 +146,5 @@ class _RouteMapScreenState extends ConsumerState<RouteMapScreen> {
           kind: MapMarkerKind.stop,
         ),
     ];
-    final current = route.currentStop;
-    if (current != null) {
-      markers.add(
-        MapMarker(
-          id: 'current_${current.stopId}',
-          lat: current.lat,
-          lng: current.lng,
-          kind: MapMarkerKind.bus,
-        ),
-      );
-    }
-    return markers;
   }
 }
