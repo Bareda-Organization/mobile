@@ -51,7 +51,6 @@ void main() {
 
     const originalClientKey = 'ORIGINAL-CLIENT-KEY';
     final outcome = await repository.sendOrQueue<void>(
-      clientKey: originalClientKey,
       endpoint: '/runs/1/emergency',
       method: 'POST',
       payload: const {'client_key': originalClientKey, 'type': 'etc'},
