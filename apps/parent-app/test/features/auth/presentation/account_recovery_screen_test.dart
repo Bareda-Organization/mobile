@@ -1,8 +1,10 @@
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:parent_app/app/di.dart';
+import 'package:parent_app/core/auth/auth_providers.dart';
 import 'package:parent_app/core/auth/domain/auth_repository.dart';
 import 'package:parent_app/features/auth/presentation/account_recovery_screen.dart';
 
@@ -112,5 +114,33 @@ void main() {
       findsOneWidget,
       reason: '두 실패 코드가 다른 문구로 갈리면 계정 존재 여부가 노출된다',
     );
+  });
+
+  // 이 화면은 비로그인 진입점이다(클래스 문서 참고) — `router.dart` 의
+  // `onAuthScreen` 판정이 로그인 전에도 이 경로를 허용하는 것은 코드로
+  // 확인됐지만, 그 판정을 통과했을 때 화면 자체가 실제로 뜨는지는 위 두
+  // 시험 모두 확인하지 않는다(둘 다 에러 문구만 본다). 여기서는
+  // `currentUserRoleProvider` 를 명시적으로 `null`(비로그인)로 두고
+  // 화면의 핵심 요소(제목·입력 폼·버튼)가 실제로 그려지는지를 본다.
+  testWidgets('비로그인 상태로 진입해도 화면이 렌더된다', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [currentUserRoleProvider.overrideWith((ref) => null)],
+        child: const MaterialApp(home: AccountRecoveryScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('아이디·비밀번호 찾기'), findsOneWidget);
+    // 라벨은 필수 표시(`*`)가 별도 TextSpan 으로 붙는 RichText 라
+    // (`input.dart` 의 `_InputLabel`) 렌더 문자열이 아니라 위젯 속성으로
+    // 확인한다.
+    expect(
+      find.byWidgetPredicate(
+        (w) => w is BaraedaInput && w.label == '가입 시 등록한 휴대폰 번호',
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('인증번호 받기'), findsOneWidget);
   });
 }
