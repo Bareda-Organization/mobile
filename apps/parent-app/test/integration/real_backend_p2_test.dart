@@ -2,6 +2,7 @@ import 'package:baraeda_core/baraeda_core.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage_platform_interface/flutter_secure_storage_platform_interface.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:parent_app/core/constants/api_constants.dart';
 import 'package:parent_app/features/settings/data/notification_settings_api.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:uuid/uuid.dart';
@@ -58,8 +59,9 @@ class _FakeSecureStoragePlatform
   }) async => SecureStorageUpgradeStatus.unsupported;
 }
 
-/// `localhost:8082`(`schoolbus_p2`)를 실제로 때리는 계약 시험 — P2 게이트
-/// 조건 ⑤. `real_backend_p1_test.dart` 가 담당한 P1 화면과 달리, 이 파일은
+/// `--dart-define=API_BASE_URL` 로 지정한 서버를 실제로 때리는 계약
+/// 시험 — P2 게이트 조건 ⑤. `real_backend_p1_test.dart` 가 담당한 P1
+/// 화면과 달리, 이 파일은
 /// P2 라운드에서 새로 다룬 설정 4개 엔드포인트(§2.8·§2.9·§2.11·§3.14)를
 /// 최소 1회씩 실제로 호출한다 — 지금까지는 위젯 시험의 가짜
 /// 저장소·가짜 레포지토리로만 검증돼 있었고, 서버가 실제로 그 계약대로
@@ -77,7 +79,12 @@ class _FakeSecureStoragePlatform
 /// 헬스체크가 전체를 환경 문제로 건너뛴다(`real_backend_p1_test.dart` 와
 /// 같은 구조).
 void main() {
-  const baseUrl = 'http://localhost:8082/api/v1';
+  // ⚠ 여기 박아 두면 안 된다 — 앱 내부(`di.dart`)는 `ApiConstants.baseUrl`
+  // 을 통해 `--dart-define=API_BASE_URL` 값을 그대로 쓴다. 리터럴을 박아
+  // 두면 `--dart-define` 으로 다른 포트를 줘도 이 파일이 그 값을 무시해
+  // 항상 건너뛰거나 엉뚱한 서버를 때린다(`auto_login_test.dart` 와 같은
+  // 근거, f766c27).
+  const baseUrl = ApiConstants.baseUrl;
   late bool backendReachable;
 
   setUpAll(() async {
@@ -111,7 +118,7 @@ void main() {
     '§2.9 — 등록된 전화번호로 인증코드 발송을 실제로 요청한다 (비인증)',
     () async {
       if (!backendReachable) {
-        markTestSkipped('환경 문제: localhost:8082 백엔드 미기동');
+        markTestSkipped('환경 문제: $baseUrl 백엔드 미기동');
         return;
       }
       // `verificationCode` 를 생략하면 SMS 발송 요청으로 처리된다(§2.9) —
@@ -128,7 +135,7 @@ void main() {
     'NTF-12 · §2.11 — 단말을 등록하고 해지까지 실제로 왕복한다',
     () async {
       if (!backendReachable) {
-        markTestSkipped('환경 문제: localhost:8082 백엔드 미기동');
+        markTestSkipped('환경 문제: $baseUrl 백엔드 미기동');
         return;
       }
       final client = buildClientFor('p2-device');
@@ -156,7 +163,7 @@ void main() {
     'NTF-07 · §3.14 — 알림 설정을 조회·변경하고 원래 값으로 되돌린다',
     () async {
       if (!backendReachable) {
-        markTestSkipped('환경 문제: localhost:8082 백엔드 미기동');
+        markTestSkipped('환경 문제: $baseUrl 백엔드 미기동');
         return;
       }
       final client = buildClientFor('p2-notif');
@@ -179,7 +186,7 @@ void main() {
     'AUTH-07 · §2.8 — 비밀번호를 실제로 변경했다가 원래 값으로 되돌린다',
     () async {
       if (!backendReachable) {
-        markTestSkipped('환경 문제: localhost:8082 백엔드 미기동');
+        markTestSkipped('환경 문제: $baseUrl 백엔드 미기동');
         return;
       }
       const original = 'password';

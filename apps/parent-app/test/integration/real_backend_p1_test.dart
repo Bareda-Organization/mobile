@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage_platform_interface/flutter_secure_storage_platform_interface.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:parent_app/core/change_requests/data/change_request_api.dart';
+import 'package:parent_app/core/constants/api_constants.dart';
 import 'package:parent_app/core/runs/data/run_api.dart';
 import 'package:parent_app/core/students/data/student_api.dart';
 import 'package:parent_app/features/child_link/data/link_api.dart';
@@ -62,10 +63,10 @@ class _FakeSecureStoragePlatform
   }) async => SecureStorageUpgradeStatus.unsupported;
 }
 
-/// `localhost:8082`(`schoolbus_p1`)를 실제로 때리는 계약 시험 — P1 이
-/// 담당한 홈·일정·자녀연결 화면이 쓰는 §3 엔드포인트 전부를 최소 1회씩
-/// 실제로 호출해 파싱까지 성공하는지 확인한다. 서버가 안 떠 있으면
-/// `setUpAll` 헬스체크가 전체를 환경 문제로 건너뛴다
+/// `--dart-define=API_BASE_URL` 로 지정한 서버를 실제로 때리는 계약
+/// 시험 — P1 이 담당한 홈·일정·자녀연결 화면이 쓰는 §3 엔드포인트 전부를
+/// 최소 1회씩 실제로 호출해 파싱까지 성공하는지 확인한다. 서버가 안 떠
+/// 있으면 `setUpAll` 헬스체크가 전체를 환경 문제로 건너뛴다
 /// (`real_backend_auth_test.dart` 와 같은 구조).
 ///
 /// 시드(`V2__seed_data.sql`) 기준 — `parentA1`(account 5·guardian 1)은
@@ -74,7 +75,12 @@ class _FakeSecureStoragePlatform
 /// 자녀연결(§3.2~§3.4) 흐름의 시험 재료다 — 이미 연결된 계정끼리는
 /// 이 흐름을 다시 시연할 수 없다.
 void main() {
-  const baseUrl = 'http://localhost:8082/api/v1';
+  // ⚠ 여기 박아 두면 안 된다 — 앱 내부(`di.dart`)는 `ApiConstants.baseUrl`
+  // 을 통해 `--dart-define=API_BASE_URL` 값을 그대로 쓴다. 리터럴을 박아
+  // 두면 `--dart-define` 으로 다른 포트를 줘도 이 파일이 그 값을 무시해
+  // 항상 건너뛰거나 엉뚱한 서버를 때린다(`auto_login_test.dart` 와 같은
+  // 근거, f766c27).
+  const baseUrl = ApiConstants.baseUrl;
   late bool backendReachable;
 
   setUpAll(() async {
@@ -116,7 +122,7 @@ void main() {
     '목표 — parentA1 이 §3.1·§3.5·§3.7·§3.9·§3.12·§3.13 을 실제로 호출한다',
     () async {
       if (!backendReachable) {
-        markTestSkipped('환경 문제: localhost:8082 백엔드 미기동');
+        markTestSkipped('환경 문제: $baseUrl 백엔드 미기동');
         return;
       }
       final parent = buildClientFor('p1-parent');
@@ -163,7 +169,7 @@ void main() {
     '실제로 왕복한다 (이미 연결돼 있으면 건너뛴다)',
     () async {
       if (!backendReachable) {
-        markTestSkipped('환경 문제: localhost:8082 백엔드 미기동');
+        markTestSkipped('환경 문제: $baseUrl 백엔드 미기동');
         return;
       }
       final parent = buildClientFor('p1-link-parent');

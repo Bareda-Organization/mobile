@@ -62,7 +62,7 @@ void main() {
     '홈 화면으로 간다 (실제 로그인 1회로 진짜 토큰을 발급받아 시드)',
     (tester) async {
       if (!backendReachable) {
-        markTestSkipped('환경 문제: localhost:8080 백엔드 미기동');
+        markTestSkipped('환경 문제: $baseUrl 백엔드 미기동');
         return;
       }
 

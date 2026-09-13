@@ -66,18 +66,27 @@ class _FakeSecureStoragePlatform
 
 }
 
-/// `localhost:8080` 을 실제로 때리는 계약 시험 — F2 목표 표 7·8·9·11 항.
-/// `flutter test` 가 도는 동안 로컬 백엔드(`docker compose up -d postgres
-/// redis` + `./gradlew bootRun`)가 떠 있어야 하고, 없으면 이 그룹 전체가
-/// 연결 실패로 죽는다. 그 실패는 코드 결함이 아니라 환경 문제이므로
-/// `setUpAll` 에서 헬스체크로 미리 갈라 별도 실패 메시지를 남긴다.
+/// `--dart-define=API_BASE_URL` 로 지정한 서버를 실제로 때리는 계약
+/// 시험 — F2 목표 표 7·8·9·11 항. `flutter test` 가 도는 동안 로컬
+/// 백엔드(`docker compose up -d postgres redis` + `./gradlew bootRun`)가
+/// 떠 있어야 하고, 없으면 이 그룹 전체가 연결 실패로 죽는다. 그 실패는
+/// 코드 결함이 아니라 환경 문제이므로 `setUpAll` 에서 헬스체크로 미리
+/// 갈라 별도 실패 메시지를 남긴다.
 ///
 /// ⚠ 아래 계정은 Flutter 갈래에 배정된 시드 계정만 쓴다
 /// (`db/migration-local/V2__seed_data.sql`) — `parentA1` 은 실패 로그인
 /// 누적 시험에 쓰지 않고, `driverBlocked` 는 상태를 바꾸는 어떤 호출도
 /// 하지 않는다(읽기 전용 공유 계정).
 void main() {
-  const baseUrl = 'http://localhost:8080/api/v1';
+  // ⚠ 여기 박아 두면 안 된다 — 이 패키지는 앱이 아니라 `parent-app`·
+  // `manager-app` 이 공유하는 라이브러리라 `ApiConstants` 가 없다. 대신
+  // 앱과 같은 규약(`--dart-define=API_BASE_URL`, 기본값 8080)을 직접
+  // 읽는다 — 리터럴을 박아 두면 다른 포트를 줘도 이 파일이 무시한다
+  // (`parent_app/test/integration/auto_login_test.dart` 와 같은 근거).
+  const baseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'http://localhost:8080/api/v1',
+  );
   late bool backendReachable;
 
   setUpAll(() async {
@@ -118,7 +127,7 @@ void main() {
     '(실제 호출 1회)',
     () async {
       if (!backendReachable) {
-        markTestSkipped('환경 문제: localhost:8080 백엔드 미기동');
+        markTestSkipped('환경 문제: $baseUrl 백엔드 미기동');
         return;
       }
       final (:auth, :dio, storage: _) = buildAuthApi();
@@ -153,7 +162,7 @@ void main() {
     '목표 8 — rejected 계정은 signup-status 응답에 거절 사유를 담아 온다',
     () async {
       if (!backendReachable) {
-        markTestSkipped('환경 문제: localhost:8080 백엔드 미기동');
+        markTestSkipped('환경 문제: $baseUrl 백엔드 미기동');
         return;
       }
       final (:auth, dio: _, storage: _) = buildAuthApi();
@@ -188,7 +197,7 @@ void main() {
     '목표 9 — blocked 계정은 로그인 자체가 실패하고 사유가 담겨 온다',
     () async {
       if (!backendReachable) {
-        markTestSkipped('환경 문제: localhost:8080 백엔드 미기동');
+        markTestSkipped('환경 문제: $baseUrl 백엔드 미기동');
         return;
       }
       final (:auth, dio: _, :storage) = buildAuthApi();
@@ -217,7 +226,7 @@ void main() {
     '목표 11 — 학원 검색은 비활성 학원(운영정지)을 제외한다 (실제 호출)',
     () async {
       if (!backendReachable) {
-        markTestSkipped('환경 문제: localhost:8080 백엔드 미기동');
+        markTestSkipped('환경 문제: $baseUrl 백엔드 미기동');
         return;
       }
       final (:auth, dio: _, storage: _) = buildAuthApi();
