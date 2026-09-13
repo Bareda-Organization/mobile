@@ -2,7 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
+import 'package:parent_app/core/map/frame_ticker.dart';
 import 'package:parent_app/core/map/map_surface.dart';
+import 'package:parent_app/core/map/marker_motion_controller.dart';
 import 'package:parent_app/core/map/naver/naver_map_init.dart';
 
 /// `MapSurface` 계약을 실제 네이버 지도 SDK 로 구현하는 어댑터.
@@ -40,6 +42,14 @@ class _NaverMapAdapterState extends State<NaverMapAdapter> {
   NaverMapController? _controller;
   final Map<String, NMarker> _markersById = {};
 
+  /// 마커 id 별 보간 상태 — 계산 자체는 `MarkerMotionController`(순수)에
+  /// 맡기고, 이 클래스는 "언제 부를지"만 담당한다.
+  final Map<String, MarkerMotionController> _motionById = {};
+
+  /// 보간 중인 마커가 하나라도 있을 때만 돈다 — 프레임마다 `setPosition`
+  /// 을 부르는 비용은 실제로 움직이는 마커가 있을 때만 낸다.
+  final FrameTicker _frameTicker = FrameTicker();
+
   @override
   void initState() {
     super.initState();
@@ -75,6 +85,10 @@ class _NaverMapAdapterState extends State<NaverMapAdapter> {
 
   @override
   void dispose() {
+    // ⚠ 반드시 멈춘다 — 안 멈추면 화면을 벗어난 뒤에도 프레임마다
+    // `setPosition` 을 계속 부르는 누수가 된다(`test/core/map/
+    // frame_ticker_test.dart` 가 이 규칙을 고정한다).
+    _frameTicker.stop();
     unawaited(_authFailedSub?.cancel());
     super.dispose();
   }
@@ -115,6 +129,13 @@ class _NaverMapAdapterState extends State<NaverMapAdapter> {
 
   /// 마커 목록을 이전 상태와 비교해 추가·갱신·삭제만 반영한다 — 매번
   /// `clearOverlays` 로 통째로 다시 그리면 깜빡임이 생긴다.
+  ///
+  /// **보간은 여기서 즉시 좌표를 대입하지 않는다** — 새 목표 좌표를
+  /// `MarkerMotionController` 에 알리기만 하고, 실제 `setPosition` 은
+  /// `_onFrameTick` 이 프레임마다 그 컨트롤러가 계산한 중간 지점으로
+  /// 부른다(`COMMON-B2.md §2`: "프레임 타이머로 직접 계산해 position 에
+  /// 반복 대입한다" — 카메라 애니메이션이 아니라 마커를 직접 옮기는
+  /// 것이므로 SDK 위젯 트리 갱신이 아니라 여기서 처리한다).
   Future<void> _syncMarkers(NaverMapController controller) async {
     final incoming = {for (final m in widget.markers) m.id: m};
 
@@ -123,32 +144,66 @@ class _NaverMapAdapterState extends State<NaverMapAdapter> {
         .toList();
     for (final id in toRemove) {
       final marker = _markersById.remove(id);
+      _motionById.remove(id);
       if (marker != null) {
         await controller.deleteOverlay(marker.info);
       }
     }
 
+    final now = DateTime.now();
     final toAdd = <NMarker>{};
     for (final entry in incoming.entries) {
       final existing = _markersById[entry.key];
-      final target = NLatLng(entry.value.lat, entry.value.lng);
+      final target = (lat: entry.value.lat, lng: entry.value.lng);
+      _motionById
+          .putIfAbsent(entry.key, MarkerMotionController.new)
+          .onCoordinateReceived(target, now);
+
       if (existing == null) {
         // 아이콘 이미지·색상 커스터마이즈는 이번 라운드 범위 밖이다(성능·
         // 표현 튜닝은 2단계) — 종류 구분은 캡션 텍스트로만 한다.
+        // 첫 좌표는 `motion.onCoordinateReceived` 가 보간 없이 그 자리에
+        // 바로 두므로(위 클래스 문서), 여기서도 target 을 그대로 쓴다.
         final marker = NMarker(
           id: entry.key,
-          position: target,
+          position: NLatLng(target.lat, target.lng),
           caption: NOverlayCaption(text: _captionFor(entry.value.kind)),
         );
         _markersById[entry.key] = marker;
         toAdd.add(marker);
-      } else {
-        existing.setPosition(target);
       }
+      // existing != null 인 경우는 `_onFrameTick` 이 보간해 가며 옮긴다 —
+      // 여기서 `setPosition` 을 바로 부르면 이어붙이기 없이 순간이동한다.
     }
     if (toAdd.isNotEmpty) {
       await controller.addOverlayAll(toAdd);
     }
+
+    _syncFrameTicker(now);
+  }
+
+  /// 보간 중인 마커가 하나라도 있으면 타이머를 돌리고, 없으면 멈춘다.
+  void _syncFrameTicker(DateTime now) {
+    final anyAnimating = _motionById.values.any((m) => m.isAnimating(now));
+    if (anyAnimating) {
+      if (!_frameTicker.isRunning) {
+        _frameTicker.start(_onFrameTick);
+      }
+    } else {
+      _frameTicker.stop();
+    }
+  }
+
+  void _onFrameTick() {
+    final now = DateTime.now();
+    for (final entry in _motionById.entries) {
+      final marker = _markersById[entry.key];
+      final position = entry.value.currentPositionAt(now);
+      if (marker != null && position != null) {
+        marker.setPosition(NLatLng(position.lat, position.lng));
+      }
+    }
+    _syncFrameTicker(now);
   }
 
   String _captionFor(MapMarkerKind kind) => switch (kind) {

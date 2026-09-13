@@ -177,29 +177,7 @@ class _LiveMapBody extends ConsumerWidget {
             child: AlertBanner(tone: AlertTone.missed, body: '재연결 시도 중입니다'),
           ),
         if (state.position != null)
-          Padding(
-            padding: const EdgeInsets.only(bottom: BaraedaSpacing.space4),
-            child: SizedBox(
-              height: 240,
-              child: MapSurface(
-                camera: MapCamera(
-                  lat: state.position!.lat,
-                  lng: state.position!.lng,
-                ),
-                markers: [
-                  MapMarker(
-                    id: 'bus-$studentId',
-                    lat: state.position!.lat,
-                    lng: state.position!.lng,
-                    kind: MapMarkerKind.bus,
-                  ),
-                ],
-                onAuthFailed: (exception) => debugPrint(
-                  '네이버 지도 인증 실패: $exception',
-                ),
-              ),
-            ),
-          )
+          _BusMapSection(studentId: studentId, position: state.position!)
         else if (!state.hasNoData)
           // 좌표는 아직 없지만(`run_started` 만 온 상태 등) "데이터 없음"도
           // 아닌 좁은 경우 — 지도 자리 대신 짧은 안내만 둔다(위 클래스
@@ -227,6 +205,74 @@ class _LiveMapBody extends ConsumerWidget {
             detail: '자동 하차 처리 ${state.runEnded!.autoAlightedCount}명',
           ),
       ],
+    );
+  }
+}
+
+/// 버스 마커 지도 한 칸 — 목표 7(F4-B 2단계): SDK 인증 실패를 화면에
+/// 직접 보여준다.
+///
+/// **판단 근거 — `debugPrint` 만으로 두지 않는 이유** (1단계 이월):
+/// `debugPrint` 는 개발자만 본다. 사용자가 왜 지도가 안 뜨는지 알 방법이
+/// 없어 "빈 화면" 결함처럼 보인다.
+///
+/// **판단 근거 — 원인(도메인 불일치 vs 키 만료)을 가르지 않고 뭉뚱그린
+/// 문구 하나로 두는 이유**: `NaverMapInit.onAuthFailed` 가 넘기는
+/// 예외는 SDK 가 던지는 원본 그대로이고(팀 공통 규칙 — 오류 분류는
+/// 호출부 몫), 실제로 원인별로 다른 문구를 보여줄 만큼 안정적으로
+/// 가를 수 있는 필드가 없다(§8.3 실측). 가를 수 없는 것을 가르는 척
+/// 하면 오히려 오진을 보여주게 되므로, 이 화면은 "지도를 불러오지
+/// 못했습니다" 한 줄만 보여주고 원인 구분은 로그(`debugPrint`)에만
+/// 남긴다.
+///
+/// **판단 근거 — 상태를 `LiveMapNotifier`/`LiveMapState` 에 넣지 않고
+/// 이 위젯 로컬 상태로 둔 이유**: 지도 SDK 인증 실패는 WebSocket 연결
+/// 상태와 원인이 다른 별개 채널이다. 그 둘을 한 상태 클래스에 합치면
+/// "연결 끊김"과 "지도 인증 실패"가 같은 `copyWith` 경합에 얽혀 순서
+/// 버그를 만들기 쉽다 — 화면에 한 번 그려지고 나면 다시 사라질 일이
+/// 없는 상태라 `StatefulWidget` 로 충분하다.
+class _BusMapSection extends StatefulWidget {
+  const _BusMapSection({required this.studentId, required this.position});
+
+  final String studentId;
+  final WsPositionPayload position;
+
+  @override
+  State<_BusMapSection> createState() => _BusMapSectionState();
+}
+
+class _BusMapSectionState extends State<_BusMapSection> {
+  bool _authFailed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    if (_authFailed) {
+      return const Padding(
+        padding: EdgeInsets.only(bottom: BaraedaSpacing.space4),
+        child: AlertBanner(tone: AlertTone.missed, body: '지도를 불러오지 못했습니다'),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: BaraedaSpacing.space4),
+      child: SizedBox(
+        height: 240,
+        child: MapSurface(
+          camera: MapCamera(lat: widget.position.lat, lng: widget.position.lng),
+          markers: [
+            MapMarker(
+              id: 'bus-${widget.studentId}',
+              lat: widget.position.lat,
+              lng: widget.position.lng,
+              kind: MapMarkerKind.bus,
+            ),
+          ],
+          onAuthFailed: (exception) {
+            debugPrint('네이버 지도 인증 실패: $exception');
+            if (mounted) setState(() => _authFailed = true);
+          },
+        ),
+      ),
     );
   }
 }
