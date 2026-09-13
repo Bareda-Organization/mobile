@@ -53,6 +53,9 @@ dev_dependencies:
   freezed: ^4.0.0-dev.3
   json_serializable: ^6.14.1
   plugin_platform_interface: ^2.1.8
+  # `Override` 시험 전용 참조 — `flutter_riverpod.dart` 배럴이 재노출하지
+  # 않아 `riverpod/misc.dart` 를 직접 쓴다(live_map_screen_test.dart).
+  riverpod: ^3.4.3
   riverpod_generator: ^4.0.9
   very_good_analysis: ^10.3.0
 

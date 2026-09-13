@@ -57,6 +57,27 @@ final apiClientProvider = Provider<ApiClient>((ref) {
   return client;
 });
 
+/// F4-A 2단계 — `/ws/location` STOMP 연결. `apiClientProvider` 와 달리
+/// **앱 전역에 하나만** 둔다(autoDispose 아님) — 화면을 오갈 때마다
+/// 재연결 핸드셰이크를 반복하지 않기 위함이다. 구독 자체는 화면 쪽
+/// (`live_map_providers.dart`)이 필요할 때만 걸고 dispose 시 반드시
+/// 해지하므로, 이 provider 는 연결 수명만 책임진다.
+///
+/// URL 은 `ApiConstants.baseUrl`(REST) 을 스킴만 `ws` 로 바꿔 유도한다 —
+/// `baraeda_websocket_client_connect_test.dart` 와 같은 변환 규칙이다.
+/// 리터럴 포트를 박지 않는 이유도 같다 — 인자를 빠뜨리면 기본값인
+/// `localhost:8080` 으로 조용히 흘러 들어간다.
+final webSocketClientProvider = Provider<BaraedaWebSocketClient>((ref) {
+  final uri = Uri.parse(ApiConstants.baseUrl);
+  final wsUrl = uri.replace(scheme: 'ws', path: '/ws/location').toString();
+  final client = BaraedaWebSocketClient(
+    url: wsUrl,
+    tokenStorage: ref.watch(tokenStorageProvider),
+  );
+  ref.onDispose(client.dispose);
+  return client;
+});
+
 /// API_SPEC §2 인증 엔드포인트 — `ApiClient.dio`(인터셉터 부착)를 그대로
 /// 물려받는다. `AuthApi` 자체는 `baraeda_core` 소유라 두 앱이 이 provider 만
 /// 각자 만든다.
