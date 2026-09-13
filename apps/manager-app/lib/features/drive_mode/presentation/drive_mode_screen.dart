@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:manager_app/app/app_routes.dart';
 import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/auth/auth_providers.dart';
+import 'package:manager_app/core/constants/position_constants.dart';
 import 'package:manager_app/core/network/failure_messages.dart';
 import 'package:manager_app/core/run/manager_channel_banner.dart';
 import 'package:manager_app/core/run/run_enums.dart';
@@ -57,7 +58,7 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
     final wantTimer = shouldTransmit && runId != null;
     if (wantTimer && _positionTimer == null) {
       _positionTimer = Timer.periodic(
-        const Duration(seconds: 8),
+        PositionConstants.transmissionInterval,
         (_) => unawaited(_sendPositionTick(runId)),
       );
     } else if (!wantTimer && _positionTimer != null) {
