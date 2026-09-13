@@ -1,6 +1,7 @@
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart' show StateProvider;
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:manager_app/app/di.dart';
@@ -130,15 +131,34 @@ void main() {
       final repository = _RecordingPositionRepository();
       const interval = PositionConstants.transmissionInterval;
 
+      // 이 시험은 dispose() 가 아니라 "이동 중 → 그 외 상태" 전이에서
+      // 타이머가 멎는 별도 정지 경로(_syncPositionTransmission 의
+      // else 분기)를 본다. 그 경로를 시험 도중에 직접 밟으려면 회차
+      // 값을 실행 중에 바꿀 수 있어야 해서, 고정 오버라이드 대신
+      // StateProvider 로 감싼 컨테이너를 쓴다 — 그래야 이 시험이
+      // "dispose 시 정지" 시험(아래)과 서로 다른 경로를 검증하게 되어,
+      // dispose() 의 정지 호출만 지웠을 때 이 시험까지 함께 실패하지
+      // 않는다(끝나기 전에 스스로 타이머를 정지시켜 두기 때문).
+      final runState = StateProvider<ManagerRun?>(
+        (ref) => _managerRun(runStatus: RunStatus.moving, now: now),
+      );
+      final container = ProviderContainer(
+        overrides: [
+          clockProvider.overrideWithValue(_FixedClock(now)),
+          currentUserRoleProvider.overrideWith((ref) => UserRole.driver),
+          selectedRunIdProvider.overrideWith((ref) => runId),
+          driveModeRunProvider.overrideWith((ref) => ref.watch(runState)),
+          driveModeRosterProvider.overrideWith((ref) async => _emptyRoster),
+          positionSourceProvider.overrideWithValue(source),
+          positionRepositoryProvider.overrideWithValue(repository),
+        ],
+      );
+      addTearDown(container.dispose);
+
       await tester.pumpWidget(
-        _wrap(
-          const DriveModeScreen(),
-          baseOverrides(
-            role: UserRole.driver,
-            runStatus: RunStatus.moving,
-            positionSource: source,
-            positionRepository: repository,
-          ),
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(home: DriveModeScreen()),
         ),
       );
       await tester.pump();
@@ -158,6 +178,17 @@ void main() {
       // 주기 타이머임을 확인 — 한 주기를 더 지나면 두 번째 전송이 있다.
       await tester.pump(interval);
       expect(repository.calls, hasLength(2));
+
+      // 시험이 끝나기 전에 이동 중 상태를 벗어나 타이머를 스스로
+      // 정지시킨다 — dispose() 의 정지 호출과는 무관한 경로다.
+      container.read(runState.notifier).state = _managerRun(
+        runStatus: RunStatus.confirmed,
+        now: now,
+      );
+      await tester.pump();
+      final callsAfterStop = repository.calls.length;
+      await tester.pump(interval * 2);
+      expect(repository.calls.length, callsAfterStop);
     },
   );
 
@@ -169,6 +200,54 @@ void main() {
     expect(
       PositionConstants.transmissionInterval,
       const Duration(seconds: 2),
+    );
+  });
+
+  // F4 이월 3번 / F5 목표 10 — DriveModeScreen 이 화면에서 사라질 때
+  // (dispose) 위치 송신 타이머가 실제로 멈추는지 확인한다. 화면을 걷어낸
+  // 뒤에도 주기를 몇 번 더 흘려보내 전송 횟수가 더는 늘지 않는 것으로
+  // 판정한다 — 결함을 심어(dispose() 의 취소 호출을 지워) 이 시험만
+  // 실패하는지로 실제로 무는 것을 확인했다(원복 후 재확인 완료).
+  testWidgets('화면이 dispose 되면 위치 송신 타이머가 멈춘다', (tester) async {
+    final source = _FakePositionSource(
+      PositionSample(lat: 37.5, lng: 127, recordedAt: recordedAt),
+    );
+    final repository = _RecordingPositionRepository();
+    const interval = PositionConstants.transmissionInterval;
+
+    await tester.pumpWidget(
+      _wrap(
+        const DriveModeScreen(),
+        baseOverrides(
+          role: UserRole.driver,
+          runStatus: RunStatus.moving,
+          positionSource: source,
+          positionRepository: repository,
+        ),
+      ),
+    );
+    await tester.pump();
+
+    // 화면이 살아 있는 동안 최소 1회 전송을 확인해 둔다 — 타이머가
+    // 애초에 돌고 있었다는 것을 먼저 확보해야, 뒤이은 "0회 증가" 가
+    // "원래도 안 돌았다" 와 구별된다.
+    await tester.pump(interval);
+    expect(repository.calls, hasLength(1));
+
+    // 화면을 완전히 다른 위젯으로 교체 — DriveModeScreen 의
+    // State.dispose() 가 호출된다.
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+
+    final callsAtDispose = repository.calls.length;
+
+    // dispose 이후 여러 주기를 흘려보내도 더는 전송이 늘지 않아야 한다.
+    await tester.pump(interval * 3);
+    expect(
+      repository.calls.length,
+      callsAtDispose,
+      reason: 'dispose() 가 위치 송신 타이머를 멈추지 않으면 화면이 사라진 '
+          '뒤에도 전송이 계속 늘어난다',
     );
   });
 
