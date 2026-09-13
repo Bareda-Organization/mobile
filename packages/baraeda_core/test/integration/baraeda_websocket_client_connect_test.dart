@@ -1,3 +1,6 @@
+@Tags(['real_backend'])
+library;
+
 import 'package:baraeda_core/auth/auth_api.dart';
 import 'package:baraeda_core/network/api_client.dart';
 import 'package:baraeda_core/storage/token_storage.dart';
@@ -9,6 +12,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage_platform_interface/flutter_secure_storage_platform_interface.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
+import '../support/real_backend_target.dart';
 
 // `test/integration/real_backend_auth_test.dart` 와 같은 구조의 가짜 —
 // 이 시험도 실 시크릿 스토리지 플러그인 없이 도는 실 백엔드 계약 시험이다.
@@ -69,10 +73,7 @@ class _FakeSecureStoragePlatform
 /// (`real_backend_auth_test.dart` 와 같은 근거 — 리터럴 포트를 박으면
 /// 격리 포트(8140)를 줘도 이 파일이 무시한다).
 void main() {
-  const apiBaseUrl = String.fromEnvironment(
-    'API_BASE_URL',
-    defaultValue: 'http://localhost:8080/api/v1',
-  );
+  final apiBaseUrl = requireRealBackendBaseUrl();
   // `/api/v1` 접미사를 떼고 스킴을 ws 로 바꾼 뒤 `/ws/location` 을 붙인다.
   final wsUrl = (() {
     final uri = Uri.parse(apiBaseUrl);

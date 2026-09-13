@@ -1,3 +1,6 @@
+@Tags(['real_backend'])
+library;
+
 import 'dart:async';
 
 import 'package:baraeda_core/auth/auth_api.dart';
@@ -9,6 +12,7 @@ import 'package:flutter_secure_storage_platform_interface/flutter_secure_storage
 import 'package:flutter_test/flutter_test.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:web_socket/web_socket.dart';
+import '../support/real_backend_target.dart';
 
 // `test/integration/real_backend_auth_test.dart` 와 같은 가짜.
 class _FakeSecureStoragePlatform
@@ -70,10 +74,7 @@ class _FakeSecureStoragePlatform
 /// `package:web_socket` 으로 직접 CONNECT + SUBSCRIBE 텍스트 프레임을
 /// 만들어 보내야 한다.
 void main() {
-  const apiBaseUrl = String.fromEnvironment(
-    'API_BASE_URL',
-    defaultValue: 'http://localhost:8080/api/v1',
-  );
+  final apiBaseUrl = requireRealBackendBaseUrl();
   final wsUri = (() {
     final uri = Uri.parse(apiBaseUrl);
     return uri.replace(scheme: 'ws', path: '/ws/location');

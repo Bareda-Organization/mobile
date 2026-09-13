@@ -1,9 +1,12 @@
+@Tags(['real_backend'])
+library;
+
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage_platform_interface/flutter_secure_storage_platform_interface.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:parent_app/core/constants/api_constants.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
+import '../support/real_backend_target.dart';
 
 // 실제 시크릿 스토리지 없이 값만 메모리에 담아 두는 가짜 구현
 // (`real_backend_p1_test.dart` 와 같은 구조).
@@ -70,7 +73,7 @@ class _FakeSecureStoragePlatform
 void main() {
   // ⚠ 리터럴 포트를 박지 않는다 — `ApiConstants.baseUrl` 하나만 쓴다
   // (`real_backend_p1_test.dart` 와 같은 근거, f766c27).
-  const baseUrl = ApiConstants.baseUrl;
+  final baseUrl = requireRealBackendBaseUrl();
   final wsUrl = (() {
     final uri = Uri.parse(baseUrl);
     return uri.replace(scheme: 'ws', path: '/ws/location').toString();

@@ -1,12 +1,15 @@
+@Tags(['real_backend'])
+library;
+
 import 'dart:io';
 
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage_platform_interface/flutter_secure_storage_platform_interface.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:manager_app/core/constants/api_constants.dart';
 import 'package:manager_app/core/run/manager_run_channel.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
+import '../support/real_backend_target.dart';
 
 // `real_backend_run_flow_test.dart`(F4-A, manager-app) 와 같은 구조 — 진짜
 // 소켓 스토리지 대신 메모리에만 담는다.
@@ -75,7 +78,7 @@ class _FakeSecureStoragePlatform
 /// 것과 구별되지 않으므로, 배치되지 않은 회차로 거부되는 부정 확인을
 /// 각 역할마다 반드시 짝지어 둔다.
 void main() {
-  const baseUrl = ApiConstants.baseUrl;
+  final baseUrl = requireRealBackendBaseUrl();
   final wsUrl = wsUrlFromApiBaseUrl(baseUrl);
 
   late bool backendReachable;

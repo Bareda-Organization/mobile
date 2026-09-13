@@ -1,3 +1,6 @@
+@Tags(['real_backend'])
+library;
+
 import 'dart:io';
 
 import 'package:baraeda_core/baraeda_core.dart';
@@ -6,11 +9,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:manager_app/app/app.dart';
 import 'package:manager_app/app/di.dart';
-import 'package:manager_app/core/constants/api_constants.dart';
 import 'package:manager_app/features/auth/presentation/login_screen.dart';
 import 'package:manager_app/features/home/presentation/home_screen.dart';
 
 import '../support/fake_token_storage.dart';
+import '../support/real_backend_target.dart';
 
 /// `localhost:8080` 을 실제로 때리는 계약 시험 — F2 목표 표 5항(재실행 시
 /// 자동 로그인). `flutter test` 가 도는 동안 로컬 백엔드가 떠 있어야 하고,
@@ -29,7 +32,7 @@ void main() {
   // 값을 박아 두면 로그인 토큰을 발급받은 서버와 앱이 실제로 붙는 서버가
   // 갈려, `--dart-define` 으로 다른 포트(예: 8083)를 줬을 때 A 서버가 발급한
   // 토큰을 B 서버에 들고 가는 셈이 되어 항상 실패한다(원인 확정 — gate-m1.md).
-  const baseUrl = ApiConstants.baseUrl;
+  final baseUrl = requireRealBackendBaseUrl();
   late bool backendReachable;
 
   setUpAll(() async {

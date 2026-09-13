@@ -1,0 +1,6 @@
+# 시험 태그 선언 — 선언이 없으면 `--exclude-tags` 가 아무것도 거르지 않는 빈 플래그가 된다
+# (2026-09-13 실측: 좌석이 "실서버 시험을 제외했다" 고 믿었는데 전부 돌아 시드 DB 를 오염시켰다).
+tags:
+  real_backend:
+    # 실제 백엔드에 접속하는 계약 시험. `--dart-define=API_BASE_URL` 이 필수이며
+    # 없으면 `requireRealBackendBaseUrl()` 이 던진다(test/support/real_backend_target.dart).

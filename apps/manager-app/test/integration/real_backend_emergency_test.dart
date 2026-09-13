@@ -1,14 +1,17 @@
+@Tags(['real_backend'])
+library;
+
 import 'dart:io';
 
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage_platform_interface/flutter_secure_storage_platform_interface.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:manager_app/core/constants/api_constants.dart';
 import 'package:manager_app/features/emergency/data/emergency_api.dart';
 import 'package:manager_app/features/emergency/data/models/emergency_raise_request.dart';
 import 'package:manager_app/features/emergency/data/models/emergency_type.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
+import '../support/real_backend_target.dart';
 
 // `real_backend_run_flow_test.dart` 와 같은 대역 — 진짜 소켓 스토리지 대신
 // 메모리에만 담는다.
@@ -82,7 +85,7 @@ class _FakeSecureStoragePlatform
 /// `assertAssignedDriverOrEscort` 를 통과한다(`EmergencyCommandService` —
 /// 발신은 회차 상태를 가리지 않는다).
 void main() {
-  const baseUrl = ApiConstants.baseUrl;
+  final baseUrl = requireRealBackendBaseUrl();
   late bool backendReachable;
 
   setUpAll(() async {

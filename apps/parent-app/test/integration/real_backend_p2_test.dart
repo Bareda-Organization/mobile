@@ -1,11 +1,14 @@
+@Tags(['real_backend'])
+library;
+
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage_platform_interface/flutter_secure_storage_platform_interface.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:parent_app/core/constants/api_constants.dart';
 import 'package:parent_app/features/settings/data/notification_settings_api.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:uuid/uuid.dart';
+import '../support/real_backend_target.dart';
 
 // 실제 시크릿 스토리지 없이 값만 메모리에 담아 두는 가짜 구현
 // (`real_backend_p1_test.dart` 와 같은 구조).
@@ -84,7 +87,7 @@ void main() {
   // 두면 `--dart-define` 으로 다른 포트를 줘도 이 파일이 그 값을 무시해
   // 항상 건너뛰거나 엉뚱한 서버를 때린다(`auto_login_test.dart` 와 같은
   // 근거, f766c27).
-  const baseUrl = ApiConstants.baseUrl;
+  final baseUrl = requireRealBackendBaseUrl();
   late bool backendReachable;
 
   setUpAll(() async {

@@ -1,14 +1,17 @@
+@Tags(['real_backend'])
+library;
+
 import 'dart:io';
 
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage_platform_interface/flutter_secure_storage_platform_interface.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:manager_app/core/constants/api_constants.dart';
 import 'package:manager_app/features/delay/data/delay_api.dart';
 import 'package:manager_app/features/delay/data/delay_repository_impl.dart';
 import 'package:manager_app/features/delay/data/models/delay_request.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
+import '../support/real_backend_target.dart';
 
 // `real_backend_auth_test.dart`(F2, baraeda_core) 와 같은 구조 — 진짜
 // 소켓 스토리지 대신 메모리에만 담는다.
@@ -85,7 +88,7 @@ class _FakeSecureStoragePlatform
 /// 않았다)는 실제 프로덕션 코드(`DelayApi`+`DelayRepositoryImpl`+
 /// `guardDio`)로 끝까지 호출한다.
 void main() {
-  const baseUrl = ApiConstants.baseUrl;
+  final baseUrl = requireRealBackendBaseUrl();
   late bool backendReachable;
 
   setUpAll(() async {

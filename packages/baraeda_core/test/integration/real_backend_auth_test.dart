@@ -1,3 +1,6 @@
+@Tags(['real_backend'])
+library;
+
 import 'package:baraeda_core/auth/account_status.dart';
 import 'package:baraeda_core/auth/auth_api.dart';
 import 'package:baraeda_core/error/failure.dart';
@@ -8,6 +11,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage_platform_interface/flutter_secure_storage_platform_interface.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
+import '../support/real_backend_target.dart';
 
 // 실제 시크릿 스토리지 없이 값만 메모리에 담아 두는 가짜 구현
 // (`api_client_auth_test.dart`·`token_storage_test.dart` 와 같은 구조).
@@ -83,10 +87,7 @@ void main() {
   // 앱과 같은 규약(`--dart-define=API_BASE_URL`, 기본값 8080)을 직접
   // 읽는다 — 리터럴을 박아 두면 다른 포트를 줘도 이 파일이 무시한다
   // (`parent_app/test/integration/auto_login_test.dart` 와 같은 근거).
-  const baseUrl = String.fromEnvironment(
-    'API_BASE_URL',
-    defaultValue: 'http://localhost:8080/api/v1',
-  );
+  final baseUrl = requireRealBackendBaseUrl();
   late bool backendReachable;
 
   setUpAll(() async {
