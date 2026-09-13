@@ -349,6 +349,36 @@ void main() {
     expect(find.text('확인 대기 중'), findsNWidgets(2));
   });
 
+  testWidgets('확인자 이름이 빈 문자열이면 이름 없는 문구 대신 확인됨을 보여준다', (tester) async {
+    // acked_by_name 이 빈 문자열('')로 오면 null 과 똑같이 "확인됨" 으로
+    // 보여야 한다 — `byName == null` 만 검사하면 이 갈래를 통과해
+    // " 님이 확인함"(앞에 빈 칸, 이름 없음)이라는 깨진 문구가 그대로
+    // 노출된다. `_statusLabelOf` 는 `byName == null || byName.isEmpty`
+    // 로 두 경우를 함께 처리한다.
+    final fakeRepo = _FakeEmergencyRepository(
+      list: EmergencyListResponse(
+        items: [
+          EmergencyItem(
+            emergencyId: 'e1',
+            type: EmergencyType.accident,
+            raisedAt: raisedAt,
+            cancelableUntil: raisedAt.add(const Duration(minutes: 1)),
+            acked: true,
+            ackedByName: '',
+          ),
+        ],
+      ),
+    );
+
+    await tester.pumpWidget(
+      _wrap(const EmergencyScreen(), overridesFor(fakeRepo: fakeRepo)),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('확인됨'), findsOneWidget);
+    expect(find.text(' 님이 확인함'), findsNothing);
+  });
+
   testWidgets('취소가 창 종료(409)로 실패하면 실패 사유를 보여준다', (tester) async {
     final fakeRepo = _FakeEmergencyRepository(
       cancelFailure: const ApiFailure(

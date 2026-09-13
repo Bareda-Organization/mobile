@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
@@ -19,6 +21,7 @@ import 'package:manager_app/features/roster/data/models/revert_result.dart';
 import 'package:manager_app/features/roster/data/models/rider_update_result.dart';
 import 'package:manager_app/features/roster/data/models/roster_response.dart';
 import 'package:manager_app/features/roster/domain/roster_repository.dart';
+import 'package:manager_app/features/roster/presentation/roster_providers.dart';
 import 'package:manager_app/features/roster/presentation/roster_screen.dart';
 
 /// 테스트 전용 대역 — §4.11 ack-changes 호출 여부·인자만 기록하고, §4.7
@@ -103,6 +106,25 @@ class _FakeRosterRepository implements RosterRepository {
     required String riderId,
     required NoShowContactRequest request,
   }) => throw UnimplementedError('이 파일의 시험 대상이 아니다');
+}
+
+/// 목표 9 검사용 대역 — `managerRunChannelProvider` 는 구체 클래스
+/// `ManagerRunChannelController` 로 타입이 고정돼 있어(`overrideWith` 가
+/// 정확히 그 타입만 받는다) 그 컨트롤러 자체를 가짜로 바꿔치기할 수
+/// 없다(리버팟 3.4.3 `$FunctionalFamilyOverride` — 생성자가 여는 실제
+/// WebSocket 연결도 그대로 남는다). 대신 그 생성자가 유일하게 주입받는
+/// `TokenStorage.readAccessToken()` 을 영원히 끝나지 않는 대기로 만들어,
+/// `_doConnect()` 의 `await` 지점에서 실행이 멈추게 한다 — `StompClient`
+/// 생성·소켓 연결·재연결 타이머가 전부 그 이후 코드라 하나도 실행되지
+/// 않는다. 결과는 `ManagerChannelStatus.connecting`(생성자가 그 값으로
+/// 시작한다)이 고정되고, 실제 컨트롤러 코드를 그대로 쓰면서도 부수효과가
+/// 없는 결정적 시험 상태를 얻는다.
+class _NeverResolvingTokenStorage extends TokenStorage {
+  _NeverResolvingTokenStorage()
+    : super(accessTokenKey: 'test_access_token', refreshTokenKey: 'test_refresh_token');
+
+  @override
+  Future<String?> readAccessToken() => Completer<String?>().future;
 }
 
 Widget _wrap(Widget child, List<Override> overrides) {
@@ -409,5 +431,79 @@ void main() {
 
     expect(find.text('처리되지 않았습니다 · 대기 중'), findsNothing);
     expect(find.textContaining('운행 중'), findsWidgets);
+  });
+
+  group('목표 9 — 연결 배너가 명단 상태와 무관하게 뜬다', () {
+    // 실제 ManagerRunChannelController 를 그대로 쓰고 tokenStorageProvider
+    // 만 영원히 응답하지 않는 대역으로 바꿔 connecting 상태에 고정한다 —
+    // 클래스 주석 참고. 어느 상태로 고정하든 "배너가 rosterAsync.when()
+    // 분기 바깥에 있다"는 구조를 확인하는 데는 같다.
+    List<Override> overridesWithBanner(List<Override> base) => [
+      ...base,
+      tokenStorageProvider.overrideWithValue(_NeverResolvingTokenStorage()),
+    ];
+
+    testWidgets('명단이 로딩 중이어도 배너가 뜬다', (tester) async {
+      final neverCompletes = Completer<RosterResponse>().future;
+      await tester.pumpWidget(
+        _wrap(
+          const RosterScreen(),
+          overridesWithBanner([
+            selectedRunIdProvider.overrideWith((ref) => runId),
+            rosterProvider.overrideWith((ref) => neverCompletes),
+            todayRunsProvider.overrideWith(
+              (ref) async => [_managerRun(ackRequired: false)],
+            ),
+          ]),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.text('실시간 연결 중'), findsOneWidget);
+    });
+
+    testWidgets('명단에 데이터가 있어도 배너가 뜬다', (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          const RosterScreen(),
+          overridesWithBanner(
+            overridesFor(roster: _roster(), ackRequired: false),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('실시간 연결 중'), findsOneWidget);
+      // 데이터도 정상적으로 함께 그려진다 — 배너가 명단을 가리지 않는다.
+      expect(find.text('김바래'), findsOneWidget);
+    });
+
+    testWidgets('명단이 비어 있어도 배너가 뜬다', (tester) async {
+      final emptyRoster = RosterResponse(
+        runId: runId,
+        busNo: '3호차',
+        direction: RunDirection.toAcademy,
+        counts: const RosterCounts(
+          boarded: 0,
+          waiting: 0,
+          noShow: 0,
+          absentN: 0,
+        ),
+        stops: const [],
+      );
+
+      await tester.pumpWidget(
+        _wrap(
+          const RosterScreen(),
+          overridesWithBanner(
+            overridesFor(roster: emptyRoster, ackRequired: false),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('실시간 연결 중'), findsOneWidget);
+    });
   });
 }

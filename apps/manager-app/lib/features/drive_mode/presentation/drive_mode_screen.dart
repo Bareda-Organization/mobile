@@ -9,6 +9,7 @@ import 'package:manager_app/app/app_routes.dart';
 import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/core/network/failure_messages.dart';
+import 'package:manager_app/core/run/manager_channel_banner.dart';
 import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/core/run/run_termination_provider.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
@@ -183,6 +184,10 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
             child: const Text('지도 자리 — 연동은 다음 라운드'),
           ),
           const SizedBox(height: 16),
+          // rosterAsync.when(...) 의 모든 분기 바깥 — "명단 없음"(정상)과
+          // "연결 끊김"(비정상)을 구별해야 한다(목표 9, ManagerChannelBanner
+          // 문서 참고).
+          ManagerChannelBanner(runId: runId),
           if (_errorMessage != null) ...[
             AlertBanner(tone: AlertTone.missed, body: _errorMessage),
             const SizedBox(height: 12),

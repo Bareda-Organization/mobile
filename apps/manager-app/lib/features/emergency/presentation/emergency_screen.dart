@@ -23,9 +23,15 @@ import 'package:manager_app/features/offline_queue/domain/send_outcome.dart';
 /// 판단한다 — 클라이언트가 `발신 시각 + 1분` 을 계산하면 단말·서버 시계가
 /// 어긋났을 때(clock skew) 실제와 다른 창을 보여준다.
 ///
-/// 실시간 확인 반영(WS `emergency_acked`)은 F4 범위라 이 화면은 목록 조회
-/// (진입 시 + 수동 새로고침)로만 `acked` 상태를 갱신한다 — WebSocket
-/// 클라이언트를 두지 않는다(지시서 범위 제한).
+/// 실시간 확인 반영(WS `emergency_acked`, Ruling 277)은 F4 로 구현됐지만
+/// 이 화면이 직접 구독하지는 않는다 — `AppRoutes.emergency` 는 라우트
+/// 등록만 있고 앱 안에서 이동해 들어오는 호출부가 없는 죽은 라우트라
+/// (`router.dart` 확인), 이 화면이 떠 있는 채로 방송을 기다릴 상황
+/// 자체가 없다. 대신 `ManagerRunChannelController`(DriveMode·StopRoster
+/// 가 호스팅)가 `emergency_acked` 를 받을 때마다 `emergencyListProvider`
+/// 를 무효화해 두므로, 이 화면에 다시 들어오면(재진입 시 재조회) 이미
+/// 최신 `acked` 상태를 본다 — 별도 WebSocket 클라이언트를 이 화면에
+/// 두지 않는다(보고서 §1).
 class EmergencyScreen extends ConsumerStatefulWidget {
   const EmergencyScreen({super.key});
 
@@ -311,7 +317,9 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
     if (canceled) return '취소됨';
     if (item.acked) {
       final byName = item.ackedByName;
-      return byName == null ? '확인됨' : '$byName 님이 확인함';
+      return (byName == null || byName.isEmpty)
+          ? '확인됨'
+          : '$byName 님이 확인함';
     }
     return '확인 대기 중';
   }
