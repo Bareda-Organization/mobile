@@ -1,3 +1,4 @@
+import 'package:parent_app/core/common/json_id.dart';
 import 'package:parent_app/core/runs/domain/student_run.dart';
 
 /// `PATCH /students/{id}/runs/{runId}/intent` 응답 (API_SPEC §3.6).
@@ -40,7 +41,9 @@ class RunIntentResult {
         ),
         riding: json['riding'] as bool,
         riderStatus: RiderStatus.fromWireValue(json['rider_status'] as String),
-        changeRequestId: json['change_request_id'] as String?,
+        changeRequestId: json['change_request_id'] == null
+            ? null
+            : asIdString(json['change_request_id']),
         changeQuotaLeft: json['change_quota_left'] as int,
         deadlineAt: json['deadline_at'] == null
             ? null
