@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -20,6 +22,20 @@ class _FixedClock implements Clock {
 
   @override
   DateTime now() => _now;
+}
+
+/// 목표 9 검사용 대역 — `managerRunChannelProvider` 는 구체 클래스
+/// `ManagerRunChannelController` 로 타입이 고정돼 있어 그 컨트롤러 자체를
+/// 가짜로 바꿔치기할 수 없다(`roster_screen_test.dart`의 같은 이름 대역과
+/// 동일한 이유). 대신 그 생성자가 유일하게 주입받는
+/// `TokenStorage.readAccessToken()` 을 영원히 끝나지 않는 대기로 만들어
+/// 실제 컨트롤러를 `ManagerChannelStatus.connecting` 에 고정시킨다.
+class _NeverResolvingTokenStorage extends TokenStorage {
+  _NeverResolvingTokenStorage()
+    : super(accessTokenKey: 'test_access_token', refreshTokenKey: 'test_refresh_token');
+
+  @override
+  Future<String?> readAccessToken() => Completer<String?>().future;
 }
 
 Widget _wrap(Widget child, List<Override> overrides) {
@@ -109,5 +125,86 @@ void main() {
 
     expect(find.text('운행 시작'), findsNothing);
     expect(find.text('운행 시작 가능 시간(출발 ±10분)이 아닙니다'), findsOneWidget);
+  });
+
+  group('목표 9 — 연결 배너가 명단 상태와 무관하게 뜬다', () {
+    const bannerTitle = '실시간 연결 중';
+
+    testWidgets('명단이 로딩 중이어도 배너가 뜬다', (tester) async {
+      final now = DateTime(2026, 9, 12, 8);
+      final completer = Completer<RosterResponse>();
+      await tester.pumpWidget(
+        _wrap(const DriveModeScreen(), [
+          clockProvider.overrideWithValue(_FixedClock(now)),
+          selectedRunIdProvider.overrideWith((ref) => runId),
+          driveModeRunProvider.overrideWithValue(
+            _managerRun(
+              startWindowFrom: now.subtract(const Duration(minutes: 5)),
+              startWindowTo: now.add(const Duration(minutes: 5)),
+            ),
+          ),
+          driveModeRosterProvider.overrideWith((ref) => completer.future),
+          tokenStorageProvider.overrideWithValue(
+            _NeverResolvingTokenStorage(),
+          ),
+        ]),
+      );
+      await tester.pump();
+
+      expect(find.text(bannerTitle), findsOneWidget);
+    });
+
+    testWidgets('명단에 데이터가 있어도 배너가 뜬다', (tester) async {
+      final now = DateTime(2026, 9, 12, 8);
+      await tester.pumpWidget(
+        _wrap(const DriveModeScreen(), [
+          clockProvider.overrideWithValue(_FixedClock(now)),
+          selectedRunIdProvider.overrideWith((ref) => runId),
+          driveModeRunProvider.overrideWithValue(
+            _managerRun(
+              startWindowFrom: now.subtract(const Duration(minutes: 5)),
+              startWindowTo: now.add(const Duration(minutes: 5)),
+            ),
+          ),
+          driveModeRosterProvider.overrideWith((ref) async => _emptyRoster),
+          tokenStorageProvider.overrideWithValue(
+            _NeverResolvingTokenStorage(),
+          ),
+        ]),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text(bannerTitle), findsOneWidget);
+    });
+
+    testWidgets('명단이 비어 있어도 배너가 뜬다', (tester) async {
+      final now = DateTime(2026, 9, 12, 8);
+      const empty = RosterResponse(
+        runId: 'run-1',
+        busNo: '3호차',
+        direction: RunDirection.toAcademy,
+        counts: RosterCounts(boarded: 0, waiting: 0, noShow: 0, absentN: 0),
+        stops: [],
+      );
+      await tester.pumpWidget(
+        _wrap(const DriveModeScreen(), [
+          clockProvider.overrideWithValue(_FixedClock(now)),
+          selectedRunIdProvider.overrideWith((ref) => runId),
+          driveModeRunProvider.overrideWithValue(
+            _managerRun(
+              startWindowFrom: now.subtract(const Duration(minutes: 5)),
+              startWindowTo: now.add(const Duration(minutes: 5)),
+            ),
+          ),
+          driveModeRosterProvider.overrideWith((ref) async => empty),
+          tokenStorageProvider.overrideWithValue(
+            _NeverResolvingTokenStorage(),
+          ),
+        ]),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text(bannerTitle), findsOneWidget);
+    });
   });
 }
