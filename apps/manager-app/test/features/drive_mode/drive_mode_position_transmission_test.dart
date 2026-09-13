@@ -119,44 +119,47 @@ void main() {
     positionRepositoryProvider.overrideWithValue(positionRepository),
   ];
 
-  testWidgets('기사·이동 중 상태면 PositionConstants.transmissionInterval 주기로 위치를 전송한다', (
-    tester,
-  ) async {
-    final source = _FakePositionSource(
-      PositionSample(lat: 37.5, lng: 127, recordedAt: recordedAt),
-    );
-    final repository = _RecordingPositionRepository();
-    const interval = PositionConstants.transmissionInterval;
+  testWidgets(
+    '기사·이동 중 상태면 PositionConstants.transmissionInterval 주기로 위치를 전송한다',
+    (
+      tester,
+    ) async {
+      final source = _FakePositionSource(
+        PositionSample(lat: 37.5, lng: 127, recordedAt: recordedAt),
+      );
+      final repository = _RecordingPositionRepository();
+      const interval = PositionConstants.transmissionInterval;
 
-    await tester.pumpWidget(
-      _wrap(
-        const DriveModeScreen(),
-        baseOverrides(
-          role: UserRole.driver,
-          runStatus: RunStatus.moving,
-          positionSource: source,
-          positionRepository: repository,
+      await tester.pumpWidget(
+        _wrap(
+          const DriveModeScreen(),
+          baseOverrides(
+            role: UserRole.driver,
+            runStatus: RunStatus.moving,
+            positionSource: source,
+            positionRepository: repository,
+          ),
         ),
-      ),
-    );
-    await tester.pump();
+      );
+      await tester.pump();
 
-    // 주기가 지나기 전에는 아직 전송이 없어야 "0초마다"가 아님을
-    // 함께 확인한다. 값을 상수에서 읽으므로 주기가 바뀌어도 이 시험은
-    // 그대로 유효하다 — 값 자체를 고정하는 것은 아래 별도 시험의 몫.
-    await tester.pump(interval - const Duration(milliseconds: 1));
-    expect(repository.calls, isEmpty);
+      // 주기가 지나기 전에는 아직 전송이 없어야 "0초마다"가 아님을
+      // 함께 확인한다. 값을 상수에서 읽으므로 주기가 바뀌어도 이 시험은
+      // 그대로 유효하다 — 값 자체를 고정하는 것은 아래 별도 시험의 몫.
+      await tester.pump(interval - const Duration(milliseconds: 1));
+      expect(repository.calls, isEmpty);
 
-    await tester.pump(const Duration(milliseconds: 1));
-    expect(repository.calls, hasLength(1));
-    // 서버로 나가는 recorded_at 은 전송 시각(clockProvider 의 `now`)이
-    // 아니라 위치 소스가 준 단말 측정 시각 그대로다.
-    expect(repository.calls.single.recordedAt, recordedAt);
+      await tester.pump(const Duration(milliseconds: 1));
+      expect(repository.calls, hasLength(1));
+      // 서버로 나가는 recorded_at 은 전송 시각(clockProvider 의 `now`)이
+      // 아니라 위치 소스가 준 단말 측정 시각 그대로다.
+      expect(repository.calls.single.recordedAt, recordedAt);
 
-    // 주기 타이머임을 확인 — 한 주기를 더 지나면 두 번째 전송이 있다.
-    await tester.pump(interval);
-    expect(repository.calls, hasLength(2));
-  });
+      // 주기 타이머임을 확인 — 한 주기를 더 지나면 두 번째 전송이 있다.
+      await tester.pump(interval);
+      expect(repository.calls, hasLength(2));
+    },
+  );
 
   test('위치 전송 주기 상수는 2초로 고정한다 (2026-09-14 사용자 결정)', () {
     // ⚠ 값 자체를 하드코딩해 대조한다 — 위 위젯 시험처럼 상수를 그대로
