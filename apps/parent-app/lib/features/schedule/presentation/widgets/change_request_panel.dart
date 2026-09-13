@@ -4,8 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:parent_app/app/di.dart';
 import 'package:parent_app/core/change_requests/domain/change_request.dart';
+import 'package:parent_app/core/runs/domain/student_run.dart';
 import 'package:parent_app/core/runs/presentation/run_providers.dart';
 import 'package:parent_app/features/schedule/presentation/schedule_providers.dart';
+
+/// 회차 선택 목록에 쓰는 표시 문구 — `방향 · 버스번호번`. 위젯 시험이
+/// 이 문구를 직접 적어 두면 라벨 문구(`RunDirection.label`)가 바뀔 때
+/// 무관한 사유로 조용히 깨진다 — 여기 노출해 시험이 값으로 참조하게 한다.
+String runOptionLabel(StudentRun run) => '${run.direction.label} · ${run.busNo}번';
 
 /// §3.8·§3.9 — 일일 변경 신청. 회차 선택은 `core/runs` 의 §3.5 조회 결과를
 /// 그대로 쓴다(변경 신청은 반드시 오늘의 특정 회차를 대상으로 한다).
@@ -112,7 +118,7 @@ class _ChangeRequestPanelState extends ConsumerState<ChangeRequestPanel> {
               return const Text('오늘 신청 가능한 회차가 없습니다');
             }
             final runOptions = runs
-                .map((r) => (r.runId, '${r.direction.label} · ${r.busNo}번'))
+                .map((r) => (r.runId, runOptionLabel(r)))
                 .toList();
             return _buildForm(runOptions);
           },

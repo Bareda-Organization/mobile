@@ -84,10 +84,11 @@ Future<void> _pumpAndSubmit(WidgetTester tester, Failure failure) async {
   );
   await tester.pumpAndSettle();
 
-  // 회차 선택 → 제출.
+  // 회차 선택 → 제출. 라벨 문자열을 직접 적지 않고 위젯이 쓰는 것과
+  // 같은 함수(`runOptionLabel`)로 만들어 — 라벨 문구가 바뀌어도 안 깨진다.
   await tester.tap(find.byType(BaraedaSelect).first);
   await tester.pumpAndSettle();
-  await tester.tap(find.text('등원 · 1번').last);
+  await tester.tap(find.text(runOptionLabel(_fixtureRun())).last);
   await tester.pumpAndSettle();
   await tester.tap(find.text('변경 신청하기'));
   await tester.pumpAndSettle();
