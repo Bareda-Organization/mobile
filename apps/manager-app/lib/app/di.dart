@@ -25,6 +25,9 @@ import 'package:manager_app/features/position/domain/position_repository.dart';
 import 'package:manager_app/features/roster/data/roster_api.dart';
 import 'package:manager_app/features/roster/data/roster_repository_impl.dart';
 import 'package:manager_app/features/roster/domain/roster_repository.dart';
+import 'package:manager_app/features/route_map/data/route_api.dart';
+import 'package:manager_app/features/route_map/data/route_repository_impl.dart';
+import 'package:manager_app/features/route_map/domain/route_repository.dart';
 import 'package:manager_app/features/run_end/data/reports_api.dart';
 import 'package:manager_app/features/run_end/data/reports_repository_impl.dart';
 import 'package:manager_app/features/run_end/domain/reports_repository.dart';
@@ -108,6 +111,15 @@ final rosterRepositoryProvider = Provider<RosterRepository>((ref) {
     api: ref.watch(rosterApiProvider),
     offlineQueue: ref.watch(offlineQueueRepositoryProvider),
   );
+});
+
+/// API_SPEC §4.3 — 실시간 노선 조회(RouteMapScreen, 기사·동승자 둘 다).
+final routeApiProvider = Provider<RouteApi>((ref) {
+  return RouteApi(dio: ref.watch(apiClientProvider).dio);
+});
+
+final routeRepositoryProvider = Provider<RouteRepository>((ref) {
+  return RouteRepositoryImpl(api: ref.watch(routeApiProvider));
 });
 
 /// API_SPEC §4.9 — 지연 알림(동승자 전용).

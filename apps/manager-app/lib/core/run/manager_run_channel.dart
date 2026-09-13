@@ -9,6 +9,7 @@ import 'package:manager_app/features/drive_mode/presentation/drive_mode_provider
 import 'package:manager_app/features/emergency/presentation/emergency_providers.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
 import 'package:manager_app/features/roster/presentation/roster_providers.dart';
+import 'package:manager_app/features/route_map/presentation/route_providers.dart';
 
 /// DriveMode·StopRoster 가 그리는 실시간 연결 배지 상태 — `API_SPEC §7`
 /// `/topic/manager/runs/{runId}` 구독의 화면 표현.
@@ -178,14 +179,19 @@ class ManagerRunChannelController extends StateNotifier<ManagerChannelStatus> {
     dispatchManagerChannelEvent(
       envelope.event,
       onRiderChanged: () {
+        // 미승차 반영이 §4.3 실시간 노선의 정의 자체다("확정 노선 + 미승차
+        // 반영") — RouteMapScreen 도 함께 무효화한다.
         _ref
           ..invalidate(rosterProvider)
-          ..invalidate(driveModeRosterProvider);
+          ..invalidate(driveModeRosterProvider)
+          ..invalidate(routeProvider);
       },
       onStopArrived: () {
+        // `current_stop`·`next_stop` 이 바뀌는 자리라 지도도 다시 그린다.
         _ref
           ..invalidate(rosterProvider)
-          ..invalidate(driveModeRosterProvider);
+          ..invalidate(driveModeRosterProvider)
+          ..invalidate(routeProvider);
       },
       onRunStarted: () {
         // 회차 상태(idle/confirmed → moving)가 바뀌어 두 화면의 액션
@@ -194,13 +200,15 @@ class ManagerRunChannelController extends StateNotifier<ManagerChannelStatus> {
         _ref
           ..invalidate(todayRunsProvider)
           ..invalidate(rosterProvider)
-          ..invalidate(driveModeRosterProvider);
+          ..invalidate(driveModeRosterProvider)
+          ..invalidate(routeProvider);
       },
       onRunEnded: () {
         _ref
           ..invalidate(todayRunsProvider)
           ..invalidate(rosterProvider)
-          ..invalidate(driveModeRosterProvider);
+          ..invalidate(driveModeRosterProvider)
+          ..invalidate(routeProvider);
       },
       onEmergencyAcked: () {
         _ref.invalidate(emergencyListProvider);
