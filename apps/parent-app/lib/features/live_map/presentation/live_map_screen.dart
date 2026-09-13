@@ -6,14 +6,18 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:parent_app/app/app_routes.dart';
 import 'package:parent_app/core/auth/auth_providers.dart';
+import 'package:parent_app/core/map/map_surface.dart';
 import 'package:parent_app/core/students/presentation/selected_student.dart';
 import 'package:parent_app/features/home/presentation/home_providers.dart';
 import 'package:parent_app/features/live_map/domain/live_map_status.dart';
 import 'package:parent_app/features/live_map/presentation/live_map_providers.dart';
 
 /// 자리표시 화면 — P-07 (IMPLEMENTATION_PLAN.md §3.1, §3.11 · §7 WebSocket).
-/// 실시간 버스 위치 지도는 이번 범위가 아니다(F4-B) — 여기서는
-/// `/topic/students/{studentId}/run` 4종 이벤트를 화면 상태로만 반영한다.
+/// 실시간 버스 위치 지도는 F4-B 1단계에서 붙었다 — `/topic/students/{studentId}/run`
+/// 4종 이벤트를 화면 상태로 반영하는 것은 그대로이고, `position` 이벤트가
+/// 있을 때만 [MapSurface] 로 버스 위치를 그린다(이 파일 아래 `_LiveMapBody`
+/// 문서 참고). 화면은 `core/map/map_surface.dart` 계약만 보고 SDK 타입은
+/// 절대 직접 참조하지 않는다 — 근거는 `core/map/map_surface.dart` 문서.
 ///
 /// 역할 분기는 `home_screen.dart` 와 같은 규칙 하나로만 한다
 /// (`roleCapabilitiesProvider.canToggleAttendance`, §1.1) — 학부모는
@@ -122,6 +126,16 @@ class _StudentLiveMap extends ConsumerWidget {
 /// 방지, `git show 9a468928`)과 같은 자리에 같은 모양의 가드를 둔다 —
 /// `connection.isLost` 를 [EmptyState] 분기보다 먼저 검사해, 연결이
 /// 끊긴 상태에서 "표시할 데이터가 없다"는 문구가 함께 뜨지 않게 한다.
+///
+/// **판단 근거 — 지도는 `state.position` 이 있을 때만 그린다.**
+/// `docs/USER_FLOWS.md` UF-P-07 은 "(운행 시간 아님) → 지도 대신 '운행
+/// 예정 시간' 안내"라고 명시한다 — 즉 좌표가 없는 상태에서 지도를 먼저
+/// 보여주면 안 되고, 그 상태의 문구는 이미 위 `EmptyState` 분기가 사양대로
+/// 채우고 있다. 지도는 그 문구를 대체하지 않고 데이터가 실제로 있는
+/// 목록 맨 위에 얹는다. `run_started` 만 와서 `hasNoData` 는 거짓인데
+/// `position` 은 아직 없는 좁은 경우(사양이 다루지 않는 틈)에는 지도
+/// 대신 "위치 신호 대기 중" 문구를 짧게 둔다 — 근거 없는 임의의 카메라
+/// 위치(예: 학원 좌표)를 기본값으로 잡지 않기 위해서다(보고서 §1 참고).
 class _LiveMapBody extends ConsumerWidget {
   const _LiveMapBody({required this.studentId});
 
@@ -161,6 +175,38 @@ class _LiveMapBody extends ConsumerWidget {
           const Padding(
             padding: EdgeInsets.only(bottom: BaraedaSpacing.space4),
             child: AlertBanner(tone: AlertTone.missed, body: '재연결 시도 중입니다'),
+          ),
+        if (state.position != null)
+          Padding(
+            padding: const EdgeInsets.only(bottom: BaraedaSpacing.space4),
+            child: SizedBox(
+              height: 240,
+              child: MapSurface(
+                camera: MapCamera(
+                  lat: state.position!.lat,
+                  lng: state.position!.lng,
+                ),
+                markers: [
+                  MapMarker(
+                    id: 'bus-$studentId',
+                    lat: state.position!.lat,
+                    lng: state.position!.lng,
+                    kind: MapMarkerKind.bus,
+                  ),
+                ],
+                onAuthFailed: (exception) => debugPrint(
+                  '네이버 지도 인증 실패: $exception',
+                ),
+              ),
+            ),
+          )
+        else if (!state.hasNoData)
+          // 좌표는 아직 없지만(`run_started` 만 온 상태 등) "데이터 없음"도
+          // 아닌 좁은 경우 — 지도 자리 대신 짧은 안내만 둔다(위 클래스
+          // 문서 판단 근거 참고).
+          const Padding(
+            padding: EdgeInsets.only(bottom: BaraedaSpacing.space4),
+            child: Text('위치 신호 대기 중', style: BaraedaTypography.bodySm),
           ),
         if (state.runStarted != null)
           _EventTile(
