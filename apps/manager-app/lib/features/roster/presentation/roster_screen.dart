@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/core/network/failure_messages.dart';
+import 'package:manager_app/core/run/manager_channel_banner.dart';
 import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
@@ -182,11 +183,35 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
     final run = ref.watch(selectedManagerRunProvider);
     final hasChanges = !_changesAcked && (run?.ackRequired ?? false);
 
-    return rosterAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, _) => Center(child: Text('명단을 불러오지 못했습니다: $error')),
-      data: (roster) {
-        return ListView(
+    // ManagerChannelBanner 는 rosterAsync.when(...) 의 모든 분기 바깥에
+    // 둔다 — "명단 없음"(정상, data 분기)과 "연결 끊김"(비정상)이 화면에서
+    // 구별돼야 한다(목표 9, ManagerChannelBanner 문서 참고).
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+          child: ManagerChannelBanner(runId: runId),
+        ),
+        Expanded(
+          child: rosterAsync.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (error, _) =>
+                Center(child: Text('명단을 불러오지 못했습니다: $error')),
+            data: (roster) =>
+                _buildRoster(runId, canDecide, hasChanges, roster),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRoster(
+    String runId,
+    bool canDecide,
+    bool hasChanges,
+    RosterResponse roster,
+  ) {
+    return ListView(
           padding: const EdgeInsets.all(16),
           children: [
             if (hasChanges) ...[
@@ -270,8 +295,6 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
               ),
           ],
         );
-      },
-    );
   }
 }
 
