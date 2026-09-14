@@ -71,10 +71,14 @@ Future<void> ensureManagerSeedIsSafeForTiming(String baseUrl) async {
     if (!await _needsManagerSeedReset(dio, baseUrl)) return;
 
     await dio.post<Map<String, dynamic>>('/dev/reset');
-  } on DioException {
-    // 백엔드 미기동 등 — 각 시험 자신의 backendReachable 판정에 맡기고
-    // 여기서는 삼킨다. 여기서 던지면 "환경 문제"와 "코드 결함"을 가르는
-    // 각 시험의 자체 판정(예: §4.5 의 markTestSkipped)이 가려진다.
+  } on DioException catch (e) {
+    // 연결 거부(백엔드 미기동)만 삼킨다 — 각 시험 자신의 backendReachable
+    // 판정에 맡기고, 여기서 던지면 "환경 문제"와 "코드 결함"을 가르는 각
+    // 시험의 자체 판정(예: §4.5 의 markTestSkipped)이 가려진다. **그
+    // 외(401 등)는 던진다** — 로그인 실패는 시드 계정이 손상됐다는 신호라,
+    // 여기서 삼키면 그 손상 상태를 안은 채 나머지 시험이 조용히 돈다
+    // (이월 6번, F5 보고서에서 발견).
+    if (e.type != DioExceptionType.connectionError) rethrow;
   } finally {
     dio.close();
   }
