@@ -4,7 +4,6 @@ import 'dart:typed_data';
 
 import 'package:baraeda_ui/widgets/transit/student_row.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/painting.dart' show debugNetworkImageHttpClientProvider;
 import 'package:flutter_test/flutter_test.dart';
 
 /// [StudentRow] 의 아바타 대체 표시 — §4.2(2026-09-14 확정). `photoUrl` 이
@@ -106,7 +105,8 @@ void main() {
   });
 
   testWidgets('photoUrl 로드가 실패하면(404) 이니셜로 떨어진다', (tester) async {
-    final httpClient = _FakeHttpClient()..response.statusCode = HttpStatus.notFound;
+    final httpClient = _FakeHttpClient()
+      ..response.statusCode = HttpStatus.notFound;
     try {
       await pumpRow(
         tester,
@@ -156,7 +156,7 @@ final Uint8List _transparentPng = Uint8List.fromList(const <int>[
 class _FakeHttpClient extends Fake implements HttpClient {
   final _FakeHttpClientRequest request = _FakeHttpClientRequest();
   _FakeHttpClientResponse get response => request.response;
-  Object? thrownError;
+  Exception? thrownError;
   bool completeManually = false;
   final _hold = Completer<void>();
 
@@ -205,9 +205,12 @@ class _FakeHttpClientResponse extends Fake implements HttpClientResponse {
     void Function()? onDone,
     bool? cancelOnError,
   }) {
-    return Stream<List<int>>.fromIterable(
-      content,
-    ).listen(onData, onDone: onDone, onError: onError, cancelOnError: cancelOnError);
+    return Stream<List<int>>.fromIterable(content).listen(
+      onData,
+      onDone: onDone,
+      onError: onError,
+      cancelOnError: cancelOnError,
+    );
   }
 
   @override
