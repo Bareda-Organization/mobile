@@ -142,6 +142,13 @@ void main() {
     } finally {
       probe.close();
     }
+
+    // F5 P2 목표 — run2 의 depart_time 이 지나면 §3.6·§3.8 ②구간
+    // CHANGE_LIMIT_REACHED 시험(Test C·Test F)이 결정적으로 실패한다.
+    // 안전하지 않을 때만 시드를 되돌린다(real_backend_target.dart 자바독).
+    if (backendReachable) {
+      await ensureParentSeedIsSafeForTiming(baseUrl);
+    }
   });
 
   ({Dio dio, AuthApi auth}) buildClientFor(String storagePrefix) {
