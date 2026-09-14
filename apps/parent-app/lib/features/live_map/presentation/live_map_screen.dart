@@ -5,10 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:parent_app/app/app_routes.dart';
+import 'package:parent_app/app/di.dart';
 import 'package:parent_app/core/auth/auth_providers.dart';
 import 'package:parent_app/core/map/map_surface.dart';
 import 'package:parent_app/core/students/presentation/selected_student.dart';
 import 'package:parent_app/features/home/presentation/home_providers.dart';
+import 'package:parent_app/features/live_map/domain/bus_position.dart';
 import 'package:parent_app/features/live_map/domain/live_map_status.dart';
 import 'package:parent_app/features/live_map/presentation/live_map_providers.dart';
 
@@ -146,6 +148,12 @@ class _LiveMapBody extends ConsumerWidget {
     final state = ref.watch(liveMapStateProvider(studentId));
     final connection = state.connection;
 
+    // 당일 결석(§3.11) — WS 연결 상태와 무관하게 가장 먼저 가른다. 결석은
+    // 그날 하루의 확정된 사실이라, 마침 연결이 살아있어도 뒤집히지 않는다.
+    if (state.isAbsent) {
+      return const EmptyState(title: '오늘은 버스를 이용하지 않습니다');
+    }
+
     // 순서가 핵심이다 — 연결 끊김을 먼저 걸러야 "데이터 없음"과 겹치지
     // 않는다(위 클래스 문서 참고).
     if (connection.isLost) {
@@ -160,6 +168,58 @@ class _LiveMapBody extends ConsumerWidget {
 
     if (connection.isLoading) {
       return const Center(child: CircularProgressIndicator());
+    }
+
+    // §3.11 REST 스냅샷 — WS 구독과 별개로 첫 진입 시 한 번 받은 결과.
+    // WS 가 아직 아무 좌표도 주지 않은 동안의 대체 표시로만 쓰고,
+    // `state.position`(WS)이 오면 그쪽을 항상 우선한다.
+    final restPositionAsync = state.restPosition;
+    final restPosition = restPositionAsync is AsyncData<BusPosition>
+        ? restPositionAsync.value
+        : null;
+
+    // 신호 유실(Ruling 208 — 마지막 수신 후 2분) — 서버가 좌표 없이
+    // `last_seen_at` 만 돌려준 경우다. `run_status` 가 `moving` 이 아니면서
+    // `last_seen_at` 도 없는 것은 유실이 아니라 그냥 운행 전·후 상태이므로
+    // (판단 근거 — 완료 조건) 여기서 배너를 띄우지 않고 기존 "위치 신호
+    // 대기 중"·"아직 위치 정보가 없습니다" 문구로 자연히 떨어진다.
+    final staleMinutesAgo =
+        state.position == null &&
+            restPosition != null &&
+            restPosition.lat == null &&
+            restPosition.lastSeenAt != null
+        ? ref
+              .watch(clockProvider)
+              .now()
+              .difference(restPosition.lastSeenAt!)
+              .inMinutes
+        : null;
+    final staleSinceText = staleMinutesAgo == null
+        ? null
+        : '마지막 확인 위치 · $staleMinutesAgo분 전';
+
+    // WS 가 아직 못 받은 좌표를 REST 스냅샷으로 메운다 — `receivedAt` 이
+    // 없으면(서버가 시각을 안 줌) 합성하지 않는다. `eta` 는 채우지 않는다
+    // (§7.1 — 학부모·학생 채널은 ETA 를 절대 받지 않는다, C-08).
+    final restSyntheticPosition =
+        state.position == null &&
+            restPosition != null &&
+            restPosition.lat != null &&
+            restPosition.lng != null &&
+            restPosition.receivedAt != null
+        ? WsPositionPayload(
+            lat: restPosition.lat!,
+            lng: restPosition.lng!,
+            receivedAt: restPosition.receivedAt!,
+            currentStopName: restPosition.currentStopName,
+          )
+        : null;
+
+    if (staleSinceText != null && state.hasNoData) {
+      return EmptyState(
+        title: staleSinceText,
+        body: '신호가 다시 잡히면 자동으로 갱신됩니다',
+      );
     }
 
     if (state.hasNoData) {
@@ -178,6 +238,13 @@ class _LiveMapBody extends ConsumerWidget {
           ),
         if (state.position != null)
           _BusMapSection(studentId: studentId, position: state.position!)
+        else if (restSyntheticPosition != null)
+          _BusMapSection(studentId: studentId, position: restSyntheticPosition)
+        else if (staleSinceText != null)
+          Padding(
+            padding: const EdgeInsets.only(bottom: BaraedaSpacing.space4),
+            child: Text(staleSinceText, style: BaraedaTypography.bodySm),
+          )
         else if (!state.hasNoData)
           // 좌표는 아직 없지만(`run_started` 만 온 상태 등) "데이터 없음"도
           // 아닌 좁은 경우 — 지도 자리 대신 짧은 안내만 둔다(위 클래스
@@ -192,7 +259,10 @@ class _LiveMapBody extends ConsumerWidget {
             time: state.runStarted!.startedAt,
             detail: '자동 탑승 처리 ${state.runStarted!.autoBoardedCount}명',
           ),
-        if (state.position != null) _PositionTile(position: state.position!),
+        if (state.position != null)
+          _PositionTile(position: state.position!)
+        else if (restSyntheticPosition != null)
+          _PositionTile(position: restSyntheticPosition),
         if (state.lastStopArrived != null)
           _EventTile(
             label: '${state.lastStopArrived!.name} 도착',
@@ -277,6 +347,12 @@ class _BusMapSectionState extends State<_BusMapSection> {
   }
 }
 
+/// **판단 근거 — ETA 를 그리지 않는 이유.** `WsPositionPayload.eta` 필드가
+/// 남아 있어도 이 타일은 절대 표시하지 않는다 — API_SPEC §7.1 "학부모·
+/// 학생 채널은 ETA 를 절대 받지 않는다"(C-08)와 §3.10 "승하차지별 탑승
+/// 인원 · ETA 부재"가 명시적으로 금지한다. 예전 구현이 `position.eta`
+/// 를 조건부로 그리고 있었던 것은 이 화면이 참조하는 채널이 원래 ETA
+/// 를 보내지 않아 드러나지 않았을 뿐인 사양 위반이라 이번에 제거한다.
 class _PositionTile extends StatelessWidget {
   const _PositionTile({required this.position});
 
@@ -296,8 +372,6 @@ class _PositionTile extends StatelessWidget {
               '가장 가까운 승하차지: ${position.currentStopName}',
               style: BaraedaTypography.body,
             ),
-          if (position.eta != null)
-            Text('도착 예정: ${position.eta}', style: BaraedaTypography.body),
         ],
       ),
     );

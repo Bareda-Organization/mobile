@@ -4,6 +4,8 @@ import 'package:baraeda_core/baraeda_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:parent_app/app/di.dart';
+import 'package:parent_app/core/runs/domain/student_run.dart';
+import 'package:parent_app/core/runs/presentation/run_providers.dart';
 import 'package:parent_app/features/live_map/domain/live_map_status.dart';
 
 /// `studentId` 별 실시간 위치 화면 상태 — `/topic/students/{studentId}/run`
@@ -87,6 +89,44 @@ class LiveMapNotifier extends StateNotifier<LiveMapState> {
       // 하다(BaraedaWebSocketClient.connect 문서 참고).
       client.connect();
     }
+
+    // API_SPEC §3.11 — WS 구독과 별개로, 첫 진입 시 한 번 REST 스냅샷을
+    // 받는다("REST 스냅샷 → WS 갱신" 순서). WS 연결·구독을 막지 않도록
+    // await 하지 않는다 — 실패해도 이 notifier 자체는 살아 있어야 한다.
+    unawaited(_loadRestSnapshot());
+  }
+
+  /// §3.11 스냅샷 + 당일 결석 대조. `AsyncValue.guard` 로 감싸 예외 종류를
+  /// 가리지 않고 전부 `restPosition` 에 담는다(`avoid_catches_without_on_clauses`
+  /// 를 맨손 `catch` 없이 지키는 방법이기도 하다). 결석 대조
+  /// (`runsForStudentProvider`)가 실패해도 스냅샷 자체는 그대로 반영한다
+  /// — 결석 여부를 모를 뿐 좌표 스냅샷은 유효한 정보이기 때문이다.
+  Future<void> _loadRestSnapshot() async {
+    state = state.copyWith(restPosition: const AsyncValue.loading());
+
+    final result = await AsyncValue.guard(
+      () => _ref.read(busPositionRepositoryProvider).getBusPosition(_studentId),
+    );
+    if (!mounted) return;
+
+    var isAbsent = false;
+    final position = result.value;
+    if (position != null) {
+      final runsResult = await AsyncValue.guard(
+        () => _ref.read(runsForStudentProvider(_studentId).future),
+      );
+      final runs = runsResult.value;
+      if (runs != null) {
+        isAbsent = runs.any(
+          (run) =>
+              run.runId == position.runId &&
+              run.riderStatus == RiderStatus.absent,
+        );
+      }
+    }
+
+    if (!mounted) return;
+    state = state.copyWith(restPosition: result, isAbsent: isAbsent);
   }
 
   void _onConnectionState(WsConnectionState wsState) {

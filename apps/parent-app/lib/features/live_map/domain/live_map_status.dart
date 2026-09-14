@@ -1,4 +1,6 @@
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:parent_app/features/live_map/domain/bus_position.dart';
 
 /// 화면이 실제로 그리는 연결 판정 — `WsConnectionState` 를 화면 관점으로
 /// 좁힌 것. "데이터 없음"과 "연결 끊김"을 구별하는 것이 이 화면의 완료
@@ -50,6 +52,8 @@ class LiveMapState {
     this.lastStopArrived,
     this.runStarted,
     this.runEnded,
+    this.restPosition,
+    this.isAbsent = false,
   });
 
   final LiveMapConnection connection;
@@ -57,6 +61,19 @@ class LiveMapState {
   final WsStopArrivedPayload? lastStopArrived;
   final WsRunStartedPayload? runStarted;
   final WsRunEndedPayload? runEnded;
+
+  /// API_SPEC §3.11 첫 진입 스냅샷 — WS 와 별개로 한 번만 불러온다
+  /// (`live_map_providers.dart` 의 `_loadRestSnapshot` 참고). `null` 은
+  /// "아직 요청을 시작하지 않음"이고, 요청이 걸리면 곧바로
+  /// `AsyncValue.loading()` 으로 바뀐다 — 화면은 이 값을 WS 가 아직
+  /// 아무것도 안 준 첫 프레임의 대체 표시로만 쓰고, `position`(WS) 이
+  /// 오면 그쪽을 우선한다.
+  final AsyncValue<BusPosition>? restPosition;
+
+  /// 당일 `RiderStatus.absent` 대조 결과(`runsForStudentProvider` 와
+  /// `restPosition.runId` 를 맞춰 본다) — §3.11 응답 자체에는 결석 여부
+  /// 필드가 없어 별도로 들고 있어야 한다.
+  final bool isAbsent;
 
   /// "표시할 이벤트가 아직 하나도 없다" — 4종 이벤트(`position`·
   /// `stop_arrived`·`run_started`·`run_ended`) 전부가 비어야 참이다.
@@ -77,6 +94,8 @@ class LiveMapState {
     WsStopArrivedPayload? lastStopArrived,
     WsRunStartedPayload? runStarted,
     WsRunEndedPayload? runEnded,
+    AsyncValue<BusPosition>? restPosition,
+    bool? isAbsent,
   }) {
     return LiveMapState(
       connection: connection ?? this.connection,
@@ -84,6 +103,8 @@ class LiveMapState {
       lastStopArrived: lastStopArrived ?? this.lastStopArrived,
       runStarted: runStarted ?? this.runStarted,
       runEnded: runEnded ?? this.runEnded,
+      restPosition: restPosition ?? this.restPosition,
+      isAbsent: isAbsent ?? this.isAbsent,
     );
   }
 }

@@ -19,6 +19,12 @@ import 'package:parent_app/features/child_link/domain/link_repository.dart';
 import 'package:parent_app/features/home/data/notification_api.dart';
 import 'package:parent_app/features/home/data/notification_repository_impl.dart';
 import 'package:parent_app/features/home/domain/notification_repository.dart';
+import 'package:parent_app/features/live_map/data/bus_position_api.dart';
+import 'package:parent_app/features/live_map/data/bus_position_repository_impl.dart';
+import 'package:parent_app/features/live_map/domain/bus_position_repository.dart';
+import 'package:parent_app/features/route/data/route_api.dart';
+import 'package:parent_app/features/route/data/route_repository_impl.dart';
+import 'package:parent_app/features/route/domain/route_repository.dart';
 import 'package:parent_app/features/schedule/data/weekly_address_api.dart';
 import 'package:parent_app/features/schedule/data/weekly_address_repository_impl.dart';
 import 'package:parent_app/features/schedule/domain/weekly_address_repository.dart';
@@ -115,6 +121,27 @@ final runApiProvider = Provider<RunApi>((ref) {
 
 final runRepositoryProvider = Provider<RunRepository>((ref) {
   return RunRepositoryImpl(runApi: ref.watch(runApiProvider));
+});
+
+/// API_SPEC §3.10 — `route`.
+final routeApiProvider = Provider<RouteApi>((ref) {
+  return RouteApi(dio: ref.watch(apiClientProvider).dio);
+});
+
+final routeRepositoryProvider = Provider<RouteRepository>((ref) {
+  return RouteRepositoryImpl(routeApi: ref.watch(routeApiProvider));
+});
+
+/// API_SPEC §3.11 — `live_map` REST 스냅샷(WS 갱신과 별개, 첫 진입 시
+/// 한 번 호출된다. `live_map_providers.dart` 참고).
+final busPositionApiProvider = Provider<BusPositionApi>((ref) {
+  return BusPositionApi(dio: ref.watch(apiClientProvider).dio);
+});
+
+final busPositionRepositoryProvider = Provider<BusPositionRepository>((ref) {
+  return BusPositionRepositoryImpl(
+    busPositionApi: ref.watch(busPositionApiProvider),
+  );
 });
 
 /// API_SPEC §3.12·§3.13 — `home`.

@@ -11,6 +11,8 @@ import 'package:parent_app/core/auth/user_role.dart';
 import 'package:parent_app/core/students/domain/student.dart';
 import 'package:parent_app/core/students/presentation/selected_student.dart';
 import 'package:parent_app/features/home/presentation/home_providers.dart';
+import 'package:parent_app/features/live_map/domain/bus_position.dart';
+import 'package:parent_app/features/live_map/domain/bus_position_repository.dart';
 import 'package:parent_app/features/live_map/presentation/live_map_screen.dart';
 // `Override` 는 `flutter_riverpod.dart` 배럴이 재노출하지 않는다(3.4.3 확인 —
 // `ProviderScope.overrides` 내부에서만 쓰고 공개 `show` 목록엔 없음). 실제
@@ -103,6 +105,20 @@ class _FakeWsClient extends BaraedaWebSocketClient {
   }
 }
 
+/// `busPositionRepositoryProvider` 기본 가짜 — §3.11 스냅샷은 이 화면
+/// 파일의 관심사가 아니므로(REST 흐름은 별도 시험으로 다룬다), 항상
+/// 즉시 실패하게 해 둔다. 실 `ApiClient`(Dio)를 거치면 내부 타이머가
+/// `FakeAsync` 위젯 트리 해제 뒤까지 남아 "A Timer is still pending"
+/// 으로 전 시험이 깨진다 — `Future.error` 로 네트워크를 건드리지 않는
+/// 것이 핵심이다. 이 파일의 기존 단언들은 `restPosition` 이 `null`
+/// 이거나 에러인 것을 전제로 짜여 있어(REST 대체 렌더 분기의 가드
+/// 조건이 전부 거짓이 되는 경로), 성공 응답을 흉내 낼 필요가 없다.
+class _FakeBusPositionRepository implements BusPositionRepository {
+  @override
+  Future<BusPosition> getBusPosition(String studentId) =>
+      Future.error(const Failure.unknown(message: 'test fake — no REST'));
+}
+
 WebSocketEnvelope _envelope(WsEventType event, Map<String, dynamic> payload) {
   return WebSocketEnvelope(
     event: event,
@@ -130,6 +146,9 @@ void main() {
       ProviderScope(
         overrides: [
           webSocketClientProvider.overrideWithValue(client),
+          busPositionRepositoryProvider.overrideWithValue(
+            _FakeBusPositionRepository(),
+          ),
           ...extraOverrides,
         ],
         child: const MaterialApp(home: LiveMapScreen()),
