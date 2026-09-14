@@ -180,8 +180,12 @@ class _StudentAvatar extends StatelessWidget {
       width: 38,
       height: 38,
       fit: BoxFit.cover,
-      loadingBuilder: (context, child, progress) =>
-          progress == null ? child : _initials(),
+      // `loadingBuilder` 의 progress 는 "시작 전"과 "다 됨"이 똑같이 null
+      // 이라 두 상태를 못 가른다. `frameBuilder` 의 frame 은 프레임이 실제로
+      // 디코드된 뒤에만 null 이 아니므로, 로딩 중(첫 프레임 전)과 완료를
+      // 정확히 가를 수 있다.
+      frameBuilder: (context, child, frame, wasSynchronouslyLoaded) =>
+          wasSynchronouslyLoaded || frame != null ? child : _initials(),
       errorBuilder: (context, error, stackTrace) => _initials(),
     );
   }
