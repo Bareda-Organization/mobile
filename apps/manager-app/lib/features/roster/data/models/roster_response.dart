@@ -82,11 +82,10 @@ class RosterStudent {
       riderId: asIdString(json['rider_id']),
       studentId: json['student_id'] as String,
       name: json['name'] as String,
-      // 널 허용성 결함(`Ruling 275` 와 다른 축) — 사진 없는 학생이 실재해
+      // §4.2(2026-09-14 확정) — 미등록 학생이 예외가 아니라 기본 상태라
       // 서버가 `photo_url: null` 을 내려보낸다. `StudentRow`(baraeda_ui)
-      // 는 photoUrl 을 아예 받지 않고 이름 이니셜만 그리므로(관례 확인 —
-      // 보고서 1항) 여기서 널 허용으로 바꾸는 것만으로 화면 쪽 추가 처리가
-      // 필요 없다.
+      // 가 이 값을 받아 렌더하고, 없거나 로드에 실패하면 이름 이니셜로
+      // 대체한다(`R4 A-photo` — roster_screen.dart 가 그대로 전달).
       photoUrl: json['photo_url'] as String?,
       className: json['class_name'] as String?,
       // 마스킹은 서버가 이미 적용(`010-2XXX-8814`) — 클라이언트는 그대로 표시.
