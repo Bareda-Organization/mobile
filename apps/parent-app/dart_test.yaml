@@ -4,3 +4,10 @@ tags:
   real_backend:
     # 실제 백엔드에 접속하는 계약 시험. `--dart-define=API_BASE_URL` 이 필수이며
     # 없으면 `requireRealBackendBaseUrl()` 이 던진다(test/support/real_backend_target.dart).
+
+# F5 P2 — real_backend_p4_test.dart 의 ensureParentSeedIsSafeForTiming 이 도는
+# 동안(POST /dev/reset → Flyway clean+migrate, 순간적이지 않다) 다른
+# real_backend_p1~p3_test.dart 파일이 같은 스키마를 동시에 읽으면 전이 상태
+# (테이블 없음·부분 시드)를 코드 결함과 구별할 수 없이 관측한다
+# (F5 M3 이 매니저 앱에서 같은 이유로 이미 적용한 것과 동일).
+concurrency: 1
