@@ -182,11 +182,9 @@ class _RouteDetailView extends StatelessWidget {
         const SizedBox(height: BaraedaSpacing.sectionGap),
         const Text('경유 승하차지', style: BaraedaTypography.h3),
         const SizedBox(height: BaraedaSpacing.space2),
-        // route.stops 가 아니라 route.visibleStops 를 그린다 — 서버가
-        // 이미 창을 좁혀 보내지만(P-08), 그 계약이 깨져도 남의 자녀
-        // 승하차지가 노출되지 않도록 여기서도 같은 창을 다시 계산한다
-        // (route_detail.dart 의 `RouteDetail.visibleStops` 문서 참고).
-        ...route.visibleStops.map(
+        // 서버가 이미 §3.10 범위로 좁혀 보낸 stops 를 그대로 그린다
+        // (route_detail.dart 의 `RouteDetail.stops` 문서 참고, 목표 2).
+        ...route.stops.map(
           (stop) => _RouteStopTile(
             stop: stop,
             isMyStop: stop.stopId == route.myStopId,
@@ -277,7 +275,11 @@ class _RouteStopTile extends StatelessWidget {
                       ],
                     ],
                   ),
-                  Text(stop.address, style: BaraedaTypography.bodySm),
+                  // 학원 합성 항목(Ruling 288)은 address 가 없을 수
+                  // 있다(academy.address nullable) — 그 경우 줄 자체를
+                  // 비운다.
+                  if (stop.address != null)
+                    Text(stop.address!, style: BaraedaTypography.bodySm),
                 ],
               ),
             ),

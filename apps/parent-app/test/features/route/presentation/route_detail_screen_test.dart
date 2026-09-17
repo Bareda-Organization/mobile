@@ -36,18 +36,29 @@ class _FakeRouteRepository implements RouteRepository {
 
 /// 정차 1개의 원본 JSON — 모든 필드를 채운다(`RouteStop.fromJson` 이
 /// 요구하는 대로).
+///
+/// `stopId` 가 `null` 이면 Ruling 288 이 합성하는 학원 항목처럼
+/// `stop_id: null` 로 보낸다. `address`/`lat`/`lng` 를 안 주면 기본값을
+/// 채우고, 명시적으로 넘기면(학원 항목처럼 `null` 포함) 그대로 쓴다.
 Map<String, dynamic> _stopJson({
-  required String stopId,
   required int seq,
   required String name,
+  String? stopId,
+  Object? address = _unset,
+  Object? lat = _unset,
+  Object? lng = _unset,
 }) => {
   'stop_id': stopId,
   'seq': seq,
   'name': name,
-  'address': '$name 주소',
-  'lat': 37.5 + seq * 0.001,
-  'lng': 127.0 + seq * 0.001,
+  'address': identical(address, _unset) ? '$name 주소' : address,
+  'lat': identical(lat, _unset) ? 37.5 + seq * 0.001 : lat,
+  'lng': identical(lng, _unset) ? 127.0 + seq * 0.001 : lng,
 };
+
+/// `_stopJson` 의 선택 인자가 "안 줬다" 와 "명시적으로 null 을 줬다" 를
+/// 가르기 위한 표식.
+const Object _unset = Object();
 
 /// `RouteDetail.fromJson` 이 요구하는 필드를 전부 채운 기본 원본 JSON.
 /// 각 시험은 이 값을 베이스로 `stops`·`driver`·부가 필드만 바꿔 쓴다.
@@ -79,6 +90,14 @@ void main() {
     WidgetTester tester, {
     required RouteDetail response,
   }) async {
+    // stops 목록이 창(3) + 학원 1개로 늘어나 기본 뷰포트를 넘긴다 —
+    // ListView 는 화면 밖 항목을 늦게(스크롤 시점에) 그리므로, 뷰포트를
+    // 넉넉히 키워 모든 타일이 즉시 그려지게 한다(스크롤 없이 검증).
+    tester.view.physicalSize = const Size(800, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -96,31 +115,57 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  group('①표시 범위 — 서버가 창을 안 좁혀도 §3.10 범위만 그린다', () {
+  group('①표시 범위 — 서버가 보낸 stops 를 그대로 그린다(재절단 없음)', () {
     testWidgets(
-      '승차지 이전 정류장이 3개 이상 와도 화면은 이전 2개 · 승차지까지 '
-      '3개만 그린다(개인정보 노출 방지)',
+      '서버가 4개를 보내면 화면도 4개를 그린다(목표 2 — visibleStops 삭제)',
       (tester) async {
-        // 승차지(정류장5) 이전에 5개(정류장0~4)를 둬 서버 계약(최대
-        // 2개 이전)을 일부러 어긴 원본을 만든다.
-        final stops = List.generate(
-          6,
-          (i) => _stopJson(stopId: 's-stop-$i', seq: i, name: '정류장$i'),
-        );
+        // Ruling 288 이후 서버는 창(최대 3개) + 합성 학원 항목 1개를
+        // 함께 보낸다 — 총 4개. 클라이언트가 다시 자르면 이 중 일부가
+        // 사라진다.
+        final stops = [
+          _stopJson(stopId: 's-stop-0', seq: 0, name: '정류장0'),
+          _stopJson(stopId: 's-stop-1', seq: 1, name: '정류장1'),
+          _stopJson(stopId: 's-stop-2', seq: 2, name: '정류장2'),
+          // 학원 합성 항목 — stop_id 없음(API_SPEC §1.13 선례).
+          _stopJson(seq: 3, name: '바래다학원 A'),
+        ];
         final route = RouteDetail.fromJson(
-          _routeJson(stops: stops, myStopId: 's-stop-5'),
+          _routeJson(stops: stops, myStopId: 's-stop-2'),
         );
 
         await pumpScreen(tester, response: route);
 
-        // §3.10 창 = 승차지(5) 이전 2개(3·4) + 승차지(5) = {3,4,5}.
-        expect(find.text('정류장3'), findsOneWidget);
-        expect(find.text('정류장4'), findsOneWidget);
-        expect(find.text('정류장5'), findsOneWidget);
-        // 창 밖(0·1·2)은 서버가 실수로 보냈어도 화면에 없어야 한다.
-        expect(find.text('정류장0'), findsNothing);
-        expect(find.text('정류장1'), findsNothing);
-        expect(find.text('정류장2'), findsNothing);
+        expect(find.text('정류장0'), findsOneWidget);
+        expect(find.text('정류장1'), findsOneWidget);
+        expect(find.text('정류장2'), findsOneWidget);
+        expect(find.text('바래다학원 A'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      '학원 합성 항목처럼 address 가 null 이어도 화면이 깨지지 않는다 '
+      '(academy.address nullable)',
+      (tester) async {
+        final stops = [
+          _stopJson(stopId: 's-stop-0', seq: 0, name: '정류장0'),
+          _stopJson(
+            seq: 1,
+            name: '바래다학원 A',
+            address: null,
+            lat: null,
+            lng: null,
+          ),
+        ];
+        final route = RouteDetail.fromJson(
+          _routeJson(stops: stops, myStopId: 's-stop-0'),
+        );
+
+        await pumpScreen(tester, response: route);
+
+        expect(find.text('바래다학원 A'), findsOneWidget);
+        // address 가 null 인 항목은 주소 줄 자체가 없어야 한다(널 텍스트
+        // 렌더 방지) — 정류장0 의 주소만 보인다.
+        expect(find.text('정류장0 주소'), findsOneWidget);
       },
     );
   });

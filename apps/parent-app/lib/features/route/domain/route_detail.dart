@@ -18,11 +18,14 @@ enum RouteStopChange {
 /// 노선의 승하차지 1개.
 ///
 /// 서버가 이미 "승차지 이전 2개 · 승차지 · 하차지" 로 창을 좁혀 보낸다
-/// (P-08). **화면은 이 목록(`stops`)을 직접 그리지 않고 [RouteDetail.
-/// visibleStops] 를 그린다** — 서버 응답이 계약대로 좁혀지지 않은 채
-/// 와도(다른 소비자·서버 변경) 화면이 §3.10 범위 밖을 그리지 않도록
-/// 클라이언트에서 같은 창을 다시 계산한다(근거는 `RouteDetail.
-/// visibleStops` 문서).
+/// (P-08, `StudentRouteQueryService.window()`) — 화면은 이 목록(`stops`)을
+/// 그대로 그린다(`RouteDetailScreen` 참고, Ruling 288/목표 2).
+///
+/// **`address`·`lat`·`lng` 는 `null` 일 수 있다** — 등원(TO_ACADEMY)의
+/// 하차지·하원(FROM_ACADEMY)의 승차지로 서버가 합성해 붙이는 학원 항목은
+/// `Academy` 엔티티 값을 그대로 옮기는데, `academy.address`·`lat`·`lng` 는
+/// DB 상 nullable 이다(`V1__init_schema.sql`). API_SPEC §1.13 도 경유
+/// 지점류 항목의 이 필드들이 `null` 일 수 있다고 이미 규정한다.
 class RouteStop {
   const RouteStop({
     required this.stopId,
@@ -38,18 +41,18 @@ class RouteStop {
     stopId: asIdString(json['stop_id']),
     seq: json['seq'] as int,
     name: json['name'] as String,
-    address: json['address'] as String,
-    lat: (json['lat'] as num).toDouble(),
-    lng: (json['lng'] as num).toDouble(),
+    address: json['address'] as String?,
+    lat: (json['lat'] as num?)?.toDouble(),
+    lng: (json['lng'] as num?)?.toDouble(),
     change: RouteStopChange.fromWireValue(json['change'] as String?),
   );
 
   final String stopId;
   final int seq;
   final String name;
-  final String address;
-  final double lat;
-  final double lng;
+  final String? address;
+  final double? lat;
+  final double? lng;
   final RouteStopChange? change;
 }
 
@@ -121,27 +124,17 @@ class RouteDetail {
 
   /// 본인 승하차지 — [stops] 중 이 `stopId` 와 일치하는 항목을 강조해 그린다.
   final String myStopId;
-  final List<RouteStop> stops;
 
-  /// 화면이 실제로 그릴 목록 — **서버가 이미 좁혀 보내는 것과 별개로
-  /// 클라이언트에서 다시 창을 계산한다.**
+  /// 화면이 그릴 목록 그 자체 — 서버 응답을 그대로 쓴다.
   ///
-  /// **판단 근거 — 방어적 이중화다.** 서버 쪽 알고리즘은
-  /// `StudentRouteQueryService.window()` 의
-  /// `entries.subList(max(0, myIndex - 2), myIndex + 1)` 이다(내 승하차지
-  /// 이전 2개 + 내 승하차지, 그 뒤는 없음). 이 화면은 원래 그 계약을
-  /// 신뢰하고 [stops] 를 그대로 그렸는데, 그 신뢰가 **다른 집 아이의
-  /// 승하차지 좌표 노출**로 이어질 수 있다 — 서버 쪽 회귀나 이 모델을
-  /// 재사용하는 다른 소비자가 창을 안 좁힌 응답을 주면 방어 수단이 없었다.
-  /// 그래서 서버와 **같은 알고리즘**을 여기서도 돌려, 무엇이 오든 화면은
-  /// 항상 §3.10 범위 안쪽만 그린다.
-  ///
-  /// [myStopId] 를 [stops] 에서 못 찾으면 빈 목록을 돌려준다 — 서버도
-  /// 같은 경우 빈 창을 돌려준다(`window()` 의 `myIndex < 0` 분기).
-  List<RouteStop> get visibleStops {
-    final myIndex = stops.indexWhere((stop) => stop.stopId == myStopId);
-    if (myIndex < 0) return const [];
-    final start = myIndex - 2 < 0 ? 0 : myIndex - 2;
-    return stops.sublist(start, myIndex + 1);
-  }
+  /// **판단 근거(목표 2, `visibleStops` 삭제)** — 이전에는 클라이언트가
+  /// 서버와 같은 windowing 알고리즘을 여기서 한 번 더 돌려 "서버 계약이
+  /// 깨져도 방어" 하려 했다. 그런데 Ruling 288 로 서버가 학원 항목을
+  /// windowed 범위 **밖**에 별도로 붙이게 되면서(등원은 뒤·하원은 앞),
+  /// 그 옛 알고리즘은 매번 학원 항목을 창 밖으로 오판해 잘라냈다 —
+  /// "방어" 가 오히려 정상 응답을 훼손했다. 서버 알고리즘을 클라이언트가
+  /// 따로 유지하는 이중화는 한쪽이 바뀌면 반드시 어긋난다. 이 화면은
+  /// `GET /students/{id}/route` 전용이라(다른 소비자가 재사용하지
+  /// 않는다) 서버를 신뢰하는 것이 유일한 소비자에게는 맞는 계약이다.
+  final List<RouteStop> stops;
 }
