@@ -6,11 +6,13 @@ import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage_platform_interface/flutter_secure_storage_platform_interface.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:parent_app/core/change_requests/data/change_request_api.dart';
+import 'package:parent_app/core/common/run_direction.dart';
 import 'package:parent_app/core/runs/data/run_api.dart';
 import 'package:parent_app/core/students/data/student_api.dart';
 import 'package:parent_app/features/child_link/data/link_api.dart';
 import 'package:parent_app/features/home/data/notification_api.dart';
 import 'package:parent_app/features/schedule/data/weekly_address_api.dart';
+import 'package:parent_app/features/schedule/domain/weekly_address_entry.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import '../support/real_backend_target.dart';
 
@@ -164,6 +166,59 @@ void main() {
       // 돌려주는지까지가 이 호출의 관심사라 별도 unread 필터 없이 첫
       // 항목으로 호출한다.
       await notificationApi.markRead(page.items.first.notificationId);
+    },
+  );
+
+  test(
+    'R11 신규 — §3.7 쓰기(PATCH)는 보낸 요일·방향 칸만 반영하고, 다시 '
+    '읽으면 그 값이 그대로 보인다 (실제 호출, 읽기는 목표 7 항이 이미 '
+    '커버해 새로 만들지 않는다)',
+    () async {
+      if (!backendReachable) {
+        markTestSkipped('환경 문제: $baseUrl 백엔드 미기동');
+        return;
+      }
+      final parent = buildClientFor('p1-weekly-write');
+      await parent.auth.login(loginId: 'parentA1', password: 'password');
+      final students = await StudentApi(dio: parent.dio).getMyStudents();
+      final chulsoo = students.firstWhere((s) => s.name == '김철수');
+      final api = WeeklyAddressApi(dio: parent.dio);
+
+      // 고정값 — 매 회차 같은 값을 써서 4연속 실행에서도 수렴한다
+      // (`WeeklyAddressStore` 는 부분 upsert: 보낸 칸만 갱신하고 나머지
+      // 13건은 그대로 둔다, Ruling 151). ⚠ 전용 서버는 `bootRun` 이라
+      // `geocoding.provider=stub` 이 아니라 실 네이버 API 를 탄다
+      // (`build.gradle` 의 stub 지정은 Gradle `test` 태스크 전용). 가짜
+      // 도로명은 결과 0건 → 422 로 거부되므로, 좌표가 알려진 실 주소
+      // (`NaverGeocodingClientLiveTest.SEOUL_CITY_HALL`, 서울시청)를 쓴다.
+      const fixedAddress = '서울특별시 중구 세종대로 110';
+      const fixedDetail = 'R11-T2 계약검사';
+
+      final updated = await api.updateWeeklyAddress(chulsoo.studentId, [
+        const WeeklyAddressEntry(
+          weekday: Weekday.mon,
+          direction: RunDirection.toAcademy,
+          address: fixedAddress,
+          addressDetail: fixedDetail,
+        ),
+      ]);
+
+      // 응답에는 보낸 1건만 담긴다 — 부분 upsert라 14건 전체가 아니다.
+      expect(updated, hasLength(1));
+      expect(updated.single.address, fixedAddress);
+      expect(updated.single.addressDetail, fixedDetail);
+      expect(updated.single.verified, isTrue);
+
+      // 다시 읽어 값이 실제로 반영됐는지 확인 — 나머지 13건은 그대로라
+      // 전체는 여전히 14건이다.
+      final reread = await api.getWeeklyAddress(chulsoo.studentId);
+      expect(reread, hasLength(14));
+      final monToAcademy = reread.firstWhere(
+        (e) =>
+            e.weekday == Weekday.mon && e.direction == RunDirection.toAcademy,
+      );
+      expect(monToAcademy.address, fixedAddress);
+      expect(monToAcademy.addressDetail, fixedDetail);
     },
   );
 

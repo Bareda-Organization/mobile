@@ -231,6 +231,63 @@ void main() {
   );
 
   test(
+    'R11 신규 — 로그아웃(§2.7)은 서버의 refresh 토큰을 무효화하고 로컬 '
+    '토큰도 지운다 (실제 호출)',
+    () async {
+      if (!backendReachable) {
+        markTestSkipped('환경 문제: $baseUrl 백엔드 미기동');
+        return;
+      }
+      final (:auth, dio: _, :storage) = buildAuthApi();
+
+      // parentA2 — 이 파일의 다른 목표가 쓰지 않는 계정. 로그아웃은 이
+      // 로그인 호출이 새로 발급한 refresh 토큰 하나만 지우므로(계정 자체를
+      // 잠그지 않음, LogoutCommandService 확인) 어느 활성 계정을 써도 무방
+      // 하다 — 그래도 파일 내 다른 목표와 안 겹치는 쪽을 골랐다.
+      await auth.login(loginId: 'parentA2', password: 'password');
+      final refreshTokenBeforeLogout = await storage.readRefreshToken();
+      expect(refreshTokenBeforeLogout, isNotNull);
+
+      await auth.logout();
+
+      // 로컬 토큰은 서버 호출 성패와 무관하게 항상 지워진다(logout() 주석).
+      expect(await storage.readAccessToken(), isNull);
+      expect(await storage.readRefreshToken(), isNull);
+
+      // 서버 쪽도 실제로 무효화됐는지 — 로그아웃 전 refresh 토큰으로 재발급을
+      // 시도하면 실패해야 한다. `AuthApi` 는 `/auth/refresh` 를 노출하지
+      // 않으므로(인터셉터 내부 전용, §2 주석 참고) 원 재료(raw Dio)로 직접
+      // 부른다 — 웹 쪽 로그아웃 시험이 쿠키 때문에 raw 요청을 쓰는 것과 달리,
+      // 여기서는 refresh 무효화를 직접 확인하려는 목적으로만 raw 를 쓴다.
+      final rawDio = Dio(BaseOptions(baseUrl: baseUrl));
+      Failure? refreshFailure;
+      try {
+        await rawDio.post<Map<String, dynamic>>(
+          '/auth/refresh',
+          data: {'refresh_token': refreshTokenBeforeLogout},
+        );
+      } on DioException catch (e) {
+        refreshFailure = mapDioExceptionToFailure(e);
+      } finally {
+        rawDio.close();
+      }
+      expect(refreshFailure, isA<ApiFailure>());
+      final refreshApiFailure = refreshFailure! as ApiFailure;
+      expect(refreshApiFailure.statusCode, 401);
+      expect(refreshApiFailure.code, 'TOKEN_EXPIRED');
+
+      // 다음 회차에서도 같은 계정으로 로그인할 수 있어야 한다 — 로그아웃이
+      // 계정을 잠그지 않는다는 것을 실측으로 확인(연속 4회 실행 안전성의
+      // 근거).
+      final relogin = await auth.login(
+        loginId: 'parentA2',
+        password: 'password',
+      );
+      expect(relogin.accessToken, isNotEmpty);
+    },
+  );
+
+  test(
     '목표 11 — 학원 검색은 비활성 학원(운영정지)을 제외한다 (실제 호출)',
     () async {
       if (!backendReachable) {
