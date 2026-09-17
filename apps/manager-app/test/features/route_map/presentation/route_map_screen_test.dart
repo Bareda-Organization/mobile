@@ -99,8 +99,16 @@ void main() {
       ],
     );
 
+    // ⚠ `pumpAndSettle()` 을 쓰지 않는다 — `MapSurface` 뒤의
+    // `NaverMapAdapter` 가 SDK 초기화 중 `CircularProgressIndicator`
+    // (무한 반복 애니메이션)를 그리므로 settle 이 영원히 끝나지 않는다
+    // (parent-app `naver_map_adapter_dispose_test.dart` 와 같은 이유).
+    // `routeProvider`(FutureProvider)가 값을 내놓는 데 필요한 만큼만
+    // pump 한다 — `MapSurface` 에 어떤 인자가 넘어갔는지만 보면 되므로
+    // SDK 초기화 완료까지 기다릴 필요가 없다.
     await tester.pumpWidget(_wrap(overridesFor(response)));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump();
 
     final surface = tester.widget<MapSurface>(find.byType(MapSurface));
     expect(surface.markers, hasLength(3));
@@ -123,7 +131,8 @@ void main() {
     );
 
     await tester.pumpWidget(_wrap(overridesFor(response)));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump();
 
     final surface = tester.widget<MapSurface>(find.byType(MapSurface));
     expect(surface.camera.lat, 20);
@@ -137,7 +146,8 @@ void main() {
     );
 
     await tester.pumpWidget(_wrap(overridesFor(response)));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump();
 
     final surface = tester.widget<MapSurface>(find.byType(MapSurface));
     expect(surface.camera.lat, 30);
@@ -155,7 +165,8 @@ void main() {
     );
 
     await tester.pumpWidget(_wrap(overridesFor(response)));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump();
 
     final surface = tester.widget<MapSurface>(find.byType(MapSurface));
     expect(surface.camera.lat, 40);
@@ -169,7 +180,8 @@ void main() {
     );
 
     await tester.pumpWidget(_wrap(overridesFor(response)));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump();
 
     expect(find.text('2곳이 미경유로 표시됩니다'), findsOneWidget);
   });
