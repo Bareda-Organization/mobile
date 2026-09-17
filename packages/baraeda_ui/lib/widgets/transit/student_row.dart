@@ -34,6 +34,7 @@ class StudentRow extends StatelessWidget {
   const StudentRow({
     super.key,
     this.name,
+    this.photoUrl,
     this.meta,
     this.phone,
     this.ride = RideStatus.waiting,
@@ -44,6 +45,12 @@ class StudentRow extends StatelessWidget {
   });
 
   final String? name;
+
+  /// 육안 확인용 사진 — §4.2. **미등록 학생이 예외가 아니라 기본 상태**라
+  /// `null` 이면 이름 뒤 2자 이니셜로 대체한다(2026-09-14 계약 확정).
+  /// URL 이 있어도 로딩 중이거나 로드에 실패하면 같은 이니셜 자리로
+  /// 떨어진다 — 깨진 이미지 아이콘을 보여주지 않는다.
+  final String? photoUrl;
 
   /// 정류장 · 반 · 보호자 등 한 줄.
   final String? meta;
@@ -88,18 +95,15 @@ class StudentRow extends StatelessWidget {
                   width: 38,
                   height: 38,
                   alignment: Alignment.center,
+                  clipBehavior: Clip.antiAlias,
                   decoration: BoxDecoration(
                     color: colors.bgSubtle,
                     shape: BoxShape.circle,
                   ),
-                  child: Text(
-                    initials,
-                    style: BaraedaTypography.labelSm.copyWith(
-                      fontSize: 14,
-                      height: 1,
-                      fontWeight: BaraedaFontWeight.bold,
-                      color: colors.textBrand,
-                    ),
+                  child: _StudentAvatar(
+                    photoUrl: photoUrl,
+                    initials: initials,
+                    textColor: colors.textBrand,
                   ),
                 ),
                 const SizedBox(width: BaraedaSpacing.space3),
@@ -145,6 +149,55 @@ class StudentRow extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// 명단 행 아바타 — §4.2 대체 표시 규칙.
+/// `photoUrl` 이 없으면(널 허용, 미등록이 기본 상태) 곧장 이니셜.
+/// 있으면 이미지를 그리되, **로딩 중이거나 로드에 실패해도 이니셜
+/// 자리를 그대로 유지**한다(깨진 이미지 아이콘·에러 화면을 보여주지 않음).
+class _StudentAvatar extends StatelessWidget {
+  const _StudentAvatar({
+    required this.photoUrl,
+    required this.initials,
+    required this.textColor,
+  });
+
+  final String? photoUrl;
+  final String initials;
+  final Color textColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final url = photoUrl;
+    if (url == null || url.isEmpty) {
+      return _initials();
+    }
+    return Image.network(
+      url,
+      width: 38,
+      height: 38,
+      fit: BoxFit.cover,
+      // `loadingBuilder` 의 progress 는 "시작 전"과 "다 됨"이 똑같이 null
+      // 이라 두 상태를 못 가른다. `frameBuilder` 의 frame 은 프레임이 실제로
+      // 디코드된 뒤에만 null 이 아니므로, 로딩 중(첫 프레임 전)과 완료를
+      // 정확히 가를 수 있다.
+      frameBuilder: (context, child, frame, wasSynchronouslyLoaded) =>
+          wasSynchronouslyLoaded || frame != null ? child : _initials(),
+      errorBuilder: (context, error, stackTrace) => _initials(),
+    );
+  }
+
+  Widget _initials() {
+    return Text(
+      initials,
+      style: BaraedaTypography.labelSm.copyWith(
+        fontSize: 14,
+        height: 1,
+        fontWeight: BaraedaFontWeight.bold,
+        color: textColor,
       ),
     );
   }

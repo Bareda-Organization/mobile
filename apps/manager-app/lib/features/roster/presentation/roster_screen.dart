@@ -362,6 +362,7 @@ class _StopSection extends StatelessWidget {
           for (final student in stop.students)
             StudentRow(
               name: student.name,
+              photoUrl: student.photoUrl,
               meta: [
                 if (student.change == RiderChange.added) '신규',
                 student.className,
