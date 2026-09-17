@@ -22,6 +22,27 @@ String requireRealBackendBaseUrl() {
   return ApiConstants.baseUrl;
 }
 
+/// `--dart-define=FIXTURE_DB` — `docker exec` 로 SQL 픽스처를 심을 DB 이름.
+///
+/// **판단 근거 — 좌석 DB 이름을 소스에 박지 않고 `API_BASE_URL` 과 짝을 이루는
+/// 별도 define 으로 받는다.** `API_BASE_URL` 의 포트 뒤에서 실제로 어느 DB 가
+/// 물려 있는지는 그 서버를 띄운 사람만 안다(`./gradlew bootRun --args=
+/// '--spring.datasource.url=...'` 의 `<네 DB>` 부분 — 회차마다 바뀐다). 이전
+/// 코드처럼 `schoolbus_fer3_p` 를 문자열로 박으면 그 DB 가 사라지는 순간
+/// 이 시험이 **영구히** 실패한다 — 그렇다고 포트→DB 매핑을 코드로 계산할
+/// 수단도 없다(그 매핑은 기동 시점에만 정해지고 서버가 공개하지 않는다).
+/// ⇒ 호출자가 `API_BASE_URL` 을 줄 때 같이 넘기게 만드는 것이 유일하게
+/// 이 파일 밖 사실(어느 DB인지)에 코드가 의존하지 않는 방법이다.
+///
+/// **`requireRealBackendBaseUrl()` 과 달리 생략해도 던지지 않는다** — 이
+/// 파일의 다른 시험(성공 경로·403)은 이 DB 픽스처가 전혀 필요 없다. 여기서
+/// 던지면 `main()` 최상단에서 파일 전체가 죽어 무관한 시험까지 함께
+/// 실패한다. 대신 호출부(`real_backend_p5_test.dart` 의 `setUpAll`)가
+/// `null` 을 보고 그 픽스처가 필요한 시험 1건만 `markTestSkipped` 한다.
+String? fixtureDbNameOrNull() => const bool.hasEnvironment('FIXTURE_DB')
+    ? const String.fromEnvironment('FIXTURE_DB')
+    : null;
+
 /// F5 P2 목표 — `real_backend_p4_test.dart` 의 §3.6·§3.8 ②구간
 /// `CHANGE_LIMIT_REACHED` 시험(Test C·Test F)은 run2 의 `depart_time`
 /// (시드 적용 시각 + 20분)에 기대는데, 재시드 없이 그 시각이 지나면

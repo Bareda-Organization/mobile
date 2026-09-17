@@ -182,10 +182,11 @@ class _RouteDetailView extends StatelessWidget {
         const SizedBox(height: BaraedaSpacing.sectionGap),
         const Text('경유 승하차지', style: BaraedaTypography.h3),
         const SizedBox(height: BaraedaSpacing.space2),
-        // 서버가 이미 "승차지 이전 2개 · 승차지 · 하차지" 로 창을 좁혀
-        // 보낸다(P-08) — 이 목록을 다시 자르지 않는다(route_detail.dart
-        // 클래스 문서와 같은 판단).
-        ...route.stops.map(
+        // route.stops 가 아니라 route.visibleStops 를 그린다 — 서버가
+        // 이미 창을 좁혀 보내지만(P-08), 그 계약이 깨져도 남의 자녀
+        // 승하차지가 노출되지 않도록 여기서도 같은 창을 다시 계산한다
+        // (route_detail.dart 의 `RouteDetail.visibleStops` 문서 참고).
+        ...route.visibleStops.map(
           (stop) => _RouteStopTile(
             stop: stop,
             isMyStop: stop.stopId == route.myStopId,

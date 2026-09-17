@@ -101,22 +101,36 @@ Future<void> _expectApiError(
 /// 이 상태(연결은 살아 있는데 학생 행만 `deleted_at` 이 선 상태)는
 /// `LinkedChildLookup` 자바독이 "죽은 가지가 아니다" 라고 직접 문서화한
 /// 시나리오이지만, **정상 API 경로로는 재현할 수 없다** — 그래서
-/// `setUpAll` 에서 이 좌석 전용 DB(`schoolbus_fer3_p`, 포트 8152)에
-/// 직접 SQL 로 그 상태를 만든다(`UPDATE student SET deleted_at = now()
-/// WHERE id = 5 AND deleted_at IS NULL`). 대상은 student 5(최지우) ·
-/// guardian 3(parentA3 계정)로, 이 저장소의 다른 실백엔드 시험 파일이
-/// 그 학생의 노선·위치 데이터를 건드리지 않는 것을 `grep` 으로 확인했다
+/// `setUpAll` 에서 `--dart-define=FIXTURE_DB` 로 받은 DB 에 직접 SQL 로
+/// 그 상태를 만든다(`UPDATE student SET deleted_at = now() WHERE id = 5
+/// AND deleted_at IS NULL`). 대상은 student 5(최지우) · guardian
+/// 3(parentA3 계정)로, 이 저장소의 다른 실백엔드 시험 파일이 그 학생의
+/// 노선·위치 데이터를 건드리지 않는 것을 `grep` 으로 확인했다
 /// (`parentA3` 는 `real_backend_p2_test.dart` 에서만 쓰이고 계정 설정
 /// 시험 용도다). 이 SQL 은 `deleted_at IS NULL` 조건이 있어 **멱등**하다
 /// — 반복 실행해도 두 번째부터는 0행이 갱신되고 상태가 더 나빠지지
 /// 않는다(`phase-goal-loop.md §5.4` 의 "연속 4회 실행" 요구를 만족한다).
 ///
-/// ⚠ **이식성 한계** — `docker exec school-bus-postgres-1 psql ...` 로
-/// 고정 컨테이너 이름을 호출한다. 이 좌석의 전용 자원(포트 8152 ·
-/// DB `schoolbus_fer3_p`)이 공유 postgres 컨테이너
-/// `school-bus-postgres-1` 위에 있다는 전제가 깨지면(다른 환경 · CI)
-/// 이 도구가 없거나 실패하며, 그 경우 404 시험 2건만 환경 문제로
-/// 건너뛴다 — 403·성공 경로 시험은 이 전제에 의존하지 않는다.
+/// ⚠ **DB 이름을 하드코딩하지 않는다(2026-09-14, 이월 4번 — 이 갈래가
+/// 그 의존을 없앤다).** 예전엔 `schoolbus_fer3_p` 를 문자열로 박아
+/// 뒀는데, `API_BASE_URL` 이 가리키는 서버가 실제로 어느 DB 를 물고
+/// 있는지는 그 서버를 띄운 사람만 안다 — 회차마다 이름이 바뀌고(이
+/// 파일은 `schoolbus_r4_assert` 를 겨냥해 돈다), 둘이 갈리면 **픽스처는
+/// 옛 DB 에 심기고 검사는 새 서버를 읽어 조용히 실패한다**(조율자가
+/// `8153` 으로 재현). 그래서 DB 이름도 `API_BASE_URL` 과 짝을 이루는
+/// `--dart-define=FIXTURE_DB` 로 받는다(`real_backend_target.dart` 의
+/// `fixtureDbNameOrNull()`). **주지 않으면 이 픽스처 없이 돌 수 있는
+/// 시험(성공 경로 · 403 두 건)은 그대로 통과하고, 이 픽스처가 필요한
+/// 404 시험 하나만 `markTestSkipped`** 로 빠진다 — `requireRealBackendBaseUrl()`
+/// 처럼 던지면 무관한 시험까지 파일 전체가 죽는다.
+///
+/// ⚠ **이식성 한계는 여전히 있다** — `docker exec school-bus-postgres-1
+/// psql ...` 로 고정 컨테이너 이름을 호출한다. 그 컨테이너가 없는
+/// 환경(다른 호스트 · CI)에서는 `FIXTURE_DB` 를 줘도 이 도구 자체가
+/// 실패하며, 그 경우도 404 시험 하나만 환경 문제로 건너뛴다 — 403·
+/// 성공 경로 시험은 이 전제에 의존하지 않는다. **앞선 좌석은 이 한계의
+/// 실패 형태를 "건너뜀" 으로 예측했으나 실제로는 (DB 이름이 갈려)
+/// 실패였다 — 이번 수정으로 그 갈림이 사라져 예측과 실제가 같아진다.**
 void main() {
   final baseUrl = requireRealBackendBaseUrl();
   late bool backendReachable;
@@ -143,7 +157,12 @@ void main() {
     }
 
     student5FixtureReady = false;
-    if (backendReachable) {
+    // `FIXTURE_DB` 를 안 주면 이 픽스처만 못 만든다 — API_BASE_URL 이
+    // 가리키는 서버의 실제 DB 이름을 코드가 추측할 수단이 없다(위 클래스
+    // 문서 "DB 이름을 하드코딩하지 않는다" 참고). backendReachable 시험
+    // (성공 경로·403)은 이 픽스처가 필요 없어 그대로 돈다.
+    final fixtureDb = fixtureDbNameOrNull();
+    if (backendReachable && fixtureDb != null) {
       try {
         const softDeleteStudent5Sql =
             'UPDATE student SET deleted_at = now() '
@@ -155,7 +174,7 @@ void main() {
           '-U',
           'schoolbus',
           '-d',
-          'schoolbus_fer3_p',
+          fixtureDb,
           '-c',
           softDeleteStudent5Sql,
         ]);
@@ -311,9 +330,9 @@ void main() {
       }
       if (!student5FixtureReady) {
         markTestSkipped(
-          '환경 문제: student5 소프트 삭제 픽스처를 만들지 못했다 '
-          '(docker exec school-bus-postgres-1 실패 — 이 좌석 전용 '
-          '컨테이너 전제가 깨졌을 가능성)',
+          '환경 문제: student5 소프트 삭제 픽스처를 만들지 못했다 — '
+          '--dart-define=FIXTURE_DB 미지정이거나 docker exec '
+          'school-bus-postgres-1 실패(고정 컨테이너 전제가 깨졌을 가능성)',
         );
         return;
       }

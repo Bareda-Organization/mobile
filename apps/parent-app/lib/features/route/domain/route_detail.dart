@@ -18,7 +18,11 @@ enum RouteStopChange {
 /// 노선의 승하차지 1개.
 ///
 /// 서버가 이미 "승차지 이전 2개 · 승차지 · 하차지" 로 창을 좁혀 보낸다
-/// (P-08) — 이 목록을 다시 자르지 않는다.
+/// (P-08). **화면은 이 목록(`stops`)을 직접 그리지 않고 [RouteDetail.
+/// visibleStops] 를 그린다** — 서버 응답이 계약대로 좁혀지지 않은 채
+/// 와도(다른 소비자·서버 변경) 화면이 §3.10 범위 밖을 그리지 않도록
+/// 클라이언트에서 같은 창을 다시 계산한다(근거는 `RouteDetail.
+/// visibleStops` 문서).
 class RouteStop {
   const RouteStop({
     required this.stopId,
@@ -118,4 +122,26 @@ class RouteDetail {
   /// 본인 승하차지 — [stops] 중 이 `stopId` 와 일치하는 항목을 강조해 그린다.
   final String myStopId;
   final List<RouteStop> stops;
+
+  /// 화면이 실제로 그릴 목록 — **서버가 이미 좁혀 보내는 것과 별개로
+  /// 클라이언트에서 다시 창을 계산한다.**
+  ///
+  /// **판단 근거 — 방어적 이중화다.** 서버 쪽 알고리즘은
+  /// `StudentRouteQueryService.window()` 의
+  /// `entries.subList(max(0, myIndex - 2), myIndex + 1)` 이다(내 승하차지
+  /// 이전 2개 + 내 승하차지, 그 뒤는 없음). 이 화면은 원래 그 계약을
+  /// 신뢰하고 [stops] 를 그대로 그렸는데, 그 신뢰가 **다른 집 아이의
+  /// 승하차지 좌표 노출**로 이어질 수 있다 — 서버 쪽 회귀나 이 모델을
+  /// 재사용하는 다른 소비자가 창을 안 좁힌 응답을 주면 방어 수단이 없었다.
+  /// 그래서 서버와 **같은 알고리즘**을 여기서도 돌려, 무엇이 오든 화면은
+  /// 항상 §3.10 범위 안쪽만 그린다.
+  ///
+  /// [myStopId] 를 [stops] 에서 못 찾으면 빈 목록을 돌려준다 — 서버도
+  /// 같은 경우 빈 창을 돌려준다(`window()` 의 `myIndex < 0` 분기).
+  List<RouteStop> get visibleStops {
+    final myIndex = stops.indexWhere((stop) => stop.stopId == myStopId);
+    if (myIndex < 0) return const [];
+    final start = myIndex - 2 < 0 ? 0 : myIndex - 2;
+    return stops.sublist(start, myIndex + 1);
+  }
 }
