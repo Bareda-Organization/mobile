@@ -11,6 +11,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage_platform_interface/flutter_secure_storage_platform_interface.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
+import '../support/driver_blocked_seed_reset.dart';
 import '../support/real_backend_target.dart';
 
 // 실제 시크릿 스토리지 없이 값만 메모리에 담아 두는 가짜 구현
@@ -104,6 +105,12 @@ void main() {
       backendReachable = e.response != null;
     } finally {
       probe.close();
+    }
+    // 목표 9(driverBlocked 로그인은 항상 실패)가 첫 실행만 초록이던 문제 — 다른 앱의
+    // 실서버 시험이 공유 시드 DB 에서 이 계정의 차단을 풀어 버리면 되돌릴 API 가 없다.
+    // 매 실행 전에 상태를 확인하고, 풀려 있을 때만 `/dev/reset` 으로 되돌린다.
+    if (backendReachable) {
+      await ensureDriverBlockedSeedIsIntact(baseUrl);
     }
   });
 
