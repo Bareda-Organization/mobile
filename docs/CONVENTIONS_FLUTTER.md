@@ -1,7 +1,7 @@
 # Flutter 코드 컨벤션
 
 작성 2026-09-10. 적용 대상 — `apps/parent-app` · `apps/manager-app` · `packages/baraeda_ui`.
-React 쪽 규칙은 `frontend/CONVENTIONS.md` 이며 **두 문서는 서로를 대체하지 않음.**
+React 쪽 규칙은 `docs/frontend/CONVENTIONS_REACT.md` 이며 **두 문서는 서로를 대체하지 않음.**
 
 기본은 [Effective Dart](https://dart.dev/effective-dart) 를 그대로 따르고,
 이 문서는 **Effective Dart 가 정하지 않는 것**(구조 · 상태 관리 · 네이밍 세부 · 이 프로젝트 규칙)만 규정.
@@ -42,14 +42,14 @@ lib/
         └── presentation/   screen · widget · provider(상태)
 ```
 
-**기능 하나가 폴더 하나.** 이름은 **`frontend/IMPLEMENTATION_PLAN.md` §3.1·§3.2 의 화면**을 따름
+**기능 하나가 폴더 하나.** 이름은 **`docs/frontend/IMPLEMENTATION_PLAN.md` §3.1·§3.2 의 화면**을 따름
 (`auth` · `home` · `live_map` · `route` · `schedule` · `settings` /
 `auth` · `home` · `drive_mode` · `roster` · `delay` · `route_map` · `run_end` · `emergency` · `offline_queue`).
 
 ⚠ **`docs/FEATURE_SPEC` 의 도메인 이름을 쓰지 않는다** (2026-09-10 정정).
 화면 하나가 도메인 경계를 넘나드는 자리가 실재한다 — 매니저 앱의 명단 화면은
 승차·하차·승인을 한 화면에서 다룬다. 도메인으로 쪼개면 **화면과 폴더가 1:1 로 안 붙어**
-어느 폴더를 열어야 하는지 알 수 없게 된다. 웹(`CONVENTIONS.md`)은 반대로 도메인 이름을 쓰는데,
+어느 폴더를 열어야 하는지 알 수 없게 된다. 웹(`CONVENTIONS_REACT.md`)은 반대로 도메인 이름을 쓰는데,
 그쪽은 화면이 아니라 라우트 단위라 경계가 겹치지 않기 때문이다.
 
 ### 지켜야 할 의존 방향
@@ -139,7 +139,7 @@ Container(color: const Color(0xFF1F5C4D))
   ```
 - **`const` 생성자를 가능한 한 붙임.** 리빌드를 건너뛰는 유일한 수단
 - 한 파일에 공개 위젯 하나. 그 파일 안의 비공개 하위 위젯은 `_` 접두로 같은 파일에 둠
-- **위젯 하나가 200줄을 넘으면 쪼갬** (`backend/docs/reference.md §20` 과 같은 기준)
+- **위젯 하나가 200줄을 넘으면 쪼갬** (`docs/backend/CODE_CONVENTIONS.md §20` 과 같은 기준)
 - 목록은 `ListView.builder`. `Column` + `map` 은 항목 수가 고정일 때만
 
 ## 6. 상태 · 비동기

@@ -38,7 +38,7 @@ dependencies:
   drift: ^2.34.4
   flutter:
     sdk: flutter
-  flutter_naver_map: ^1.4.4  # F4-B 1단계 — 노선 지도 화면 (frontend/IMPLEMENTATION_PLAN.md §3.2 RouteMapScreen)
+  flutter_naver_map: ^1.4.4  # F4-B 1단계 — 노선 지도 화면 (docs/frontend/IMPLEMENTATION_PLAN.md §3.2 RouteMapScreen)
   flutter_riverpod: ^3.4.3
   flutter_secure_storage: ^11.0.0
   freezed_annotation: ^3.1.0
