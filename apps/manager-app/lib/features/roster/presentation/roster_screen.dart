@@ -274,7 +274,7 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
             const SizedBox(width: 8),
             Expanded(
               child: StatCard(
-                label: '미탑승',
+                label: '미승차',
                 value: '${roster.counts.noShow}',
                 tone: StatCardTone.missed,
               ),
@@ -282,7 +282,7 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
             const SizedBox(width: 8),
             Expanded(
               child: StatCard(
-                label: '결석',
+                label: '미등원',
                 value: '${roster.counts.absentN}',
               ),
             ),
@@ -467,7 +467,7 @@ class _StudentActions extends StatelessWidget {
               onPressed: busy ? null : onBoard,
             ),
             BaraedaButton(
-              label: '미탑승',
+              label: '미승차',
               size: BaraedaButtonSize.sm,
               variant: BaraedaButtonVariant.danger,
               onPressed: busy ? null : onNoShow,

@@ -22,7 +22,7 @@ class _RideMeta {
     RideStatus.boarded: _RideMeta('탑승 완료', BaraedaStatus.boarded),
     RideStatus.alighted: _RideMeta('하차 완료', BaraedaStatus.boarded),
     RideStatus.absent: _RideMeta('미등원', BaraedaStatus.idle),
-    RideStatus.missed: _RideMeta('미탑승', BaraedaStatus.missed),
+    RideStatus.missed: _RideMeta('미승차', BaraedaStatus.missed),
     RideStatus.waiting: _RideMeta('대기', BaraedaStatus.idle),
   };
 

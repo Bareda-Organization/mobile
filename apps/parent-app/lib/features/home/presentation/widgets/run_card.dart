@@ -138,10 +138,12 @@ class _RunCardState extends ConsumerState<RunCard> {
       status: BaraedaStatus.boarded,
       label: run.riderStatus == RiderStatus.boarded ? '탑승 완료' : '하차 완료',
     ),
-    RiderStatus.absent || RiderStatus.noShow => (
-      status: BaraedaStatus.missed,
-      label: '미탑승',
-    ),
+    // ⚠ `absent`(미등원)와 `no_show`(미승차)를 합치지 않는다 — `FEATURE_SPEC C-02`
+    // 가 "반드시 구분" 을 명시한다. 학부모에게 둘은 전혀 다른 일이다 —
+    // 미등원은 **내가 직접 껐다**(정상), 미승차는 **버스가 왔는데 안 나왔다**(사고).
+    // 색도 사양이 가른다(§3 상태표) — 미등원 스톤 · 미승차 레드.
+    RiderStatus.absent => (status: BaraedaStatus.idle, label: '미등원'),
+    RiderStatus.noShow => (status: BaraedaStatus.missed, label: '미승차'),
     RiderStatus.waiting =>
       run.runStatus == RunStatus.moving
           ? (status: BaraedaStatus.moving, label: '이동 중')

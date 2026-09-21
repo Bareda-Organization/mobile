@@ -30,7 +30,7 @@ class _ThrowingRunRepository implements RunRepository {
   }) => Future.error(failure);
 }
 
-StudentRun _fixtureRun() => StudentRun(
+StudentRun _fixtureRun({RiderStatus status = RiderStatus.waiting}) => StudentRun(
   runId: 'run-1',
   direction: RunDirection.toAcademy,
   // ⚠ 서버가 주는 값은 **호차 이름 그 자체**다(`ERD bus.bus_no varchar(20)` · 시드 '1호차'·'2호차'
@@ -41,7 +41,7 @@ StudentRun _fixtureRun() => StudentRun(
   runStatus: RunStatus.idle,
   confirmed: false,
   riding: true,
-  riderStatus: RiderStatus.waiting,
+  riderStatus: status,
   stop: const RunStop(stopId: 'stop-1', name: '정문'),
   changeQuotaLeft: 1,
 );
@@ -62,6 +62,37 @@ Future<void> _pumpWith(WidgetTester tester, RunRepository repository) async {
 }
 
 void main() {
+  /// `absent`(미등원)와 `no_show`(미승차)는 **반드시 구분**한다 — `FEATURE_SPEC C-02`.
+  ///
+  /// ⚠ 학부모에게 이 둘은 전혀 다른 일이다. `absent` 는 **내가 직접 껐다**(정상),
+  /// `no_show` 는 **버스가 왔는데 아이가 안 나왔다**(사고). 한 라벨로 합치면
+  /// 학부모가 사고를 못 알아챈다. 색도 사양이 가른다 — 미등원 스톤 · 미승차 레드.
+  Future<void> pumpWithStatus(WidgetTester tester, RiderStatus status) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          home: Scaffold(
+            body: RunCard(
+              studentId: 's-1',
+              run: _fixtureRun(status: status),
+              canToggle: false,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  testWidgets('미등원과 미승차를 다른 말로 보여준다', (tester) async {
+    await pumpWithStatus(tester, RiderStatus.absent);
+    expect(find.text('미등원'), findsOneWidget);
+    expect(find.text('미승차'), findsNothing);
+
+    await pumpWithStatus(tester, RiderStatus.noShow);
+    expect(find.text('미승차'), findsOneWidget);
+    expect(find.text('미등원'), findsNothing);
+  });
+
   testWidgets('호차를 서버 값 그대로 보여준다 — 단위를 덧붙이지 않는다', (tester) async {
     await tester.pumpWidget(
       ProviderScope(
