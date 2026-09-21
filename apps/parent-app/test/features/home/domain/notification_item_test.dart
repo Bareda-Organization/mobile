@@ -8,8 +8,8 @@ void main() {
     final item = NotificationItem.fromJson({
       'notification_id': 'n-1',
       'type': 'boarding',
-      'title': '탑승 안내',
-      'body': '김철수 학생이 곧 탑승합니다.',
+      'title': '승하차 안내',
+      'body': '김철수 학생이 버스에 탑승했습니다.',
       'sent_at': '2026-09-12T00:00:00Z',
       'read_at': null,
       'popup': false,
@@ -22,8 +22,8 @@ void main() {
     final item = NotificationItem.fromJson({
       'notification_id': 'n-2',
       'type': 'alighting',
-      'title': '하차 안내',
-      'body': '김철수 학생이 하차했습니다.',
+      'title': '승하차 안내',
+      'body': '김철수 학생이 버스에서 하차했습니다.',
       'sent_at': '2026-09-12T00:00:00Z',
       'read_at': '2026-09-12T00:05:00Z',
       'popup': false,
