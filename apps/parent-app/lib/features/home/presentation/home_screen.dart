@@ -36,7 +36,20 @@ class HomeScreen extends ConsumerWidget {
           children: [
             if (isParent) const _ParentSection() else const _StudentSection(),
             const SizedBox(height: BaraedaSpacing.sectionGap),
-            const Text('알림', style: BaraedaTypography.h3),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('알림', style: BaraedaTypography.h3),
+                // UF-P-08 — "홈 → [알림] → … → [알림 설정]". 이 배선이 없어서
+                // SettingsScreen 에 도달할 길이 부재했다(2026-09-21).
+                BaraedaButton(
+                  label: '설정',
+                  size: BaraedaButtonSize.sm,
+                  variant: BaraedaButtonVariant.ghost,
+                  onPressed: () => context.push(AppRoutes.settings),
+                ),
+              ],
+            ),
             const SizedBox(height: BaraedaSpacing.space4),
             const _NotificationSection(),
           ],
@@ -87,8 +100,7 @@ class _ParentSection extends ConsumerWidget {
                     )
                     .toList(),
                 onChanged: (value) =>
-                    ref.read(selectedStudentIdProvider.notifier).state =
-                        value,
+                    ref.read(selectedStudentIdProvider.notifier).state = value,
               ),
               const SizedBox(height: BaraedaSpacing.space4),
             ],

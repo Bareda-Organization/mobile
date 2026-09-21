@@ -33,7 +33,7 @@ class LiveMapScreen extends ConsumerWidget {
     final isParent = capabilities?.canToggleAttendance ?? false;
 
     return Scaffold(
-      appBar: const AppHeader(title: '자리표시'),
+      appBar: const AppHeader(title: '실시간 버스 위치'),
       body: SafeArea(
         child: isParent ? const _ParentLiveMap() : const _StudentLiveMap(),
       ),
@@ -91,6 +91,14 @@ class _ParentLiveMap extends ConsumerWidget {
                 const SizedBox(height: BaraedaSpacing.space4),
               ],
               Expanded(child: _LiveMapBody(studentId: selectedId)),
+              const SizedBox(height: BaraedaSpacing.space4),
+              // UF-P-07 — 지도 다음 단계가 "[노선 자세히 보기]" 다. 이 버튼이 없어서
+              // RouteDetailScreen 에 도달할 길이 부재했다(2026-09-21).
+              BaraedaButton(
+                label: '노선 자세히 보기',
+                variant: BaraedaButtonVariant.ghost,
+                onPressed: () => context.push(AppRoutes.routeDetail),
+              ),
             ],
           ),
         );
