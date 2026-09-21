@@ -10,9 +10,11 @@ import 'package:manager_app/features/offline_queue/presentation/offline_queue_pr
 /// UF-E-07).
 ///
 /// 낙관적 UI 를 두지 않는다(§1.9) — 큐에 쌓인 요청은 서버 2xx 를 받기 전까지
-/// 계속 "처리되지 않았습니다 · 대기 중" 으로 보여준다. 자동 폴링·재전송은
-/// 두지 않는다(WS 도입 이후 F4 몫) — 재전송은 이 화면의 버튼을 눌렀을 때만
-/// 일어난다.
+/// 계속 "처리되지 않았습니다 · 대기 중" 으로 보여준다.
+///
+/// 이 화면의 버튼은 **수동** 재전송이다 — 자동 재생은 `OfflineQueueAutoSync`
+/// (주기)와 `OfflineQueueRepository.sendOrQueue`(다음 쓰기 직전)가 맡으므로,
+/// 이 화면을 한 번도 열지 않아도 복구 후 큐는 비워진다(M-06).
 class OfflineQueueScreen extends ConsumerStatefulWidget {
   const OfflineQueueScreen({super.key});
 

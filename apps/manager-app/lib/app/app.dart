@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:manager_app/app/router.dart';
 import 'package:manager_app/core/auth/account_session.dart';
+import 'package:manager_app/features/offline_queue/presentation/offline_queue_auto_sync.dart';
 
 /// 기사·동승자 앱 진입점. **다크 고정** — `ThemeMode.system`·`.light` 은 쓰지
 /// 않는다(CONVENTIONS_FLUTTER.md §3, 운행 시간대 특성).
@@ -30,13 +31,18 @@ class BaraedaManagerApp extends ConsumerWidget {
     }
 
     final router = ref.watch(routerProvider);
-    return MaterialApp.router(
-      title: '바래다 매니저',
-      debugShowCheckedModeBanner: false,
-      theme: BaraedaTheme.dark(),
-      darkTheme: BaraedaTheme.dark(),
-      themeMode: ThemeMode.dark,
-      routerConfig: router,
+    // 로그인 이후 트리 전체를 감싼다 — 오프라인 큐 재생은 어느 화면에 있든
+    // 돌아야 한다(M-06 "복구 시 자동 동기화"). 로딩 분기에는 붙이지 않는다:
+    // 그때는 아직 토큰 판정 전이라 재생할 수 없다.
+    return OfflineQueueAutoSync(
+      child: MaterialApp.router(
+        title: '바래다 매니저',
+        debugShowCheckedModeBanner: false,
+        theme: BaraedaTheme.dark(),
+        darkTheme: BaraedaTheme.dark(),
+        themeMode: ThemeMode.dark,
+        routerConfig: router,
+      ),
     );
   }
 }

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:manager_app/app/app.dart';
 import 'package:manager_app/app/di.dart';
+import 'package:manager_app/features/offline_queue/presentation/offline_queue_auto_sync.dart';
 
 import 'support/fake_token_storage.dart';
 
@@ -28,5 +29,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(MaterialApp), findsOneWidget);
+    // M-06 자동 동기화가 **실제 앱 트리에 걸려 있는지** — 위젯을 만들어 두고
+    // 아무 데도 끼우지 않으면 큐는 영영 자동으로 나가지 않는다
+    // (`test/app/reachable_routes_test.dart` 와 같은 형태의 구멍).
+    expect(find.byType(OfflineQueueAutoSync), findsOneWidget);
   });
 }

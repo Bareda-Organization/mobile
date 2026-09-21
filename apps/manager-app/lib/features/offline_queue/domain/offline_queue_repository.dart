@@ -19,8 +19,12 @@ abstract interface class OfflineQueueRepository {
   /// 큐 화면이 진입 시 보여줄 대기 목록.
   Future<List<PendingRequestSummary>> fetchPending();
 
-  /// 큐 화면의 수동 재시도 버튼이 부르는 재생 — 네트워크가 돌아왔다고
-  /// 사용자가 판단했을 때만 실행한다(자동 폴링은 이번 범위 밖, WS 도입
-  /// 이후 F4 몫).
+  /// 큐에 쌓인 요청을 순서대로 다시 보낸다. 부르는 곳 셋 —
+  /// ①큐 화면의 수동 재시도 버튼 ②[sendOrQueue] (쓰기 한 건이 성공하기 직전)
+  /// ③`OfflineQueueAutoSync` 의 주기 타이머. ②·③ 이 M-06 의 "복구 시 **자동**
+  /// 동기화" 를 맡는다.
+  ///
+  /// 통신이 아직 두절이면 **첫 실패에서 멈춘다** — 남은 행마다 타임아웃을
+  /// 되풀이할 이유가 없고, 중간 건만 성공하면 큐 안의 순서가 뒤집힌다.
   Future<ReplayResult> replayPending();
 }
