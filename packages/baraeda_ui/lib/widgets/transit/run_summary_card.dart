@@ -108,7 +108,10 @@ class RunSummaryCard extends StatelessWidget {
                       Expanded(
                         child: _RunStopTile(
                           icon: 'navigation',
-                          label: '현재 이동 중',
+                          // 호출부가 넘기는 값은 `/manager/runs` 의 `origin` — **출발지**다
+                          // (`API_SPEC §4.1`). "현재 이동 중" 으로 적으면 출발 전 회차에도
+                          // 버스가 움직이는 것처럼 보인다.
+                          label: '출발',
                           value: currentStop,
                         ),
                       ),
@@ -116,7 +119,9 @@ class RunSummaryCard extends StatelessWidget {
                       Expanded(
                         child: _RunStopTile(
                           icon: 'map-pin',
-                          label: '다음 정류장',
+                          // `destination` — **도착지**. 그리고 이 서비스에는 공용 정류장
+                          // 개념이 부재하고 단위는 승하차지다(`FEATURE_SPEC C-12`).
+                          label: '도착',
                           value: nextStop,
                         ),
                       ),

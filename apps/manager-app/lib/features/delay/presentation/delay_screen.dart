@@ -33,7 +33,7 @@ class _DelayScreenState extends ConsumerState<DelayScreen> {
     BaraedaSegmentedOption('traffic', label: '교통 체증'),
     BaraedaSegmentedOption('weather', label: '기상 악화'),
     BaraedaSegmentedOption('vehicle_check', label: '차량 점검'),
-    BaraedaSegmentedOption('prev_stop_wait', label: '이전 정류장 대기'),
+    BaraedaSegmentedOption('prev_stop_wait', label: '이전 승하차지 대기'),
   ];
 
   @override
