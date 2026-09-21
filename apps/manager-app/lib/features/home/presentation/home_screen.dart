@@ -96,7 +96,7 @@ class ManagerHomeScreen extends ConsumerWidget {
                         : '하원',
                     status: _statusOf(run.runStatus),
                     statusLabel: _statusLabelOf(run),
-                    eta: DateFormat('HH:mm').format(run.departTime),
+                    eta: DateFormat('HH:mm').format(run.departTime.toLocal()),
                     currentStop: run.origin,
                     nextStop: run.destination,
                     onTap: run.confirmed

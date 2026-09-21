@@ -151,8 +151,12 @@ class _RunCardState extends ConsumerState<RunCard> {
   };
 }
 
+/// 서버가 주는 시각은 **UTC 순간**이다(`…Z`). `DateTime.parse` 는 오프셋이
+/// 붙은 문자열을 UTC `DateTime` 으로 돌려주므로, 벽시계로 읽으려면 기기
+/// 표준시로 옮겨야 한다 — 안 옮기면 KST 에서 **9시간 이른 시각**이 나온다.
 String _formatTime(DateTime time) {
-  final hour = time.hour.toString().padLeft(2, '0');
-  final minute = time.minute.toString().padLeft(2, '0');
+  final local = time.toLocal();
+  final hour = local.hour.toString().padLeft(2, '0');
+  final minute = local.minute.toString().padLeft(2, '0');
   return '$hour:$minute';
 }

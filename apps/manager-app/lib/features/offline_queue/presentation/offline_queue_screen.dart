@@ -120,7 +120,7 @@ class _OfflineQueueScreenState extends ConsumerState<OfflineQueueScreen> {
             style: Theme.of(context).textTheme.titleSmall,
           ),
           const SizedBox(height: 4),
-          Text(DateFormat('MM/dd HH:mm:ss').format(item.createdAt)),
+          Text(DateFormat('MM/dd HH:mm:ss').format(item.createdAt.toLocal())),
           const SizedBox(height: 4),
           const Text('처리되지 않았습니다 · 대기 중'),
         ],

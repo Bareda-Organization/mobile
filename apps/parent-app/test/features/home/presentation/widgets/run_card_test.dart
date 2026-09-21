@@ -30,14 +30,17 @@ class _ThrowingRunRepository implements RunRepository {
   }) => Future.error(failure);
 }
 
-StudentRun _fixtureRun({RiderStatus status = RiderStatus.waiting}) => StudentRun(
+StudentRun _fixtureRun({
+  RiderStatus status = RiderStatus.waiting,
+  DateTime? departTime,
+}) => StudentRun(
   runId: 'run-1',
   direction: RunDirection.toAcademy,
   // ⚠ 서버가 주는 값은 **호차 이름 그 자체**다(`ERD bus.bus_no varchar(20)` · 시드 '1호차'·'2호차'
   // · `API_SPEC` "호차"). 맨 숫자 '1' 로 두면 화면이 단위를 덧붙여도 시험이 못 잡는다 —
   // 실제로 2026-09-20 까지 "1호차번" 이 그렇게 살아남았다.
   busNo: '1호차',
-  departTime: DateTime(2026, 9, 12, 8),
+  departTime: departTime ?? DateTime(2026, 9, 12, 8),
   runStatus: RunStatus.idle,
   confirmed: false,
   riding: true,
@@ -82,6 +85,37 @@ void main() {
       ),
     );
   }
+
+  // ⚠ 2026-09-21 실측 — 서버가 주는 시각은 **UTC 순간**(`2026-09-21T10:40:19Z`)인데
+  // 화면이 그 값의 `hour`·`minute` 를 그대로 읽어 **9시간 어긋난 시각**을 보여줬다
+  // (19:40 출발을 "10:40 출발" 로). `DateTime.parse` 는 오프셋이 붙은 문자열을
+  // 언제나 **UTC DateTime** 으로 돌려주므로, 벽시계로 쓰려면 `toLocal()` 이 필요하다.
+  //
+  // 기대값을 `toLocal()` 로 계산하는 이유 — 시험기의 표준시를 코드에서 바꿀 수단이
+  // 부재하다. 표준시가 UTC 인 기계에서는 이 단언이 참으로 통과하지만(변환 여부와
+  // 무관), **KST 에서 돌리면 변환이 빠진 순간 실패한다.**
+  testWidgets('출발 시각을 기기 표준시로 보여준다 — 서버가 준 UTC 그대로가 아니라', (tester) async {
+    final departUtc = DateTime.utc(2026, 9, 21, 10, 40);
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          home: Scaffold(
+            body: RunCard(
+              studentId: 's-1',
+              run: _fixtureRun(departTime: departUtc),
+              canToggle: false,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final local = departUtc.toLocal();
+    final expected =
+        '${local.hour.toString().padLeft(2, '0')}:'
+        '${local.minute.toString().padLeft(2, '0')}';
+    expect(find.textContaining('$expected 출발'), findsOneWidget);
+  });
 
   testWidgets('미등원과 미승차를 다른 말로 보여준다', (tester) async {
     await pumpWithStatus(tester, RiderStatus.absent);

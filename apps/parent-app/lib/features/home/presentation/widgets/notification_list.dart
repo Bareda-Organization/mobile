@@ -36,7 +36,10 @@ class NotificationList extends ConsumerWidget {
     WidgetRef ref,
     NotificationItem item,
   ) {
+    final (status, label) = _tagOf(item.type);
     return NotificationCard(
+      status: status,
+      statusLabel: label,
       title: item.title,
       sub: item.body,
       meta: item.studentName,
@@ -51,6 +54,29 @@ class NotificationList extends ConsumerWidget {
     ref.invalidate(notificationsProvider);
   }
 }
+
+/// 알림 종류(§9.7) → 상태 태그. 색 규칙은 `FEATURE_SPEC C-09` —
+/// 그린(완료) · 앰버(이동·지연) · 레드(미승차·긴급) · 스톤(대기·종료).
+///
+/// ⚠ **모르는 종류를 그린으로 떨어뜨리지 않는다.** §9.7 은 앞으로도 늘고,
+/// 기본값이 `boarded`(초록 '승차 완료')인 [NotificationCard] 에 그대로 맡기면
+/// 새 종류가 생길 때마다 "승차 완료" 로 잘못 표시된다 — 2026-09-21 까지
+/// **모든 알림**이 그 상태였다. 특히 `no_show`(미승차)는 버스가 왔는데 아이가
+/// 안 나온 사고라, 초록 '승차 완료' 로 보이면 학부모가 사고를 정상으로 읽는다.
+(BaraedaStatus, String) _tagOf(String type) => switch (type) {
+  'boarding' => (BaraedaStatus.boarded, '승차 완료'),
+  'alighting' => (BaraedaStatus.boarded, '하차 완료'),
+  'boarding_canceled' => (BaraedaStatus.idle, '승차 취소'),
+  'alighting_canceled' => (BaraedaStatus.idle, '하차 취소'),
+  'no_show' => (BaraedaStatus.missed, '미승차'),
+  'arrive' => (BaraedaStatus.moving, '곧 도착'),
+  'delay' => (BaraedaStatus.moving, '지연'),
+  'run_started' => (BaraedaStatus.moving, '운행 시작'),
+  'change_decided' => (BaraedaStatus.idle, '변경 결과'),
+  'signup_decided' => (BaraedaStatus.idle, '가입 결과'),
+  'link_requested' => (BaraedaStatus.idle, '자녀 연결'),
+  _ => (BaraedaStatus.idle, '안내'),
+};
 
 String _relativeTime(DateTime sentAt, DateTime now) {
   final diff = now.difference(sentAt);

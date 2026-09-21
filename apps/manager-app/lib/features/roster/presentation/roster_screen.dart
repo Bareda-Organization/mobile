@@ -362,7 +362,7 @@ class _StopSection extends StatelessWidget {
         ? (stop.skipNotice ?? '경유하지 않음')
         : (arrivedAt == null
               ? '미도착'
-              : '${DateFormat('HH:mm').format(arrivedAt)} 도착');
+              : '${DateFormat('HH:mm').format(arrivedAt.toLocal())} 도착');
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -495,7 +495,7 @@ class _StudentActions extends StatelessWidget {
           children: [
             if (expiresAt != null)
               Text(
-                '${DateFormat('HH:mm:ss').format(expiresAt)} 만료',
+                '${DateFormat('HH:mm:ss').format(expiresAt.toLocal())} 만료',
                 style: Theme.of(context).textTheme.bodySmall,
               ),
             BaraedaButton(

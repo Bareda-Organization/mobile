@@ -368,7 +368,7 @@ class _PositionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final timeText = DateFormat('HH:mm:ss').format(position.receivedAt);
+    final timeText = DateFormat('HH:mm:ss').format(position.receivedAt.toLocal());
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: BaraedaSpacing.space2),
       child: Column(
@@ -395,7 +395,7 @@ class _EventTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final timeText = DateFormat('HH:mm:ss').format(time);
+    final timeText = DateFormat('HH:mm:ss').format(time.toLocal());
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: BaraedaSpacing.space2),
       child: Column(

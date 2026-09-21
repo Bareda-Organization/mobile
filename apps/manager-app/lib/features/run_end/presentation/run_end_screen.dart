@@ -126,7 +126,7 @@ class _RunEndScreenState extends ConsumerState<RunEndScreen> {
         child: Text('종료 정보가 없습니다 — 운행 모드에서 최종 지점 도착 처리를 마치면 이 화면으로 이동합니다'),
       );
     }
-    final arrivedLabel = DateFormat('HH:mm').format(termination.arrivedAt);
+    final arrivedLabel = DateFormat('HH:mm').format(termination.arrivedAt.toLocal());
     if (termination.finishPending) {
       return AlertBanner(
         tone: AlertTone.moving,
@@ -156,7 +156,7 @@ class _RunEndScreenState extends ConsumerState<RunEndScreen> {
             tone: AlertTone.boarded,
             body:
                 '보고가 접수됐습니다 '
-                '(${DateFormat('HH:mm:ss').format(_result!.reportedAt)})',
+                '(${DateFormat('HH:mm:ss').format(_result!.reportedAt.toLocal())})',
           ),
           const SizedBox(height: 12),
         ],

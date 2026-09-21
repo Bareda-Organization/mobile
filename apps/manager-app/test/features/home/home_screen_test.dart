@@ -23,8 +23,8 @@ import 'package:manager_app/features/home/presentation/home_screen.dart';
 /// 관심사가 흐려진다(`router_redirect_test.dart` 는 반대로 계정 상태 게이트가
 /// 관심사라 실제 화면이 필요했던 경우다).
 void main() {
-  ManagerRun confirmedRun() {
-    final now = DateTime(2026, 9, 12, 8);
+  ManagerRun confirmedRun({DateTime? departTime}) {
+    final now = departTime ?? DateTime(2026, 9, 12, 8);
     return ManagerRun(
       runId: 'run-1',
       busNo: '3호차',
@@ -67,6 +67,29 @@ void main() {
       child: MaterialApp.router(routerConfig: buildRouter()),
     );
   }
+
+  // ⚠ 2026-09-21 실측(학부모 앱에서 먼저 드러났다) — 서버 시각은 **UTC 순간**인데
+  // 화면이 그대로 벽시계로 읽어 KST 에서 **9시간 이른 시각**이 나왔다.
+  // 기대값을 `toLocal()` 로 계산하는 이유는 시험기의 표준시를 바꿀 수단이
+  // 부재하기 때문이다 — UTC 기계에서는 무해하게 통과하고 KST 에서 문다.
+  testWidgets('출발 시각을 기기 표준시로 보여준다', (tester) async {
+    final departUtc = DateTime.utc(2026, 9, 21, 10, 40);
+    await tester.pumpWidget(
+      wrap([
+        todayRunsProvider.overrideWith(
+          (ref) async => [confirmedRun(departTime: departUtc)],
+        ),
+        currentUserRoleProvider.overrideWith((ref) => UserRole.escort),
+      ]),
+    );
+    await tester.pumpAndSettle();
+
+    final local = departUtc.toLocal();
+    final expected =
+        '${local.hour.toString().padLeft(2, '0')}:'
+        '${local.minute.toString().padLeft(2, '0')}';
+    expect(find.textContaining(expected), findsOneWidget);
+  });
 
   testWidgets('로딩 중에는 진행 표시기를 보여준다', (tester) async {
     final neverCompletes = Completer<List<ManagerRun>>().future;
