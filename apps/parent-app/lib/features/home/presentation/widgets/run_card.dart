@@ -96,7 +96,7 @@ class _RunCardState extends ConsumerState<RunCard> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  '${run.direction.label} · ${run.busNo}번',
+                  '${run.direction.label} · ${run.busNo}',
                   style: BaraedaTypography.bodyLg,
                 ),
                 BaraedaStatusPill(status: status.status, label: status.label),

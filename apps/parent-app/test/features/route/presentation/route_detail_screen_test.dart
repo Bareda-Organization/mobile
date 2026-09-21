@@ -69,7 +69,9 @@ Map<String, dynamic> _routeJson({
   Map<String, dynamic> extraTopLevel = const {},
 }) => {
   'run_id': 'r-1',
-  'bus_no': '7',
+  // ⚠ 서버가 주는 값은 호차 이름 그 자체다(시드 '1호차'·'2호차' · `ERD varchar(20)`).
+  // 맨 숫자 '7' 로 두면 화면이 "호차" 를 덧붙여도 시험이 못 잡는다 — "7호차호차" 가 그렇게 살아남았다.
+  'bus_no': '7호차',
   'depart_time': '2026-09-14T08:00:00Z',
   'confirmed': true,
   'driver': {'name': '기사김', ...driverExtra},
@@ -114,6 +116,25 @@ void main() {
     );
     await tester.pumpAndSettle();
   }
+
+  group('⓪호차 표기 — 서버 값을 그대로 쓴다', () {
+    testWidgets('단위를 덧붙이지 않는다', (tester) async {
+      final route = RouteDetail.fromJson(
+        _routeJson(
+          stops: [_stopJson(stopId: 's-stop-1', seq: 1, name: '정류장1')],
+          myStopId: 's-stop-1',
+        ),
+      );
+      await pumpScreen(tester, response: route);
+
+      expect(find.textContaining('7호차 · '), findsOneWidget);
+      expect(
+        find.textContaining('7호차호차'),
+        findsNothing,
+        reason: '`bus_no` 가 이미 "7호차" 라 "호차" 를 붙이면 겹친다',
+      );
+    });
+  });
 
   group('①표시 범위 — 서버가 보낸 stops 를 그대로 그린다(재절단 없음)', () {
     testWidgets(
@@ -195,7 +216,7 @@ void main() {
       await pumpScreen(tester, response: route);
 
       expect(find.textContaining('ETA_마커'), findsNothing);
-      // 화면에 원래 뜨는 숫자(호차 "7"·시각 "08:00")와 안 겹치도록
+      // 화면에 원래 뜨는 숫자(호차 "7호차"·시각 "08:00")와 안 겹치도록
       // student_count 는 마커 문자열로 대조한다.
       expect(find.text('4명'), findsNothing);
     });

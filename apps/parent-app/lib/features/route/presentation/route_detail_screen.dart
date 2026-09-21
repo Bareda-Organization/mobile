@@ -161,7 +161,7 @@ class _RouteDetailView extends StatelessWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      '${route.busNo}호차 · $departTimeText 출발',
+                      '${route.busNo} · $departTimeText 출발',
                       style: BaraedaTypography.h3,
                     ),
                   ),

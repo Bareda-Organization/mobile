@@ -51,7 +51,7 @@ class _ThrowingChangeRequestRepository implements ChangeRequestRepository {
 StudentRun _fixtureRun() => StudentRun(
   runId: 'run-1',
   direction: RunDirection.toAcademy,
-  busNo: '1',
+  busNo: '1호차',   // 서버가 주는 꼴 — run_card_test 와 같은 이유
   departTime: DateTime(2026, 9, 12, 8),
   runStatus: RunStatus.idle,
   confirmed: false,
@@ -95,6 +95,13 @@ Future<void> _pumpAndSubmit(WidgetTester tester, Failure failure) async {
 }
 
 void main() {
+  // ⚠ 아래 흐름 시험들은 라벨을 `runOptionLabel` 로 만들어 찾는다 — 편하지만 **그 함수가 틀려도
+  // 양쪽이 같이 틀려서 통과한다**(`API_SPEC §8` 에러 사전 대조가 상수를 안 쓰는 것과 같은 이유).
+  // 그래서 문구 자체는 여기서 **손으로 적은 리터럴**로 한 번 고정한다.
+  test('회차 라벨은 호차를 서버 값 그대로 쓴다 — 단위를 덧붙이지 않는다', () {
+    expect(runOptionLabel(_fixtureRun()), '등원 · 1호차');
+  });
+
   testWidgets('신청이 CHANGE_WINDOW_CLOSED 로 실패하면 운행 중 문구를 보여준다', (tester) async {
     await _pumpAndSubmit(
       tester,

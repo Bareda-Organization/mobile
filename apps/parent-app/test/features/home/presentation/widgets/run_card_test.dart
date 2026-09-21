@@ -33,7 +33,10 @@ class _ThrowingRunRepository implements RunRepository {
 StudentRun _fixtureRun() => StudentRun(
   runId: 'run-1',
   direction: RunDirection.toAcademy,
-  busNo: '1',
+  // ⚠ 서버가 주는 값은 **호차 이름 그 자체**다(`ERD bus.bus_no varchar(20)` · 시드 '1호차'·'2호차'
+  // · `API_SPEC` "호차"). 맨 숫자 '1' 로 두면 화면이 단위를 덧붙여도 시험이 못 잡는다 —
+  // 실제로 2026-09-20 까지 "1호차번" 이 그렇게 살아남았다.
+  busNo: '1호차',
   departTime: DateTime(2026, 9, 12, 8),
   runStatus: RunStatus.idle,
   confirmed: false,
@@ -59,6 +62,29 @@ Future<void> _pumpWith(WidgetTester tester, RunRepository repository) async {
 }
 
 void main() {
+  testWidgets('호차를 서버 값 그대로 보여준다 — 단위를 덧붙이지 않는다', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          home: Scaffold(
+            body: RunCard(
+              studentId: 's-1',
+              run: _fixtureRun(),
+              canToggle: false,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('등원 · 1호차'), findsOneWidget);
+    expect(
+      find.text('등원 · 1호차번'),
+      findsNothing,
+      reason: '`bus_no` 가 이미 "1호차" 라 "번" 을 붙이면 "1호차번" 이 된다',
+    );
+  });
+
   testWidgets('토글이 CHANGE_LIMIT_REACHED 로 실패하면 한도 소진 문구를 보여준다', (
     tester,
   ) async {
