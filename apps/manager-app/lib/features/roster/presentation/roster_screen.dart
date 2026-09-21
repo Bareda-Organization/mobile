@@ -2,7 +2,9 @@ import 'package:baraeda_core/baraeda_core.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:manager_app/app/app_routes.dart';
 import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/core/network/failure_messages.dart';
@@ -168,8 +170,36 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
   Widget build(BuildContext context) {
     final runId = ref.watch(selectedRunIdProvider);
 
+    // 사양이 정한 진입점 — 둘 다 **명단 화면에서** 간다.
+    //  · UF-E-05 "명단 → [지연 알림]"  — M-05 는 **동승자 전용**(기사는 운전 중)
+    //  · M-09 운행 정보 · 외부 내비     — **기사 전용**
+    // 2026-09-21 까지 이 두 배선이 부재해 화면이 만들어져 있어도 도달할 수 없었다.
+    final caps = ref.watch(roleCapabilitiesProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('승하차 명단')),
+      appBar: AppBar(
+        title: const Text('승하차 명단'),
+        actions: [
+          if (caps?.canSendDelayNotification ?? false)
+            TextButton(
+              onPressed: () => context.push(AppRoutes.delay),
+              child: const Text('지연 알림'),
+            ),
+          if (caps?.canOperateRun ?? false)
+            TextButton(
+              onPressed: () => context.push(AppRoutes.routeMap),
+              child: const Text('노선 지도'),
+            ),
+          // ⚠ 오프라인 큐는 **이 화면에서만** 갈 수 있어야 한다.
+          // `OfflineQueueScreen` 자바독이 "재전송은 이 화면의 버튼을 눌렀을 때만"
+          // 이라고 적는다 — 도달 불가면 통신 두절로 쌓인 승하차 처리가 **영영 안 나간다**.
+          // 승하차를 처리하는 주체(동승자)에게 연다(M-06 · UF-E-07).
+          if (caps?.canDecideBoardingStatus ?? false)
+            TextButton(
+              onPressed: () => context.push(AppRoutes.offlineQueue),
+              child: const Text('대기열'),
+            ),
+        ],
+      ),
       body: runId == null
           ? const Center(child: Text('선택된 운행이 없습니다 — 홈에서 운행을 선택하세요'))
           : _buildBody(context, runId),
@@ -195,8 +225,7 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
         Expanded(
           child: rosterAsync.when(
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (error, _) =>
-                Center(child: Text('명단을 불러오지 못했습니다: $error')),
+            error: (error, _) => Center(child: Text('명단을 불러오지 못했습니다: $error')),
             data: (roster) =>
                 _buildRoster(runId, canDecide, hasChanges, roster),
           ),
@@ -212,89 +241,89 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
     RosterResponse roster,
   ) {
     return ListView(
-          padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
+      children: [
+        if (hasChanges) ...[
+          const AlertBanner(
+            tone: AlertTone.moving,
+            body: '승하차지·명단이 변경됐습니다 — 확인 후 계속 진행하세요',
+          ),
+          const SizedBox(height: 8),
+          BaraedaButton(
+            label: '변경 목록 확인',
+            onPressed: _acking ? null : () => _ackChanges(runId),
+          ),
+          const SizedBox(height: 16),
+        ],
+        Row(
           children: [
-            if (hasChanges) ...[
-              const AlertBanner(
-                tone: AlertTone.moving,
-                body: '승하차지·명단이 변경됐습니다 — 확인 후 계속 진행하세요',
+            Expanded(
+              child: StatCard(
+                label: '탑승',
+                value: '${roster.counts.boarded}',
+                tone: StatCardTone.boarded,
               ),
-              const SizedBox(height: 8),
-              BaraedaButton(
-                label: '변경 목록 확인',
-                onPressed: _acking ? null : () => _ackChanges(runId),
-              ),
-              const SizedBox(height: 16),
-            ],
-            Row(
-              children: [
-                Expanded(
-                  child: StatCard(
-                    label: '탑승',
-                    value: '${roster.counts.boarded}',
-                    tone: StatCardTone.boarded,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: StatCard(
-                    label: '대기',
-                    value: '${roster.counts.waiting}',
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: StatCard(
-                    label: '미탑승',
-                    value: '${roster.counts.noShow}',
-                    tone: StatCardTone.missed,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: StatCard(
-                    label: '결석',
-                    value: '${roster.counts.absentN}',
-                  ),
-                ),
-              ],
             ),
-            const SizedBox(height: 16),
-            if (_errorMessage != null) ...[
-              AlertBanner(tone: AlertTone.missed, body: _errorMessage),
-              const SizedBox(height: 12),
-            ],
-            if (_queueNotice != null) ...[
-              AlertBanner(tone: AlertTone.moving, body: _queueNotice),
-              const SizedBox(height: 12),
-            ],
-            for (final stop in roster.stops)
-              _StopSection(
-                stop: stop,
-                canDecide: canDecide,
-                pendingRiderId: _pendingRiderId,
-                onBoard: (riderId) => _updateStatus(
-                  runId: runId,
-                  riderId: riderId,
-                  status: RiderStatus.boarded,
-                ),
-                onAlight: (riderId) => _updateStatus(
-                  runId: runId,
-                  riderId: riderId,
-                  status: RiderStatus.alighted,
-                ),
-                onNoShow: (riderId) => _updateStatus(
-                  runId: runId,
-                  riderId: riderId,
-                  status: RiderStatus.noShow,
-                ),
-                onRevert: (riderId) =>
-                    _revertStatus(runId: runId, riderId: riderId),
-                onRecordContact: (riderId) =>
-                    _recordNoShowContact(runId: runId, riderId: riderId),
+            const SizedBox(width: 8),
+            Expanded(
+              child: StatCard(
+                label: '대기',
+                value: '${roster.counts.waiting}',
               ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: StatCard(
+                label: '미탑승',
+                value: '${roster.counts.noShow}',
+                tone: StatCardTone.missed,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: StatCard(
+                label: '결석',
+                value: '${roster.counts.absentN}',
+              ),
+            ),
           ],
-        );
+        ),
+        const SizedBox(height: 16),
+        if (_errorMessage != null) ...[
+          AlertBanner(tone: AlertTone.missed, body: _errorMessage),
+          const SizedBox(height: 12),
+        ],
+        if (_queueNotice != null) ...[
+          AlertBanner(tone: AlertTone.moving, body: _queueNotice),
+          const SizedBox(height: 12),
+        ],
+        for (final stop in roster.stops)
+          _StopSection(
+            stop: stop,
+            canDecide: canDecide,
+            pendingRiderId: _pendingRiderId,
+            onBoard: (riderId) => _updateStatus(
+              runId: runId,
+              riderId: riderId,
+              status: RiderStatus.boarded,
+            ),
+            onAlight: (riderId) => _updateStatus(
+              runId: runId,
+              riderId: riderId,
+              status: RiderStatus.alighted,
+            ),
+            onNoShow: (riderId) => _updateStatus(
+              runId: runId,
+              riderId: riderId,
+              status: RiderStatus.noShow,
+            ),
+            onRevert: (riderId) =>
+                _revertStatus(runId: runId, riderId: riderId),
+            onRecordContact: (riderId) =>
+                _recordNoShowContact(runId: runId, riderId: riderId),
+          ),
+      ],
+    );
   }
 }
 
