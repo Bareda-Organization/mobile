@@ -162,6 +162,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 variant: BaraedaButtonVariant.ghost,
                 onPressed: () => context.go(AppRoutes.signup),
               ),
+              DevQuickLogin(
+                accounts: const [
+                  DevAccount('기사', 'driverA1'),
+                  DevAccount('동승자', 'escortA1'),
+                  DevAccount('기사(타 학원)', 'driverB1'),
+                  DevAccount('차단됨', 'driverBlocked'),
+                ],
+                onPick: (loginId, password) {
+                  _loginIdController.text = loginId;
+                  _passwordController.text = password;
+                  _submit();
+                },
+              ),
             ],
           ),
         ),
