@@ -10,10 +10,6 @@ class LinkRepositoryImpl implements LinkRepository {
   final LinkApi _linkApi;
 
   @override
-  Future<LinkRequestResult> requestLink(String studentLoginId) =>
-      _guard(() => _linkApi.requestLink(studentLoginId));
-
-  @override
   Future<LinkCodeResult> generateLinkCode() =>
       _guard(_linkApi.generateLinkCode);
 

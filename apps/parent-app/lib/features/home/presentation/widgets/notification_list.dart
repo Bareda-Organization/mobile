@@ -74,7 +74,6 @@ class NotificationList extends ConsumerWidget {
   'run_started' => (BaraedaStatus.moving, '운행 시작'),
   'change_decided' => (BaraedaStatus.idle, '변경 결과'),
   'signup_decided' => (BaraedaStatus.idle, '가입 결과'),
-  'link_requested' => (BaraedaStatus.idle, '자녀 연결'),
   _ => (BaraedaStatus.idle, '안내'),
 };
 

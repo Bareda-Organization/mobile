@@ -223,7 +223,7 @@ void main() {
   );
 
   test(
-    '목표 — 학부모↔학생 자녀연결(§3.2~§3.4)을 parentA1·studentA4 로 '
+    '목표 — 학부모↔학생 자녀연결(§3.3·§3.4, Ruling 324)을 parentA1·studentA4 로 '
     '실제로 왕복한다 (이미 연결돼 있으면 건너뛴다)',
     () async {
       if (!backendReachable) {
@@ -237,17 +237,12 @@ void main() {
       final before = await StudentApi(dio: parent.dio).getMyStudents();
       if (before.any((s) => s.name == '이하늘')) {
         // 이전 실행에서 이미 연결을 끝냈다 — 재연결을 시도하면 서버가
-        // 거부하므로(멱등 없음, §3.2 는 신규 요청 생성) 여기서 멈춘다.
-        // 읽기 결과가 이미 존재한다는 것 자체가 §3.2~§3.4 가 실제로
-        // 동작했다는 증거다.
+        // 거부하므로(§8.5 ALREADY_LINKED) 여기서 멈춘다. 읽기 결과가 이미
+        // 존재한다는 것 자체가 §3.3·§3.4 가 실제로 동작했다는 증거다.
         return;
       }
 
-      // §3.2 — 학부모가 연결을 요청.
-      final requestResult = await linkApiParent.requestLink('studentA4');
-      expect(requestResult.linkRequestId, isNotEmpty);
-
-      // §3.3 — 학생이 인증 코드를 발급.
+      // §3.3 — 학생이 선행 조건 없이 인증 코드를 발급(Ruling 324).
       final student = buildClientFor('p1-link-student');
       await student.auth.login(loginId: 'studentA4', password: 'password');
       final codeResult = await LinkApi(dio: student.dio).generateLinkCode();
