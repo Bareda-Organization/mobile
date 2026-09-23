@@ -36,12 +36,16 @@ class MapMarker {
     required this.lat,
     required this.lng,
     required this.kind,
+    this.seq,
   });
 
   final String id;
   final double lat;
   final double lng;
   final MapMarkerKind kind;
+
+  /// 정차지 순번 — [MapMarkerKind.stop] 핀 안에 그린다(2026-09-23 사용자 지시).
+  final int? seq;
 }
 
 /// 지도 준비 완료 콜백 — SDK 가 타일을 그릴 준비를 마치면 호출된다.

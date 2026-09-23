@@ -11,6 +11,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:manager_app/core/map/map_surface.dart';
+import 'package:manager_app/core/map/naver/stop_pin.dart';
 
 /// 빌드·실행 시점에 `--dart-define=NAVER_MAP_CLIENT_ID=<값>` 으로 주입한다.
 /// 실제 클라이언트 ID 값은 어떤 파일에도 커밋하지 않는다(F4-B 공통 규칙).
@@ -94,19 +95,35 @@ class _NaverMapAdapterState extends State<NaverMapAdapter> {
       ),
       onMapReady: (controller) async {
         if (widget.markers.isNotEmpty) {
-          await controller.addOverlayAll(
-            widget.markers.map(_toNMarker).toSet(),
-          );
+          final markers = <NMarker>{};
+          for (final marker in widget.markers) {
+            // 아이콘을 굳히는 사이 화면이 닫힐 수 있다 — 닫힌 뒤의 context 는 쓰지 않는다.
+            if (!mounted) return;
+            markers.add(await _toNMarker(marker));
+          }
+          if (!mounted) return;
+          await controller.addOverlayAll(markers);
         }
         widget.onReady?.call();
       },
     );
   }
 
-  NMarker _toNMarker(MapMarker marker) {
+  /// 정차지는 순번 핀 이미지를 아이콘으로 쓴다 — 기준점이 SDK 기본값(아래 가운데)이라 핀 끝이
+  /// 좌표에 온다([StopPin] 문서). 핀과 숫자가 종류를 말하므로 "승하차지" 글자는 붙이지 않는다.
+  Future<NMarker> _toNMarker(MapMarker marker) async {
+    final position = NLatLng(marker.lat, marker.lng);
+    if (marker.kind == MapMarkerKind.stop) {
+      final icon = await NOverlayImage.fromWidget(
+        widget: StopPin(seq: marker.seq),
+        size: StopPin.size,
+        context: context,
+      );
+      return NMarker(id: marker.id, position: position, icon: icon);
+    }
     return NMarker(
       id: marker.id,
-      position: NLatLng(marker.lat, marker.lng),
+      position: position,
       caption: NOverlayCaption(text: _captionFor(marker.kind)),
     );
   }

@@ -69,8 +69,7 @@ class _RouteMapScreenState extends ConsumerState<RouteMapScreen> {
         Expanded(
           child: routeAsync.when(
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (error, _) =>
-                Center(child: Text('노선을 불러오지 못했습니다: $error')),
+            error: (error, _) => Center(child: Text('노선을 불러오지 못했습니다: $error')),
             data: _buildMap,
           ),
         ),
@@ -144,6 +143,7 @@ class _RouteMapScreenState extends ConsumerState<RouteMapScreen> {
           lat: stop.lat,
           lng: stop.lng,
           kind: MapMarkerKind.stop,
+          seq: stop.seq,
         ),
     ];
   }

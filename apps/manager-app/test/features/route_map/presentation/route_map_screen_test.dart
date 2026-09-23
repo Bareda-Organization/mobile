@@ -39,7 +39,10 @@ class _FakeRouteRepository implements RouteRepository {
 /// 않게 한다.
 class _NeverResolvingTokenStorage extends TokenStorage {
   _NeverResolvingTokenStorage()
-    : super(accessTokenKey: 'test_access_token', refreshTokenKey: 'test_refresh_token');
+    : super(
+        accessTokenKey: 'test_access_token',
+        refreshTokenKey: 'test_refresh_token',
+      );
 
   @override
   Future<String?> readAccessToken() => Completer<String?>().future;
@@ -83,7 +86,9 @@ void main() {
   });
 
   testWidgets('승하차지가 빈 배열이면 안내만 보이고 지도를 그리지 않는다', (tester) async {
-    await tester.pumpWidget(_wrap(overridesFor(const RouteResponse(stops: []))));
+    await tester.pumpWidget(
+      _wrap(overridesFor(const RouteResponse(stops: []))),
+    );
     await tester.pumpAndSettle();
 
     expect(find.text('표시할 승하차지가 없습니다'), findsOneWidget);
@@ -121,6 +126,28 @@ void main() {
           '하나라도 섞이면 그 판정이 깨진 것이다.',
     );
     expect(surface.markers.map((m) => m.id), containsAll(['s1', 's2', 's3']));
+  });
+
+  // 2026-09-23 사용자 지시 — 정차지 핀 안에 순번을 넣는다. 순번은 화면이 넘겨야 어댑터가 그린다.
+  // 정차지 id 와 순번을 일부러 어긋나게 둔다 — 순서대로 1·2·3 을 매겨 넣는 구현이 통과하지 않게.
+  testWidgets('정차지 마커는 그 정차지의 순번을 싣는다', (tester) async {
+    final response = RouteResponse(
+      stops: [
+        _stop(stopId: 's1', seq: 3),
+        _stop(stopId: 's2', seq: 1),
+        _stop(stopId: 's3', seq: 2),
+      ],
+    );
+
+    await tester.pumpWidget(_wrap(overridesFor(response)));
+    await tester.pump();
+    await tester.pump();
+
+    final surface = tester.widget<MapSurface>(find.byType(MapSurface));
+    expect(
+      {for (final m in surface.markers) m.id: m.seq},
+      {'s1': 3, 's2': 1, 's3': 2},
+    );
   });
 
   testWidgets('카메라 중심은 current_stop 을 최우선한다', (tester) async {
