@@ -1,7 +1,9 @@
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:parent_app/app/app_routes.dart';
+import 'package:parent_app/core/auth/account_session.dart';
 import 'package:parent_app/core/devices/presentation/device_registration_panel.dart';
 import 'package:parent_app/features/settings/presentation/widgets/notification_settings_panel.dart';
 
@@ -11,11 +13,11 @@ import 'package:parent_app/features/settings/presentation/widgets/notification_s
 /// 알림 설정(S-03)에 그대로 접근한다(학생에게 감추는 것은 "탑승 토글·
 /// 일일 스케줄 변경" 뿐이고 둘 다 Home·Schedule 화면 소관이다). 그래서
 /// `roleCapabilitiesProvider` 를 참조하지 않는다.
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       appBar: const AppHeader(title: '설정'),
       body: SafeArea(
@@ -36,6 +38,13 @@ class SettingsScreen extends StatelessWidget {
               label: '비밀번호 변경',
               variant: BaraedaButtonVariant.secondary,
               onPressed: () => context.push(AppRoutes.passwordChange),
+            ),
+            const SizedBox(height: BaraedaSpacing.space2),
+            // 로그아웃(2026-09-23) — 역할이 비면 라우터가 로그인 화면으로 보낸다.
+            BaraedaButton(
+              label: '로그아웃',
+              variant: BaraedaButtonVariant.ghost,
+              onPressed: () => signOut(ref),
             ),
           ],
         ),

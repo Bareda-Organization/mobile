@@ -110,8 +110,7 @@ Future<bool> _needsParentSeedReset(Dio dio) async {
     '/me/students',
   );
   final studentsData = studentsResponse.data!['data'] as Map<String, dynamic>;
-  final students = (studentsData['items'] as List)
-      .cast<Map<String, dynamic>>();
+  final students = (studentsData['items'] as List).cast<Map<String, dynamic>>();
   final chulsoo = students.firstWhere((s) => s['name'] == '김철수');
   final studentId = chulsoo['student_id'];
 

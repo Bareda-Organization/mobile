@@ -27,7 +27,8 @@ class BlockedScreen extends StatelessWidget {
             child: EmptyState(
               icon: 'circle-alert',
               title: '계정이 차단되었습니다',
-              body: '로그인 5회 실패로 계정이 잠겼습니다. 자가 해제는 지원하지 않으며, '
+              body:
+                  '로그인 5회 실패로 계정이 잠겼습니다. 자가 해제는 지원하지 않으며, '
                   '학원 관리자(메인 관리자)만 잠금을 해제할 수 있습니다. '
                   '학원에 문의해 주세요.',
               action: BaraedaButton(

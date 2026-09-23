@@ -219,8 +219,8 @@ class _NaverMapAdapterState extends State<NaverMapAdapter> {
   }
 
   String _captionFor(MapMarkerKind kind) => switch (kind) {
-        MapMarkerKind.bus => '버스',
-        MapMarkerKind.stop => '승하차지',
-        MapMarkerKind.student => '학생',
-      };
+    MapMarkerKind.bus => '버스',
+    MapMarkerKind.stop => '승하차지',
+    MapMarkerKind.student => '학생',
+  };
 }

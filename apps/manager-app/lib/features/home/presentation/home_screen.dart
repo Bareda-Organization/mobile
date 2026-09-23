@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:manager_app/app/app_routes.dart';
+import 'package:manager_app/core/auth/account_session.dart';
 import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/core/auth/role_policy.dart';
 import 'package:manager_app/core/run/run_enums.dart';
@@ -29,7 +30,13 @@ class ManagerHomeScreen extends ConsumerWidget {
     final capabilities = ref.watch(roleCapabilitiesProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('오늘 운행')),
+      appBar: AppBar(
+        title: const Text('오늘 운행'),
+        actions: [
+          // 로그아웃(2026-09-23) — 역할이 비면 라우터가 로그인 화면으로 보낸다. 기사가 다른 계정으로 바꿔 타는 길.
+          TextButton(onPressed: () => signOut(ref), child: const Text('로그아웃')),
+        ],
+      ),
       body: RefreshIndicator(
         onRefresh: () => ref.refresh(todayRunsProvider.future),
         child: runsAsync.when(
@@ -91,9 +98,7 @@ class ManagerHomeScreen extends ConsumerWidget {
                 for (final run in runs) ...[
                   RunSummaryCard(
                     bus: run.busNo,
-                    leg: run.direction == RunDirection.toAcademy
-                        ? '등원'
-                        : '하원',
+                    leg: run.direction == RunDirection.toAcademy ? '등원' : '하원',
                     status: _statusOf(run.runStatus),
                     statusLabel: _statusLabelOf(run),
                     eta: DateFormat('HH:mm').format(run.departTime.toLocal()),
@@ -137,9 +142,7 @@ class ManagerHomeScreen extends ConsumerWidget {
   ) {
     ref.read(selectedRunIdProvider.notifier).state = run.runId;
     final canOperateRun = capabilities?.canOperateRun ?? false;
-    final destination = canOperateRun
-        ? AppRoutes.driveMode
-        : AppRoutes.roster;
+    final destination = canOperateRun ? AppRoutes.driveMode : AppRoutes.roster;
     unawaited(context.push(destination));
   }
 }

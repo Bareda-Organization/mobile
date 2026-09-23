@@ -9,7 +9,9 @@ import 'package:parent_app/features/route/domain/route_detail.dart';
 // `flutter_riverpod` 가 공개 API 로 export 하지 않는 내부 타입이라
 // 명시할 수 없다(`run_providers.dart` 와 같은 이유).
 // ignore: specify_nonobvious_property_types
-final routeDetailProvider =
-    FutureProvider.family<RouteDetail, String>((ref, studentId) {
-      return ref.watch(routeRepositoryProvider).getRoute(studentId);
-    });
+final routeDetailProvider = FutureProvider.family<RouteDetail, String>((
+  ref,
+  studentId,
+) {
+  return ref.watch(routeRepositoryProvider).getRoute(studentId);
+});

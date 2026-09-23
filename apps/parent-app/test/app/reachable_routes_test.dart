@@ -28,7 +28,8 @@ void main() {
     final re = RegExp(r'AppRoutes\.(\w+)');
     for (final f in Directory('lib').listSync(recursive: true)) {
       if (f is! File || !f.path.endsWith('.dart')) continue;
-      if (f.path.endsWith('router.dart') || f.path.endsWith('app_routes.dart')) {
+      if (f.path.endsWith('router.dart') ||
+          f.path.endsWith('app_routes.dart')) {
         continue; // 등록처·정의처는 세지 않는다
       }
       for (final m in re.allMatches(f.readAsStringSync())) {
@@ -39,10 +40,9 @@ void main() {
   }
 
   test('등록한 화면에는 전부 갈 길이 있다', () {
-    final registered = RegExp(r'path:\s*AppRoutes\.(\w+)')
-        .allMatches(router)
-        .map((m) => m.group(1)!)
-        .toSet();
+    final registered = RegExp(
+      r'path:\s*AppRoutes\.(\w+)',
+    ).allMatches(router).map((m) => m.group(1)!).toSet();
     final reached = referencedTargets()
       // 첫 화면과 계정 상태 리다이렉트는 `router.dart` 의 redirect 가 보낸다 —
       // `context.push` 로 가지 않으므로 여기서 면제한다.

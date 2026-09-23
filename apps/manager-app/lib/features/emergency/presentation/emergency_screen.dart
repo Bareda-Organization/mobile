@@ -279,7 +279,9 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
   }
 
   String _buildRaisedNotice(EmergencyRaiseResult result) {
-    final until = DateFormat('HH:mm:ss').format(result.cancelableUntil.toLocal());
+    final until = DateFormat(
+      'HH:mm:ss',
+    ).format(result.cancelableUntil.toLocal());
     return '비상 알림을 보냈습니다 (${result.notified}명에게 전달) — '
         '$until 까지 취소할 수 있습니다';
   }
@@ -317,9 +319,7 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
     if (canceled) return '취소됨';
     if (item.acked) {
       final byName = item.ackedByName;
-      return (byName == null || byName.isEmpty)
-          ? '확인됨'
-          : '$byName 님이 확인함';
+      return (byName == null || byName.isEmpty) ? '확인됨' : '$byName 님이 확인함';
     }
     return '확인 대기 중';
   }

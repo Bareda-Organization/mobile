@@ -368,7 +368,9 @@ class _PositionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final timeText = DateFormat('HH:mm:ss').format(position.receivedAt.toLocal());
+    final timeText = DateFormat(
+      'HH:mm:ss',
+    ).format(position.receivedAt.toLocal());
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: BaraedaSpacing.space2),
       child: Column(
@@ -402,8 +404,7 @@ class _EventTile extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('$label · $timeText', style: BaraedaTypography.body),
-          if (detail != null)
-            Text(detail!, style: BaraedaTypography.bodySm),
+          if (detail != null) Text(detail!, style: BaraedaTypography.bodySm),
         ],
       ),
     );

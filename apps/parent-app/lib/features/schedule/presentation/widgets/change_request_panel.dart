@@ -13,7 +13,8 @@ import 'package:parent_app/features/schedule/presentation/schedule_providers.dar
 /// 무관한 사유로 조용히 깨진다 — 여기 노출해 시험이 값으로 참조하게 한다.
 // `bus_no` 는 호차 **이름 그 자체**다(`ERD bus.bus_no varchar(20)` · 시드 '1호차').
 // 단위를 덧붙이면 "1호차번" 이 된다.
-String runOptionLabel(StudentRun run) => '${run.direction.label} · ${run.busNo}';
+String runOptionLabel(StudentRun run) =>
+    '${run.direction.label} · ${run.busNo}';
 
 /// §3.8·§3.9 — 일일 변경 신청. 회차 선택은 `core/runs` 의 §3.5 조회 결과를
 /// 그대로 쓴다(변경 신청은 반드시 오늘의 특정 회차를 대상으로 한다).
@@ -23,8 +24,7 @@ class ChangeRequestPanel extends ConsumerStatefulWidget {
   final String studentId;
 
   @override
-  ConsumerState<ChangeRequestPanel> createState() =>
-      _ChangeRequestPanelState();
+  ConsumerState<ChangeRequestPanel> createState() => _ChangeRequestPanelState();
 }
 
 class _ChangeRequestPanelState extends ConsumerState<ChangeRequestPanel> {

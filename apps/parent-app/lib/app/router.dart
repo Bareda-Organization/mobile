@@ -60,8 +60,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
 
       if (!loggedIn && !onAuthScreen) return AppRoutes.login;
-      if (loggedIn &&
-          (onAuthScreen || location == AppRoutes.pendingApproval)) {
+      if (loggedIn && (onAuthScreen || location == AppRoutes.pendingApproval)) {
         return AppRoutes.home;
       }
       return null;

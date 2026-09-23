@@ -149,7 +149,9 @@ class _RouteDetailView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final departTimeText = DateFormat('HH:mm').format(route.departTime.toLocal());
+    final departTimeText = DateFormat(
+      'HH:mm',
+    ).format(route.departTime.toLocal());
 
     return ListView(
       children: [

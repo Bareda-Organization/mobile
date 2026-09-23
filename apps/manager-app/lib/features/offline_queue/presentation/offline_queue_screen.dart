@@ -19,8 +19,7 @@ class OfflineQueueScreen extends ConsumerStatefulWidget {
   const OfflineQueueScreen({super.key});
 
   @override
-  ConsumerState<OfflineQueueScreen> createState() =>
-      _OfflineQueueScreenState();
+  ConsumerState<OfflineQueueScreen> createState() => _OfflineQueueScreenState();
 }
 
 class _OfflineQueueScreenState extends ConsumerState<OfflineQueueScreen> {

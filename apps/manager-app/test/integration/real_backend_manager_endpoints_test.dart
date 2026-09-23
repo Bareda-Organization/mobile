@@ -165,7 +165,8 @@ void main() {
           expect(
             stop.stopId,
             isA<String>(),
-            reason: 'asIdString 이 서버의 int stop_id 를 문자열로 흡수해야 '
+            reason:
+                'asIdString 이 서버의 int stop_id 를 문자열로 흡수해야 '
                 '한다 — 캐스팅 실패 없이 여기까지 도달한 것 자체가 수정 '
                 '증거이지만, 값 타입도 명시적으로 확인한다',
           );
@@ -285,7 +286,8 @@ void main() {
         expect(
           secondChangedAt.isAtSameMomentAs(firstChangedAt),
           isTrue,
-          reason: '멱등이면 두 번째 호출도 최초 처리 결과의 changed_at 과 '
+          reason:
+              '멱등이면 두 번째 호출도 최초 처리 결과의 changed_at 과 '
               '같은 순간을 돌려줘야 한다 — 다르면 서버가 두 번째 요청을 '
               '다시 처리한 것이다(실제 서버 값: 1차 $firstChangedAt / '
               '2차 $secondChangedAt)',
@@ -484,7 +486,8 @@ void main() {
         expect(
           firstResponse.data!['next_stop'],
           isNotNull,
-          reason: '아래 결함 재현은 next_stop 이 있어야 성립한다 — 마지막 '
+          reason:
+              '아래 결함 재현은 next_stop 이 있어야 성립한다 — 마지막 '
               '정류장을 제외하고 골랐으므로 항상 있어야 한다',
         );
 

@@ -126,7 +126,9 @@ class _RunEndScreenState extends ConsumerState<RunEndScreen> {
         child: Text('종료 정보가 없습니다 — 운행 모드에서 최종 지점 도착 처리를 마치면 이 화면으로 이동합니다'),
       );
     }
-    final arrivedLabel = DateFormat('HH:mm').format(termination.arrivedAt.toLocal());
+    final arrivedLabel = DateFormat(
+      'HH:mm',
+    ).format(termination.arrivedAt.toLocal());
     if (termination.finishPending) {
       return AlertBanner(
         tone: AlertTone.moving,

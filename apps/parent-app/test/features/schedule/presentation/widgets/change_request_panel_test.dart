@@ -51,7 +51,7 @@ class _ThrowingChangeRequestRepository implements ChangeRequestRepository {
 StudentRun _fixtureRun() => StudentRun(
   runId: 'run-1',
   direction: RunDirection.toAcademy,
-  busNo: '1호차',   // 서버가 주는 꼴 — run_card_test 와 같은 이유
+  busNo: '1호차', // 서버가 주는 꼴 — run_card_test 와 같은 이유
   departTime: DateTime(2026, 9, 12, 8),
   runStatus: RunStatus.idle,
   confirmed: false,

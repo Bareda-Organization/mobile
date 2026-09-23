@@ -17,10 +17,7 @@ class RunApi {
       },
     );
     final items = response.data?['items'] as List<dynamic>? ?? [];
-    return items
-        .cast<Map<String, dynamic>>()
-        .map(StudentRun.fromJson)
-        .toList();
+    return items.cast<Map<String, dynamic>>().map(StudentRun.fromJson).toList();
   }
 
   /// §3.6.

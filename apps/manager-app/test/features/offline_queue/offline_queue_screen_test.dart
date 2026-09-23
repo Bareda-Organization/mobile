@@ -16,11 +16,11 @@ class _FakeOfflineQueueRepository implements OfflineQueueRepository {
     required List<PendingRequestSummary> pending,
     this.replayResult,
   })
-  // 필드를 private 으로 유지하려고 initializing formal 대신 명시 대입을
-  // 쓴다(OfflineQueueRepositoryImpl 과 같은 이유 — replayPending 이 재대입
-  // 해야 해서 field 를 밖에서 직접 못 건드리게 막아 둔다).
-  // ignore: prefer_initializing_formals
-  : _pending = pending;
+    // 필드를 private 으로 유지하려고 initializing formal 대신 명시 대입을
+    // 쓴다(OfflineQueueRepositoryImpl 과 같은 이유 — replayPending 이 재대입
+    // 해야 해서 field 를 밖에서 직접 못 건드리게 막아 둔다).
+    // ignore: prefer_initializing_formals
+    : _pending = pending;
 
   List<PendingRequestSummary> _pending;
   final ReplayResult? replayResult;
@@ -56,7 +56,10 @@ class _FakeOfflineQueueRepository implements OfflineQueueRepository {
 }
 
 Widget _wrap(Widget child, List<Override> overrides) {
-  return ProviderScope(overrides: overrides, child: MaterialApp(home: child));
+  return ProviderScope(
+    overrides: overrides,
+    child: MaterialApp(home: child),
+  );
 }
 
 void main() {

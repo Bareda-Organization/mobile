@@ -23,8 +23,7 @@ class AccountRecoveryScreen extends ConsumerStatefulWidget {
       _AccountRecoveryScreenState();
 }
 
-class _AccountRecoveryScreenState
-    extends ConsumerState<AccountRecoveryScreen> {
+class _AccountRecoveryScreenState extends ConsumerState<AccountRecoveryScreen> {
   final _phoneController = TextEditingController();
   final _codeController = TextEditingController();
 
@@ -45,8 +44,9 @@ class _AccountRecoveryScreenState
   /// (클래스 문서의 열거 위험 참고).
   String _messageFor(Failure failure) => switch (failure) {
     ApiFailure(code: 'ACCOUNT_NOT_FOUND') ||
-    ApiFailure(code: 'VERIFICATION_CODE_INVALID') =>
-      '휴대폰 번호 또는 인증번호를 확인할 수 없습니다',
+    ApiFailure(
+      code: 'VERIFICATION_CODE_INVALID',
+    ) => '휴대폰 번호 또는 인증번호를 확인할 수 없습니다',
     ApiFailure(code: 'VALIDATION_FAILED') => '입력값을 다시 확인해 주세요',
     ApiFailure(:final message) => message,
     NetworkFailure() => '네트워크 상태를 확인해 주세요',

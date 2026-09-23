@@ -10,11 +10,10 @@ import 'package:parent_app/core/common/json_id.dart';
 class LinkCodeResult {
   const LinkCodeResult({required this.code, required this.expiresAt});
 
-  factory LinkCodeResult.fromJson(Map<String, dynamic> json) =>
-      LinkCodeResult(
-        code: json['code'] as String,
-        expiresAt: DateTime.parse(json['expires_at'] as String),
-      );
+  factory LinkCodeResult.fromJson(Map<String, dynamic> json) => LinkCodeResult(
+    code: json['code'] as String,
+    expiresAt: DateTime.parse(json['expires_at'] as String),
+  );
 
   final String code;
   final DateTime expiresAt;

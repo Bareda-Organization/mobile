@@ -197,7 +197,8 @@ void main() {
       expect(
         confirmedRuns,
         isNotEmpty,
-        reason: '확정(confirmed) 상태인 회차가 없다 — 시드 데이터의 상대 시각을 '
+        reason:
+            '확정(confirmed) 상태인 회차가 없다 — 시드 데이터의 상대 시각을 '
             '확인해야 한다',
       );
       final runId = confirmedRuns.first['run_id'] as String;
@@ -210,13 +211,11 @@ void main() {
       // §1.1 — 식별자는 서버 발급 문자열이다. run_id·stop_id·rider_id·
       // student_id 전부 String.
       expect(response.data!['run_id'], runId);
-      final stops = (response.data!['stops'] as List<dynamic>).cast<
-        Map<String, dynamic>
-      >();
+      final stops = (response.data!['stops'] as List<dynamic>)
+          .cast<Map<String, dynamic>>();
       expect(stops.first['stop_id'], isA<String>());
-      final students = (stops.first['students'] as List<dynamic>).cast<
-        Map<String, dynamic>
-      >();
+      final students = (stops.first['students'] as List<dynamic>)
+          .cast<Map<String, dynamic>>();
       expect(students.first['rider_id'], isA<String>());
       expect(students.first['student_id'], isA<String>());
     },

@@ -57,6 +57,23 @@ final authBootstrapProvider = FutureProvider<void>((ref) async {
   }
 });
 
+/// 로그아웃(2026-09-23 사용자 지시) — 서버에 알리고, **실패해도** 이 기기의 역할·상태를 비운다. 역할이
+/// 비면 라우터가 로그인 화면으로 보낸다(판정은 라우터 한 곳). 토큰은 `AuthApi.logout` 이 성패와 무관하게
+/// 지운다 — 여기서 역할까지 비우지 않으면 토큰 없이 로그인된 화면에 갇혀 요청마다 401 이 난다.
+///
+/// provider 를 await 전에 모두 읽어 둔다 — 로그아웃하면서 화면이 사라지면 그 뒤의 `ref` 는 쓸 수 없다.
+Future<void> signOut(WidgetRef ref) async {
+  final repository = ref.read(authRepositoryProvider);
+  final unsupported = ref.read(unsupportedRoleProvider.notifier);
+  final role = ref.read(currentUserRoleProvider.notifier);
+  final status = ref.read(currentAccountStatusProvider.notifier);
+  try {
+    await repository.logout();
+  } finally {
+    applyRoleAndStatus(unsupported, role, status, role: null, status: null);
+  }
+}
+
 /// 로그인·`/me` 성공 응답을 역할·상태 provider 에 반영하는 유일한 통로 —
 /// 화면마다 이 매핑을 다시 적지 않는다. 로그인 화면도 이 함수를 그대로 쓴다.
 ///
@@ -103,11 +120,10 @@ class RouterRefreshNotifier extends ChangeNotifier {
     _gateSubscription = _ref.read(apiClientProvider).gateEvents.listen((
       reason,
     ) {
-      _ref.read(currentAccountStatusProvider.notifier).state =
-          switch (reason) {
-            AccountGateReason.pending => AccountStatus.pending,
-            AccountGateReason.rejected => AccountStatus.rejected,
-          };
+      _ref.read(currentAccountStatusProvider.notifier).state = switch (reason) {
+        AccountGateReason.pending => AccountStatus.pending,
+        AccountGateReason.rejected => AccountStatus.rejected,
+      };
     });
   }
 

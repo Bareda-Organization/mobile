@@ -153,7 +153,9 @@ void main() {
       await tester.pumpWidget(
         // currentUserRoleProvider 를 override 하지 않는다 — 기본값 null 로
         // roleCapabilitiesProvider 도 null 이 된다.
-        wrap([todayRunsProvider.overrideWith((ref) async => [confirmedRun()])]),
+        wrap([
+          todayRunsProvider.overrideWith((ref) async => [confirmedRun()]),
+        ]),
       );
       await tester.pumpAndSettle();
 

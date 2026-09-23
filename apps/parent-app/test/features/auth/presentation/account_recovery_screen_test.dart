@@ -80,8 +80,7 @@ class _StallingAuthRepository implements AuthRepository {
   final recoverCalled = Completer<void>();
   final _recoverResult = Completer<void>();
 
-  void failRecover() =>
-      _recoverResult.completeError(const Failure.network());
+  void failRecover() => _recoverResult.completeError(const Failure.network());
 
   @override
   Future<List<AcademySummary>> searchAcademies(String query) async => [];

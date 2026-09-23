@@ -121,7 +121,10 @@ class _FakeRosterRepository implements RosterRepository {
 /// 없는 결정적 시험 상태를 얻는다.
 class _NeverResolvingTokenStorage extends TokenStorage {
   _NeverResolvingTokenStorage()
-    : super(accessTokenKey: 'test_access_token', refreshTokenKey: 'test_refresh_token');
+    : super(
+        accessTokenKey: 'test_access_token',
+        refreshTokenKey: 'test_refresh_token',
+      );
 
   @override
   Future<String?> readAccessToken() => Completer<String?>().future;

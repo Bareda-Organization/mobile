@@ -12,7 +12,9 @@ import 'package:parent_app/core/runs/domain/student_run.dart';
 // `flutter_riverpod` 가 공개 API 로 export 하지 않는 내부 타입이라
 // 명시할 수 없다(riverpod-3.4.3/lib/src/internals.dart 확인).
 // ignore: specify_nonobvious_property_types
-final runsForStudentProvider =
-    FutureProvider.family<List<StudentRun>, String>((ref, studentId) {
-      return ref.watch(runRepositoryProvider).getRuns(studentId);
-    });
+final runsForStudentProvider = FutureProvider.family<List<StudentRun>, String>((
+  ref,
+  studentId,
+) {
+  return ref.watch(runRepositoryProvider).getRuns(studentId);
+});

@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/auth/account_session.dart';
-import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/features/auth/presentation/widgets/academy_picker.dart';
 
 /// UF-X-02 — 승인 대기 · 거절 안내.
@@ -24,8 +23,7 @@ class PendingApprovalScreen extends ConsumerStatefulWidget {
       _PendingApprovalScreenState();
 }
 
-class _PendingApprovalScreenState
-    extends ConsumerState<PendingApprovalScreen> {
+class _PendingApprovalScreenState extends ConsumerState<PendingApprovalScreen> {
   Future<SignupStatusResponse>? _statusFuture;
   bool _reapplying = false;
   AcademySummary? _newAcademy;
@@ -38,17 +36,7 @@ class _PendingApprovalScreenState
     _statusFuture = ref.read(authRepositoryProvider).signupStatus();
   }
 
-  Future<void> _logout() async {
-    await ref.read(authRepositoryProvider).logout();
-    if (!mounted) return;
-    applyRoleAndStatus(
-      ref.read(unsupportedRoleProvider.notifier),
-      ref.read(currentUserRoleProvider.notifier),
-      ref.read(currentAccountStatusProvider.notifier),
-      role: null,
-      status: null,
-    );
-  }
+  Future<void> _logout() => signOut(ref);
 
   Future<void> _reapply() async {
     final academy = _newAcademy;
@@ -94,13 +82,15 @@ class _PendingApprovalScreenState
               return const Center(child: CircularProgressIndicator());
             }
             if (snapshot.hasError) {
-              return _ErrorBody(onRetry: () {
-                setState(() {
-                  _statusFuture = ref
-                      .read(authRepositoryProvider)
-                      .signupStatus();
-                });
-              });
+              return _ErrorBody(
+                onRetry: () {
+                  setState(() {
+                    _statusFuture = ref
+                        .read(authRepositoryProvider)
+                        .signupStatus();
+                  });
+                },
+              );
             }
             final status = snapshot.data!;
             return _StatusBody(

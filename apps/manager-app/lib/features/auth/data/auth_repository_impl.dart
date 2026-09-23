@@ -31,8 +31,7 @@ class AuthRepositoryImpl implements AuthRepository {
       _guard(() => _authApi.signup(request));
 
   @override
-  Future<SignupStatusResponse> signupStatus() =>
-      _guard(_authApi.signupStatus);
+  Future<SignupStatusResponse> signupStatus() => _guard(_authApi.signupStatus);
 
   @override
   Future<ReapplyResponse> reapply({required String academyId}) =>

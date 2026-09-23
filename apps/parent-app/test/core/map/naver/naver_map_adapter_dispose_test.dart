@@ -62,7 +62,8 @@ void main() {
     expect(
       tickCount,
       tickCountAtDispose,
-      reason: 'dispose() 가 프레임 타이머를 멈추지 않으면 화면이 사라진 '
+      reason:
+          'dispose() 가 프레임 타이머를 멈추지 않으면 화면이 사라진 '
           '뒤에도 setPosition 호출이 계속 늘어난다',
     );
   });

@@ -8,8 +8,9 @@ import 'package:parent_app/core/change_requests/domain/change_request.dart';
 /// (CONVENTIONS_FLUTTER.md §2, `core/runs/presentation/run_providers.dart`
 /// 와 같은 이유).
 // ignore: specify_nonobvious_property_types
-final changeRequestsProvider =
-    FutureProvider.family<ChangeRequestPage, String>((ref, studentId) {
-      final repository = ref.watch(changeRequestRepositoryProvider);
-      return repository.getChangeRequests(studentId);
-    });
+final changeRequestsProvider = FutureProvider.family<ChangeRequestPage, String>(
+  (ref, studentId) {
+    final repository = ref.watch(changeRequestRepositoryProvider);
+    return repository.getChangeRequests(studentId);
+  },
+);

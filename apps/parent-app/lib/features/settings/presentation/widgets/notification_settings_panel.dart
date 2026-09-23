@@ -38,8 +38,7 @@ class _NotificationSwitches extends ConsumerStatefulWidget {
       _NotificationSwitchesState();
 }
 
-class _NotificationSwitchesState
-    extends ConsumerState<_NotificationSwitches> {
+class _NotificationSwitchesState extends ConsumerState<_NotificationSwitches> {
   late NotificationSettings _current = widget.settings;
   bool _submitting = false;
   String? _banner;

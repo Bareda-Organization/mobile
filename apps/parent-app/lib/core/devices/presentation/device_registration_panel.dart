@@ -49,9 +49,7 @@ class _DeviceRegistrationPanelState
   }
 
   Future<void> _load() async {
-    final token = await ref
-        .read(deviceRegistrationStorageProvider)
-        .readToken();
+    final token = await ref.read(deviceRegistrationStorageProvider).readToken();
     if (!mounted) return;
     setState(() => _registered = token != null);
   }
