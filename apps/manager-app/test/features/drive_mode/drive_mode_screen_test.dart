@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
+import 'package:manager_app/app/app_routes.dart';
 import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
@@ -32,7 +34,10 @@ class _FixedClock implements Clock {
 /// 실제 컨트롤러를 `ManagerChannelStatus.connecting` 에 고정시킨다.
 class _NeverResolvingTokenStorage extends TokenStorage {
   _NeverResolvingTokenStorage()
-    : super(accessTokenKey: 'test_access_token', refreshTokenKey: 'test_refresh_token');
+    : super(
+        accessTokenKey: 'test_access_token',
+        refreshTokenKey: 'test_refresh_token',
+      );
 
   @override
   Future<String?> readAccessToken() => Completer<String?>().future;
@@ -125,6 +130,44 @@ void main() {
 
     expect(find.text('운행 시작'), findsNothing);
     expect(find.text('운행 시작 가능 시간(출발 ±10분)이 아닙니다'), findsOneWidget);
+  });
+
+  // 2026-09-23 — 노선 지도(M-04·M-09)는 기사 전용인데, 버튼이 동승자만 들어가는 명단 화면에만 있어서
+  // 기사도 동승자도 닿지 못했다. 기사가 홈에서 들어오는 유일한 화면이 여기라 여기서 연다.
+  testWidgets('노선 지도 버튼을 누르면 노선 지도 화면으로 간다', (tester) async {
+    final now = DateTime(2026, 9, 12, 8);
+    final router = GoRouter(
+      routes: [
+        GoRoute(path: '/', builder: (_, _) => const DriveModeScreen()),
+        GoRoute(
+          path: AppRoutes.routeMap,
+          builder: (_, _) => const Text('노선 지도 화면'),
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          clockProvider.overrideWithValue(_FixedClock(now)),
+          selectedRunIdProvider.overrideWith((ref) => runId),
+          driveModeRunProvider.overrideWithValue(
+            _managerRun(
+              startWindowFrom: now.subtract(const Duration(minutes: 5)),
+              startWindowTo: now.add(const Duration(minutes: 5)),
+            ),
+          ),
+          driveModeRosterProvider.overrideWith((ref) async => _emptyRoster),
+        ],
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('노선 지도'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('노선 지도 화면'), findsOneWidget);
   });
 
   group('목표 9 — 연결 배너가 명단 상태와 무관하게 뜬다', () {

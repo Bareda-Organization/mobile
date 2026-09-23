@@ -147,7 +147,17 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
     );
 
     return Scaffold(
-      appBar: AppBar(title: const Text('운행 모드')),
+      appBar: AppBar(
+        title: const Text('운행 모드'),
+        actions: [
+          // 노선 지도(M-04·M-09)는 기사 전용이고, 기사가 홈에서 들어오는 화면은 여기뿐이다 —
+          // 명단 화면에만 두면 그 화면은 동승자만 들어가서 아무도 닿지 못한다(2026-09-23).
+          TextButton(
+            onPressed: () => unawaited(context.push(AppRoutes.routeMap)),
+            child: const Text('노선 지도'),
+          ),
+        ],
+      ),
       body: runId == null
           ? const Center(child: Text('선택된 운행이 없습니다 — 홈에서 운행을 선택하세요'))
           : _buildBody(context, runId, run),

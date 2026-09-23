@@ -246,7 +246,8 @@ void main() {
     expect(
       repository.calls.length,
       callsAtDispose,
-      reason: 'dispose() 가 위치 송신 타이머를 멈추지 않으면 화면이 사라진 '
+      reason:
+          'dispose() 가 위치 송신 타이머를 멈추지 않으면 화면이 사라진 '
           '뒤에도 전송이 계속 늘어난다',
     );
   });
