@@ -171,6 +171,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   DevAccount('동승자(운행중)', 'escortA2'),
                   DevAccount('기사(타 학원)', 'driverB1'),
                   DevAccount('차단됨', 'driverBlocked'),
+                  // V14 데모 학원(목동) 1호차 — 승하차지 15곳 · 학생 20명 명단.
+                  DevAccount('데모 기사', 'driver011'),
+                  DevAccount('데모 동승자', 'escort011'),
                 ],
                 onPick: (loginId, password) {
                   _loginIdController.text = loginId;
