@@ -265,7 +265,6 @@ class _LiveMapBody extends ConsumerWidget {
           _EventTile(
             label: '운행 시작',
             time: state.runStarted!.startedAt,
-            detail: '자동 탑승 처리 ${state.runStarted!.autoBoardedCount}명',
           ),
         if (state.position != null)
           _PositionTile(position: state.position!)
@@ -280,7 +279,6 @@ class _LiveMapBody extends ConsumerWidget {
           _EventTile(
             label: '운행 종료',
             time: state.runEnded!.finishedAt,
-            detail: '자동 하차 처리 ${state.runEnded!.autoAlightedCount}명',
           ),
       ],
     );
@@ -388,25 +386,20 @@ class _PositionTile extends StatelessWidget {
   }
 }
 
+/// 운행 이벤트 한 줄. 운행 시작·종료에 인원수를 붙이지 않는다 — 학부모·학생 앱은 탑승 인원을
+/// 표시하지 않고(C-08) 학생 채널에도 실리지 않는다(Ruling 335).
 class _EventTile extends StatelessWidget {
-  const _EventTile({required this.label, required this.time, this.detail});
+  const _EventTile({required this.label, required this.time});
 
   final String label;
   final DateTime time;
-  final String? detail;
 
   @override
   Widget build(BuildContext context) {
     final timeText = DateFormat('HH:mm:ss').format(time.toLocal());
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: BaraedaSpacing.space2),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('$label · $timeText', style: BaraedaTypography.body),
-          if (detail != null) Text(detail!, style: BaraedaTypography.bodySm),
-        ],
-      ),
+      child: Text('$label · $timeText', style: BaraedaTypography.body),
     );
   }
 }

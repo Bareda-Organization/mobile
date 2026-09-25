@@ -109,43 +109,49 @@ class WsRiderChangedPayload {
 }
 
 /// `run_started` — `run_status` 는 `moving` 고정(§9.3).
+///
+/// [autoBoardedCount] 는 매니저·관제 채널에만 실린다 — 학생 채널은 인원수를
+/// 싣지 않는다(C-08, Ruling 335).
 class WsRunStartedPayload {
   const WsRunStartedPayload({
     required this.runStatus,
     required this.startedAt,
-    required this.autoBoardedCount,
+    this.autoBoardedCount,
   });
 
   factory WsRunStartedPayload.fromJson(Map<String, dynamic> json) =>
       WsRunStartedPayload(
         runStatus: json['run_status'] as String,
         startedAt: DateTime.parse(json['started_at'] as String),
-        autoBoardedCount: json['auto_boarded_count'] as int,
+        autoBoardedCount: json['auto_boarded_count'] as int?,
       );
 
   final String runStatus;
   final DateTime startedAt;
-  final int autoBoardedCount;
+  final int? autoBoardedCount;
 }
 
 /// `run_ended` — `run_status` 는 `finished` 고정(§9.3).
+///
+/// [autoAlightedCount] 는 매니저·관제 채널에만 실린다 — 학생 채널은 인원수를
+/// 싣지 않는다(C-08, Ruling 335).
 class WsRunEndedPayload {
   const WsRunEndedPayload({
     required this.runStatus,
     required this.finishedAt,
-    required this.autoAlightedCount,
+    this.autoAlightedCount,
   });
 
   factory WsRunEndedPayload.fromJson(Map<String, dynamic> json) =>
       WsRunEndedPayload(
         runStatus: json['run_status'] as String,
         finishedAt: DateTime.parse(json['finished_at'] as String),
-        autoAlightedCount: json['auto_alighted_count'] as int,
+        autoAlightedCount: json['auto_alighted_count'] as int?,
       );
 
   final String runStatus;
   final DateTime finishedAt;
-  final int autoAlightedCount;
+  final int? autoAlightedCount;
 }
 
 /// [WsEmergencyRaisedPayload.raisedBy] 하위 객체.
