@@ -84,6 +84,22 @@ void main() {
       expect(ended.runStatus, 'finished');
       expect(ended.autoAlightedCount, 5);
     });
+
+    // Ruling 335 — 학생 채널(`/topic/students/{id}/run`)은 인원수를 싣지 않는다(C-08).
+    // 필수로 읽으면 학부모 앱이 운행 시작·종료 이벤트를 받는 순간 예외가 난다.
+    test('학생 채널처럼 인원수가 없으면 null 로 둔다', () {
+      final started = WsRunStartedPayload.fromJson({
+        'run_status': 'moving',
+        'started_at': '2026-09-13T10:00:00Z',
+      });
+      expect(started.autoBoardedCount, isNull);
+
+      final ended = WsRunEndedPayload.fromJson({
+        'run_status': 'finished',
+        'finished_at': '2026-09-13T11:00:00Z',
+      });
+      expect(ended.autoAlightedCount, isNull);
+    });
   });
 
   group('WsEmergencyRaisedPayload.fromJson', () {

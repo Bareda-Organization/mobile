@@ -426,6 +426,29 @@ void main() {
       },
     );
 
+    // Ruling 335 — 학생 채널은 인원수를 싣지 않고 앱도 표시하지 않는다(C-08 "탑승 인원 미표시").
+    testWidgets('운행 시작·종료 이벤트를 받아도 탑승·하차 인원은 표시하지 않는다', (tester) async {
+      await pumpConnected(tester);
+      client
+        ..deliver(
+          _envelope(WsEventType.runStarted, {
+            'run_status': 'moving',
+            'started_at': '2026-09-13T08:00:00Z',
+          }),
+        )
+        ..deliver(
+          _envelope(WsEventType.runEnded, {
+            'run_status': 'finished',
+            'finished_at': '2026-09-13T09:00:00Z',
+          }),
+        );
+      await tester.pump();
+
+      expect(find.textContaining('운행 시작'), findsOneWidget);
+      expect(find.textContaining('운행 종료'), findsOneWidget);
+      expect(find.textContaining('명'), findsNothing);
+    });
+
     testWidgets('reconnecting 상태면 데이터가 있어도 재연결 안내 배너가 함께 뜬다', (
       tester,
     ) async {
