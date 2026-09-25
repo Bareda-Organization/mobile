@@ -89,7 +89,8 @@ class RosterStudent {
       photoUrl: json['photo_url'] as String?,
       className: json['class_name'] as String?,
       // 마스킹은 서버가 이미 적용(`010-2XXX-8814`) — 클라이언트는 그대로 표시.
-      guardianPhone: json['guardian_phone'] as String,
+      // 보호자 미연결 학생은 `null`(§4.2 `○`, BR-082) — 화면은 연락처 칸을 생략한다.
+      guardianPhone: json['guardian_phone'] as String?,
       note: json['note'] as String?,
       canGoAlone: json['can_go_alone'] as bool,
       status:
@@ -107,7 +108,7 @@ class RosterStudent {
   final String name;
   final String? photoUrl;
   final String? className;
-  final String guardianPhone;
+  final String? guardianPhone;
   final String? note;
   final bool canGoAlone;
   final RiderStatus status;
