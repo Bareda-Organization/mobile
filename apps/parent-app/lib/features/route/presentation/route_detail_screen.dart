@@ -210,20 +210,24 @@ class _DriverEscortSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('기사 ${driver.name}', style: BaraedaTypography.body),
+        Text('기사 ${driver.name ?? '미배치'}', style: BaraedaTypography.body),
         const SizedBox(height: BaraedaSpacing.space2),
         Row(
           children: [
             Expanded(
-              child: Text('동승자 ${escort.name}', style: BaraedaTypography.body),
+              child: Text(
+                '동승자 ${escort.name ?? '미배치'}',
+                style: BaraedaTypography.body,
+              ),
             ),
-            BaraedaButton(
-              label: '전화하기',
-              size: BaraedaButtonSize.sm,
-              variant: BaraedaButtonVariant.secondary,
-              icon: 'phone',
-              onPressed: () => _callEscort(escort.phone),
-            ),
+            if (escort.phone case final phone?)
+              BaraedaButton(
+                label: '전화하기',
+                size: BaraedaButtonSize.sm,
+                variant: BaraedaButtonVariant.secondary,
+                icon: 'phone',
+                onPressed: () => _callEscort(phone),
+              ),
           ],
         ),
       ],

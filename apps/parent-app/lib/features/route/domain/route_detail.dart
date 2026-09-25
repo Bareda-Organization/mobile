@@ -57,27 +57,29 @@ class RouteStop {
 }
 
 /// 기사 이름만 — 기사는 연락처가 부재하다(학부모 → 기사 직접 연락은
-/// 스코프 제외, API_SPEC §3.10 `escort.phone` 설명 참고).
+/// 스코프 제외, API_SPEC §3.10 `escort.phone` 설명 참고). 배치 전 회차는
+/// `null`(§3.10 `◐`).
 class RouteDriver {
   const RouteDriver({required this.name});
 
   factory RouteDriver.fromJson(Map<String, dynamic> json) =>
-      RouteDriver(name: json['name'] as String);
+      RouteDriver(name: json['name'] as String?);
 
-  final String name;
+  final String? name;
 }
 
-/// 동승자 — 연락 버튼은 이 사람만 갖는다.
+/// 동승자 — 연락 버튼은 이 사람만 갖는다. 배치 전 회차는 이름·연락처가
+/// `null`(§3.10 `◐`).
 class RouteEscort {
   const RouteEscort({required this.name, required this.phone});
 
   factory RouteEscort.fromJson(Map<String, dynamic> json) => RouteEscort(
-    name: json['name'] as String,
-    phone: json['phone'] as String,
+    name: json['name'] as String?,
+    phone: json['phone'] as String?,
   );
 
-  final String name;
-  final String phone;
+  final String? name;
+  final String? phone;
 }
 
 /// `GET /students/{id}/route` 응답 (API_SPEC §3.10).
