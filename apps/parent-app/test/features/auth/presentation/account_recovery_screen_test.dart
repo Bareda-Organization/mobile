@@ -180,6 +180,27 @@ void main() {
     );
   });
 
+  // Ruling 329 — SMS 연동 전까지 서버가 503 RECOVERY_UNAVAILABLE 을 낸다. 원문 메시지나 일반 오류가
+  // 아니라 "학원에 요청" 이라는 다음 행동을 알려야 복구가 막힌 채 끝나지 않는다.
+  testWidgets('RECOVERY_UNAVAILABLE 은 학원에 초기화를 요청하라고 안내한다', (tester) async {
+    await _pumpAndRequestCode(tester, 'RECOVERY_UNAVAILABLE');
+
+    expect(find.textContaining('학원에 비밀번호 초기화를 요청'), findsWidgets);
+    expect(find.text('서버 원본 메시지(RECOVERY_UNAVAILABLE)'), findsNothing);
+  });
+
+  testWidgets('요청 전에도 관리자 경유 안내가 보인다', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [currentUserRoleProvider.overrideWith((ref) => null)],
+        child: const MaterialApp(home: AccountRecoveryScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('학원에 비밀번호 초기화를 요청'), findsOneWidget);
+  });
+
   // 이 화면은 비로그인 진입점이다(클래스 문서 참고) — `router.dart` 의
   // `onAuthScreen` 판정이 로그인 전에도 이 경로를 허용하는 것은 코드로
   // 확인됐지만, 그 판정을 통과했을 때 화면 자체가 실제로 뜨는지는 위 두
