@@ -57,14 +57,12 @@ class RosterApi {
     );
   }
 
-  /// §4.11 — `change_ids` 미전달 시 전건 확인(정본 문구 그대로).
-  Future<AckChangesResult> ackChanges({
-    required String runId,
-    List<String>? changeIds,
-  }) async {
+  /// §4.11 — 요청 본문 없음, 현재 노선 버전 단위 전건 확인(Ruling 344). 변경 건 하나하나를
+  /// 골라 확인하는 저장 구조가 스키마에 없어(`acked_route_version_id` 가 버전 1개만 가리킴)
+  /// 이 API 자체가 그런 값을 받지 않는다.
+  Future<AckChangesResult> ackChanges({required String runId}) async {
     final response = await _dio.post<Map<String, dynamic>>(
       '/runs/$runId/ack-changes',
-      data: {'change_ids': ?changeIds},
     );
     return AckChangesResult.fromJson(response.data!);
   }

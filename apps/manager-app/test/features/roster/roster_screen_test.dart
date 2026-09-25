@@ -47,7 +47,6 @@ class _FakeRosterRepository implements RosterRepository {
   final SendOutcome<RiderUpdateResult>? updateOutcome;
   final Failure? updateFailure;
   String? lastAckRunId;
-  List<String>? lastAckChangeIds;
 
   /// 즉시 전송·재생이 같은 client_key 를 쓰는지 검증하는 시험이 읽는다.
   String? lastUpdateClientKey;
@@ -56,12 +55,8 @@ class _FakeRosterRepository implements RosterRepository {
   Future<RosterResponse> fetchRoster(String runId) async => roster;
 
   @override
-  Future<AckChangesResult> ackChanges({
-    required String runId,
-    List<String>? changeIds,
-  }) async {
+  Future<AckChangesResult> ackChanges({required String runId}) async {
     lastAckRunId = runId;
-    lastAckChangeIds = changeIds;
     // Failure 는 의도적으로 Exception/Error 를 상속하지 않는다
     // (baraeda_core/error/failure.dart 참고) — delay_screen_test.dart 와
     // 같은 패턴.
@@ -262,7 +257,7 @@ void main() {
     expect(find.text('변경 목록 확인'), findsNothing);
   });
 
-  testWidgets('변경 목록 확인 호출 시 change_ids 를 전달하지 않는다(전건 확인)', (tester) async {
+  testWidgets('변경 목록 확인 호출 시 요청 본문 없이 전건 확인을 호출한다(Ruling 344)', (tester) async {
     final fakeRepo = _FakeRosterRepository(
       roster: _roster(stopChange: StopChange.added),
       ackResult: AckChangesResult(ackedAt: DateTime(2026, 9, 12, 9)),
@@ -283,7 +278,6 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(fakeRepo.lastAckRunId, runId);
-    expect(fakeRepo.lastAckChangeIds, isNull);
   });
 
   testWidgets('ack-changes 가 실패하면 실패 사유를 보여주고 배너는 남는다', (tester) async {
