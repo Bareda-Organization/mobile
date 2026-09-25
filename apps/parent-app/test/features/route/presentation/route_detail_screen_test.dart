@@ -240,4 +240,22 @@ void main() {
       expect(find.text('전화하기'), findsOneWidget);
     });
   });
+
+  group('④배치 전 — 기사·동승자 이름·연락처가 null 이어도 화면이 뜬다', () {
+    // API_SPEC §3.10 `◐` — 배치(assignment)가 없는 회차는 서버가 null 을 보낸다(BR-055).
+    testWidgets('"미배치" 로 표시하고 "전화하기" 버튼을 내지 않는다', (tester) async {
+      final stops = [_stopJson(stopId: 's-A', seq: 0, name: '정류장A')];
+      final route = RouteDetail.fromJson({
+        ..._routeJson(stops: stops, myStopId: 's-A'),
+        'driver': {'name': null},
+        'escort': {'name': null, 'phone': null},
+      });
+
+      await pumpScreen(tester, response: route);
+
+      expect(find.text('기사 미배치'), findsOneWidget);
+      expect(find.text('동승자 미배치'), findsOneWidget);
+      expect(find.text('전화하기'), findsNothing);
+    });
+  });
 }
