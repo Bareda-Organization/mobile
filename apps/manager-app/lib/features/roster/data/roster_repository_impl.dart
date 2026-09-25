@@ -80,8 +80,6 @@ class RosterRepositoryImpl implements RosterRepository {
   );
 
   @override
-  Future<AckChangesResult> ackChanges({
-    required String runId,
-    List<String>? changeIds,
-  }) => guardDio(() => _api.ackChanges(runId: runId, changeIds: changeIds));
+  Future<AckChangesResult> ackChanges({required String runId}) =>
+      guardDio(() => _api.ackChanges(runId: runId));
 }

@@ -35,10 +35,7 @@ abstract interface class RosterRepository {
     required NoShowContactRequest request,
   });
 
-  /// §4.11 `POST /runs/{runId}/ack-changes` — `changeIds` 를 생략하면
-  /// 전건 확인(정본 문구).
-  Future<AckChangesResult> ackChanges({
-    required String runId,
-    List<String>? changeIds,
-  });
+  /// §4.11 `POST /runs/{runId}/ack-changes` — 요청 본문 없음, 현재 노선
+  /// 버전 단위 전건 확인(Ruling 344).
+  Future<AckChangesResult> ackChanges({required String runId});
 }
