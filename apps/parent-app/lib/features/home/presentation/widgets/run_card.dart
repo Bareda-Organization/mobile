@@ -70,7 +70,12 @@ class _RunCardState extends ConsumerState<RunCard> {
         _banner = switch (failure) {
           ApiFailure(code: 'CHANGE_LIMIT_REACHED') =>
             '이 회차는 변경 가능 횟수를 모두 사용했습니다',
-          ApiFailure(code: 'CHANGE_WINDOW_CLOSED') => '운행 중에는 이 변경을 되돌릴 수 없습니다',
+          // 같은 코드가 끄기(이미 승하차 처리된 학생, Ruling 334)와 켜기(출발 30분 전부터
+          // 탑승 복귀 불가)에서 뜻이 다르다.
+          ApiFailure(code: 'CHANGE_WINDOW_CLOSED') =>
+            value
+                ? '출발 30분 전부터는 탑승으로 되돌릴 수 없습니다'
+                : '이미 탑승 처리가 진행돼 앱에서는 바꿀 수 없습니다. 학원에 문의해 주세요',
           ApiFailure(:final message) => message,
           _ => '변경을 처리하지 못했습니다',
         };

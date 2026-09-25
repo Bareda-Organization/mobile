@@ -33,6 +33,7 @@ class _ThrowingRunRepository implements RunRepository {
 StudentRun _fixtureRun({
   RiderStatus status = RiderStatus.waiting,
   DateTime? departTime,
+  bool riding = true,
 }) => StudentRun(
   runId: 'run-1',
   direction: RunDirection.toAcademy,
@@ -43,19 +44,27 @@ StudentRun _fixtureRun({
   departTime: departTime ?? DateTime(2026, 9, 12, 8),
   runStatus: RunStatus.idle,
   confirmed: false,
-  riding: true,
+  riding: riding,
   riderStatus: status,
   stop: const RunStop(stopId: 'stop-1', name: '정문'),
   changeQuotaLeft: 1,
 );
 
-Future<void> _pumpWith(WidgetTester tester, RunRepository repository) async {
+Future<void> _pumpWith(
+  WidgetTester tester,
+  RunRepository repository, {
+  bool riding = true,
+}) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [runRepositoryProvider.overrideWithValue(repository)],
       child: MaterialApp(
         home: Scaffold(
-          body: RunCard(studentId: 's-1', run: _fixtureRun(), canToggle: true),
+          body: RunCard(
+            studentId: 's-1',
+            run: _fixtureRun(riding: riding),
+            canToggle: true,
+          ),
         ),
       ),
     ),
@@ -167,7 +176,10 @@ void main() {
     expect(find.text('이 회차는 변경 가능 횟수를 모두 사용했습니다'), findsOneWidget);
   });
 
-  testWidgets('토글이 CHANGE_WINDOW_CLOSED 로 실패하면 운행 중 문구를 보여준다', (
+  // Ruling 334 · BR-029 — 같은 CHANGE_WINDOW_CLOSED 가 끄기(이미 승하차 처리된 학생)와
+  // 켜기(출발 30분 전부터 탑승 복귀 불가)에서 뜻이 다르다. 한 문구로 합치면 끄기 실패에
+  // "되돌릴 수 없습니다" 가 떠 학부모가 무엇이 막혔는지 알 수 없다.
+  testWidgets('끄기가 CHANGE_WINDOW_CLOSED 로 실패하면 이미 처리됨 문구를 보여준다', (
     tester,
   ) async {
     await _pumpWith(
@@ -181,7 +193,28 @@ void main() {
       ),
     );
 
-    expect(find.text('운행 중에는 이 변경을 되돌릴 수 없습니다'), findsOneWidget);
+    expect(
+      find.text('이미 탑승 처리가 진행돼 앱에서는 바꿀 수 없습니다. 학원에 문의해 주세요'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('켜기가 CHANGE_WINDOW_CLOSED 로 실패하면 탑승 복귀 불가 문구를 보여준다', (
+    tester,
+  ) async {
+    await _pumpWith(
+      tester,
+      _ThrowingRunRepository(
+        const Failure.api(
+          statusCode: 403,
+          code: 'CHANGE_WINDOW_CLOSED',
+          message: '운행이 시작되어 변경할 수 없습니다',
+        ),
+      ),
+      riding: false,
+    );
+
+    expect(find.text('출발 30분 전부터는 탑승으로 되돌릴 수 없습니다'), findsOneWidget);
   });
 
   testWidgets('canToggle 이 false 면 등원 여부 토글 스위치 자체가 렌더링되지 않는다', (
