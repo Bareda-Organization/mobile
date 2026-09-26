@@ -109,6 +109,11 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
     } on Failure catch (failure) {
       if (!mounted) return;
       setState(() => _errorMessage = describeFailure(failure));
+      // M3(Ruling 345) — 같은 상태 재요청 포함, 다른 사람이 이미 처리했을
+      // 수 있어 낡은 화면이 그대로 남지 않도록 명단을 다시 불러온다.
+      if (failure case ApiFailure(code: 'RIDER_TRANSITION_NOT_ALLOWED')) {
+        ref.invalidate(rosterProvider);
+      }
     } finally {
       if (mounted) setState(() => _pendingRiderId = null);
     }

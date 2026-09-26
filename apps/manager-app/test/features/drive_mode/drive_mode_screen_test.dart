@@ -10,10 +10,40 @@ import 'package:manager_app/app/app_routes.dart';
 import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
+import 'package:manager_app/features/drive_mode/data/models/arrive_stop_result.dart';
+import 'package:manager_app/features/drive_mode/data/models/start_run_result.dart';
+import 'package:manager_app/features/drive_mode/domain/drive_mode_repository.dart';
 import 'package:manager_app/features/drive_mode/presentation/drive_mode_providers.dart';
 import 'package:manager_app/features/drive_mode/presentation/drive_mode_screen.dart';
 import 'package:manager_app/features/home/data/models/manager_run.dart';
+import 'package:manager_app/features/home/presentation/home_providers.dart';
 import 'package:manager_app/features/roster/data/models/roster_response.dart';
+
+/// M4 — `_startRun` 이 `Failure` 를 어떻게 다루는지만 보는 시험용 대역.
+/// `arriveStop` 은 이 파일의 시험 대상이 아니다.
+class _FakeDriveModeRepository implements DriveModeRepository {
+  _FakeDriveModeRepository({this.startFailure});
+
+  final Failure? startFailure;
+
+  @override
+  Future<StartRunResult> startRun(String runId) async {
+    // Failure 는 의도적으로 Exception/Error 를 상속하지 않는다
+    // (roster_screen_test.dart 의 같은 패턴 주석 참고).
+    // ignore: only_throw_errors
+    if (startFailure != null) throw startFailure!;
+    return StartRunResult(
+      runStatus: RunStatus.moving,
+      startedAt: DateTime(2026, 9, 12, 8),
+    );
+  }
+
+  @override
+  Future<ArriveStopResult> arriveStop({
+    required String runId,
+    required String stopId,
+  }) => throw UnimplementedError('이 파일의 시험 대상이 아니다');
+}
 
 /// 시각을 고정해 판정을 결정적으로 만드는 가짜 시계
 /// ([clockProvider] override 대상, 이월 11 · Ruling 266).
@@ -130,6 +160,51 @@ void main() {
 
     expect(find.text('운행 시작'), findsNothing);
     expect(find.text('운행 시작 가능 시간(출발 ±10분)이 아닙니다'), findsOneWidget);
+  });
+
+  // M4(Ruling 340) — 취소된 회차(§4.1 목록에서도 제외)에 운행 시작을
+  // 시도하면 서버가 409 RUN_CANCELED 로 거절한다. 문구를 보여주는 것에서
+  // 그치지 않고 §4.1 오늘 회차 목록을 다시 불러와야 취소된 카드가 화면에
+  // 남지 않는다.
+  testWidgets('409 RUN_CANCELED 면 문구 + 오늘 회차 목록을 다시 불러온다', (tester) async {
+    final now = DateTime(2026, 9, 12, 8);
+    var todayRunsFetchCount = 0;
+    final fakeRepo = _FakeDriveModeRepository(
+      startFailure: const ApiFailure(
+        statusCode: 409,
+        code: 'RUN_CANCELED',
+        message: '취소된 회차입니다',
+      ),
+    );
+
+    await tester.pumpWidget(
+      _wrap(const DriveModeScreen(), [
+        clockProvider.overrideWithValue(_FixedClock(now)),
+        selectedRunIdProvider.overrideWith((ref) => runId),
+        // `driveModeRunProvider` 를 직접 override 하지 않는다 — 실제
+        // 구현이 `todayRunsProvider` 를 읽어 유도하는 provider라, 여기서
+        // 직접 값을 박으면 무효화가 이 provider 에 닿는지 확인할 수 없다.
+        driveModeRosterProvider.overrideWith((ref) async => _emptyRoster),
+        driveModeRepositoryProvider.overrideWithValue(fakeRepo),
+        todayRunsProvider.overrideWith((ref) async {
+          todayRunsFetchCount++;
+          return [
+            _managerRun(
+              startWindowFrom: now.subtract(const Duration(minutes: 5)),
+              startWindowTo: now.add(const Duration(minutes: 5)),
+            ),
+          ];
+        }),
+      ]),
+    );
+    await tester.pumpAndSettle();
+    expect(todayRunsFetchCount, 1);
+
+    await tester.tap(find.text('운행 시작'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('취소된 회차입니다'), findsOneWidget);
+    expect(todayRunsFetchCount, 2);
   });
 
   // 2026-09-23 — 노선 지도(M-04·M-09)는 기사 전용인데, 버튼이 동승자만 들어가는 명단 화면에만 있어서

@@ -105,6 +105,11 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
     } on Failure catch (failure) {
       if (!mounted) return;
       setState(() => _errorMessage = describeFailure(failure));
+      // M4(Ruling 340) — 취소된 회차는 §4.1 목록에서 빠져야 하는데, 목록을
+      // 다시 불러오지 않으면 이미 취소된 카드가 화면에 그대로 남는다.
+      if (failure case ApiFailure(code: 'RUN_CANCELED')) {
+        ref.invalidate(todayRunsProvider);
+      }
     } finally {
       if (mounted) setState(() => _submitting = false);
     }

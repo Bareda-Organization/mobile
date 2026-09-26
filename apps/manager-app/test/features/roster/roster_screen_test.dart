@@ -51,8 +51,14 @@ class _FakeRosterRepository implements RosterRepository {
   /// 즉시 전송·재생이 같은 client_key 를 쓰는지 검증하는 시험이 읽는다.
   String? lastUpdateClientKey;
 
+  /// M3 — 실패 시 명단이 **다시 조회됐는지**(재조회 1회) 확인하는 시험이 읽는다.
+  int fetchRosterCallCount = 0;
+
   @override
-  Future<RosterResponse> fetchRoster(String runId) async => roster;
+  Future<RosterResponse> fetchRoster(String runId) async {
+    fetchRosterCallCount++;
+    return roster;
+  }
 
   @override
   Future<AckChangesResult> ackChanges({required String runId}) async {
@@ -430,15 +436,51 @@ void main() {
     expect(find.textContaining('운행 중'), findsWidgets);
   });
 
+  // M3(Ruling 345) — 같은 상태 재요청 포함, 서버가 409
+  // RIDER_TRANSITION_NOT_ALLOWED 로 거절하면 전용 문구를 보여주고 명단을
+  // 다시 불러와야 한다(재요청 사이 다른 사람이 이미 처리했을 수 있어서).
+  testWidgets(
+    '409 RIDER_TRANSITION_NOT_ALLOWED 면 전용 문구 + 명단을 다시 불러온다',
+    (tester) async {
+      final fakeRepo = _FakeRosterRepository(
+        roster: _roster(),
+        updateFailure: const ApiFailure(
+          statusCode: 409,
+          code: 'RIDER_TRANSITION_NOT_ALLOWED',
+          message: '허용되지 않는 상태 전이입니다',
+        ),
+      );
+
+      await tester.pumpWidget(
+        _wrap(const RosterScreen(), [
+          selectedRunIdProvider.overrideWith((ref) => runId),
+          rosterRepositoryProvider.overrideWithValue(fakeRepo),
+          currentUserRoleProvider.overrideWith((ref) => UserRole.escort),
+          todayRunsProvider.overrideWith(
+            (ref) async => [_managerRun(ackRequired: false)],
+          ),
+        ]),
+      );
+      await tester.pumpAndSettle();
+      expect(fakeRepo.fetchRosterCallCount, 1);
+
+      await tester.tap(find.widgetWithText(BaraedaButton, '탑승'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('이미 처리된 학생입니다 — 명단을 새로 불러왔습니다'), findsOneWidget);
+      expect(fakeRepo.fetchRosterCallCount, 2);
+    },
+  );
+
   // M1(Ruling 341, BR-016) — 버스 간 이동으로 빠진 학생은 `status: absent` ·
   // `change: removed` 로 명단에 남는다(§4.2). 다른 버스로 옮긴 학생에게
   // [탑승]·[미승차] 버튼이 보이면 안 되고, "금일 삭제" 배지만 보여야 한다.
   testWidgets('금일 삭제(absent·removed) 학생은 배지만 보이고 조작 버튼이 없다', (tester) async {
-    final roster = RosterResponse(
+    const roster = RosterResponse(
       runId: runId,
       busNo: '3호차',
       direction: RunDirection.toAcademy,
-      counts: const RosterCounts(boarded: 0, waiting: 0, noShow: 0, absentN: 1),
+      counts: RosterCounts(boarded: 0, waiting: 0, noShow: 0, absentN: 1),
       stops: [
         RosterStop(
           stopId: 'stop-1',
