@@ -79,6 +79,9 @@ final webSocketClientProvider = Provider<BaraedaWebSocketClient>((ref) {
   final client = BaraedaWebSocketClient(
     url: wsUrl,
     tokenStorage: ref.watch(tokenStorageProvider),
+    // REST 401 재발급과 같은 창구를 쓴다 — 동시 재발급 경합을 막는 이유는
+    // `token_refresher.dart` 문서를 본다.
+    refreshAccessToken: ref.watch(apiClientProvider).tokenRefresher.refresh,
   );
   ref.onDispose(client.dispose);
   return client;
