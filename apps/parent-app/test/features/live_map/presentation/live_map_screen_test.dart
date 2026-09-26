@@ -554,4 +554,74 @@ void main() {
       },
     );
   });
+
+  group('F1(2026-09-26) — 다른 이벤트 없이 시간만 흐르는 경우의 자동 재표시', () {
+    // 이 그룹은 위 그룹과 달리 `client.emit(...)` 을 전혀 부르지 않는다 —
+    // WS 연결은 살아 있고 그 버스의 위치 방송만 끊긴(Ruling 349) 상황을
+    // 재현한다. 지금 코드는 이 경우 화면을 다시 그리는 계기가 없어
+    // "현재 위치" 가 무기한 남는다(브리프가 지적한 결함 그대로).
+    final t0 = DateTime.utc(2026, 9, 13, 8);
+
+    Future<void> pumpConnectedWithPosition(
+      WidgetTester tester, {
+      required Clock clock,
+    }) async {
+      await pumpScreen(
+        tester,
+        extraOverrides: [
+          roleCapabilitiesProvider.overrideWithValue(
+            RoleCapabilities.of(UserRole.student),
+          ),
+          myStudentIdProvider.overrideWith((ref) async => 's-1'),
+          clockProvider.overrideWithValue(clock),
+        ],
+      );
+      await tester.pump();
+      await tester.pump();
+      client.emit(WsConnectionState.connected);
+      await tester.pump();
+      client.deliver(
+        _envelope(WsEventType.position, {
+          'lat': 37.5,
+          'lng': 127.0,
+          'received_at': t0.toIso8601String(),
+        }),
+      );
+      await tester.pump();
+    }
+
+    testWidgets(
+      '다른 이벤트 없이 시간만 2분 지나면 자동으로 "마지막 확인 위치 · 2분 전" 으로 '
+      '전환된다 — 1분 59초에는 "현재 위치" 를 유지한다',
+      (tester) async {
+        final clock = _MutableClock(t0);
+        await pumpConnectedWithPosition(tester, clock: clock);
+        expect(find.textContaining('현재 위치'), findsOneWidget);
+
+        clock.value = t0.add(const Duration(minutes: 1, seconds: 59));
+        await tester.pump(const Duration(minutes: 1, seconds: 59));
+        expect(find.textContaining('현재 위치'), findsOneWidget);
+        expect(find.textContaining('마지막 확인 위치'), findsNothing);
+
+        clock.value = t0.add(const Duration(minutes: 2));
+        await tester.pump(const Duration(seconds: 1));
+
+        expect(find.textContaining('마지막 확인 위치 · 2분 전'), findsOneWidget);
+        expect(find.textContaining('현재 위치'), findsNothing);
+      },
+    );
+
+    testWidgets('화면을 떠나면(dispose) 예약된 재표시 타이머가 남지 않는다', (
+      tester,
+    ) async {
+      final clock = _MutableClock(t0);
+      await pumpConnectedWithPosition(tester, clock: clock);
+      expect(find.textContaining('현재 위치'), findsOneWidget);
+
+      // dispose 뒤 Timer 가 취소되지 않으면 flutter_test 가 테스트 종료 시
+      // "A Timer is still pending" 로 이 시험 자체를 실패시킨다 — 별도
+      // 단언 없이 dispose 만으로 검증이 성립한다.
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+  });
 }
