@@ -48,6 +48,12 @@ class _FakePositionSource implements PositionSource {
     callCount++;
     return _sample;
   }
+
+  @override
+  void start() {}
+
+  @override
+  void stop() {}
 }
 
 /// 실제 서버를 부르지 않고 `sendPosition` 호출을 그대로 기록하는 가짜

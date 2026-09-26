@@ -89,6 +89,12 @@ class _FakePositionSource implements PositionSource {
 
   @override
   PositionAvailability get availability => PositionAvailability.available;
+
+  @override
+  void start() {}
+
+  @override
+  void stop() {}
 }
 
 Widget _wrap(Widget child, List<Override> overrides) {

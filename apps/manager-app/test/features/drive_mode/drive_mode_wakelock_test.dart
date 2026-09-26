@@ -49,6 +49,12 @@ class _NoopPositionSource implements PositionSource {
   const _NoopPositionSource();
 
   @override
+  void start() {}
+
+  @override
+  void stop() {}
+
+  @override
   PositionSample? sample() => null;
 
   @override

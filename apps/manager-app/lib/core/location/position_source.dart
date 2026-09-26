@@ -1,7 +1,7 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:meta/meta.dart';
 
 /// GPS 등 실제 위치 획득 소스 — LOC-01 이 요구하는 좌표 하나를 제공한다.
 ///
@@ -23,6 +23,49 @@ abstract interface class PositionSource {
   /// [sample] 이 `null` 인 이유 — 화면이 "아직 못 받았을 뿐"과 "권한·서비스
   /// 문제" 를 구별해 안내 문구를 낼 수 있게 한다(LOC-01 할 일 2).
   PositionAvailability get availability;
+
+  /// 위치 스트림 구독을 시작한다(`Ruling 360`) — 운행 화면 진입 시 기사만
+  /// 부른다(`drive_mode_screen.dart` `initState`, `canTransmitPosition`
+  /// 게이트). 이미 시작됐으면 아무 것도 하지 않는다(멱등) — 재빌드가
+  /// 중복 구독을 만들지 않는다.
+  void start();
+
+  /// 위치 스트림 구독을 멈춘다 — 운행 종료 또는 화면 dispose 시 부른다.
+  /// [start] 로 켜진 Android 포그라운드 서비스 알림·iOS 백그라운드 갱신도
+  /// 이 호출로 함께 멎는다. 이미 멈췄으면 아무 것도 하지 않는다(멱등).
+  void stop();
+}
+
+/// `Ruling 360` — 플랫폼별 위치 스트림 설정을 만드는 순수 함수. Android 는
+/// 포그라운드 서비스 알림을 달아야 화면이 꺼지거나 뒤로 가도 위치 콜백이
+/// 계속 온다([ForegroundNotificationConfig]). iOS 는
+/// `AppleSettings.allowBackgroundLocationUpdates` 로 같은 것을 사용
+/// 중(`WhenInUse`) 권한만으로 해낸다(`Always` 불필요 — Apple 은 이미 도는
+/// 위치 갱신을 앱이 백그라운드로 가도 이어 준다, 파란 표시줄로 사용자에게
+/// 알린다). 순수 함수로 뺀 이유는 시험이 [TargetPlatform] 값만 바꿔 가며
+/// 두 분기를 각각 검사할 수 있게 하려는 것뿐 — 실제 배선은
+/// `defaultTargetPlatform` 을 읽는 [GeolocatorPositionSource] 가 맡는다.
+LocationSettings buildLocationSettings(TargetPlatform platform) {
+  const accuracy = LocationAccuracy.high; // 기존 값 그대로 유지
+  return switch (platform) {
+    TargetPlatform.android => AndroidSettings(
+      accuracy: accuracy,
+      foregroundNotificationConfig: const ForegroundNotificationConfig(
+        notificationTitle: '운행 중',
+        notificationText: '학부모에게 버스 위치를 보내고 있습니다',
+        enableWakeLock: true,
+      ),
+    ),
+    // allowBackgroundLocationUpdates·pauseLocationUpdatesAutomatically 는
+    // AppleSettings 기본값이 이미 true/false 라 명시하지 않는다(lint
+    // avoid_redundant_argument_values) — 값 자체는 `buildLocationSettings`
+    // 시험(iOS 분기)이 지킨다.
+    TargetPlatform.iOS => AppleSettings(
+      accuracy: accuracy,
+      showBackgroundLocationIndicator: true,
+    ),
+    _ => const LocationSettings(accuracy: accuracy),
+  };
 }
 
 /// [PositionSource.sample] 이 `null` 인 이유.
@@ -71,20 +114,28 @@ class UnavailablePositionSource implements PositionSource {
 
   @override
   PositionAvailability get availability => PositionAvailability.available;
+
+  @override
+  void start() {}
+
+  @override
+  void stop() {}
 }
 
 /// `geolocator` 플러그인으로 실제 GPS 좌표를 낸다(LOC-01).
 ///
-/// [sample] 은 동기라 플러그인 호출(비동기)을 매 호출마다 다시 묻지 않고,
-/// 생성 시점에 권한·위치 서비스를 한 번 확인한 뒤
-/// [Geolocator.getPositionStream] 을 구독해 최신 좌표를 캐시해 둔다 —
-/// `sample()` 은 그 캐시를 그대로 돌려준다.
+/// [sample] 은 동기라 플러그인 호출(비동기)을 매 호출마다 다시 묻지 않고
+/// 캐시를 돌려준다. 생성 시점에는 권한·위치 서비스 확인만 한다 — 실제
+/// [Geolocator.getPositionStream] 구독(Android 포그라운드 서비스 알림·
+/// iOS 백그라운드 갱신이 여기서 켜진다)은 [start] 를 불러야 시작한다
+/// (`Ruling 360` — 동승자 단말에서는 이 구독 자체가 시작되지 않아야
+/// 한다, 생성자에서 자동 구독하면 역할과 무관하게 켜진다).
 class GeolocatorPositionSource implements PositionSource {
   GeolocatorPositionSource() {
     _ready = _init();
   }
 
-  /// 생성자의 초기화(권한 확인·구독 시작)가 끝났는지 — 시험 전용
+  /// 생성자의 초기화(권한·위치 서비스 확인)가 끝났는지 — 시험 전용
   /// (`await source.ready`). 운영 코드는 기다리지 않는다: 첫 좌표가 아직
   /// 없으면 `sample()` 이 `null` 을 돌려주는 것으로 충분하다.
   @visibleForTesting
@@ -94,6 +145,10 @@ class GeolocatorPositionSource implements PositionSource {
   PositionSample? _lastSample;
   PositionAvailability _availability = PositionAvailability.available;
   StreamSubscription<Position>? _subscription;
+
+  /// [start] 가 불렸는지 — [stop] 이 먼저 불리면(권한 확인이 아직 안 끝난
+  /// 사이) 뒤늦게 끝난 권한 확인이 구독을 다시 열지 않도록 막는다.
+  bool _started = false;
 
   Future<void> _init() async {
     if (!await Geolocator.isLocationServiceEnabled()) {
@@ -110,9 +165,29 @@ class GeolocatorPositionSource implements PositionSource {
       return;
     }
     _availability = PositionAvailability.available;
+  }
+
+  @override
+  void start() {
+    if (_started) return;
+    _started = true;
+    unawaited(_startStream());
+  }
+
+  Future<void> _startStream() async {
+    await _ready;
+    if (!_started || _subscription != null) return;
+    if (_availability != PositionAvailability.available) return;
     _subscription = Geolocator.getPositionStream(
-      locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
+      locationSettings: buildLocationSettings(defaultTargetPlatform),
     ).listen(_onPosition);
+  }
+
+  @override
+  void stop() {
+    _started = false;
+    unawaited(_subscription?.cancel());
+    _subscription = null;
   }
 
   void _onPosition(Position position) {
@@ -136,9 +211,10 @@ class GeolocatorPositionSource implements PositionSource {
   @override
   PositionAvailability get availability => _availability;
 
-  /// 앱·화면 종료 시 구독을 끊는다 — `di.dart` provider 의 `ref.onDispose`
-  /// 에서 부른다.
+  /// 앱 종료 시 구독을 끊는다 — `di.dart` provider 의 `ref.onDispose` 에서
+  /// 부른다. [stop] 과 같은 경로([start] 를 다시 부르면 재구독도 가능하나,
+  /// 여기서는 provider 자체가 사라지는 시점이라 재사용되지 않는다).
   void dispose() {
-    unawaited(_subscription?.cancel());
+    stop();
   }
 }

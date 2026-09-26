@@ -58,6 +58,14 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
   /// 쓰면 되고 `ref` 를 다시 묻지 않는다.
   late final WakelockPort _wakelockPort;
 
+  /// LOC-01 배경 송신(`Ruling 360`) — 위치 스트림(Android 포그라운드
+  /// 서비스 알림 · iOS 백그라운드 갱신)을 [initState] 에서 시작해 둔
+  /// 인스턴스. 기사만 채운다(`canTransmitPosition` 게이트) — 동승자는
+  /// `null` 로 남아 [PositionSource.start] 를 한 번도 부르지 않는다.
+  /// 위 [_wakelockPort] 와 같은 이유로 `dispose()` 가 쓸 수 있게 필드에
+  /// 저장해 둔다.
+  PositionSource? _positionSource;
+
   /// [_positionAvailability] 를 화면 문구로 옮긴다 — 정상(`available`)이거나
   /// 아직 모르면(`null`) 아무것도 보여주지 않는다.
   String? get _positionGuidance => switch (_positionAvailability) {
@@ -77,12 +85,20 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
     // 이 화면에 들어오는 모든 사용자(기사·동승자)에게 공통이다.
     _wakelockPort = ref.read(wakelockPortProvider);
     unawaited(_wakelockPort.enable());
+    // LOC-01 배경 송신(Ruling 360) — 위치 스트림은 화면 진입 시 기사만
+    // 시작한다(위 wakelock 과 달리 동승자는 시작하지 않는다, BRIEF-BG
+    // 할 일 3 · 지금 canTransmitPosition 게이트와 같은 기준).
+    if (ref.read(roleCapabilitiesProvider)?.canTransmitPosition ?? false) {
+      final source = ref.read(positionSourceProvider)..start();
+      _positionSource = source;
+    }
   }
 
   @override
   void dispose() {
     _positionTimer?.cancel();
     unawaited(_wakelockPort.disable());
+    _positionSource?.stop();
     super.dispose();
   }
 
@@ -191,6 +207,12 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
       runId: runId,
       shouldTransmit: canTransmitPosition && run?.runStatus == RunStatus.moving,
     );
+    // 운행 종료(§4.10 이 `finished` 로 옮기는 순간) — 화면은 종료 보고서로
+    // 이동하지 않고 스택에 남을 수 있어(FIX-MF.md §2) dispose 만으로는
+    // 늦다. 위치 스트림을 여기서 바로 멈춘다(Ruling 360, BRIEF-BG 할 일 3).
+    if (run?.runStatus == RunStatus.finished) {
+      _positionSource?.stop();
+    }
 
     return Scaffold(
       appBar: AppBar(

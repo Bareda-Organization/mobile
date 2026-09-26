@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show TargetPlatform;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:manager_app/core/location/position_source.dart';
@@ -49,10 +50,41 @@ Position _position({
 );
 
 void main() {
+  // Ruling 360 — Android 는 포그라운드 서비스 알림, iOS 는 사용 중 권한으로
+  // 시작한 백그라운드 갱신 유지. 플랫폼 분기를 순수 함수로 빼서 시험이
+  // 실제 GPS 없이 두 분기를 각각 검사할 수 있게 한다(BRIEF-BG 할 일 1).
+  group('buildLocationSettings', () {
+    test('Android 는 포그라운드 서비스 알림 설정을 싣는다', () {
+      final settings = buildLocationSettings(TargetPlatform.android);
+
+      expect(settings, isA<AndroidSettings>());
+      final android = settings as AndroidSettings;
+      expect(android.foregroundNotificationConfig, isNotNull);
+      expect(android.foregroundNotificationConfig!.enableWakeLock, isTrue);
+    });
+
+    test('iOS 는 사용 중 권한으로 시작한 백그라운드 갱신을 켠다', () {
+      final settings = buildLocationSettings(TargetPlatform.iOS);
+
+      expect(settings, isA<AppleSettings>());
+      final apple = settings as AppleSettings;
+      expect(apple.allowBackgroundLocationUpdates, isTrue);
+      expect(apple.showBackgroundLocationIndicator, isTrue);
+      expect(apple.pauseLocationUpdatesAutomatically, isFalse);
+    });
+
+    test('그 밖 플랫폼은 기본 LocationSettings 를 쓴다(정확도는 유지)', () {
+      final settings = buildLocationSettings(TargetPlatform.macOS);
+
+      expect(settings.runtimeType, LocationSettings);
+      expect(settings.accuracy, LocationAccuracy.high);
+    });
+  });
+
   test('권한·위치 서비스가 정상이면 스트림 좌표를 캐시해 sample() 로 낸다', () async {
     final platform = _FakeGeolocatorPlatform();
     GeolocatorPlatform.instance = platform;
-    final source = GeolocatorPositionSource();
+    final source = GeolocatorPositionSource()..start();
     await source.ready;
 
     expect(source.availability, PositionAvailability.available);
@@ -73,7 +105,7 @@ void main() {
   test('recordedAt 은 플랫폼이 준 측정 시각 그대로다(전송 시각이 아니다)', () async {
     final platform = _FakeGeolocatorPlatform();
     GeolocatorPlatform.instance = platform;
-    final source = GeolocatorPositionSource();
+    final source = GeolocatorPositionSource()..start();
     await source.ready;
 
     final measuredAt = DateTime.utc(2020);
@@ -86,7 +118,7 @@ void main() {
   test('iOS 음수 속도·방향은 필드를 빼고 보낸다(§4.12 범위 밖)', () async {
     final platform = _FakeGeolocatorPlatform();
     GeolocatorPlatform.instance = platform;
-    final source = GeolocatorPositionSource();
+    final source = GeolocatorPositionSource()..start();
     await source.ready;
 
     platform.emit(_position(speed: -1, heading: -1));
@@ -101,7 +133,7 @@ void main() {
     final platform = _FakeGeolocatorPlatform()
       ..checkPermissionResult = LocationPermission.denied;
     GeolocatorPlatform.instance = platform;
-    final source = GeolocatorPositionSource();
+    final source = GeolocatorPositionSource()..start();
     await source.ready;
 
     expect(source.sample(), isNull);
@@ -111,7 +143,7 @@ void main() {
   test('위치 서비스 꺼짐 → sample() null, availability serviceDisabled', () async {
     final platform = _FakeGeolocatorPlatform()..serviceEnabled = false;
     GeolocatorPlatform.instance = platform;
-    final source = GeolocatorPositionSource();
+    final source = GeolocatorPositionSource()..start();
     await source.ready;
 
     expect(source.sample(), isNull);

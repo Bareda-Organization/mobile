@@ -28,6 +28,14 @@
 	<true/>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>운행 중 버스 위치를 학부모·학생에게 실시간으로 보여주기 위해 위치 권한이 필요합니다.</string>
+	<!-- LOC-01 배경 송신(Ruling 360) — 앱이 뒤로 가거나 화면이 꺼져도
+	     사용 중 권한으로 이미 시작된 위치 갱신을 이어 받는다. Always
+	     권한(NSLocationAlwaysAndWhenInUseUsageDescription)은 요구하지
+	     않는다. -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>location</string>
+	</array>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
