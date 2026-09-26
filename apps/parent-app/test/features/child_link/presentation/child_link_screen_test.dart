@@ -130,6 +130,42 @@ void main() {
     expect(find.text('잠시 후 다시 시도해 주세요'), findsOneWidget);
   });
 
+  // P2 — FEATURE_SPEC 정책 상수(보호자당 10분에 5회)에 걸려도 응답은
+  // LINK_CODE_INVALID 하나뿐이라(코드 실재 노출 방지) 화면이 매번 이
+  // 고정 안내를 함께 보여줘 상한에 걸린 학부모가 무한정 재시도하지 않게
+  // 한다.
+  testWidgets(
+    '코드 확인이 LINK_CODE_INVALID 로 실패하면 시도 상한 고정 안내도 함께 보여준다',
+    (tester) async {
+      await _pumpAsParent(
+        tester,
+        _StubLinkRepository(
+          confirmLinkFailure: const Failure.api(
+            statusCode: 403,
+            code: 'LINK_CODE_INVALID',
+            message: '코드가 올바르지 않음',
+          ),
+        ),
+      );
+
+      await tester.enterText(
+        find.descendant(
+          of: find.byType(BaraedaCodeInput),
+          matching: find.byType(TextField),
+        ),
+        '000000',
+      );
+      await tester.pump();
+      await tester.tap(find.text('연결 완료하기'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('여러 번 틀리면 10분 동안 입력이 막힙니다 · 계속 안 되면 자녀 앱에서 코드를 다시 발급'),
+        findsOneWidget,
+      );
+    },
+  );
+
   testWidgets('코드 확인이 ALREADY_LINKED 로 실패하면 안내 문구를 보여준다', (tester) async {
     await _pumpAsParent(
       tester,
@@ -154,5 +190,11 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('이미 연결된 자녀입니다'), findsOneWidget);
+    // P2 안내는 LINK_CODE_INVALID 전용 — 다른 에러 코드까지 번지면 무관한
+    // 상황(이미 연결된 자녀)에도 시도 상한 얘기가 뜬다.
+    expect(
+      find.text('여러 번 틀리면 10분 동안 입력이 막힙니다 · 계속 안 되면 자녀 앱에서 코드를 다시 발급'),
+      findsNothing,
+    );
   });
 }

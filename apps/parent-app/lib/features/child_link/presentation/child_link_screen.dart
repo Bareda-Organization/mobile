@@ -31,12 +31,19 @@ class _ChildLinkScreenState extends ConsumerState<ChildLinkScreen> {
   String? _successMessage;
   DateTime? _generatedCodeExpiresAt;
 
+  /// P2 — 지금 `_formError` 가 `LINK_CODE_INVALID` 로 실패한 것인가.
+  /// 서버는 코드 오류·시도 상한 초과·중복 코드를 전부 이 코드 하나로
+  /// 합쳐 돌려준다(코드 실재 노출 방지, `§3.4`) — 응답을 갈라 안내하지
+  /// 못하므로 이 코드일 때는 항상 시도 상한 고정 안내를 함께 보여준다.
+  bool _formErrorIsCodeInvalid = false;
+
   Future<void> _submitConfirmLink() async {
     if (_code.length != 6 || _submitting) return;
 
     setState(() {
       _submitting = true;
       _formError = null;
+      _formErrorIsCodeInvalid = false;
       _successMessage = null;
     });
 
@@ -56,6 +63,8 @@ class _ChildLinkScreenState extends ConsumerState<ChildLinkScreen> {
       setState(() {
         _submitting = false;
         _formError = _messageFor(failure);
+        _formErrorIsCodeInvalid =
+            failure is ApiFailure && failure.code == 'LINK_CODE_INVALID';
       });
     }
   }
@@ -66,6 +75,7 @@ class _ChildLinkScreenState extends ConsumerState<ChildLinkScreen> {
     setState(() {
       _submitting = true;
       _formError = null;
+      _formErrorIsCodeInvalid = false;
       _successMessage = null;
     });
 
@@ -172,6 +182,13 @@ class _ChildLinkScreenState extends ConsumerState<ChildLinkScreen> {
       if (_formError != null) ...[
         const SizedBox(height: BaraedaSpacing.space4),
         AlertBanner(tone: AlertTone.missed, body: _formError),
+        if (_formErrorIsCodeInvalid) ...[
+          const SizedBox(height: BaraedaSpacing.space2),
+          const Text(
+            '여러 번 틀리면 10분 동안 입력이 막힙니다 · 계속 안 되면 자녀 앱에서 코드를 다시 발급',
+            style: BaraedaTypography.bodySm,
+          ),
+        ],
       ],
       if (_successMessage != null) ...[
         const SizedBox(height: BaraedaSpacing.space4),
