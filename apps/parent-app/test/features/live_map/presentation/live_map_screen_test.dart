@@ -624,4 +624,98 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
     });
   });
+
+  group('PF2(2026-09-26) — 새 좌표가 오면 예약을 다시 거는 동작(BRIEF-PF2 완료 조건 1)', () {
+    // 위 F1 그룹은 좌표 하나가 2분을 넘기는 경우만 다룬다. 이 그룹은
+    // `_scheduledForReceivedAt` 비교(코드 문서 참고)가 실제로 "새 좌표가
+    // 오면 다시 예약한다"를 지키는지를 좌표 두 개(A·B)로 직접 고정한다.
+    final t0 = DateTime.utc(2026, 9, 13, 8);
+
+    Future<void> pumpConnected(
+      WidgetTester tester, {
+      required Clock clock,
+    }) async {
+      await pumpScreen(
+        tester,
+        extraOverrides: [
+          roleCapabilitiesProvider.overrideWithValue(
+            RoleCapabilities.of(UserRole.student),
+          ),
+          myStudentIdProvider.overrideWith((ref) async => 's-1'),
+          clockProvider.overrideWithValue(clock),
+        ],
+      );
+      // myStudentIdProvider 의 FutureProvider 가 해소될 때까지 한 프레임.
+      await tester.pump();
+      await tester.pump();
+      client.emit(WsConnectionState.connected);
+      await tester.pump();
+    }
+
+    void deliverPosition(DateTime receivedAt) {
+      client.deliver(
+        _envelope(WsEventType.position, {
+          'lat': 37.5,
+          'lng': 127.0,
+          'received_at': receivedAt.toIso8601String(),
+        }),
+      );
+    }
+
+    testWidgets(
+      '좌표 A 수신 1분30초 뒤 좌표 B 가 오면 예약이 B 기준으로 다시 걸린다 — '
+      'A 기준 2분(=B 기준 30초)에는 아직 "현재 위치", B 기준 2분에야 유실 문구로 전환된다',
+      (tester) async {
+        final clock = _MutableClock(t0);
+        await pumpConnected(tester, clock: clock);
+        deliverPosition(t0);
+        await tester.pump();
+        expect(find.textContaining('현재 위치'), findsOneWidget);
+
+        final tB = t0.add(const Duration(minutes: 1, seconds: 30));
+        clock.value = tB;
+        await tester.pump(const Duration(minutes: 1, seconds: 30));
+        deliverPosition(tB);
+        await tester.pump();
+        expect(find.textContaining('현재 위치'), findsOneWidget);
+
+        // A 기준 2분(=B 기준 30초) — 재예약이 B 를 향해 걸렸다면 A 의
+        // 예약은 이미 취소된 상태라 이 시점에는 아무것도 전환되지 않는다.
+        clock.value = t0.add(const Duration(minutes: 2));
+        await tester.pump(const Duration(seconds: 30));
+        expect(find.textContaining('현재 위치'), findsOneWidget);
+        expect(find.textContaining('마지막 확인 위치'), findsNothing);
+
+        // B 기준 2분 — 재예약이 실제로 B 를 향해 걸렸어야 이 시점에
+        // 전환된다. A 의 예약만 살아 있는 결함이면 여기서 전환이
+        // 일어나지 않는다(A 의 타이머는 이미 위에서 소진됐다).
+        clock.value = tB.add(const Duration(minutes: 2));
+        await tester.pump(const Duration(minutes: 1, seconds: 30));
+        expect(find.textContaining('마지막 확인 위치 · 2분 전'), findsOneWidget);
+        expect(find.textContaining('현재 위치'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      '같은 received_at 좌표가 재연결로 다시 와도 예약이 중복되지 않는다 — '
+      '대기 중 타이머는 늘 1개다',
+      (tester) async {
+        final clock = _MutableClock(t0);
+        await pumpConnected(tester, clock: clock);
+        deliverPosition(t0);
+        await tester.pump();
+
+        // 재연결 재전송 — 같은 receivedAt 이 다시 온다.
+        deliverPosition(t0);
+        await tester.pump();
+
+        // 타이머가 발화하기 전에 화면을 곧바로 떠난다. 재전송이 이전
+        // 타이머를 취소하지 않고 새 타이머를 하나 더 만들었다면(중복
+        // 예약) dispose 는 마지막 참조만 취소해 먼저 만든 것이 취소되지
+        // 않은 채 남는다 — flutter_test 가 "A Timer is still pending"
+        // 으로 이 시험을 실패시킨다.
+        await tester.pumpWidget(const SizedBox.shrink());
+      },
+    );
+  });
 }
