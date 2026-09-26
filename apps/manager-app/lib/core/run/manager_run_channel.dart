@@ -4,12 +4,15 @@ import 'package:baraeda_core/baraeda_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:manager_app/app/di.dart';
+import 'package:manager_app/core/auth/account_session.dart';
+import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/core/constants/api_constants.dart';
 import 'package:manager_app/features/drive_mode/presentation/drive_mode_providers.dart';
 import 'package:manager_app/features/emergency/presentation/emergency_providers.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
 import 'package:manager_app/features/roster/presentation/roster_providers.dart';
 import 'package:manager_app/features/route_map/presentation/route_providers.dart';
+import 'package:meta/meta.dart';
 
 /// DriveMode·StopRoster 가 그리는 실시간 연결 배지 상태 — `API_SPEC §7`
 /// `/topic/manager/runs/{runId}` 구독의 화면 표현.
@@ -123,17 +126,31 @@ void dispatchManagerChannelEvent(
 /// 동기로 내보내는 첫 `connecting` 이벤트를 영영 놓친다(broadcast 스트림은
 /// 늦게 붙은 리스너에게 과거 이벤트를 다시 보내지 않는다).
 class ManagerRunChannelController extends StateNotifier<ManagerChannelStatus> {
-  ManagerRunChannelController(this._ref, this._runId)
-    : _client = BaraedaWebSocketClient(
-        url: wsUrlFromApiBaseUrl(ApiConstants.baseUrl),
-        tokenStorage: _ref.read(tokenStorageProvider),
-        // REST 401 재발급과 같은 창구를 쓴다 — 동시 재발급 경합을 막는
-        // 이유는 `token_refresher.dart` 문서를 본다.
-        refreshAccessToken: _ref.read(apiClientProvider).tokenRefresher.refresh,
-      ),
-      super(ManagerChannelStatus.connecting) {
+  /// [client] 는 시험 전용 주입점이다(`@visibleForTesting`) — 생략하면
+  /// 운영과 같은 실제 [BaraedaWebSocketClient] 를 만든다. `??` 는 오른쪽을
+  /// [client] 가 `null` 일 때만 평가하므로, 시험이 가짜를 넘기면
+  /// `tokenStorageProvider`·`apiClientProvider` 를 굳이 override 하지
+  /// 않아도 된다.
+  ManagerRunChannelController(
+    this._ref,
+    this._runId, {
+    @visibleForTesting BaraedaWebSocketClient? client,
+  }) : _client =
+           client ??
+           BaraedaWebSocketClient(
+             url: wsUrlFromApiBaseUrl(ApiConstants.baseUrl),
+             tokenStorage: _ref.read(tokenStorageProvider),
+             // REST 401 재발급과 같은 창구를 쓴다 — 동시 재발급 경합을 막는
+             // 이유는 `token_refresher.dart` 문서를 본다.
+             refreshAccessToken:
+                 _ref.read(apiClientProvider).tokenRefresher.refresh,
+           ),
+       super(ManagerChannelStatus.connecting) {
     _connectionSub = _client.connectionState.listen(_onConnectionState);
     _forbiddenSub = _client.forbiddenSubscriptions.listen(_onForbidden);
+    _sessionExpiredSub = _client.sessionExpired.listen(
+      (_) => _onSessionExpired(),
+    );
     _client.connect();
   }
 
@@ -142,6 +159,7 @@ class ManagerRunChannelController extends StateNotifier<ManagerChannelStatus> {
   final BaraedaWebSocketClient _client;
   late final StreamSubscription<WsConnectionState> _connectionSub;
   late final StreamSubscription<String> _forbiddenSub;
+  late final StreamSubscription<void> _sessionExpiredSub;
 
   /// `subscribe()` 가 돌려준 해제 콜백 — 타입을 `StompUnsubscribe` 로 적으면
   /// `stomp_dart_client` 를 이 앱의 직접 의존성으로 새로 추가해야 한다
@@ -176,6 +194,24 @@ class ManagerRunChannelController extends StateNotifier<ManagerChannelStatus> {
     // 재시도 자체가 무의미한 상태라 클라이언트를 완전히 멈춘다 — 그대로
     // 두면 백오프 정책에 따라 계속 재연결·재구독·재거부가 반복된다.
     _client.disconnect();
+  }
+
+  /// WS 재발급까지 실패해 세션을 되살릴 수 없다는 신호
+  /// ([BaraedaWebSocketClient.sessionExpired]) — REST 401 재발급 실패가
+  /// 이미 거치는 것과 같은 경로(`account_session.dart` 의
+  /// `applyRoleAndStatus`)로 역할·상태를 비운다. 라우터가 그 변화를 보고
+  /// 로그인 화면으로 보낸다(`router.dart` redirect, `signOut` 과 같은
+  /// 판정 — 여기서는 화면 전환을 직접 하지 않는다). 재시도해 봐야 같은
+  /// 토큰으로 다시 거부되므로 클라이언트도 멈춘다.
+  void _onSessionExpired() {
+    _client.disconnect();
+    applyRoleAndStatus(
+      _ref.read(unsupportedRoleProvider.notifier),
+      _ref.read(currentUserRoleProvider.notifier),
+      _ref.read(currentAccountStatusProvider.notifier),
+      role: null,
+      status: null,
+    );
   }
 
   void _onEnvelope(WebSocketEnvelope envelope) {
@@ -223,6 +259,7 @@ class ManagerRunChannelController extends StateNotifier<ManagerChannelStatus> {
   void dispose() {
     unawaited(_connectionSub.cancel());
     unawaited(_forbiddenSub.cancel());
+    unawaited(_sessionExpiredSub.cancel());
     _unsubscribe?.call();
     _client.dispose();
     super.dispose();
