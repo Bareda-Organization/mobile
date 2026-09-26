@@ -77,6 +77,15 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
       _errorMessage = null;
       _queueNotice = null;
     });
+    // §4.14 가 미전달 시 서버의 최신 수신 좌표 대체를 규정한다 — 비상은
+    // 운행 전·후나 GPS 송신이 끊긴 뒤에도 나므로, 그 대체값이 최신
+    // 좌표보다 나은 판단은 아니다. 아직 못 받았거나(첫 좌표 전) 권한이
+    // 거부됐으면 `sample()` 이 `null` 이라 여기서도 그대로 생략한다 —
+    // 좌표를 지어내지 않는다(F1, position_source.dart 문서 주석 참고).
+    // 비상은 기사·동승자 둘 다 발신하고(ARCHITECTURE §3.3·EXC-04)
+    // positionSourceProvider 는 역할과 무관하게 도는 provider 라(di.dart)
+    // 별도 역할 분기가 필요 없다.
+    final sample = ref.read(positionSourceProvider).sample();
     try {
       final outcome = await ref
           .read(emergencyRepositoryProvider)
@@ -93,12 +102,8 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
               // 부르지 않는다(CONVENTIONS_FLUTTER.md §9, 이월 11) —
               // clockProvider 로 주입받는다.
               occurredAt: ref.read(clockProvider).now(),
-              // lat·lng 는 생략한다 — §4.14 가 미전달 시 서버의 최신 수신
-              // 좌표 대체를 규정하고, 위치 소스(GPS)가 이번 라운드에
-              // 아직 배선되지 않았다(§4.12 도 같은 이유로
-              // UnavailablePositionSource 스텁, positionSourceProvider
-              // 참고). 다음 라운드에 위치 소스가 배선되면 여기서
-              // positionSourceProvider.sample() 을 읽어 채운다.
+              lat: sample?.lat,
+              lng: sample?.lng,
             ),
           );
       if (!mounted) return;
