@@ -1,3 +1,4 @@
+import 'package:baraeda_core/baraeda_core.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -40,15 +41,52 @@ class SettingsScreen extends ConsumerWidget {
               onPressed: () => context.push(AppRoutes.passwordChange),
             ),
             const SizedBox(height: BaraedaSpacing.space2),
-            // 로그아웃(2026-09-23) — 역할이 비면 라우터가 로그인 화면으로 보낸다.
+            // 로그아웃(2026-09-23 · LO 2026-09-26 확인 대화 추가) — 역할이
+            // 비면 라우터가 로그인 화면으로 보낸다. 되돌릴 수 없는 동작이라
+            // 확인 대화 1회를 거친다(승인 대기 화면의 로그아웃은 이 대화가
+            // 없다 — 그 화면은 `active` 갈래가 아니라 이번 범위 밖).
             BaraedaButton(
               label: '로그아웃',
               variant: BaraedaButtonVariant.ghost,
-              onPressed: () => signOut(ref),
+              onPressed: () => _confirmLogout(context, ref),
             ),
           ],
         ),
       ),
     );
+  }
+}
+
+/// 확인 대화 1회 → 확정 시 [signOut] 재사용. 실패해도 [signOut] 자체가
+/// 역할·상태를 비운다(그 함수 문서 참고) — 여기서 에러를 따로 처리하지
+/// 않는다.
+Future<void> _confirmLogout(BuildContext context, WidgetRef ref) async {
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('로그아웃'),
+      content: const Text('로그아웃 하시겠습니까?'),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(false),
+          child: const Text('취소'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(true),
+          child: const Text('로그아웃하기'),
+        ),
+      ],
+    ),
+  );
+  if (confirmed ?? false) {
+    // [signOut] 은 요청이 실패해도 `finally` 로 역할·상태를 비운 뒤 원래
+    // 예외를 다시 던진다(그 함수 문서 참고) — 사용자에게는 이미 로그인
+    // 화면으로 넘어가는 결과가 같으므로 여기서 삼킨다. 그렇지 않으면
+    // 이 화면(호출자가 없는 버튼 콜백)에서 처리되지 않은 예외로 남는다.
+    try {
+      await signOut(ref);
+    } on Failure {
+      // 이미 로그아웃 처리됐다 — 위 주석 참고.
+    }
   }
 }
