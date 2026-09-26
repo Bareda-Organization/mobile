@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:baraeda_core/baraeda_core.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:parent_app/app/di.dart';
@@ -72,6 +72,42 @@ Future<void> signOut(WidgetRef ref) async {
     await repository.logout();
   } finally {
     applyRoleAndStatus(unsupported, role, status, role: null, status: null);
+  }
+}
+
+/// 로그아웃 확인 대화 1회 → 확정 시 [signOut] 재사용. 실패해도 [signOut]
+/// 자체가 역할·상태를 비운다(그 함수 문서 참고) — 여기서 에러를 따로
+/// 처리하지 않는다.
+///
+/// **F2(2026-09-26) — `settings_screen.dart`·`pending_approval_screen.dart`
+/// 가 이 함수 하나를 공유한다.** 화면마다 확인 대화를 새로 만들면 문구·
+/// 동작이 갈릴 위험이 있어(실제로 두 화면이 이 함수가 생기기 전까지
+/// 갈려 있었다), `features/` 어느 쪽도 소유하지 않는 `core/auth` 에 둔다
+/// (`CONVENTIONS_FLUTTER.md §2` "기능끼리 서로 import 하지 않음").
+Future<void> confirmLogout(BuildContext context, WidgetRef ref) async {
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('로그아웃'),
+      content: const Text('로그아웃 하시겠습니까?'),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(false),
+          child: const Text('취소'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(true),
+          child: const Text('로그아웃하기'),
+        ),
+      ],
+    ),
+  );
+  if (confirmed ?? false) {
+    try {
+      await signOut(ref);
+    } on Failure {
+      // 이미 로그아웃 처리됐다 — 위 주석 참고.
+    }
   }
 }
 

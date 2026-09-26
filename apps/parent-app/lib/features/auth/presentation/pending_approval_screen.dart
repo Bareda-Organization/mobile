@@ -44,7 +44,11 @@ class _PendingApprovalScreenState extends ConsumerState<PendingApprovalScreen> {
     _statusFuture = ref.read(authRepositoryProvider).signupStatus();
   }
 
-  Future<void> _logout() => signOut(ref);
+  // F2(2026-09-26) — `settings_screen.dart` 가 만든 확인 대화를 재사용한다
+  // (`core/auth/account_session.dart` 의 [confirmLogout]). 이 화면은 이제껏
+  // 확인 없이 곧장 [signOut] 을 불렀다 — 두 로그아웃 진입점의 동작이
+  // 갈리는 비일관성이었다(FIX-P.md §2).
+  Future<void> _logout() => confirmLogout(context, ref);
 
   Future<void> _reapply() async {
     final academy = _newAcademy;

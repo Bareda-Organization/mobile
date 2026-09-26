@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
@@ -159,14 +161,50 @@ class _StudentLiveMap extends ConsumerWidget {
 /// 는 연결 자체가 끊기지 않아도 방송만 멈추면(Ruling 349 — 과부하 때
 /// `position` 방송은 버려질 수 있다) 서버가 다시 판정해 줄 기회가 없다
 /// — 그래서 이 화면이 매 빌드마다 `clockProvider` 로 직접 잰다.
-class _LiveMapBody extends ConsumerWidget {
+class _LiveMapBody extends ConsumerStatefulWidget {
   const _LiveMapBody({required this.studentId});
 
   final String studentId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(liveMapStateProvider(studentId));
+  ConsumerState<_LiveMapBody> createState() => _LiveMapBodyState();
+}
+
+/// F1(2026-09-26·Ruling 208·349) — 표시 중인 좌표가 2분을 넘기는 "그
+/// 시점"에 화면을 한 번 다시 그린다. 위 클래스 문서가 밝힌 유실 판정은
+/// 매 빌드마다 다시 재는 순수 계산이라, 다른 WS 이벤트가 재빌드를
+/// 일으켜야만 갱신됐다 — 방송만 끊기고 다른 이벤트도 없는 좁은 경우
+/// (바로 이 결함이 막으려는 상황)는 재빌드 계기가 아예 없었다. 주기
+/// 폴링 대신 좌표 하나당 1회 예약이면 충분하다.
+class _LiveMapBodyState extends ConsumerState<_LiveMapBody> {
+  Timer? _staleRebuildTimer;
+  DateTime? _scheduledForReceivedAt;
+
+  /// 새 좌표가 오면 다시 예약하고(같은 좌표면 중복 예약하지 않는다),
+  /// 화면을 떠나면(`dispose`) 취소한다. 예약 시각은 `now`(`clockProvider`)
+  /// 기준으로 구한다 — Ruling 208 판정과 같은 시계를 쓴다.
+  void _scheduleStaleRebuild(WsPositionPayload? position, DateTime now) {
+    if (position == null) return;
+    if (_scheduledForReceivedAt == position.receivedAt) return;
+    _staleRebuildTimer?.cancel();
+    _scheduledForReceivedAt = position.receivedAt;
+    final remaining =
+        _positionStaleThreshold - now.difference(position.receivedAt);
+    if (remaining <= Duration.zero) return; // 이미 유실 판정을 넘긴 좌표
+    _staleRebuildTimer = Timer(remaining, () {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _staleRebuildTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final state = ref.watch(liveMapStateProvider(widget.studentId));
     final connection = state.connection;
 
     // 당일 결석(§3.11) — WS 연결 상태와 무관하게 가장 먼저 가른다. 결석은
@@ -252,6 +290,8 @@ class _LiveMapBody extends ConsumerWidget {
     final hasFreshPosition =
         effectivePosition != null && effectiveStaleSinceText == null;
 
+    _scheduleStaleRebuild(effectivePosition, now);
+
     if (resolvedStaleText != null && state.hasNoData) {
       return EmptyState(
         title: resolvedStaleText,
@@ -274,7 +314,10 @@ class _LiveMapBody extends ConsumerWidget {
             child: AlertBanner(tone: AlertTone.missed, body: '재연결 시도 중입니다'),
           ),
         if (hasFreshPosition)
-          _BusMapSection(studentId: studentId, position: effectivePosition)
+          _BusMapSection(
+            studentId: widget.studentId,
+            position: effectivePosition,
+          )
         else if (resolvedStaleText != null)
           Padding(
             padding: const EdgeInsets.only(bottom: BaraedaSpacing.space4),
