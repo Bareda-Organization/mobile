@@ -1,0 +1,166 @@
+import 'package:baraeda_core/baraeda_core.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:manager_app/app/app.dart';
+import 'package:manager_app/app/di.dart';
+import 'package:manager_app/core/auth/account_session.dart';
+import 'package:manager_app/core/auth/auth_providers.dart';
+import 'package:manager_app/core/auth/user_role.dart';
+import 'package:manager_app/core/run/run_enums.dart';
+import 'package:manager_app/features/auth/domain/auth_repository.dart';
+import 'package:manager_app/features/auth/presentation/login_screen.dart';
+import 'package:manager_app/features/home/data/models/manager_run.dart';
+import 'package:manager_app/features/home/presentation/home_providers.dart';
+
+import '../../support/fake_token_storage.dart';
+
+/// `logout` 만 쓰는 가짜 — `sign_out_test.dart` 의 `_StubAuthRepository` 와
+/// 같은 패턴. 나머지 메서드는 이 시험에서 불리면 안 된다.
+class _StubAuthRepository implements AuthRepository {
+  _StubAuthRepository({this.fail = false});
+
+  final bool fail;
+  int logoutCalls = 0;
+
+  @override
+  Future<void> logout() async {
+    logoutCalls++;
+    if (fail) throw Exception('network down');
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
+}
+
+ManagerRun _run({required RunStatus runStatus}) {
+  final now = DateTime(2026, 9, 26, 8);
+  return ManagerRun(
+    runId: 'run-1',
+    busNo: '3호차',
+    direction: RunDirection.toAcademy,
+    departTime: now,
+    origin: '기점',
+    destination: '학원',
+    estDurationMin: 30,
+    runStatus: runStatus,
+    confirmed: true,
+    startWindowFrom: now.subtract(const Duration(minutes: 10)),
+    startWindowTo: now.add(const Duration(minutes: 10)),
+    addedCount: 0,
+    removedCount: 0,
+    ackRequired: false,
+  );
+}
+
+/// 로그아웃(AUTH-09) — 기사·동승자 둘 다 닿는 홈 화면 앱바 진입점.
+/// `BaraedaManagerApp` 전체를 띄워 실제 `routerProvider` 의 redirect 가
+/// 로그인 화면으로 보내는지까지 확인한다(`router_redirect_test.dart` 와
+/// 같은 이유 — 확인 대화만 위젯 트리 일부로 시험하면 "그래서 실제로 로그인
+/// 화면으로 가는가" 를 놓친다).
+void main() {
+  Future<void> pump(
+    WidgetTester tester, {
+    required AuthRepository authRepository,
+    RunStatus? extraMovingRun,
+  }) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          tokenStorageProvider.overrideWithValue(FakeTokenStorage()),
+          currentUserRoleProvider.overrideWith((ref) => UserRole.driver),
+          currentAccountStatusProvider.overrideWith(
+            (ref) => AccountStatus.active,
+          ),
+          authRepositoryProvider.overrideWithValue(authRepository),
+          todayRunsProvider.overrideWith(
+            (ref) async => [
+              _run(runStatus: extraMovingRun ?? RunStatus.confirmed),
+            ],
+          ),
+        ],
+        child: const BaraedaManagerApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+  }
+
+  Finder dialogButton(String text) => find.descendant(
+    of: find.byType(AlertDialog),
+    matching: find.text(text),
+  );
+
+  testWidgets('로그아웃 버튼을 누르면 확인 대화상자가 뜨고, 취소하면 아무 일도 없다', (
+    tester,
+  ) async {
+    final repository = _StubAuthRepository();
+    await pump(tester, authRepository: repository);
+
+    await tester.tap(find.text('로그아웃'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AlertDialog), findsOneWidget);
+    expect(repository.logoutCalls, 0);
+
+    await tester.tap(dialogButton('취소'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AlertDialog), findsNothing);
+    expect(repository.logoutCalls, 0);
+    expect(find.byType(LoginScreen), findsNothing);
+  });
+
+  testWidgets('확인하면 로그아웃하고 로그인 화면으로 이동한다', (tester) async {
+    final repository = _StubAuthRepository();
+    await pump(tester, authRepository: repository);
+
+    await tester.tap(find.text('로그아웃'));
+    await tester.pumpAndSettle();
+    await tester.tap(dialogButton('로그아웃'));
+    await tester.pumpAndSettle();
+
+    expect(repository.logoutCalls, 1);
+    expect(find.byType(LoginScreen), findsOneWidget);
+  });
+
+  testWidgets('서버 호출이 실패해도 토큰을 지우고 로그인 화면으로 이동한다', (tester) async {
+    final repository = _StubAuthRepository(fail: true);
+    await pump(tester, authRepository: repository);
+
+    await tester.tap(find.text('로그아웃'));
+    await tester.pumpAndSettle();
+    await tester.tap(dialogButton('로그아웃'));
+    await tester.pumpAndSettle();
+
+    expect(repository.logoutCalls, 1);
+    expect(find.byType(LoginScreen), findsOneWidget);
+  });
+
+  testWidgets('운행 중인 회차가 있으면 확인 문구에 경고가 붙는다', (tester) async {
+    await pump(
+      tester,
+      authRepository: _StubAuthRepository(),
+      extraMovingRun: RunStatus.moving,
+    );
+
+    await tester.tap(find.text('로그아웃'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.textContaining('운행 중에 로그아웃하면 명단·위치 송신이 멈춥니다'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('운행 중인 회차가 없으면 경고 문구가 없다', (tester) async {
+    await pump(tester, authRepository: _StubAuthRepository());
+
+    await tester.tap(find.text('로그아웃'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.textContaining('운행 중에 로그아웃하면 명단·위치 송신이 멈춥니다'),
+      findsNothing,
+    );
+  });
+}
