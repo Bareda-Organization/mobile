@@ -19,14 +19,19 @@ import 'package:baraeda_core/websocket/ws_connection_state.dart';
 ///    (무한 즉시 재시도가 아니다 — 상한 도달 시 [WsConnectionState.gaveUp]).
 /// 4. 수신한 프레임을 [WebSocketEnvelope] 로 파싱해 넘긴다(id 흡수 포함).
 ///
-/// **토큰 만료 처리** — CONNECT 는 한 번만 인증하고 서버가 만료를 이유로
-/// 세션을 능동적으로 끊지 않는다(브리프 §4 판단 근거 3). 이 클래스는
-/// `ApiClient` 의 401→재발급 로직을 중복 구현하지 않는다 — 대신 매
-/// (재)연결 시도마다 [TokenStorage.readAccessToken] 을 **새로 읽는다.**
-/// `ApiClient` 가 REST 401 을 만나 토큰을 갱신해 두면, 다음 WS 재연결이
-/// 그 새 토큰을 자동으로 집는다. 지금 열려 있는 WS 세션 자체를 갱신된
-/// 토큰으로 바꿔 끼우는 수단은 STOMP 프로토콜에 없다 — 재연결이 유일한
-/// 갱신 계기다.
+/// **토큰 만료 처리** — 서버는 연결에 쓰인 access 토큰이 만료되면 다음
+/// 방송 대신 STOMP `ERROR` 프레임(`message:TOKEN_EXPIRED`)을 보내고 세션을
+/// 능동적으로 닫는다(`API_SPEC §7`). 이 클래스는 그 프레임을 받으면
+/// [refreshAccessToken](주입받은 콜백 — 실제로는 `ApiClient.tokenRefresher`
+/// 의 재발급 창구를 그대로 공유한다, 앱 생성 지점의 배선 참고)을 **먼저**
+/// 불러 새 access 토큰을 받은 뒤에만 재연결한다 — `ApiClient` 의 401→재발급
+/// 로직을 중복 구현하지 않고 창구만 공유하는 이유는 REST·WS 가 동시에
+/// 재발급을 시도하면 서버의 refresh 토큰 1회용 회전과 부딪히기 때문이다
+/// (`token_refresher.dart` 문서). 재발급 실패(퇴사·차단·refresh 만료)는
+/// [WsConnectionState.gaveUp] 이 아니라 [sessionExpired] 스트림으로 넘긴다 — 같은 토큰으로
+/// 재시도해 봐야 다시 거부되므로 "재시도 버튼"이 뜻을 잃는다. 이 재연결은
+/// 네트워크 실패가 아니라 예정된 갱신이라 [WsBackoffPolicy] 의 재시도
+/// 횟수를 소모하지 않는다.
 ///
 /// **구독 정리** — [subscribe] 가 돌려주는 [StompUnsubscribe] 를 화면이
 /// `dispose()` 시점에 반드시 호출해야 한다. 이 클래스는 화면 생명주기를
@@ -37,13 +42,24 @@ class BaraedaWebSocketClient {
     required String url,
     required TokenStorage tokenStorage,
     this.backoffPolicy = const WsBackoffPolicy(),
+    Future<String?> Function()? refreshAccessToken,
     void Function(String message)? onDebugMessage,
   }) : _url = url,
        _tokenStorage = tokenStorage,
+       // 필드는 비공개, 파라미터는 공개 이름(`refreshAccessToken:`)을
+       // 유지한다(`token_refresher.dart` 와 같은 이유).
+       // ignore: prefer_initializing_formals
+       _refreshAccessToken = refreshAccessToken,
        _onDebugMessage = onDebugMessage ?? ((_) {});
 
   final String _url;
   final TokenStorage _tokenStorage;
+
+  /// `TOKEN_EXPIRED` 를 받았을 때 부를 재발급 콜백 — 클래스 문서 "토큰 만료
+  /// 처리" 참고. 앱이 아직 배선하지 않았으면(`null`) 재발급을 시도하지 않고
+  /// 곧바로 [sessionExpired] 로 넘긴다 — 재발급 없이 같은 토큰을 다시
+  /// 실어 봐야 서버가 다시 거부한다.
+  final Future<String?> Function()? _refreshAccessToken;
   final void Function(String message) _onDebugMessage;
 
   /// 재연결 대기 간격 정책 — 시험이 주입해 실제 시간을 기다리지 않고
@@ -68,8 +84,19 @@ class BaraedaWebSocketClient {
   /// 시도부터 멈추는 것을 이 필드를 추가하기 전에 실제로 확인했다.
   bool _reconnectHandled = false;
 
+  /// 이번 연결이 끊긴 원인이 `TOKEN_EXPIRED` 였는지 — `onStompError` 가
+  /// 세워 두면 뒤이어 오는 `onWebSocketDone`(`_handleDisconnected`)이 이
+  /// 플래그를 보고 일반 백오프 대신 재발급 경로(`_handleTokenExpired`)를
+  /// 탄다.
+  bool _tokenExpired = false;
+
   final _stateController = StreamController<WsConnectionState>.broadcast();
   WsConnectionState _state = WsConnectionState.disconnected;
+
+  /// 재발급까지 실패해 이 세션을 되살릴 수 없을 때 한 번 흘려보내는 신호 —
+  /// 클래스 문서 "토큰 만료 처리" 참고. 화면은 이걸 받으면 로그인 화면으로
+  /// 보내야 한다.
+  final _sessionExpiredController = StreamController<void>.broadcast();
 
   /// 매 구독 거부(`FORBIDDEN`)마다 그 목적지 문자열을 흘려보낸다. 화면은
   /// 이걸 받으면 같은 목적지 재구독을 멈춰야 한다 — 이 클라이언트는 거부된
@@ -97,6 +124,10 @@ class BaraedaWebSocketClient {
 
   Stream<String> get forbiddenSubscriptions => _forbiddenController.stream;
 
+  /// 재발급까지 실패해 세션을 되살릴 수 없을 때 흘러가는 신호 — 클래스
+  /// 문서의 "토큰 만료 처리" 참고.
+  Stream<void> get sessionExpired => _sessionExpiredController.stream;
+
   /// 연결을 시작한다. [WsConnectionState.gaveUp] 상태에서 다시 호출하면
   /// 시도 횟수가 0 으로 리셋되어 재시도가 재개된다 — 화면의 "다시 시도"
   /// 버튼이 이 메서드 하나만 부르면 된다.
@@ -107,7 +138,12 @@ class BaraedaWebSocketClient {
     unawaited(_doConnect());
   }
 
-  Future<void> _doConnect() async {
+  /// [overrideToken] 을 주면 저장소를 다시 읽지 않고 그 값을 그대로 싣는다
+  /// — 재발급 직후([_handleTokenExpired])는 방금 받은 새 토큰이 손에 있는데
+  /// 굳이 저장소 왕복을 한 번 더 거칠 이유가 없고, 콜백이 저장까지 했는지
+  /// 여부에 기대지 않아도 된다(저장은 재발급 콜백의 책임이지 이 클래스가
+  /// 강제할 계약이 아니다).
+  Future<void> _doConnect({String? overrideToken}) async {
     _reconnectHandled = false;
     // 새 소켓은 이전 세션의 구독을 이어받지 않는다 — 화면이 `connected`
     // 를 다시 받으면 알아서 재구독하므로, 옛 목적지가 여기 남아 있으면
@@ -115,7 +151,7 @@ class BaraedaWebSocketClient {
     _pendingSubscriptions.clear();
     _setState(WsConnectionState.connecting);
     // 매 (재)연결마다 새로 읽는다 — 토큰 만료 처리 판단 근거 참고.
-    final token = await _tokenStorage.readAccessToken();
+    final token = overrideToken ?? await _tokenStorage.readAccessToken();
 
     final config = StompConfig(
       url: _url,
@@ -135,6 +171,14 @@ class BaraedaWebSocketClient {
       },
       onStompError: (frame) {
         final message = frame.headers['message'];
+        // API_SPEC §7 — 연결에 쓰인 access 토큰이 만료되면 서버가 이
+        // 프레임으로 세션을 닫는다. 실제 재발급·재연결은 뒤이어 오는
+        // `onWebSocketDone`(`_handleDisconnected`)이 이 플래그를 보고
+        // 처리한다 — 여기서 바로 재발급을 시작하지 않는 이유는 서버가
+        // 소켓을 닫는 시점과 순서를 맞추기 위해서다.
+        if (message == 'TOKEN_EXPIRED') {
+          _tokenExpired = true;
+        }
         // `StompAuthChannelInterceptor` 의 SUBSCRIBE 거부 경로는 전부
         // `BusinessException(ErrorCode.FORBIDDEN)` 을 던진다 — 이 저장소
         // 안에서 구독 거부를 나타내는 값은 이 문자열 하나뿐이다.
@@ -177,6 +221,12 @@ class BaraedaWebSocketClient {
       return;
     }
 
+    if (_tokenExpired) {
+      _tokenExpired = false;
+      unawaited(_handleTokenExpired());
+      return;
+    }
+
     _reconnectAttempt += 1;
     if (backoffPolicy.shouldGiveUp(_reconnectAttempt)) {
       _setState(WsConnectionState.gaveUp);
@@ -187,6 +237,26 @@ class BaraedaWebSocketClient {
     final delay = backoffPolicy.delayFor(_reconnectAttempt);
     _reconnectTimer?.cancel();
     _reconnectTimer = Timer(delay, () => unawaited(_doConnect()));
+  }
+
+  /// `TOKEN_EXPIRED` 로 끊긴 뒤의 처리 — 클래스 문서 "토큰 만료 처리" 참고.
+  /// 재발급에 성공하면 곧바로 재연결하고(백오프 횟수를 소모하지 않는다 —
+  /// 예정된 갱신이지 네트워크 실패가 아니다), 실패하면(콜백이 없거나
+  /// `null` 을 돌려주면) [sessionExpired] 로 넘기고 더 이상 재시도하지
+  /// 않는다.
+  Future<void> _handleTokenExpired() async {
+    _setState(WsConnectionState.reconnecting);
+    final refresh = _refreshAccessToken;
+    final newToken = refresh == null ? null : await refresh();
+    if (newToken == null) {
+      if (!_sessionExpiredController.isClosed) {
+        _sessionExpiredController.add(null);
+      }
+      _setState(WsConnectionState.disconnected);
+      return;
+    }
+    _reconnectAttempt = 0;
+    unawaited(_doConnect(overrideToken: newToken));
   }
 
   /// 재연결을 멈추고 연결을 닫는다. 화면 종료·로그아웃 시 호출한다.
@@ -261,5 +331,6 @@ class BaraedaWebSocketClient {
     disconnect();
     unawaited(_stateController.close());
     unawaited(_forbiddenController.close());
+    unawaited(_sessionExpiredController.close());
   }
 }

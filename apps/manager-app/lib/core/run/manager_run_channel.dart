@@ -127,6 +127,9 @@ class ManagerRunChannelController extends StateNotifier<ManagerChannelStatus> {
     : _client = BaraedaWebSocketClient(
         url: wsUrlFromApiBaseUrl(ApiConstants.baseUrl),
         tokenStorage: _ref.read(tokenStorageProvider),
+        // REST 401 재발급과 같은 창구를 쓴다 — 동시 재발급 경합을 막는
+        // 이유는 `token_refresher.dart` 문서를 본다.
+        refreshAccessToken: _ref.read(apiClientProvider).tokenRefresher.refresh,
       ),
       super(ManagerChannelStatus.connecting) {
     _connectionSub = _client.connectionState.listen(_onConnectionState);
