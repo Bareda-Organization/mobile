@@ -1,4 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- LOC-01 — 운행 화면이 켜져 있는 동안(foreground)만 기사 위치를
+         전송한다. 백그라운드 전송(꺼진 화면·뒤로 간 앱)은 이번 범위 밖 —
+         필요해지면 ACCESS_BACKGROUND_LOCATION·포그라운드 서비스를 추가로
+         선언해야 한다. -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <application
         android:label="manager_app"
         android:name="${applicationName}"
