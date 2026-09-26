@@ -126,6 +126,22 @@ class RouterRefreshNotifier extends ChangeNotifier {
         AccountGateReason.rejected => AccountStatus.rejected,
       };
     });
+    // SE — WS 재발급까지 실패하면(공유 패키지 C1 `sessionExpired`) REST
+    // 로그인 만료와 같은 경로로 보낸다. `signOut()` 의 실패 갈래가 쓰는
+    // 것과 같은 [applyRoleAndStatus] 호출이다 — 이미 토큰은
+    // `TokenRefresher.refresh()` 가 지운 뒤라 서버에 다시 알릴 것이 없다.
+    _sessionExpiredSubscription = _ref
+        .read(webSocketClientProvider)
+        .sessionExpired
+        .listen((_) {
+          applyRoleAndStatus(
+            _ref.read(unsupportedRoleProvider.notifier),
+            _ref.read(currentUserRoleProvider.notifier),
+            _ref.read(currentAccountStatusProvider.notifier),
+            role: null,
+            status: null,
+          );
+        });
   }
 
   final Ref _ref;
@@ -133,6 +149,7 @@ class RouterRefreshNotifier extends ChangeNotifier {
   late final ProviderSubscription<AccountStatus?> _statusSub;
   late final ProviderSubscription<bool> _unsupportedSub;
   late final StreamSubscription<AccountGateReason> _gateSubscription;
+  late final StreamSubscription<void> _sessionExpiredSubscription;
 
   @override
   void dispose() {
@@ -140,6 +157,7 @@ class RouterRefreshNotifier extends ChangeNotifier {
     _statusSub.close();
     _unsupportedSub.close();
     unawaited(_gateSubscription.cancel());
+    unawaited(_sessionExpiredSubscription.cancel());
     super.dispose();
   }
 }
