@@ -430,6 +430,55 @@ void main() {
     expect(find.textContaining('운행 중'), findsWidgets);
   });
 
+  // M1(Ruling 341, BR-016) — 버스 간 이동으로 빠진 학생은 `status: absent` ·
+  // `change: removed` 로 명단에 남는다(§4.2). 다른 버스로 옮긴 학생에게
+  // [탑승]·[미승차] 버튼이 보이면 안 되고, "금일 삭제" 배지만 보여야 한다.
+  testWidgets('금일 삭제(absent·removed) 학생은 배지만 보이고 조작 버튼이 없다', (tester) async {
+    final roster = RosterResponse(
+      runId: runId,
+      busNo: '3호차',
+      direction: RunDirection.toAcademy,
+      counts: const RosterCounts(boarded: 0, waiting: 0, noShow: 0, absentN: 1),
+      stops: [
+        RosterStop(
+          stopId: 'stop-1',
+          seq: 1,
+          name: 'A정류장',
+          students: [
+            RosterStudent(
+              riderId: 'r1',
+              studentId: 's1',
+              name: '김바래',
+              photoUrl: null,
+              guardianPhone: null,
+              canGoAlone: false,
+              status: RiderStatus.absent,
+              change: RiderChange.removed,
+            ),
+          ],
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      _wrap(const RosterScreen(), [
+        selectedRunIdProvider.overrideWith((ref) => runId),
+        rosterRepositoryProvider.overrideWithValue(
+          _FakeRosterRepository(roster: roster),
+        ),
+        currentUserRoleProvider.overrideWith((ref) => UserRole.escort),
+        todayRunsProvider.overrideWith(
+          (ref) async => [_managerRun(ackRequired: false)],
+        ),
+      ]),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('금일 삭제'), findsOneWidget);
+    expect(find.widgetWithText(BaraedaButton, '탑승'), findsNothing);
+    expect(find.widgetWithText(BaraedaButton, '미승차'), findsNothing);
+  });
+
   group('목표 9 — 연결 배너가 명단 상태와 무관하게 뜬다', () {
     // 실제 ManagerRunChannelController 를 그대로 쓰고 tokenStorageProvider
     // 만 영원히 응답하지 않는 대역으로 바꿔 connecting 상태에 고정한다 —

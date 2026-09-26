@@ -45,13 +45,15 @@ enum RunStatus {
 }
 
 /// API_SPEC §4.2 `stops[].students[].status` · §4.6 `status`.
-/// `absent` 는 이 enum 에 없다 — 명단에서 개인 행 자체가 빠지는 값이라
-/// (§4.2 "absent 는 개인 행 제외") 화면이 상태로 다룰 일이 없다.
+/// `absent` 는 `change=removed` 행에서만 등장한다 — 버스 간 이동으로 빠진
+/// 학생을 명단에서 지우지 않고 빨강으로 남긴다(RTE-04 · Ruling 341 ·
+/// BR-016). 처리 대상이 아니며 `absent_n` 에 세지 않는다.
 enum RiderStatus {
   waiting('waiting'),
   boarded('boarded'),
   alighted('alighted'),
-  noShow('no_show');
+  noShow('no_show'),
+  absent('absent');
 
   const RiderStatus(this.wireValue);
 

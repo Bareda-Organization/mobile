@@ -398,7 +398,16 @@ class _StopSection extends StatelessWidget {
                 student.guardianPhone,
               ].whereType<String>().join(' · '),
               ride: _rideStatusOf(student),
-              actions: canDecide
+              // M1(Ruling 341, BR-016) — `absent`(`change=removed`) 행은
+              // 버스 간 이동으로 빠진 학생이라 조작 대상이 아니다. 배지만
+              // 보여주고 [탑승]·[미승차] 등은 아예 그리지 않는다(canDecide
+              // 여부와 무관).
+              actions: student.status == RiderStatus.absent
+                  ? const BaraedaBadge(
+                      label: '금일 삭제',
+                      tone: BaraedaBadgeTone.removed,
+                    )
+                  : canDecide
                   ? _StudentActions(
                       student: student,
                       busy: pendingRiderId == student.riderId,
@@ -420,6 +429,9 @@ class _StopSection extends StatelessWidget {
     RiderStatus.boarded => RideStatus.boarded,
     RiderStatus.alighted => RideStatus.alighted,
     RiderStatus.noShow => RideStatus.missed,
+    // 이 행은 `actions` 가 이미 "금일 삭제" 배지로 대체해 상태 pill 을
+    // 그리지 않지만, `ride` 는 필수 인자라 매핑을 채워 둔다.
+    RiderStatus.absent => RideStatus.absent,
   };
 }
 
@@ -509,6 +521,10 @@ class _StudentActions extends StatelessWidget {
         );
       case RiderStatus.alighted:
         return revertButton;
+      case RiderStatus.absent:
+        // `_StopSection` 이 absent 행에는 이 위젯 자체를 만들지 않는다
+        // (배지로 대체) — 도달하지 않지만 exhaustiveness 를 위해 채운다.
+        return const SizedBox.shrink();
     }
   }
 }

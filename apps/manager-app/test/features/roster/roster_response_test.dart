@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/features/roster/data/models/roster_response.dart';
 
 /// §4.2 `students[]` 파싱 — BR-082. 보호자가 아직 연결되지 않은 학생(관계자가 먼저 등록, P-02 로
@@ -26,5 +27,19 @@ void main() {
         RosterStudent.fromJson(student(guardianPhone: '010-2XXX-8814'));
 
     expect(parsed.guardianPhone, '010-2XXX-8814');
+  });
+
+  // M1(Ruling 341, BR-016) — 버스 간 이동으로 빠진 학생은 `status: absent` ·
+  // `change: removed` 로 명단에 남는다(§4.2, `run_enums.dart` 가 이 값을
+  // 몰라 지금은 `waiting` 으로 대체된다).
+  test('status가 absent · change가 removed 인 학생은 absent 로 파싱된다', () {
+    final json = student()
+      ..['status'] = 'absent'
+      ..['change'] = 'removed';
+
+    final parsed = RosterStudent.fromJson(json);
+
+    expect(parsed.status, RiderStatus.absent);
+    expect(parsed.change, RiderChange.removed);
   });
 }
