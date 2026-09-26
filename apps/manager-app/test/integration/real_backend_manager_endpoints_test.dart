@@ -233,6 +233,11 @@ void main() {
   });
 
   group('§4.6 PATCH /runs/{runId}/riders/{riderId} — 목표 9 멱등성', () {
+    // 아래 두 번째 시험이 새 네트워크 호출 없이 이 응답 본문을 재사용한다
+    // (같은 상태로의 재요청이 지금은 409 라, 세 번째 호출로 성공 응답을
+    // 다시 받을 수 없다 — Ruling 345 아래 주석 참고).
+    late Map<String, dynamic> firstResponseBody;
+
     test(
       '같은 client_key 로 2회 보내도 부수효과는 1회 — 원재료 dio 로 '
       'run3/rider 3(boarded→alighted) 을 갱신하고, 두 응답의 changed_at 이 '
@@ -268,6 +273,7 @@ void main() {
 
         expect(firstResponse.statusCode, 200);
         expect(secondResponse.statusCode, 200);
+        firstResponseBody = firstResponse.data!;
         expect(
           secondResponse.data!['rider_id'],
           firstResponse.data!['rider_id'],
@@ -298,8 +304,29 @@ void main() {
     test(
       '결함 수정 확인(F5 M2 목표 A-3, `Ruling 275`) — 위 시험이 실제로 받은 '
       '응답을 그대로 RiderUpdateResult.fromJson 에 먹이면(추가 네트워크 '
-      '호출 없이) 이제 asIdString 이 rider_id 를 흡수해 캐스팅이 성공하고 '
-      '값도 옳게 읽혀야 한다',
+      '호출 없이) asIdString 이 rider_id 를 흡수해 캐스팅이 성공하고 값도 '
+      '옳게 읽힌다',
+      () async {
+        if (!backendReachable) {
+          markTestSkipped('환경 문제: 백엔드 미기동($baseUrl)');
+          return;
+        }
+        // 새 client_key 로 같은 상태(alighted)를 다시 요청하면 지금 계약은
+        // 409 RIDER_TRANSITION_NOT_ALLOWED 다(Ruling 345 — 같은 상태
+        // 재요청은 멱등 재생과 다르며, 전이표 밖이라 거부된다). "성공
+        // 응답을 다시 받아 파싱한다"는 옛 흐름이 더는 성립하지 않아, 위
+        // 시험이 이미 받은 성공 응답 본문을 재사용해 파싱 목적(asIdString
+        // 흡수 확인)만 그대로 지킨다(아래 시험이 409 자체를 별도로 확인).
+        final result = RiderUpdateResult.fromJson(firstResponseBody);
+
+        expect(result.riderId, '3');
+        expect(result.status, RiderStatus.alighted);
+      },
+    );
+
+    test(
+      'RIDER_TRANSITION_NOT_ALLOWED — 같은 상태(alighted)로의 재요청은 '
+      '전이표 밖이라 409 로 거부된다(Ruling 345)',
       () async {
         if (!backendReachable) {
           markTestSkipped('환경 문제: 백엔드 미기동($baseUrl)');
@@ -308,26 +335,27 @@ void main() {
         final (:auth, :dio) = buildClient();
         await auth.login(loginId: 'escortA2', password: 'password');
 
-        // 같은 client_key 를 세 번째로 보낸다 — 서버는 이미 멱등 판정을
-        // 마쳤으므로(위 시험) 이 호출은 새 부수효과를 내지 않고 원래
-        // 처리 결과를 그대로 돌려준다. 그 실제 응답을 파싱기에 먹인다.
         final clientKey = IdempotencyKeys.generate();
-        // 위 시험과 다른 client_key 를 새로 만들되, 같은 rider 에 같은
-        // 상태를 요청해 서버 쪽 부수효과는 이미 alighted 로 안정된 값과
-        // 같다 — 응답 모양만 필요하므로 값 자체의 중복 여부는 무관하다.
         final request = BoardingUpdateRequest(
           status: RiderStatus.alighted,
           clientKey: clientKey,
         );
-        final response = await dio.patch<Map<String, dynamic>>(
-          '/runs/3/riders/3',
-          data: request.toJson(),
-        );
 
-        final result = RiderUpdateResult.fromJson(response.data!);
-
-        expect(result.riderId, '3');
-        expect(result.status, RiderStatus.alighted);
+        try {
+          await dio.patch<Map<String, dynamic>>(
+            '/runs/3/riders/3',
+            data: request.toJson(),
+          );
+          fail(
+            '이미 alighted 인 rider 에 같은 상태를 새 client_key 로 '
+            '재요청했는데 409 가 아니었다',
+          );
+        } on DioException catch (e) {
+          expect(e.response?.statusCode, 409);
+          final data = e.response?.data as Map<String, dynamic>?;
+          final error = data?['error'] as Map<String, dynamic>?;
+          expect(error?['code'], 'RIDER_TRANSITION_NOT_ALLOWED');
+        }
       },
     );
   });
