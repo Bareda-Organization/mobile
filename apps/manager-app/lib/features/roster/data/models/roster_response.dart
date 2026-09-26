@@ -48,7 +48,9 @@ class NoShowCase {
 
   factory NoShowCase.fromJson(Map<String, dynamic> json) {
     return NoShowCase(
-      caseId: json['case_id'] as String,
+      // M2(BR-054, Ruling 332) — 서버가 아직 숫자로 보낸다(`Long caseId`).
+      // `rider_id`(rider_update_result.dart)와 같은 방식으로 흡수한다.
+      caseId: asIdString(json['case_id']),
       startedAt: DateTime.parse(json['started_at'] as String),
       expiresAt: DateTime.parse(json['expires_at'] as String),
     );
