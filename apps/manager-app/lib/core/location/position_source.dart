@@ -1,20 +1,41 @@
+import 'dart:async';
+
+import 'package:geolocator/geolocator.dart';
+import 'package:meta/meta.dart';
+
 /// GPS 등 실제 위치 획득 소스 — LOC-01 이 요구하는 좌표 하나를 제공한다.
 ///
-/// 이번 라운드는 지도 SDK·위치 플러그인을 도입하지 않는다(브리프 범위 밖 —
-/// `drive_mode_screen.dart` 의 지도 자리 placeholder 와 같은 이유이고,
-/// `pubspec.yaml` 에도 위치 플러그인이 없다). 그래서 이 인터페이스만 두고
-/// 기본 구현([UnavailablePositionSource])은 항상 `null` 을 반환해 전송
-/// 자체를 건너뛴다 — 좌표를 지어내 보내면 근접 알림(NTF-04) 판정이 실제
-/// 위치와 어긋난다. 다음 라운드는 이 인터페이스를 실제 GPS 구현으로
-/// 교체하기만 하면 전송 파이프라인(`position_policy.dart`·
-/// `PositionRepository`)은 그대로 재사용된다.
+/// 기본 구현은 [GeolocatorPositionSource](`geolocator` 플러그인, `di.dart`
+/// 조립 지점)다. 권한 거부·위치 서비스 꺼짐이면 [sample] 은 계속 `null` 이고
+/// [availability] 로 그 이유를 구별한다 — 좌표를 지어내 보내면 근접
+/// 알림(NTF-04) 판정이 실제 위치와 어긋나므로, 화면은 안내만 보여주고
+/// 전송 자체를 건너뛴다(기존 자바독의 근거 그대로). 전송
+/// 파이프라인(`drive_mode_screen.dart` 의 타이머·`PositionRepository`)은
+/// 이 인터페이스만 보고 구현을 모른다.
 // `di.dart` 의 Provider<PositionSource> 조립 지점과 맞추려 인터페이스로
 // 둔다(CONVENTIONS_FLUTTER.md §2, DelayRepository 등 여러 메서드짜리와
 // 같은 패턴) — 최상위 함수로 바꾸면 그 조립 방식이 깨진다.
-// ignore: one_member_abstracts
 abstract interface class PositionSource {
-  /// 지금 시점의 좌표 스냅샷. 아직 값을 못 구했으면 `null`.
+  /// 지금 시점의 좌표 스냅샷. 아직 값을 못 구했거나 [availability] 가
+  /// `available` 이 아니면 `null`.
   PositionSample? sample();
+
+  /// [sample] 이 `null` 인 이유 — 화면이 "아직 못 받았을 뿐"과 "권한·서비스
+  /// 문제" 를 구별해 안내 문구를 낼 수 있게 한다(LOC-01 할 일 2).
+  PositionAvailability get availability;
+}
+
+/// [PositionSource.sample] 이 `null` 인 이유.
+enum PositionAvailability {
+  /// 정상 — 권한·위치 서비스 모두 확인됨(아직 첫 좌표를 못 받았을 수는 있다).
+  available,
+
+  /// 위치 권한이 거부됨(iOS `NSLocationWhenInUseUsageDescription` ·
+  /// Android `ACCESS_FINE_LOCATION` 거부).
+  permissionDenied,
+
+  /// 기기 위치 서비스 자체가 꺼짐.
+  serviceDisabled,
 }
 
 /// [PositionSource] 가 돌려주는 좌표 스냅샷 — §4.12 요청 본문과 거의 1:1.
@@ -40,10 +61,84 @@ class PositionSample {
   final double? heading;
 }
 
-/// 실제 위치 플러그인이 연동되기 전까지 쓰는 기본 구현 — 항상 `null`.
+/// 위치 플러그인이 연동되기 전 자리표시로 쓰던 구현 — 항상 `null`
+/// (이제 `di.dart` 는 [GeolocatorPositionSource] 를 쓴다, 시험용으로만 남긴다).
 class UnavailablePositionSource implements PositionSource {
   const UnavailablePositionSource();
 
   @override
   PositionSample? sample() => null;
+
+  @override
+  PositionAvailability get availability => PositionAvailability.available;
+}
+
+/// `geolocator` 플러그인으로 실제 GPS 좌표를 낸다(LOC-01).
+///
+/// [sample] 은 동기라 플러그인 호출(비동기)을 매 호출마다 다시 묻지 않고,
+/// 생성 시점에 권한·위치 서비스를 한 번 확인한 뒤
+/// [Geolocator.getPositionStream] 을 구독해 최신 좌표를 캐시해 둔다 —
+/// `sample()` 은 그 캐시를 그대로 돌려준다.
+class GeolocatorPositionSource implements PositionSource {
+  GeolocatorPositionSource() {
+    _ready = _init();
+  }
+
+  /// 생성자의 초기화(권한 확인·구독 시작)가 끝났는지 — 시험 전용
+  /// (`await source.ready`). 운영 코드는 기다리지 않는다: 첫 좌표가 아직
+  /// 없으면 `sample()` 이 `null` 을 돌려주는 것으로 충분하다.
+  @visibleForTesting
+  Future<void> get ready => _ready;
+  late final Future<void> _ready;
+
+  PositionSample? _lastSample;
+  PositionAvailability _availability = PositionAvailability.available;
+  StreamSubscription<Position>? _subscription;
+
+  Future<void> _init() async {
+    if (!await Geolocator.isLocationServiceEnabled()) {
+      _availability = PositionAvailability.serviceDisabled;
+      return;
+    }
+    var permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+    if (permission == LocationPermission.denied ||
+        permission == LocationPermission.deniedForever) {
+      _availability = PositionAvailability.permissionDenied;
+      return;
+    }
+    _availability = PositionAvailability.available;
+    _subscription = Geolocator.getPositionStream(
+      locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
+    ).listen(_onPosition);
+  }
+
+  void _onPosition(Position position) {
+    _lastSample = PositionSample(
+      lat: position.latitude,
+      lng: position.longitude,
+      // §4.12 는 이 값이 단말 측정 시각이라고 규정한다 — 전송 직전에
+      // clockProvider 로 "지금" 을 다시 물으면 안 된다(클래스 문서 참고).
+      recordedAt: position.timestamp,
+      // iOS 는 측정 불가일 때 속도·방향에 -1 을 준다 — §4.12 범위 밖이라
+      // 서버가 거부하므로, 음수면 그 필드를 아예 빼고 보낸다
+      // (브리프 §5.8.1.2 마지막 행 근거).
+      speed: position.speed >= 0 ? position.speed : null,
+      heading: position.heading >= 0 ? position.heading : null,
+    );
+  }
+
+  @override
+  PositionSample? sample() => _lastSample;
+
+  @override
+  PositionAvailability get availability => _availability;
+
+  /// 앱·화면 종료 시 구독을 끊는다 — `di.dart` provider 의 `ref.onDispose`
+  /// 에서 부른다.
+  void dispose() {
+    unawaited(_subscription?.cancel());
+  }
 }
