@@ -118,19 +118,27 @@ void main() {
   }
 
   test(
-    '§2.9 — 등록된 전화번호로 인증코드 발송을 실제로 요청한다 (비인증)',
+    '§2.9 — 등록된 전화번호로 인증코드 발송을 요청하면 503 '
+    'RECOVERY_UNAVAILABLE 로 거부된다(Ruling 329)',
     () async {
       if (!backendReachable) {
         markTestSkipped('환경 문제: $baseUrl 백엔드 미기동');
         return;
       }
-      // `verificationCode` 를 생략하면 SMS 발송 요청으로 처리된다(§2.9) —
-      // 실제 SMS 연동이 없는 이 저장소에서 부작용 없이 계약만 확인 가능한
-      // 유일한 호출 형태다.
+      // SMS 연동 전까지 이 엔드포인트는 요청 내용과 무관하게 항상 503
+      // RECOVERY_UNAVAILABLE 을 낸다(Ruling 329 — 관계자 웹 R31 W-UI 가
+      // 같은 정정을 이미 했다, academy-web `recover.ts` 주석 참고). 옛
+      // "접수 성공" 기대는 그 이전 계약이다.
       final client = buildClientFor('p2-recover');
-      await client.auth.recover(type: 'login_id', phone: '010-1000-0003');
-      // 예외 없이 끝나면 그것이 곧 계약 성공이다(§2.9 성공 응답은 본문이
-      // 없다).
+      try {
+        await client.auth.recover(type: 'login_id', phone: '010-1000-0003');
+        fail('SMS 연동 전인데 인증코드 발송이 503 이 아니었다');
+      } on DioException catch (e) {
+        expect(e.response?.statusCode, 503);
+        final data = e.response?.data as Map<String, dynamic>?;
+        final error = data?['error'] as Map<String, dynamic>?;
+        expect(error?['code'], 'RECOVERY_UNAVAILABLE');
+      }
     },
   );
 

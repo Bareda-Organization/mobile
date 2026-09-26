@@ -122,7 +122,7 @@ void main() {
 
       final api = EmergencyApi(dio: dio);
       final raised = await api.raise(
-        runId: '1',
+        runId: '7',
         request: EmergencyRaiseRequest(
           type: EmergencyType.accident,
           clientKey: IdempotencyKeys.generate(),
@@ -132,7 +132,7 @@ void main() {
       // 이 호출이 예외 없이 끝나는 것 자체가 검사다 — emergency_id 가
       // 숫자로 오면 EmergencyItem.fromJson 의 `as String` 캐스팅이 여기서
       // 던진다.
-      final list = await api.list(runId: '1');
+      final list = await api.list(runId: '7');
 
       expect(list.items, isNotEmpty);
       final item = list.items.firstWhere(
@@ -146,7 +146,7 @@ void main() {
 
       // 목록에서 받은 emergency_id 를 그대로 취소 URL 에 넣는다 — 발신 →
       // 목록 → 취소가 한 값으로 이어지는지가 이 시험의 나머지 절반이다.
-      await api.cancel(runId: '1', emergencyId: item.emergencyId);
+      await api.cancel(runId: '7', emergencyId: item.emergencyId);
     },
   );
 }
