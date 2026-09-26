@@ -155,12 +155,14 @@ final offlineQueueRepositoryProvider = Provider<OfflineQueueRepository>((ref) {
   );
 });
 
-/// LOC-01 — 좌표 획득 소스. 위치 플러그인이 아직 연동되지 않아 기본값은
-/// 항상 `null` 을 돌려주는 [UnavailablePositionSource] 다
-/// (`core/location/position_source.dart` 문서 주석 참고).
-final positionSourceProvider = Provider<PositionSource>(
-  (ref) => const UnavailablePositionSource(),
-);
+/// LOC-01 — 좌표 획득 소스. `geolocator` 로 실제 GPS 좌표를 낸다
+/// (`core/location/position_source.dart` 문서 주석 참고). 시험은 이 provider 를
+/// 가짜 [PositionSource] 로 덮는다.
+final positionSourceProvider = Provider<PositionSource>((ref) {
+  final source = GeolocatorPositionSource();
+  ref.onDispose(source.dispose);
+  return source;
+});
 
 /// API_SPEC §4.12 — 위치 업로드(기사 전용). §1.7 대상이 아니라 오프라인
 /// 큐를 거치지 않는다(재시도가 오래된 좌표를 나중에 보내면 오히려

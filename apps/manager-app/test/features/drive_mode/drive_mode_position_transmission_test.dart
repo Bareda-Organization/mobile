@@ -32,10 +32,16 @@ class _FixedClock implements Clock {
 /// 시험이 고정하는 "지금"과 **다른 값**으로 둬서, 화면이 전송 시각을
 /// 새로 채우는 것이 아니라 이 값을 그대로 옮기는지 구별한다(§4.12).
 class _FakePositionSource implements PositionSource {
-  _FakePositionSource(this._sample);
+  _FakePositionSource(
+    this._sample, {
+    this.availability = PositionAvailability.available,
+  });
 
-  final PositionSample _sample;
+  final PositionSample? _sample;
   int callCount = 0;
+
+  @override
+  final PositionAvailability availability;
 
   @override
   PositionSample? sample() {
@@ -295,6 +301,62 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(seconds: 8));
 
+    expect(repository.calls, isEmpty);
+  });
+
+  testWidgets('위치 권한이 거부됐으면 화면에 안내를 보여주고 전송은 건너뛴다', (tester) async {
+    final source = _FakePositionSource(
+      null,
+      availability: PositionAvailability.permissionDenied,
+    );
+    final repository = _RecordingPositionRepository();
+
+    await tester.pumpWidget(
+      _wrap(
+        const DriveModeScreen(),
+        baseOverrides(
+          role: UserRole.driver,
+          runStatus: RunStatus.moving,
+          positionSource: source,
+          positionRepository: repository,
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(PositionConstants.transmissionInterval);
+
+    expect(
+      find.textContaining('위치 권한이 없어 위치를 보낼 수 없습니다'),
+      findsOneWidget,
+    );
+    expect(repository.calls, isEmpty);
+  });
+
+  testWidgets('위치 서비스가 꺼져 있으면 화면에 안내를 보여주고 전송은 건너뛴다', (tester) async {
+    final source = _FakePositionSource(
+      null,
+      availability: PositionAvailability.serviceDisabled,
+    );
+    final repository = _RecordingPositionRepository();
+
+    await tester.pumpWidget(
+      _wrap(
+        const DriveModeScreen(),
+        baseOverrides(
+          role: UserRole.driver,
+          runStatus: RunStatus.moving,
+          positionSource: source,
+          positionRepository: repository,
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(PositionConstants.transmissionInterval);
+
+    expect(
+      find.textContaining('기기 위치 서비스가 꺼져 있어 위치를 보낼 수 없습니다'),
+      findsOneWidget,
+    );
     expect(repository.calls, isEmpty);
   });
 }

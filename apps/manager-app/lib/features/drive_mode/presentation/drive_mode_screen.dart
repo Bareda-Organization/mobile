@@ -9,6 +9,7 @@ import 'package:manager_app/app/app_routes.dart';
 import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/core/constants/position_constants.dart';
+import 'package:manager_app/core/location/position_source.dart';
 import 'package:manager_app/core/network/failure_messages.dart';
 import 'package:manager_app/core/run/manager_channel_banner.dart';
 import 'package:manager_app/core/run/run_enums.dart';
@@ -43,6 +44,23 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
   /// 상태.
   Timer? _positionTimer;
 
+  /// 마지막 전송 시도에서 본 [PositionSource.availability] — 권한 거부·
+  /// 위치 서비스 꺼짐이면 화면에 안내 한 줄을 보여준다(LOC-01 할 일 2).
+  /// 전송 타이머가 돌 때만 갱신되므로(2초 주기), 타이머가 아예 안 도는
+  /// 상태(이동 중이 아니거나 동승자)에서는 계속 `null` — 안내를 보여줄
+  /// 근거가 없다.
+  PositionAvailability? _positionAvailability;
+
+  /// [_positionAvailability] 를 화면 문구로 옮긴다 — 정상(`available`)이거나
+  /// 아직 모르면(`null`) 아무것도 보여주지 않는다.
+  String? get _positionGuidance => switch (_positionAvailability) {
+    PositionAvailability.permissionDenied =>
+      '위치 권한이 없어 위치를 보낼 수 없습니다. 설정에서 위치 권한을 허용해 주세요',
+    PositionAvailability.serviceDisabled =>
+      '기기 위치 서비스가 꺼져 있어 위치를 보낼 수 없습니다. 설정에서 위치 서비스를 켜 주세요',
+    PositionAvailability.available || null => null,
+  };
+
   @override
   void dispose() {
     _positionTimer?.cancel();
@@ -71,7 +89,11 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
   /// 텔레메트리라 실패해도 `_errorMessage` 를 세우지 않는다 — 다음 주기
   /// 전송이 실패를 대신 만회하고, 매번 배너를 띄우면 운전 중 방해만 된다.
   Future<void> _sendPositionTick(String runId) async {
-    final sample = ref.read(positionSourceProvider).sample();
+    final source = ref.read(positionSourceProvider);
+    if (mounted && source.availability != _positionAvailability) {
+      setState(() => _positionAvailability = source.availability);
+    }
+    final sample = source.sample();
     if (sample == null) return;
     try {
       await ref
@@ -204,6 +226,10 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
           // "연결 끊김"(비정상)을 구별해야 한다(목표 9, ManagerChannelBanner
           // 문서 참고).
           ManagerChannelBanner(runId: runId),
+          if (_positionGuidance != null) ...[
+            AlertBanner(tone: AlertTone.missed, body: _positionGuidance),
+            const SizedBox(height: 12),
+          ],
           if (_errorMessage != null) ...[
             AlertBanner(tone: AlertTone.missed, body: _errorMessage),
             const SizedBox(height: 12),
