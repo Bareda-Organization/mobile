@@ -14,6 +14,12 @@ import 'package:parent_app/features/live_map/domain/bus_position.dart';
 import 'package:parent_app/features/live_map/domain/live_map_status.dart';
 import 'package:parent_app/features/live_map/presentation/live_map_providers.dart';
 
+/// Ruling 208 — 마지막 수신 후 2분이면 유실로 판정한다. 서버
+/// (`API_SPEC §3.11`)의 `StudentBusPositionQueryService.STALE_THRESHOLD`
+/// 와 같은 값이어야 한다 — 갈라 두면 REST 스냅샷은 정상인데 WS 화면은
+/// 유실로 보이는(또는 그 반대) 구간이 생긴다.
+const _positionStaleThreshold = Duration(minutes: 2);
+
 /// 자리표시 화면 — P-07 (IMPLEMENTATION_PLAN.md §3.1, §3.11 · §7 WebSocket).
 /// 실시간 버스 위치 지도는 F4-B 1단계에서 붙었다 — `/topic/students/{studentId}/run`
 /// 4종 이벤트를 화면 상태로 반영하는 것은 그대로이고, `position` 이벤트가
@@ -146,6 +152,13 @@ class _StudentLiveMap extends ConsumerWidget {
 /// `position` 은 아직 없는 좁은 경우(사양이 다루지 않는 틈)에는 지도
 /// 대신 "위치 신호 대기 중" 문구를 짧게 둔다 — 근거 없는 임의의 카메라
 /// 위치(예: 학원 좌표)를 기본값으로 잡지 않기 위해서다(보고서 §1 참고).
+///
+/// **P1(Ruling 208·349) — WS 로 받은 좌표도 2분이 지나면 유실로 본다.**
+/// 아래 `staleSinceText` 는 서버가 §3.11 REST 응답에서 이미 유실로
+/// 판정해 좌표를 안 준 경우다. 반대로 WS 로 한 번 받은 좌표(`state.position`)
+/// 는 연결 자체가 끊기지 않아도 방송만 멈추면(Ruling 349 — 과부하 때
+/// `position` 방송은 버려질 수 있다) 서버가 다시 판정해 줄 기회가 없다
+/// — 그래서 이 화면이 매 빌드마다 `clockProvider` 로 직접 잰다.
 class _LiveMapBody extends ConsumerWidget {
   const _LiveMapBody({required this.studentId});
 
@@ -186,6 +199,8 @@ class _LiveMapBody extends ConsumerWidget {
         ? restPositionAsync.value
         : null;
 
+    final now = ref.watch(clockProvider).now();
+
     // 신호 유실(Ruling 208 — 마지막 수신 후 2분) — 서버가 좌표 없이
     // `last_seen_at` 만 돌려준 경우다. `run_status` 가 `moving` 이 아니면서
     // `last_seen_at` 도 없는 것은 유실이 아니라 그냥 운행 전·후 상태이므로
@@ -196,11 +211,7 @@ class _LiveMapBody extends ConsumerWidget {
             restPosition != null &&
             restPosition.lat == null &&
             restPosition.lastSeenAt != null
-        ? ref
-              .watch(clockProvider)
-              .now()
-              .difference(restPosition.lastSeenAt!)
-              .inMinutes
+        ? now.difference(restPosition.lastSeenAt!).inMinutes
         : null;
     final staleSinceText = staleMinutesAgo == null
         ? null
@@ -223,9 +234,27 @@ class _LiveMapBody extends ConsumerWidget {
           )
         : null;
 
-    if (staleSinceText != null && state.hasNoData) {
+    // P1 — 지금 화면이 표시할 좌표(WS 우선, 없으면 위 REST 대체)가 그 자체로
+    // 2분을 넘겼는지 클래스 문서에서 밝힌 이유로 다시 잰다. `staleSinceText`
+    // 와 동시에 값이 있을 일은 없다 — 저쪽이 서면 이쪽의 두 후보(`state.position`·
+    // `restSyntheticPosition`)가 이미 둘 다 null 이기 때문이다.
+    final effectivePosition = state.position ?? restSyntheticPosition;
+    final effectiveStaleMinutesAgo =
+        effectivePosition != null &&
+            now.difference(effectivePosition.receivedAt) >=
+                _positionStaleThreshold
+        ? now.difference(effectivePosition.receivedAt).inMinutes
+        : null;
+    final effectiveStaleSinceText = effectiveStaleMinutesAgo == null
+        ? null
+        : '마지막 확인 위치 · $effectiveStaleMinutesAgo분 전';
+    final resolvedStaleText = staleSinceText ?? effectiveStaleSinceText;
+    final hasFreshPosition =
+        effectivePosition != null && effectiveStaleSinceText == null;
+
+    if (resolvedStaleText != null && state.hasNoData) {
       return EmptyState(
-        title: staleSinceText,
+        title: resolvedStaleText,
         body: '신호가 다시 잡히면 자동으로 갱신됩니다',
       );
     }
@@ -244,14 +273,12 @@ class _LiveMapBody extends ConsumerWidget {
             padding: EdgeInsets.only(bottom: BaraedaSpacing.space4),
             child: AlertBanner(tone: AlertTone.missed, body: '재연결 시도 중입니다'),
           ),
-        if (state.position != null)
-          _BusMapSection(studentId: studentId, position: state.position!)
-        else if (restSyntheticPosition != null)
-          _BusMapSection(studentId: studentId, position: restSyntheticPosition)
-        else if (staleSinceText != null)
+        if (hasFreshPosition)
+          _BusMapSection(studentId: studentId, position: effectivePosition)
+        else if (resolvedStaleText != null)
           Padding(
             padding: const EdgeInsets.only(bottom: BaraedaSpacing.space4),
-            child: Text(staleSinceText, style: BaraedaTypography.bodySm),
+            child: Text(resolvedStaleText, style: BaraedaTypography.bodySm),
           )
         else if (!state.hasNoData)
           // 좌표는 아직 없지만(`run_started` 만 온 상태 등) "데이터 없음"도
@@ -266,10 +293,7 @@ class _LiveMapBody extends ConsumerWidget {
             label: '운행 시작',
             time: state.runStarted!.startedAt,
           ),
-        if (state.position != null)
-          _PositionTile(position: state.position!)
-        else if (restSyntheticPosition != null)
-          _PositionTile(position: restSyntheticPosition),
+        if (hasFreshPosition) _PositionTile(position: effectivePosition),
         if (state.lastStopArrived != null)
           _EventTile(
             label: '${state.lastStopArrived!.name} 도착',

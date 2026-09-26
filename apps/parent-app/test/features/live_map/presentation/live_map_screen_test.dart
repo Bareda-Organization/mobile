@@ -129,6 +129,18 @@ WebSocketEnvelope _envelope(WsEventType event, Map<String, dynamic> payload) {
   );
 }
 
+/// P1(Ruling 208) — `clockProvider` 로 주입하는 가짜 시계. `home_screen_test.dart`
+/// 의 `_FixedClock` 과 달리 한 시험 안에서 시각을 옮겨(`clock.value = ...`) 2분
+/// 경과 전후를 비교해야 해서 값을 바꿀 수 있게 둔다.
+class _MutableClock implements Clock {
+  _MutableClock(this.value);
+
+  DateTime value;
+
+  @override
+  DateTime now() => value;
+}
+
 final _linkedAt = DateTime(2026);
 
 void main() {
@@ -311,7 +323,14 @@ void main() {
   });
 
   group('연결·이벤트 반영 — 완료 조건 9(데이터 없음 vs 연결 끊김 구분)', () {
-    Future<void> pumpConnected(WidgetTester tester) async {
+    // P1(Ruling 208) — 이 그룹이 WS 로 실어 보내는 `received_at` 이 대부분
+    // 이 값(2026-09-13T08:00:00Z)이다. `live_map_screen.dart` 가 이제
+    // `clockProvider` 로 2분 유실을 판정하므로, 시험을 실제 실행 시각
+    // (`DateTime.now()`)에 맡기면 실행 날짜에 따라 "유실"로 잘못 판정될
+    // 수 있다 — 고정 시계를 기본값으로 준다.
+    final fixedNow = DateTime.utc(2026, 9, 13, 8);
+
+    Future<void> pumpConnected(WidgetTester tester, {Clock? clock}) async {
       await pumpScreen(
         tester,
         extraOverrides: [
@@ -319,6 +338,7 @@ void main() {
             RoleCapabilities.of(UserRole.student),
           ),
           myStudentIdProvider.overrideWith((ref) async => 's-1'),
+          clockProvider.overrideWithValue(clock ?? _MutableClock(fixedNow)),
         ],
       );
       // myStudentIdProvider 의 FutureProvider 가 해소될 때까지 한 프레임.
@@ -468,5 +488,70 @@ void main() {
       expect(find.text('재연결 시도 중입니다'), findsOneWidget);
       expect(find.textContaining('운행 시작'), findsOneWidget);
     });
+  });
+
+  group('연결·이벤트 반영 — P1(Ruling 208·349) 표시 중인 좌표의 신호 유실', () {
+    final t0 = DateTime.utc(2026, 9, 13, 8);
+
+    Future<void> pumpConnectedWithPosition(
+      WidgetTester tester, {
+      required Clock clock,
+    }) async {
+      await pumpScreen(
+        tester,
+        extraOverrides: [
+          roleCapabilitiesProvider.overrideWithValue(
+            RoleCapabilities.of(UserRole.student),
+          ),
+          myStudentIdProvider.overrideWith((ref) async => 's-1'),
+          clockProvider.overrideWithValue(clock),
+        ],
+      );
+      // myStudentIdProvider 의 FutureProvider 가 해소될 때까지 한 프레임.
+      await tester.pump();
+      await tester.pump();
+      client.emit(WsConnectionState.connected);
+      await tester.pump();
+      client.deliver(
+        _envelope(WsEventType.position, {
+          'lat': 37.5,
+          'lng': 127.0,
+          'received_at': t0.toIso8601String(),
+        }),
+      );
+      await tester.pump();
+    }
+
+    testWidgets('1분 59초가 지나도 "현재 위치" 표시를 유지한다', (tester) async {
+      final clock = _MutableClock(t0);
+      await pumpConnectedWithPosition(tester, clock: clock);
+      expect(find.textContaining('현재 위치'), findsOneWidget);
+
+      // 실제로 재빌드를 일으키는 계기(백오프 재연결 시도)를 흉내낸다 —
+      // 방송이 몇 초씩 끊기는 것(Ruling 349)은 연결 자체가 흔들리는 것과
+      // 별개라 이 시험은 그 재시도가 화면을 다시 그리는 계기로만 쓴다.
+      clock.value = t0.add(const Duration(minutes: 1, seconds: 59));
+      client.emit(WsConnectionState.reconnecting);
+      await tester.pump();
+
+      expect(find.textContaining('현재 위치'), findsOneWidget);
+      expect(find.textContaining('마지막 확인 위치'), findsNothing);
+    });
+
+    testWidgets(
+      '마지막 수신 후 2분이 지나면 "마지막 확인 위치 · N분 전" 으로 전환된다 — '
+      '지금 코드는 연결이 끊기지 않는 한 "현재 위치" 로 그대로 남는다',
+      (tester) async {
+        final clock = _MutableClock(t0);
+        await pumpConnectedWithPosition(tester, clock: clock);
+
+        clock.value = t0.add(const Duration(minutes: 2));
+        client.emit(WsConnectionState.reconnecting);
+        await tester.pump();
+
+        expect(find.textContaining('마지막 확인 위치 · 2분 전'), findsOneWidget);
+        expect(find.textContaining('현재 위치'), findsNothing);
+      },
+    );
   });
 }
