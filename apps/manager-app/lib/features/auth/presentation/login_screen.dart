@@ -162,6 +162,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 variant: BaraedaButtonVariant.ghost,
                 onPressed: () => context.go(AppRoutes.signup),
               ),
+              const SizedBox(height: BaraedaSpacing.space4),
+              // M5(Ruling 329 · UF-X-04) — 매니저(기사·동승자)도 학부모·
+              // 학생과 같은 "학원 관계자 경유" 복구만 연다. 전화번호 복구
+              // 화면(SMS 연동 전 503, §5.22)은 만들지 않고 안내만 둔다.
+              const Text(
+                '비밀번호를 잊으셨나요? 다니는 학원에 초기화를 요청해 주세요.',
+                textAlign: TextAlign.center,
+              ),
               DevQuickLogin(
                 accounts: const [
                   DevAccount('기사', 'driverA1'),
