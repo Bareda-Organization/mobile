@@ -81,13 +81,14 @@ class _FakeSecureStoragePlatform
 /// 버튼을 보여줄지 판단하는 것과 같은 조건(`now.isBefore(cancelableUntil)`,
 /// `emergency_screen.dart` 참고)을 그 실제 파싱 결과로 직접 계산한다.
 ///
-/// 시드 `driverA1`(BRIEF-em.md 계정)은 회차 1(idle)·7(confirmed)에 driver 로
-/// 배치돼 있다. **발신은 확정(confirmed) 이후 회차에만 받는다**(API_SPEC
-/// §4.14 "발신 시점" · BR-109 · Ruling 357) — 회차 1(idle)로 부르면
-/// `assertAssignedDriverOrEscort` 는 통과해도 `EmergencyCommandService.raise`
-/// 가 곧바로 `409 RUN_NOT_CONFIRMED` 로 거부한다. 그래서 성공 경로는 회차
-/// 7(confirmed, 내일 출발이라 재구성 없이도 오래 살아 있다)로 발신하고,
-/// 확정 전 회차 거부는 아래 별도 시험이 회차 1로 재현한다.
+/// 시드 `driverA1`(BRIEF-em.md 계정)은 회차 1(idle)·2(confirmed)·7(confirmed)
+/// 에 driver 로 배치돼 있다(`assignment` 시드 실측). **발신은 확정
+/// (confirmed) 이후 회차에만 받는다**(API_SPEC §4.14 "발신 시점" · BR-109)
+/// — 회차 1(idle)로 부르면 `assertAssignedDriverOrEscort` 는 통과해도
+/// `EmergencyCommandService.raise` 가 곧바로 `409 RUN_NOT_CONFIRMED` 로
+/// 거부한다. 성공 경로는 회차 2 대신 7(confirmed, 내일 출발이라 재구성
+/// 없이도 오래 살아 있다 — 회차 2 는 오늘 날짜라 자정 경계 위험이 있다)로
+/// 발신하고, 확정 전 회차 거부는 아래 별도 시험이 회차 1로 재현한다.
 void main() {
   final baseUrl = requireRealBackendBaseUrl();
   late bool backendReachable;
