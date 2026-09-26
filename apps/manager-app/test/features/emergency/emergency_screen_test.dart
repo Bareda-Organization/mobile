@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:manager_app/app/di.dart';
+import 'package:manager_app/core/location/position_source.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/features/emergency/data/models/emergency_item.dart';
 import 'package:manager_app/features/emergency/data/models/emergency_raise_request.dart';
@@ -74,6 +75,20 @@ class _FakeEmergencyRepository implements EmergencyRepository {
   Future<EmergencyListResponse> fetchList({required String runId}) async {
     return list ?? const EmergencyListResponse(items: []);
   }
+}
+
+/// 항상 같은 좌표 스냅샷(또는 `null`)을 돌려주는 가짜 위치 소스 —
+/// `drive_mode_position_transmission_test.dart` 와 같은 패턴(F1).
+class _FakePositionSource implements PositionSource {
+  const _FakePositionSource(this._sample);
+
+  final PositionSample? _sample;
+
+  @override
+  PositionSample? sample() => _sample;
+
+  @override
+  PositionAvailability get availability => PositionAvailability.available;
 }
 
 Widget _wrap(Widget child, List<Override> overrides) {
@@ -184,6 +199,79 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(fakeRepo.lastRequest?.occurredAt, raisedAt);
+    },
+  );
+
+  testWidgets(
+    '위치 소스가 좌표를 주면 발신 요청에 lat·lng 가 실린다 (F1)',
+    (tester) async {
+      // 비상은 기사·동승자 둘 다 발신한다(ARCHITECTURE §3.3·EXC-04) —
+      // 이 시험은 역할을 override 하지 않는다(역할 무관 동작을 확인).
+      final fakeRepo = _FakeEmergencyRepository(
+        raiseOutcome: Sent(
+          EmergencyRaiseResult(
+            emergencyId: 'e1',
+            raisedAt: raisedAt,
+            cancelableUntil: cancelableUntil,
+            notified: 1,
+          ),
+        ),
+        list: const EmergencyListResponse(items: []),
+      );
+      final sample = PositionSample(
+        lat: 37.5,
+        lng: 127,
+        recordedAt: DateTime(2026, 9, 12, 8, 59),
+      );
+
+      await tester.pumpWidget(
+        _wrap(const EmergencyScreen(), [
+          ...overridesFor(fakeRepo: fakeRepo),
+          positionSourceProvider.overrideWithValue(
+            _FakePositionSource(sample),
+          ),
+        ]),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('비상 알림 보내기'));
+      await tester.pumpAndSettle();
+
+      expect(fakeRepo.lastRequest?.lat, 37.5);
+      expect(fakeRepo.lastRequest?.lng, 127);
+    },
+  );
+
+  testWidgets(
+    '위치 소스가 null 이면 발신 요청에서 lat·lng 를 생략한다(서버가 최신 수신 좌표로 대체) (F1)',
+    (tester) async {
+      final fakeRepo = _FakeEmergencyRepository(
+        raiseOutcome: Sent(
+          EmergencyRaiseResult(
+            emergencyId: 'e1',
+            raisedAt: raisedAt,
+            cancelableUntil: cancelableUntil,
+            notified: 1,
+          ),
+        ),
+        list: const EmergencyListResponse(items: []),
+      );
+
+      await tester.pumpWidget(
+        _wrap(const EmergencyScreen(), [
+          ...overridesFor(fakeRepo: fakeRepo),
+          positionSourceProvider.overrideWithValue(
+            const _FakePositionSource(null),
+          ),
+        ]),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('비상 알림 보내기'));
+      await tester.pumpAndSettle();
+
+      expect(fakeRepo.lastRequest?.lat, isNull);
+      expect(fakeRepo.lastRequest?.lng, isNull);
     },
   );
 

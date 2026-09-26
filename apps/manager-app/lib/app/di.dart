@@ -2,6 +2,7 @@ import 'package:baraeda_core/baraeda_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:manager_app/core/constants/api_constants.dart';
 import 'package:manager_app/core/location/position_source.dart';
+import 'package:manager_app/core/wakelock/wakelock_port.dart';
 import 'package:manager_app/features/auth/data/auth_repository_impl.dart';
 import 'package:manager_app/features/auth/domain/auth_repository.dart';
 import 'package:manager_app/features/delay/data/delay_api.dart';
@@ -163,6 +164,13 @@ final positionSourceProvider = Provider<PositionSource>((ref) {
   ref.onDispose(source.dispose);
   return source;
 });
+
+/// F2 — 운행 화면이 켜져 있는 동안 화면 꺼짐을 막는다(백그라운드 GPS
+/// 송신이 범위 밖이라 화면이 켜진 상태가 지금 송신을 지키는 유일한
+/// 수단, M-B 2항). 시험은 이 provider 를 가짜 [WakelockPort] 로 덮는다.
+final wakelockPortProvider = Provider<WakelockPort>(
+  (ref) => WakelockPlusPort(),
+);
 
 /// API_SPEC §4.12 — 위치 업로드(기사 전용). §1.7 대상이 아니라 오프라인
 /// 큐를 거치지 않는다(재시도가 오래된 좌표를 나중에 보내면 오히려
