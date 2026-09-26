@@ -19,6 +19,7 @@ export 'error/failure.dart';
 export 'id/as_id_string.dart';
 export 'network/api_client.dart';
 export 'network/dio_error_mapper.dart';
+export 'network/token_refresher.dart';
 export 'storage/token_storage.dart';
 export 'time/clock.dart';
 export 'websocket/baraeda_websocket_client.dart';

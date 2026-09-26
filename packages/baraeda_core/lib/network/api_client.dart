@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:baraeda_core/network/token_refresher.dart';
 import 'package:baraeda_core/storage/token_storage.dart';
 import 'package:dio/dio.dart';
 import 'package:uuid/uuid.dart';
@@ -59,11 +60,19 @@ class ApiClient {
     // 감싸져 있고, `/auth/refresh` 응답도 예외가 아니다).
     _dio.interceptors.add(_EnvelopeInterceptor());
     refresh.interceptors.add(_EnvelopeInterceptor());
+    // WS 클라이언트(`BaraedaWebSocketClient`)도 이 인스턴스를 그대로 받는다
+    // (`tokenRefresher` getter) — REST·WS 동시 재발급 경합을 막는 이유는
+    // `token_refresher.dart` 문서를 본다.
+    tokenRefresher = TokenRefresher(
+      refreshDio: refresh,
+      tokenStorage: _tokenStorage,
+      clientType: clientType,
+    );
     _dio.interceptors.add(
       _AuthInterceptor(
         _tokenStorage,
         _dio,
-        refresh,
+        tokenRefresher,
         clientType: clientType,
         gateEvents: _gateEventsController,
       ),
@@ -77,6 +86,11 @@ class ApiClient {
 
   /// 인터셉터가 붙은 dio 인스턴스. repository 는 이것으로 요청한다.
   Dio get dio => _dio;
+
+  /// REST 401 재발급과 WS 재발급이 공유하는 창구 — 앱의 WS 클라이언트
+  /// 생성 지점(`di.dart` 등)이 이 값의 [TokenRefresher.refresh] 를 그대로
+  /// 넘겨 받는다.
+  late final TokenRefresher tokenRefresher;
 
   /// `403 AUTH_PENDING`·`403 AUTH_REJECTED` 를 어느 화면의 어느 호출이
   /// 냈든 한 곳(인터셉터)에서 감지해 흘려보내는 스트림. 라우터가 이것만
@@ -116,7 +130,7 @@ class _AuthInterceptor extends Interceptor {
   _AuthInterceptor(
     this._tokenStorage,
     this._dio,
-    this._refreshDio, {
+    this._tokenRefresher, {
     required this.clientType,
     required this._gateEvents,
   });
@@ -124,9 +138,8 @@ class _AuthInterceptor extends Interceptor {
   final TokenStorage _tokenStorage;
   final Dio _dio;
 
-  /// 인터셉터가 붙지 않은 인스턴스 — refresh 응답이 401 일 때
-  /// 이 인터셉터가 자기 자신에게 다시 걸리는 것을 구조적으로 막는다.
-  final Dio _refreshDio;
+  /// REST·WS 가 공유하는 재발급 창구 — `token_refresher.dart` 문서 참고.
+  final TokenRefresher _tokenRefresher;
   final String clientType;
   final StreamController<AccountGateReason> _gateEvents;
 
@@ -161,32 +174,16 @@ class _AuthInterceptor extends Interceptor {
       return;
     }
 
-    final refreshToken = await _tokenStorage.readRefreshToken();
-    if (refreshToken == null) {
+    // 실제 HTTP 호출·저장·실패 시 토큰 삭제는 `TokenRefresher` 가 한다 —
+    // WS 클라이언트와 같은 창구를 공유해야 동시 재발급 경합이 없다
+    // (`token_refresher.dart` 문서).
+    final newAccessToken = await _tokenRefresher.refresh();
+    if (newAccessToken == null) {
       handler.next(err);
       return;
     }
 
     try {
-      // 이 응답은 `_refreshDio` 에 붙은 `_EnvelopeInterceptor` 를 이미 거쳐
-      // `data` 봉투가 벗겨진 상태다 — 그래서 아래는 루트에서 바로 읽는다.
-      final refreshResponse = await _refreshDio.post<Map<String, dynamic>>(
-        '/auth/refresh',
-        data: {'refresh_token': refreshToken},
-        options: Options(headers: {_headerClientType: clientType}),
-      );
-      final body = refreshResponse.data;
-      final newAccessToken = body?['access_token'] as String?;
-      final newRefreshToken = body?['refresh_token'] as String?;
-      if (newAccessToken == null || newRefreshToken == null) {
-        handler.next(err);
-        return;
-      }
-      await _tokenStorage.saveTokens(
-        accessToken: newAccessToken,
-        refreshToken: newRefreshToken,
-      );
-
       final retryOptions = err.requestOptions
         ..headers[_headerAuthorization] = 'Bearer $newAccessToken'
         ..extra[_retriedKey] = true;
