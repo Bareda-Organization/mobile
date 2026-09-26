@@ -59,6 +59,11 @@ class _NoopPositionSource implements PositionSource {
 
   @override
   PositionAvailability get availability => PositionAvailability.available;
+
+  @override
+  Future<PositionSample?> sampleOnce({
+    Duration timeout = const Duration(seconds: 5),
+  }) async => null;
 }
 
 class _NoopPositionRepository implements PositionRepository {

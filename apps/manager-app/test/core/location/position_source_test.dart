@@ -30,6 +30,16 @@ class _FakeGeolocatorPlatform extends GeolocatorPlatform {
       _positionController.stream;
 
   void emit(Position position) => _positionController.add(position);
+
+  /// `sampleOnce` 시험용 — 값을 그대로 낼지, 예외를 던질지 고른다(BRIEF-BG2).
+  Position? currentPositionResult;
+  Exception? currentPositionError;
+
+  @override
+  Future<Position> getCurrentPosition({LocationSettings? locationSettings}) {
+    if (currentPositionError != null) throw currentPositionError!;
+    return Future.value(currentPositionResult);
+  }
 }
 
 Position _position({
@@ -148,5 +158,73 @@ void main() {
 
     expect(source.sample(), isNull);
     expect(source.availability, PositionAvailability.serviceDisabled);
+  });
+
+  // BRIEF-BG2 — 스트림 좌표가 없을 때(비상 발신, 동승자 단말·송신 두절
+  // 기사 단말) 포그라운드 서비스를 켜지 않고 좌표를 한 번만 얻는다.
+  group('sampleOnce', () {
+    test(
+      'getCurrentPosition 결과를 sample() 과 같은 변환 규칙으로 낸다(음수 속도·방향 제외)',
+      () async {
+        final platform = _FakeGeolocatorPlatform()
+          ..currentPositionResult = _position(speed: -1, heading: -1);
+        GeolocatorPlatform.instance = platform;
+        final source = GeolocatorPositionSource();
+        await source.ready;
+
+        final result = await source.sampleOnce();
+
+        expect(result, isNotNull);
+        expect(result!.lat, 37.5);
+        expect(result.lng, 127);
+        expect(result.speed, isNull);
+        expect(result.heading, isNull);
+      },
+    );
+
+    test('스트림을 열지 않는다(start() 를 부르지 않는다) — sample() 은 그대로 null', () async {
+      final platform = _FakeGeolocatorPlatform()
+        ..currentPositionResult = _position();
+      GeolocatorPlatform.instance = platform;
+      final source = GeolocatorPositionSource();
+      await source.ready;
+
+      final result = await source.sampleOnce();
+
+      expect(result, isNotNull);
+      // 캐시(_lastSample)에 남기지 않는다 — 스트림 구독과 별개 경로다.
+      expect(source.sample(), isNull);
+    });
+
+    test('제한 시간 안에 못 받으면(TimeoutException) null 을 낸다', () async {
+      final platform = _FakeGeolocatorPlatform()
+        ..currentPositionError = TimeoutException('no fix');
+      GeolocatorPlatform.instance = platform;
+      final source = GeolocatorPositionSource();
+      await source.ready;
+
+      expect(await source.sampleOnce(), isNull);
+    });
+
+    test('위치 서비스 거부(LocationServiceDisabledException)면 null 을 낸다', () async {
+      final platform = _FakeGeolocatorPlatform()
+        ..currentPositionError = const LocationServiceDisabledException();
+      GeolocatorPlatform.instance = platform;
+      final source = GeolocatorPositionSource();
+      await source.ready;
+
+      expect(await source.sampleOnce(), isNull);
+    });
+
+    test('권한이 이미 거부 상태면 플랫폼을 부르지 않고 null 을 낸다', () async {
+      final platform = _FakeGeolocatorPlatform()
+        ..checkPermissionResult = LocationPermission.denied
+        ..currentPositionResult = _position();
+      GeolocatorPlatform.instance = platform;
+      final source = GeolocatorPositionSource();
+      await source.ready;
+
+      expect(await source.sampleOnce(), isNull);
+    });
   });
 }

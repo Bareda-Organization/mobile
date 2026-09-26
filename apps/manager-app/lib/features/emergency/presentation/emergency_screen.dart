@@ -67,6 +67,11 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
   /// §4.14 발신. `type=etc` 는 `memo` 가 필수(§4.14 `422 VALIDATION_FAILED`
   /// 조건) — 서버 왕복 없이 화면에서 먼저 막는다.
   Future<void> _submit(String runId) async {
+    // 재진입 가드 — 1회 측정(sampleOnce)을 기다리는 동안 버튼이 아직
+    // 비활성으로 다시 그려지기 전이면(pump 전) 두 번째 탭이 옛 onPressed
+    // 를 그대로 다시 부를 수 있다. 이 가드가 없으면 그 재호출도 끝까지
+    // 진행돼 중복 발신이 나간다(BRIEF-BG2 "중복 발신 방지").
+    if (_submitting) return;
     final memo = _memoController.text.trim();
     if (_type == EmergencyType.etc && memo.isEmpty) {
       setState(() => _errorMessage = '기타 유형은 상황 메모가 필요합니다');
@@ -79,13 +84,18 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
     });
     // §4.14 가 미전달 시 서버의 최신 수신 좌표 대체를 규정한다 — 비상은
     // 운행 전·후나 GPS 송신이 끊긴 뒤에도 나므로, 그 대체값이 최신
-    // 좌표보다 나은 판단은 아니다. 아직 못 받았거나(첫 좌표 전) 권한이
-    // 거부됐으면 `sample()` 이 `null` 이라 여기서도 그대로 생략한다 —
-    // 좌표를 지어내지 않는다(F1, position_source.dart 문서 주석 참고).
-    // 비상은 기사·동승자 둘 다 발신하고(ARCHITECTURE §3.3·EXC-04)
-    // positionSourceProvider 는 역할과 무관하게 도는 provider 라(di.dart)
-    // 별도 역할 분기가 필요 없다.
-    final sample = ref.read(positionSourceProvider).sample();
+    // 좌표보다 나은 판단은 아니다. 비상은 기사·동승자 둘 다 발신하고
+    // (ARCHITECTURE §3.3·EXC-04) positionSourceProvider 자체는 역할과
+    // 무관하게 읽을 수 있지만, 위치 스트림([PositionSource.start])은
+    // `Ruling 360` 이후 기사 운행 화면에서만 열린다 — 동승자 단말이나
+    // 송신이 끊긴 기사 단말은 `sample()` 이 늘 `null` 이다. 그때만 1회
+    // 측정(sampleOnce)으로 보완한다(포그라운드 서비스는 켜지 않는다,
+    // BRIEF-BG2). 제한 시간 안에 못 받거나 거부되면 지금처럼 좌표 없이
+    // 그대로 진행한다 — 좌표를 지어내지 않는다.
+    final positionSource = ref.read(positionSourceProvider);
+    var sample = positionSource.sample();
+    sample ??= await positionSource.sampleOnce();
+    if (!mounted) return;
     try {
       final outcome = await ref
           .read(emergencyRepositoryProvider)

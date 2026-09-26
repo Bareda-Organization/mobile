@@ -34,6 +34,17 @@ abstract interface class PositionSource {
   /// [start] 로 켜진 Android 포그라운드 서비스 알림·iOS 백그라운드 갱신도
   /// 이 호출로 함께 멎는다. 이미 멈췄으면 아무 것도 하지 않는다(멱등).
   void stop();
+
+  /// 지금 좌표를 한 번만 측정한다(`Ruling 360` 회귀 보완, BRIEF-BG2) —
+  /// [start] 를 부르지 않으므로 Android 포그라운드 서비스 알림·iOS
+  /// 백그라운드 갱신을 켜지 않는다. 비상 발신처럼 [sample] 이 `null`(스트림
+  /// 미시작 — 동승자 단말, 또는 송신이 끊긴 기사 단말)일 때만 쓴다. [timeout]
+  /// 안에 못 받거나 권한·서비스 문제면 `null`(좌표를 지어내지 않는다,
+  /// [sample] 문서 참고). 결과는 [sample] 의 캐시에 남지 않는다 — 스트림
+  /// 구독과 완전히 별개 경로다.
+  Future<PositionSample?> sampleOnce({
+    Duration timeout = const Duration(seconds: 5),
+  });
 }
 
 /// `Ruling 360` — 플랫폼별 위치 스트림 설정을 만드는 순수 함수. Android 는
@@ -81,6 +92,22 @@ enum PositionAvailability {
   serviceDisabled,
 }
 
+/// [Position] → [PositionSample] 변환 — 스트림(`_onPosition`)과 1회 측정
+/// ([GeolocatorPositionSource.sampleOnce])이 같은 함수를 쓴다(BRIEF-BG2,
+/// 두 벌 두지 않는다).
+PositionSample _toSample(Position position) => PositionSample(
+  lat: position.latitude,
+  lng: position.longitude,
+  // §4.12 는 이 값이 단말 측정 시각이라고 규정한다 — 전송 직전에
+  // clockProvider 로 "지금" 을 다시 물으면 안 된다(PositionSample 문서 참고).
+  recordedAt: position.timestamp,
+  // iOS 는 측정 불가일 때 속도·방향에 -1 을 준다 — §4.12 범위 밖이라 서버가
+  // 거부하므로, 음수면 그 필드를 아예 빼고 보낸다(브리프 §5.8.1.2 마지막
+  // 행 근거).
+  speed: position.speed >= 0 ? position.speed : null,
+  heading: position.heading >= 0 ? position.heading : null,
+);
+
 /// [PositionSource] 가 돌려주는 좌표 스냅샷 — §4.12 요청 본문과 거의 1:1.
 ///
 /// `recordedAt` 을 여기 담는 이유 — §4.12 는 이 값이 "단말 측정 시각"이지
@@ -120,6 +147,11 @@ class UnavailablePositionSource implements PositionSource {
 
   @override
   void stop() {}
+
+  @override
+  Future<PositionSample?> sampleOnce({
+    Duration timeout = const Duration(seconds: 5),
+  }) async => null;
 }
 
 /// `geolocator` 플러그인으로 실제 GPS 좌표를 낸다(LOC-01).
@@ -191,18 +223,7 @@ class GeolocatorPositionSource implements PositionSource {
   }
 
   void _onPosition(Position position) {
-    _lastSample = PositionSample(
-      lat: position.latitude,
-      lng: position.longitude,
-      // §4.12 는 이 값이 단말 측정 시각이라고 규정한다 — 전송 직전에
-      // clockProvider 로 "지금" 을 다시 물으면 안 된다(클래스 문서 참고).
-      recordedAt: position.timestamp,
-      // iOS 는 측정 불가일 때 속도·방향에 -1 을 준다 — §4.12 범위 밖이라
-      // 서버가 거부하므로, 음수면 그 필드를 아예 빼고 보낸다
-      // (브리프 §5.8.1.2 마지막 행 근거).
-      speed: position.speed >= 0 ? position.speed : null,
-      heading: position.heading >= 0 ? position.heading : null,
-    );
+    _lastSample = _toSample(position);
   }
 
   @override
@@ -210,6 +231,33 @@ class GeolocatorPositionSource implements PositionSource {
 
   @override
   PositionAvailability get availability => _availability;
+
+  /// [sample] 이 스트림 구독을 못 여는 상황(비상 발신, BRIEF-BG2)의 보완 —
+  /// [start] 없이 좌표를 한 번만 측정한다. 변환 규칙은 [_onPosition] 과
+  /// 같은 [_toSample] 을 쓴다(두 벌 두지 않는다).
+  @override
+  Future<PositionSample?> sampleOnce({
+    Duration timeout = const Duration(seconds: 5),
+  }) async {
+    await _ready;
+    // 권한·서비스 문제는 이미 알고 있으니 플랫폼을 다시 부르지 않는다.
+    if (_availability != PositionAvailability.available) return null;
+    try {
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: LocationSettings(
+          accuracy: LocationAccuracy.high,
+          timeLimit: timeout,
+        ),
+      );
+      return _toSample(position);
+    } on TimeoutException {
+      return null;
+    } on LocationServiceDisabledException {
+      return null;
+    } on PermissionDeniedException {
+      return null;
+    }
+  }
 
   /// 앱 종료 시 구독을 끊는다 — `di.dart` provider 의 `ref.onDispose` 에서
   /// 부른다. [stop] 과 같은 경로([start] 를 다시 부르면 재구독도 가능하나,

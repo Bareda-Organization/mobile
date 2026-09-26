@@ -54,6 +54,11 @@ class _FakePositionSource implements PositionSource {
 
   @override
   void stop() {}
+
+  @override
+  Future<PositionSample?> sampleOnce({
+    Duration timeout = const Duration(seconds: 5),
+  }) async => null;
 }
 
 /// 실제 서버를 부르지 않고 `sendPosition` 호출을 그대로 기록하는 가짜

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -78,11 +80,27 @@ class _FakeEmergencyRepository implements EmergencyRepository {
 }
 
 /// 항상 같은 좌표 스냅샷(또는 `null`)을 돌려주는 가짜 위치 소스 —
-/// `drive_mode_position_transmission_test.dart` 와 같은 패턴(F1).
+/// `drive_mode_position_transmission_test.dart` 와 같은 패턴(F1). `sampleOnce`
+/// 는 스트림이 없을 때(BG2)의 1회 측정을 대역한다 — 호출 횟수를 기록하고,
+/// 값을 즉시 낼지([onceSample]) 완료를 미룰지([onceCompleter], 중복 발신
+/// 시험용)를 고른다.
 class _FakePositionSource implements PositionSource {
-  const _FakePositionSource(this._sample);
+  _FakePositionSource(this._sample, {this.onceSample, this.onceCompleter});
 
   final PositionSample? _sample;
+  final PositionSample? onceSample;
+  final Completer<PositionSample?>? onceCompleter;
+
+  int sampleOnceCallCount = 0;
+
+  @override
+  Future<PositionSample?> sampleOnce({
+    Duration timeout = const Duration(seconds: 5),
+  }) async {
+    sampleOnceCallCount++;
+    if (onceCompleter != null) return onceCompleter!.future;
+    return onceSample;
+  }
 
   @override
   PositionSample? sample() => _sample;
@@ -112,11 +130,20 @@ void main() {
   List<Override> overridesFor({
     required _FakeEmergencyRepository fakeRepo,
     DateTime? now,
+    // `_submit` 이 sample() null 이면 sampleOnce() 로 넘어간다(BG2) — 이
+    // 값을 안 주는 시험은 기본 provider(di.dart 의 실제
+    // GeolocatorPositionSource) 로 떨어져 플랫폼 채널을 두드리다 예외를
+    // 낸다. 좌표를 직접 다루지 않는 시험은 이 기본값(둘 다 null)으로
+    // 충분하다.
+    PositionSource? positionSource,
   }) {
     return [
       selectedRunIdProvider.overrideWith((ref) => runId),
       emergencyRepositoryProvider.overrideWithValue(fakeRepo),
       clockProvider.overrideWithValue(_FixedClock(now ?? raisedAt)),
+      positionSourceProvider.overrideWithValue(
+        positionSource ?? _FakePositionSource(null),
+      ),
     ];
   }
 
@@ -231,12 +258,13 @@ void main() {
       );
 
       await tester.pumpWidget(
-        _wrap(const EmergencyScreen(), [
-          ...overridesFor(fakeRepo: fakeRepo),
-          positionSourceProvider.overrideWithValue(
-            _FakePositionSource(sample),
+        _wrap(
+          const EmergencyScreen(),
+          overridesFor(
+            fakeRepo: fakeRepo,
+            positionSource: _FakePositionSource(sample),
           ),
-        ]),
+        ),
       );
       await tester.pumpAndSettle();
 
@@ -264,12 +292,13 @@ void main() {
       );
 
       await tester.pumpWidget(
-        _wrap(const EmergencyScreen(), [
-          ...overridesFor(fakeRepo: fakeRepo),
-          positionSourceProvider.overrideWithValue(
-            const _FakePositionSource(null),
+        _wrap(
+          const EmergencyScreen(),
+          overridesFor(
+            fakeRepo: fakeRepo,
+            positionSource: _FakePositionSource(null),
           ),
-        ]),
+        ),
       );
       await tester.pumpAndSettle();
 
@@ -280,6 +309,166 @@ void main() {
       expect(fakeRepo.lastRequest?.lng, isNull);
     },
   );
+
+  // BRIEF-BG2 — Ruling 360 이후 위치 스트림이 기사 운행 화면에서만 열려
+  // (`positionSourceProvider.sample()`), 스트림이 없을 때(동승자 단말·송신
+  // 두절 기사 단말)는 발신 시점에 1회만 좌표를 측정해 보완한다.
+  testWidgets(
+    '스트림 좌표가 없으면(sample() null) 1회 측정 좌표를 요청에 싣는다 (BG2)',
+    (tester) async {
+      final fakeRepo = _FakeEmergencyRepository(
+        raiseOutcome: Sent(
+          EmergencyRaiseResult(
+            emergencyId: 'e1',
+            raisedAt: raisedAt,
+            cancelableUntil: cancelableUntil,
+            notified: 1,
+          ),
+        ),
+        list: const EmergencyListResponse(items: []),
+      );
+      final onceSample = PositionSample(
+        lat: 37.6,
+        lng: 127.1,
+        recordedAt: DateTime(2026, 9, 12, 8, 59, 55),
+      );
+      final fakeSource = _FakePositionSource(null, onceSample: onceSample);
+
+      await tester.pumpWidget(
+        _wrap(
+          const EmergencyScreen(),
+          overridesFor(fakeRepo: fakeRepo, positionSource: fakeSource),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('비상 알림 보내기'));
+      await tester.pumpAndSettle();
+
+      expect(fakeRepo.lastRequest?.lat, 37.6);
+      expect(fakeRepo.lastRequest?.lng, 127.1);
+      expect(fakeSource.sampleOnceCallCount, 1);
+    },
+  );
+
+  testWidgets(
+    '1회 측정이 실패(null)해도 좌표 없이 발신은 그대로 진행한다 (BG2)',
+    (tester) async {
+      final fakeRepo = _FakeEmergencyRepository(
+        raiseOutcome: Sent(
+          EmergencyRaiseResult(
+            emergencyId: 'e1',
+            raisedAt: raisedAt,
+            cancelableUntil: cancelableUntil,
+            notified: 1,
+          ),
+        ),
+        list: const EmergencyListResponse(items: []),
+      );
+      // onceSample 을 안 주면 sampleOnce() 는 null 을 낸다 — 제한 시간 초과·
+      // 권한 거부와 같은 결과(호출부 관점에서는 구별할 필요가 없다).
+      final fakeSource = _FakePositionSource(null);
+
+      await tester.pumpWidget(
+        _wrap(
+          const EmergencyScreen(),
+          overridesFor(fakeRepo: fakeRepo, positionSource: fakeSource),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('비상 알림 보내기'));
+      await tester.pumpAndSettle();
+
+      expect(fakeRepo.lastRequest?.lat, isNull);
+      expect(fakeRepo.lastRequest?.lng, isNull);
+      expect(fakeRepo.raiseCallCount, 1);
+      expect(find.textContaining('보냈습니다'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    '스트림 좌표가 있으면(sample() 값 있음) 1회 측정을 부르지 않는다 (BG2)',
+    (tester) async {
+      final fakeRepo = _FakeEmergencyRepository(
+        raiseOutcome: Sent(
+          EmergencyRaiseResult(
+            emergencyId: 'e1',
+            raisedAt: raisedAt,
+            cancelableUntil: cancelableUntil,
+            notified: 1,
+          ),
+        ),
+        list: const EmergencyListResponse(items: []),
+      );
+      final streamSample = PositionSample(
+        lat: 37.5,
+        lng: 127,
+        recordedAt: DateTime(2026, 9, 12, 8, 59),
+      );
+      final fakeSource = _FakePositionSource(
+        streamSample,
+        onceSample: PositionSample(
+          lat: 0,
+          lng: 0,
+          recordedAt: DateTime(2026, 9, 12, 8, 59),
+        ),
+      );
+
+      await tester.pumpWidget(
+        _wrap(
+          const EmergencyScreen(),
+          overridesFor(fakeRepo: fakeRepo, positionSource: fakeSource),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('비상 알림 보내기'));
+      await tester.pumpAndSettle();
+
+      expect(fakeRepo.lastRequest?.lat, 37.5);
+      expect(fakeRepo.lastRequest?.lng, 127);
+      expect(fakeSource.sampleOnceCallCount, 0);
+    },
+  );
+
+  testWidgets('측정을 기다리는 동안 두 번째 탭은 새 발신을 만들지 않는다 (BG2)', (
+    tester,
+  ) async {
+    // 1회 측정이 끝나기 전까지는 버튼이 다시 그려지기 전이라(pump 없이
+    // 연속 탭) onPressed 가 아직 살아 있는 옛 위젯을 그대로 다시 호출할 수
+    // 있다 — `_submit` 자체의 재진입 가드가 없으면 두 번째 호출도 끝까지
+    // 진행해 중복 발신이 나간다.
+    final fakeRepo = _FakeEmergencyRepository(
+      raiseOutcome: Sent(
+        EmergencyRaiseResult(
+          emergencyId: 'e1',
+          raisedAt: raisedAt,
+          cancelableUntil: cancelableUntil,
+          notified: 1,
+        ),
+      ),
+      list: const EmergencyListResponse(items: []),
+    );
+    final completer = Completer<PositionSample?>();
+    final fakeSource = _FakePositionSource(null, onceCompleter: completer);
+
+    await tester.pumpWidget(
+      _wrap(
+        const EmergencyScreen(),
+        overridesFor(fakeRepo: fakeRepo, positionSource: fakeSource),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('비상 알림 보내기'));
+    await tester.tap(find.text('비상 알림 보내기'));
+
+    completer.complete(null);
+    await tester.pumpAndSettle();
+
+    expect(fakeRepo.raiseCallCount, 1);
+  });
 
   testWidgets('발신이 통신 두절로 큐에 쌓이면 대기 안내를 보여준다', (tester) async {
     // §1.7 M-06 — sendOrQueue 가 Queued 를 돌려주는 경우(UF-E-07).
