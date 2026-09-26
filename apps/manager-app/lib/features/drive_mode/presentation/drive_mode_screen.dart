@@ -15,6 +15,7 @@ import 'package:manager_app/core/run/manager_channel_banner.dart';
 import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/core/run/run_termination_provider.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
+import 'package:manager_app/core/wakelock/wakelock_port.dart';
 import 'package:manager_app/features/drive_mode/presentation/drive_mode_providers.dart';
 import 'package:manager_app/features/home/data/models/manager_run.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
@@ -51,6 +52,12 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
   /// 근거가 없다.
   PositionAvailability? _positionAvailability;
 
+  /// [initState] 에서 받아 둔 포트 — `ConsumerState.dispose()` 안에서는
+  /// `ref.read` 가 안전하지 않다(위젯이 이미 unmount 되는 중이라 Riverpod
+  /// 이 `StateError` 를 던진다). 필드에 저장해 두면 dispose 에서 이 값만
+  /// 쓰면 되고 `ref` 를 다시 묻지 않는다.
+  late final WakelockPort _wakelockPort;
+
   /// [_positionAvailability] 를 화면 문구로 옮긴다 — 정상(`available`)이거나
   /// 아직 모르면(`null`) 아무것도 보여주지 않는다.
   String? get _positionGuidance => switch (_positionAvailability) {
@@ -62,8 +69,20 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
   };
 
   @override
+  void initState() {
+    super.initState();
+    // F2 — 백그라운드 위치 송신은 범위 밖이라, 운행 화면이 켜져 있는
+    // 것이 지금 GPS 송신을 지키는 유일한 수단이다(M-B 2항). 화면에
+    // 머무는 동안은 역할·운행 상태와 무관하게 켠다 — `_buildBody` 가
+    // 이 화면에 들어오는 모든 사용자(기사·동승자)에게 공통이다.
+    _wakelockPort = ref.read(wakelockPortProvider);
+    unawaited(_wakelockPort.enable());
+  }
+
+  @override
   void dispose() {
     _positionTimer?.cancel();
+    unawaited(_wakelockPort.disable());
     super.dispose();
   }
 
