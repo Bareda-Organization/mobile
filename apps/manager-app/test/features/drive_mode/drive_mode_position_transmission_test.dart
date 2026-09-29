@@ -228,52 +228,45 @@ void main() {
     );
   });
 
-  // F4 이월 3번 / F5 목표 10 — DriveModeScreen 이 화면에서 사라질 때
-  // (dispose) 위치 송신 타이머가 실제로 멈추는지 확인한다. 화면을 걷어낸
-  // 뒤에도 주기를 몇 번 더 흘려보내 전송 횟수가 더는 늘지 않는 것으로
-  // 판정한다 — 결함을 심어(dispose() 의 취소 호출을 지워) 이 시험만
-  // 실패하는지로 실제로 무는 것을 확인했다(원복 후 재확인 완료).
-  testWidgets('화면이 dispose 되면 위치 송신 타이머가 멈춘다', (tester) async {
+  // R33 M1 — 위치 송신은 화면이 아니라 앱 전역이다. 옛 시험(`화면이 dispose 되면 위치 송신
+  // 타이머가 멈춘다`, F4 이월 3번)은 "화면을 나가면 송신이 끊기는" 결함을 고정하고 있었다 —
+  // 반대로, 화면이 사라져도 송신이 이어지는 것을 지킨다. 화면만 걷고 ProviderScope 는 그대로 둔다
+  // (같은 overrides 목록 · 같은 위치의 ProviderScope 라 상태가 유지된다).
+  testWidgets('화면이 dispose 되어도 위치 송신은 계속된다', (tester) async {
     final source = _FakePositionSource(
       PositionSample(lat: 37.5, lng: 127, recordedAt: recordedAt),
     );
     final repository = _RecordingPositionRepository();
     const interval = PositionConstants.transmissionInterval;
+    final overrides = baseOverrides(
+      role: UserRole.driver,
+      runStatus: RunStatus.moving,
+      positionSource: source,
+      positionRepository: repository,
+    );
 
     await tester.pumpWidget(
-      _wrap(
-        const DriveModeScreen(),
-        baseOverrides(
-          role: UserRole.driver,
-          runStatus: RunStatus.moving,
-          positionSource: source,
-          positionRepository: repository,
-        ),
+      ProviderScope(
+        overrides: overrides,
+        child: const MaterialApp(home: DriveModeScreen()),
       ),
     );
     await tester.pump();
-
-    // 화면이 살아 있는 동안 최소 1회 전송을 확인해 둔다 — 타이머가
-    // 애초에 돌고 있었다는 것을 먼저 확보해야, 뒤이은 "0회 증가" 가
-    // "원래도 안 돌았다" 와 구별된다.
     await tester.pump(interval);
     expect(repository.calls, hasLength(1));
 
-    // 화면을 완전히 다른 위젯으로 교체 — DriveModeScreen 의
-    // State.dispose() 가 호출된다.
-    await tester.pumpWidget(const SizedBox.shrink());
+    // 운행 화면을 걷어낸다 — DriveModeScreen 의 State.dispose() 가 호출된다.
+    await tester.pumpWidget(
+      ProviderScope(overrides: overrides, child: const SizedBox.shrink()),
+    );
     await tester.pump();
-
     final callsAtDispose = repository.calls.length;
 
-    // dispose 이후 여러 주기를 흘려보내도 더는 전송이 늘지 않아야 한다.
     await tester.pump(interval * 3);
     expect(
       repository.calls.length,
-      callsAtDispose,
-      reason:
-          'dispose() 가 위치 송신 타이머를 멈추지 않으면 화면이 사라진 '
-          '뒤에도 전송이 계속 늘어난다',
+      callsAtDispose + 3,
+      reason: '송신은 화면이 아니라 운행 상태에 묶여 있어 화면이 사라져도 2초마다 이어져야 한다',
     );
   });
 

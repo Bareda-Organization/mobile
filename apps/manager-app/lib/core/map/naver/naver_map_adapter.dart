@@ -92,7 +92,7 @@ class _NaverMapAdapterState extends State<NaverMapAdapter> {
   /// 지금 지도 위에 올라가 있는 선의 점 수(id 별) — 바뀌면 지우고 다시 그린다.
   final Map<String, int> _polylinePointCounts = {};
 
-  /// 마지막으로 카메라를 맞출 때 본 마커 구성 — 이 값이 바뀔 때만 다시 맞춘다.
+  /// 마지막으로 카메라를 맞출 때 넣은 마커 id 목록 — 이 값이 바뀔 때만 다시 맞춘다.
   String? _fittedSignature;
 
   @override
@@ -174,16 +174,15 @@ class _NaverMapAdapterState extends State<NaverMapAdapter> {
     await _fitCameraIfNeeded(controller);
   }
 
-  /// [MapSurface.fitToContent] — 마커 구성(id 목록)이 바뀐 때만 내용 전체가 보이게 맞춘다.
+  /// [MapSurface.fitToContent] — 맞춤 대상(`cameraFit` 이 정한 마커 id)이 바뀐 때만 다시 맞춘다.
+  /// 대상은 노선이고, 버스는 노선 근처일 때만 들어간다.
   Future<void> _fitCameraIfNeeded(NaverMapController controller) async {
     if (!widget.fitToContent) return;
-    final signature = (widget.markers.map((m) => m.id).toList()..sort()).join(
-      ',',
-    );
-    if (signature == _fittedSignature) return;
-    final bounds = contentBounds(widget.markers, widget.polylines);
-    if (bounds == null) return;
-    _fittedSignature = signature;
+    final fit = cameraFit(widget.markers, widget.polylines);
+    if (fit == null) return;
+    if (fit.signature == _fittedSignature) return;
+    _fittedSignature = fit.signature;
+    final bounds = fit.bounds;
     if (bounds.isPoint) {
       await controller.updateCamera(
         NCameraUpdate.scrollAndZoomTo(

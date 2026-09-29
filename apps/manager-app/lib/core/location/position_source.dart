@@ -10,7 +10,7 @@ import 'package:geolocator/geolocator.dart';
 /// [availability] 로 그 이유를 구별한다 — 좌표를 지어내 보내면 근접
 /// 알림(NTF-04) 판정이 실제 위치와 어긋나므로, 화면은 안내만 보여주고
 /// 전송 자체를 건너뛴다(기존 자바독의 근거 그대로). 전송
-/// 파이프라인(`drive_mode_screen.dart` 의 타이머·`PositionRepository`)은
+/// 파이프라인(`position_transmitter.dart` 의 타이머·`PositionRepository`)은
 /// 이 인터페이스만 보고 구현을 모른다.
 // `di.dart` 의 Provider<PositionSource> 조립 지점과 맞추려 인터페이스로
 // 둔다(CONVENTIONS_FLUTTER.md §2, DelayRepository 등 여러 메서드짜리와
@@ -24,13 +24,13 @@ abstract interface class PositionSource {
   /// 문제" 를 구별해 안내 문구를 낼 수 있게 한다(LOC-01 할 일 2).
   PositionAvailability get availability;
 
-  /// 위치 스트림 구독을 시작한다(`Ruling 360`) — 운행 화면 진입 시 기사만
-  /// 부른다(`drive_mode_screen.dart` `initState`, `canTransmitPosition`
+  /// 위치 스트림 구독을 시작한다(`Ruling 360`) — 운행 중인 기사 회차가 생기면
+  /// 앱 전역 송신기(`position_transmitter.dart`)가 부른다(`canTransmitPosition`
   /// 게이트). 이미 시작됐으면 아무 것도 하지 않는다(멱등) — 재빌드가
   /// 중복 구독을 만들지 않는다.
   void start();
 
-  /// 위치 스트림 구독을 멈춘다 — 운행 종료 또는 화면 dispose 시 부른다.
+  /// 위치 스트림 구독을 멈춘다 — 운행 종료·로그아웃 등 송신기가 멎을 때 부른다.
   /// [start] 로 켜진 Android 포그라운드 서비스 알림·iOS 백그라운드 갱신도
   /// 이 호출로 함께 멎는다. 이미 멈췄으면 아무 것도 하지 않는다(멱등).
   void stop();
