@@ -568,17 +568,17 @@ void main() {
     });
 
     testWidgets('명단이 비어 있어도 배너가 뜬다', (tester) async {
-      final emptyRoster = RosterResponse(
+      const emptyRoster = RosterResponse(
         runId: runId,
         busNo: '3호차',
         direction: RunDirection.toAcademy,
-        counts: const RosterCounts(
+        counts: RosterCounts(
           boarded: 0,
           waiting: 0,
           noShow: 0,
           absentN: 0,
         ),
-        stops: const [],
+        stops: [],
       );
 
       await tester.pumpWidget(

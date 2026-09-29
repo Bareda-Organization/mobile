@@ -7,7 +7,6 @@ import 'package:baraeda_core/baraeda_core.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage_platform_interface/flutter_secure_storage_platform_interface.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:manager_app/core/run/manager_run_channel.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import '../support/real_backend_target.dart';
 

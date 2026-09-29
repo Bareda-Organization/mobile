@@ -90,6 +90,10 @@ class _RunEndScreenState extends ConsumerState<RunEndScreen> {
     }
   }
 
+  /// 접수 시각(기기 시간대) — 한 줄 80자 제한 안에 두려고 뺐다.
+  String get _reportedTime =>
+      DateFormat('HH:mm:ss').format(_result!.reportedAt.toLocal());
+
   @override
   Widget build(BuildContext context) {
     final runId = ref.watch(selectedRunIdProvider);
@@ -176,9 +180,7 @@ class _RunEndScreenState extends ConsumerState<RunEndScreen> {
         if (_result != null) ...[
           AlertBanner(
             tone: AlertTone.boarded,
-            body:
-                '보고가 접수됐습니다 '
-                '(${DateFormat('HH:mm:ss').format(_result!.reportedAt.toLocal())})',
+            body: '보고가 접수됐습니다 ($_reportedTime)',
           ),
           const SizedBox(height: 12),
         ],

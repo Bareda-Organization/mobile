@@ -11,6 +11,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:manager_app/core/map/map_surface.dart';
+import 'package:manager_app/core/map/naver/serial_sync.dart';
 import 'package:manager_app/core/map/naver/stop_pin.dart';
 
 /// 빌드·실행 시점에 `--dart-define=NAVER_MAP_CLIENT_ID=<값>` 으로 주입한다.
@@ -79,6 +80,12 @@ class _NaverMapAdapterState extends State<NaverMapAdapter> {
   /// 지도가 준비된 뒤에만 채워지는 컨트롤러 — 그 전에는 오버레이를 만질 수 없다.
   NaverMapController? _controller;
 
+  /// 오버레이 동기화를 한 번에 하나만 — 겹치면 핀 이미지가 빈 파일로 저장돼 iOS 에서 앱이 종료된다([SerialSync]).
+  late final SerialSync _sync = SerialSync(() async {
+    final controller = _controller;
+    if (controller != null && mounted) await _syncOverlays(controller);
+  });
+
   /// 지금 지도 위에 올라가 있는 마커(id 별) — 좌표가 바뀐 것만 옮기고 없어진 것은 지우려고 든다.
   final Map<String, NMarker> _markersById = {};
 
@@ -92,7 +99,7 @@ class _NaverMapAdapterState extends State<NaverMapAdapter> {
   void didUpdateWidget(covariant NaverMapAdapter oldWidget) {
     super.didUpdateWidget(oldWidget);
     final controller = _controller;
-    if (controller != null) unawaited(_syncOverlays(controller));
+    if (controller != null) unawaited(_sync.request());
   }
 
   @override
@@ -118,7 +125,7 @@ class _NaverMapAdapterState extends State<NaverMapAdapter> {
       ),
       onMapReady: (controller) async {
         _controller = controller;
-        await _syncOverlays(controller);
+        await _sync.request();
         widget.onReady?.call();
       },
     );
