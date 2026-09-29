@@ -22,12 +22,14 @@ class _FakeReportsRepository implements ReportsRepository {
   final ReportResult? result;
   ReportRequest? lastRequest;
   String? lastRunId;
+  int callCount = 0;
 
   @override
   Future<ReportResult> submitReport({
     required String runId,
     required ReportRequest request,
   }) async {
+    callCount++;
     lastRunId = runId;
     lastRequest = request;
     return result!;
@@ -181,5 +183,81 @@ void main() {
     final select = tester.widget<BaraedaSelect>(find.byType(BaraedaSelect));
     expect(select.enabled, isFalse);
     expect(select.options, isEmpty);
+  });
+
+  // R32 M11
+  testWidgets('상황 메모가 필수임을 라벨에 밝힌다', (tester) async {
+    await tester.pumpWidget(
+      _wrap(const RunEndScreen(), [
+        selectedRunIdProvider.overrideWith((ref) => runId),
+        lastArriveResultProvider.overrideWith((ref) => null),
+      ]),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('상황 메모 (필수)'), findsOneWidget);
+  });
+
+  testWidgets('보호자 부재인데 대상 학생이 없으면 이유를 알려 준다', (tester) async {
+    await tester.pumpWidget(
+      _wrap(const RunEndScreen(), [
+        selectedRunIdProvider.overrideWith((ref) => runId),
+        lastArriveResultProvider.overrideWith((ref) => null),
+      ]),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('보호자 부재로 보고할 학생이 없습니다 — 혼자 귀가할 수 없는 학생이 탑승 중일 때만 고를 수 있습니다'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('대상 학생이 있으면 빈 목록 안내는 없다', (tester) async {
+    await tester.pumpWidget(
+      _wrap(const RunEndScreen(), [
+        selectedRunIdProvider.overrideWith((ref) => runId),
+        lastArriveResultProvider.overrideWith(
+          (ref) => _terminationWith(
+            finishPending: true,
+            remaining: const [
+              RemainingRider(riderId: 'r1', name: '김바래', stopName: 'A정류장'),
+            ],
+          ),
+        ),
+      ]),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('보고할 학생이 없습니다'), findsNothing);
+  });
+
+  testWidgets('접수된 뒤에는 제출 버튼이 꺼져 같은 보고가 두 번 나가지 않는다', (tester) async {
+    final fakeRepo = _FakeReportsRepository(
+      result: ReportResult(
+        reportId: 'rep-1',
+        reportedAt: DateTime(2026, 9, 12, 8, 31, 5),
+      ),
+    );
+    await tester.pumpWidget(
+      _wrap(const RunEndScreen(), [
+        selectedRunIdProvider.overrideWith((ref) => runId),
+        lastArriveResultProvider.overrideWith((ref) => null),
+        reportsRepositoryProvider.overrideWithValue(fakeRepo),
+      ]),
+    );
+
+    await tester.enterText(find.byType(TextField), '보호자가 안 나왔습니다');
+    await tester.tap(find.text('보고 제출'));
+    await tester.pumpAndSettle();
+    expect(fakeRepo.callCount, 1);
+
+    final button = tester.widget<BaraedaButton>(
+      find.widgetWithText(BaraedaButton, '보고 제출'),
+    );
+    expect(button.onPressed, isNull);
+    await tester.tap(find.text('보고 제출'), warnIfMissed: false);
+    await tester.pumpAndSettle();
+    expect(fakeRepo.callCount, 1);
   });
 }

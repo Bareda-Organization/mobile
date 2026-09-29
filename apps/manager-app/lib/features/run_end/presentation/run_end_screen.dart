@@ -209,10 +209,18 @@ class _RunEndScreenState extends ConsumerState<RunEndScreen> {
             enabled: !_submitting && remaining.isNotEmpty,
             onChanged: (value) => setState(() => _selectedRiderId = value),
           ),
+          // 대상이 없으면 선택 칸이 왜 꺼져 있는지 알린다(R32 M11).
+          if (remaining.isEmpty)
+            const Padding(
+              padding: EdgeInsets.only(top: 8),
+              child: Text(
+                '보호자 부재로 보고할 학생이 없습니다 — 혼자 귀가할 수 없는 학생이 탑승 중일 때만 고를 수 있습니다',
+              ),
+            ),
         ],
         const SizedBox(height: 12),
         BaraedaTextarea(
-          label: '상황 메모',
+          label: '상황 메모 (필수)',
           hint: '무슨 일이 있었는지 적어 주세요',
           enabled: !_submitting,
           controller: _memoController,
@@ -221,7 +229,10 @@ class _RunEndScreenState extends ConsumerState<RunEndScreen> {
         BaraedaButton(
           label: '보고 제출',
           size: BaraedaButtonSize.lg,
-          onPressed: _submitting ? null : () => _submit(runId),
+          // 접수된 뒤에는 끈다 — 다시 누르면 같은 보고가 한 번 더 관계자에게 통지된다(R32 M11).
+          onPressed: (_submitting || _result != null)
+              ? null
+              : () => _submit(runId),
         ),
       ],
     );
