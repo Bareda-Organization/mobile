@@ -4,6 +4,7 @@
 /// 에러 매핑, 토큰 저장을 공유한다. 구조는 `CONVENTIONS_FLUTTER.md §2` 를 따른다.
 library;
 
+export 'async/serial_sync.dart';
 export 'auth/account_role.dart';
 export 'auth/account_status.dart';
 export 'auth/auth_api.dart';

@@ -1,7 +1,7 @@
 import 'dart:async';
 
+import 'package:baraeda_core/baraeda_core.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:manager_app/core/map/naver/serial_sync.dart';
 
 /// 지도 오버레이 동기화가 겹쳐 돌지 않는지 — 겹치면 같은 승하차지 핀 이미지를 두 번 동시에 만들다
 /// 빈 이미지 파일이 생기고, 네이버 SDK(iOS)가 그 파일을 읽다 앱이 종료된다(2026-09-30 시뮬레이터 실측).

@@ -8,10 +8,10 @@ library;
 
 import 'dart:async';
 
+import 'package:baraeda_core/baraeda_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:manager_app/core/map/map_surface.dart';
-import 'package:manager_app/core/map/naver/serial_sync.dart';
 import 'package:manager_app/core/map/naver/stop_pin.dart';
 
 /// 빌드·실행 시점에 `--dart-define=NAVER_MAP_CLIENT_ID=<값>` 으로 주입한다.
