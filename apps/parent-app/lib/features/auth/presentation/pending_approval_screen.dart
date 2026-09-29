@@ -112,6 +112,9 @@ class _PendingApprovalScreenState extends ConsumerState<PendingApprovalScreen> {
               submittingReapply: _submittingReapply,
               reapplyError: _reapplyError,
               onLogout: _logout,
+              onRefresh: () => setState(() {
+                _statusFuture = ref.read(authRepositoryProvider).signupStatus();
+              }),
               onStartReapply: () => setState(() => _reapplying = true),
               onAcademySelected: (academy) =>
                   setState(() => _newAcademy = academy),
@@ -154,6 +157,7 @@ class _StatusBody extends StatelessWidget {
     required this.submittingReapply,
     required this.reapplyError,
     required this.onLogout,
+    required this.onRefresh,
     required this.onStartReapply,
     required this.onAcademySelected,
     required this.onSubmitReapply,
@@ -166,6 +170,7 @@ class _StatusBody extends StatelessWidget {
   final bool submittingReapply;
   final String? reapplyError;
   final VoidCallback onLogout;
+  final VoidCallback onRefresh;
   final VoidCallback onStartReapply;
   final ValueChanged<AcademySummary> onAcademySelected;
   final VoidCallback onSubmitReapply;
@@ -199,6 +204,14 @@ class _StatusBody extends StatelessWidget {
           ),
           _InfoRow(label: '현재 상태', value: _isRejected ? '거절됨' : '승인 대기'),
           _InfoRow(label: '학원 문의처', value: status.academyContact),
+          const SizedBox(height: BaraedaSpacing.space4),
+          // R32 P9 — 상태를 처음 한 번만 조회해, 승인·거절이 나도 앱을 껐다 켜야 알 수 있었다.
+          BaraedaButton(
+            label: '상태 다시 확인',
+            variant: BaraedaButtonVariant.secondary,
+            block: true,
+            onPressed: onRefresh,
+          ),
           const SizedBox(height: BaraedaSpacing.space6),
           const Text('단말', style: BaraedaTypography.h3),
           const SizedBox(height: BaraedaSpacing.space2),

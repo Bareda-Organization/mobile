@@ -19,6 +19,12 @@ class _StubAuthRepository implements AuthRepository {
   String? unregisteredToken;
   int logoutCallCount = 0;
 
+  /// `signupStatus` 호출 횟수 — [다시 확인] 이 실제로 서버를 다시 부르는지 본다.
+  int signupStatusCalls = 0;
+
+  /// 두 번째 조회부터 거절로 응답한다(관리자가 그 사이에 거절한 상황).
+  bool rejectedFromSecondCall = false;
+
   @override
   Future<List<AcademySummary>> searchAcademies(String query) async => [];
 
@@ -27,14 +33,19 @@ class _StubAuthRepository implements AuthRepository {
       throw UnimplementedError();
 
   @override
-  Future<SignupStatusResponse> signupStatus() async => SignupStatusResponse(
-    status: AccountStatus.pending,
-    academyName: '바래다학원',
-    academyRegion: '서울',
-    academyCode: 'A-001',
-    requestedAt: DateTime(2026, 9),
-    academyContact: '02-000-0000',
-  );
+  Future<SignupStatusResponse> signupStatus() async {
+    signupStatusCalls++;
+    return SignupStatusResponse(
+      status: rejectedFromSecondCall && signupStatusCalls > 1
+          ? AccountStatus.rejected
+          : AccountStatus.pending,
+      academyName: '바래다학원',
+      academyRegion: '서울',
+      academyCode: 'A-001',
+      requestedAt: DateTime(2026, 9),
+      academyContact: '02-000-0000',
+    );
+  }
 
   @override
   Future<ReapplyResponse> reapply({required String academyId}) =>
@@ -123,6 +134,19 @@ Future<void> _pumpPendingApproval(
 }
 
 void main() {
+  // R32 P9 — 상태를 처음 한 번만 조회해, 관리자가 승인·거절해도 앱을 껐다 켜야 알 수 있었다.
+  testWidgets('P9 [상태 다시 확인] 을 누르면 승인 상태를 다시 조회해 화면에 반영한다', (tester) async {
+    final authRepository = _StubAuthRepository()..rejectedFromSecondCall = true;
+    await _pumpPendingApproval(tester, authRepository);
+    expect(find.text('가입 승인을 기다리고 있습니다'), findsOneWidget);
+
+    await tester.tap(find.text('상태 다시 확인'));
+    await tester.pumpAndSettle();
+
+    expect(authRepository.signupStatusCalls, 2);
+    expect(find.text('가입이 거절되었습니다'), findsOneWidget);
+  });
+
   testWidgets('가입 승인 대기 화면에 단말 등록 패널이 도달 가능하다', (tester) async {
     await _pumpPendingApproval(tester, _StubAuthRepository());
 
