@@ -47,29 +47,6 @@ void main() {
     });
   });
 
-  group('wsUrlFromApiBaseUrl', () {
-    test('http → ws, 경로는 /ws/location 으로 고정', () {
-      expect(
-        wsUrlFromApiBaseUrl('http://localhost:8161/api/v1'),
-        'ws://localhost:8161/ws/location',
-      );
-    });
-
-    test('https → wss (배포 환경, baraeda_core 시험에는 없는 분기)', () {
-      expect(
-        wsUrlFromApiBaseUrl('https://api.example.com/api/v1'),
-        'wss://api.example.com/ws/location',
-      );
-    });
-
-    test('쿼리·프래그먼트가 있어도 경로만 교체된다', () {
-      expect(
-        wsUrlFromApiBaseUrl('http://localhost:8080/api/v1?x=1'),
-        'ws://localhost:8080/ws/location',
-      );
-    });
-  });
-
   group('dispatchManagerChannelEvent', () {
     // 5개 콜백 중 정확히 하나만 불렸는지 확인하기 위해 매번 호출 횟수를
     // 전부 세고, 시험마다 "그 하나만 1이고 나머지는 0" 을 함께 단언한다.

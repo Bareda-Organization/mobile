@@ -28,4 +28,5 @@ export 'websocket/ws_channel.dart';
 export 'websocket/ws_connection_state.dart';
 export 'websocket/ws_event_type.dart';
 export 'websocket/ws_payloads.dart';
+export 'websocket/ws_url.dart';
 export 'websocket/websocket_envelope.dart';

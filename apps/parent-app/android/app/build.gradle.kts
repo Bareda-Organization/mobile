@@ -6,7 +6,9 @@ plugins {
 
 android {
     namespace = "com.baraeda.parent_app"
-    compileSdk = flutter.compileSdkVersion
+    // flutter_secure_storage 11 이 compileSdk 37 이상을 요구한다(Flutter 기본값 36 이면 출시 빌드가
+    // checkReleaseAarMetadata 에서 실패). 컴파일 기준만 올리고 동작 기준인 targetSdk 는 그대로 둔다.
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

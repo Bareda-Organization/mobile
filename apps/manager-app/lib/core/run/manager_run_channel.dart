@@ -59,28 +59,6 @@ ManagerChannelStatus mapConnectionState(WsConnectionState state) =>
       WsConnectionState.gaveUp => ManagerChannelStatus.gaveUp,
     };
 
-/// REST `baseUrl`(`.../api/v1`)에서 STOMP 엔드포인트 URL 을 유도한다 —
-/// `baraeda_core` 자체의 `test/integration/baraeda_websocket_client_connect_test.dart`
-/// 가 쓰는 것과 같은 조립 방식이다(스킴 교체 + 경로를 `/ws/location` 으로
-/// 고정). 그 시험은 항상 `http://localhost:...` 만 다뤄 무조건 `ws` 로
-/// 바꾸지만, 이 함수는 배포 환경의 `https` 도 받을 수 있어야 하므로
-/// `https` → `wss` 분기를 추가했다(그 테스트에는 없는 판단 — 보고서 §2).
-String wsUrlFromApiBaseUrl(String apiBaseUrl) {
-  final uri = Uri.parse(apiBaseUrl);
-  final wsScheme = uri.scheme == 'https' ? 'wss' : 'ws';
-  // 쿼리·프래그먼트는 REST baseUrl 쪽 값이라 STOMP 엔드포인트에는 의미가
-  // 없어 아예 뺀다 — `Uri.replace(query: '')` 는 "빈 쿼리가 있다" 로 남아
-  // `?` 를 그대로 찍으므로 (`Uri.replace` 는 인자를 안 주면 원본 값을
-  // 물려주고, 지우려면 새로 만드는 수밖에 없다) `Uri()` 로 새로 만든다.
-  return Uri(
-    scheme: wsScheme,
-    userInfo: uri.userInfo.isEmpty ? null : uri.userInfo,
-    host: uri.host,
-    port: uri.hasPort ? uri.port : null,
-    path: '/ws/location',
-  ).toString();
-}
-
 /// `WsEventType` → 화면 무효화 대상 매핑. [WebSocketEnvelope] 전체가 아니라
 /// [WsEventType] 만 받는다 — 이 채널이 다루는 5종 전부 "받으면 해당 목록을
 /// 다시 조회한다"만 하고 payload 필드를 직접 쓰지 않기 때문이다(로스터·명단

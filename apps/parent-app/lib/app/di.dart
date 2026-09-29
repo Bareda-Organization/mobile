@@ -69,15 +69,12 @@ final apiClientProvider = Provider<ApiClient>((ref) {
 /// (`live_map_providers.dart`)이 필요할 때만 걸고 dispose 시 반드시
 /// 해지하므로, 이 provider 는 연결 수명만 책임진다.
 ///
-/// URL 은 `ApiConstants.baseUrl`(REST) 을 스킴만 `ws` 로 바꿔 유도한다 —
-/// `baraeda_websocket_client_connect_test.dart` 와 같은 변환 규칙이다.
-/// 리터럴 포트를 박지 않는 이유도 같다 — 인자를 빠뜨리면 기본값인
-/// `localhost:8080` 으로 조용히 흘러 들어간다.
+/// URL 은 `ApiConstants.baseUrl`(REST) 에서 공용 `wsUrlFromApiBaseUrl` 로
+/// 유도한다 — 배포 서버(`https`)면 `wss` 가 돼야 해서 스킴을 여기서 박지 않는다
+/// (`test/architecture/ws_url_boundary_test.dart`).
 final webSocketClientProvider = Provider<BaraedaWebSocketClient>((ref) {
-  final uri = Uri.parse(ApiConstants.baseUrl);
-  final wsUrl = uri.replace(scheme: 'ws', path: '/ws/location').toString();
   final client = BaraedaWebSocketClient(
-    url: wsUrl,
+    url: wsUrlFromApiBaseUrl(ApiConstants.baseUrl),
     tokenStorage: ref.watch(tokenStorageProvider),
     // REST 401 재발급과 같은 창구를 쓴다 — 동시 재발급 경합을 막는 이유는
     // `token_refresher.dart` 문서를 본다.
