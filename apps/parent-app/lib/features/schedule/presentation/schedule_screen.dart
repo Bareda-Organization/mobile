@@ -6,6 +6,7 @@ import 'package:parent_app/app/app_routes.dart';
 import 'package:parent_app/core/auth/auth_providers.dart';
 import 'package:parent_app/core/students/presentation/selected_student.dart';
 import 'package:parent_app/core/students/presentation/student_providers.dart';
+import 'package:parent_app/core/ui/confirm_dialog.dart';
 import 'package:parent_app/features/schedule/presentation/schedule_providers.dart';
 import 'package:parent_app/features/schedule/presentation/widgets/change_request_panel.dart';
 import 'package:parent_app/features/schedule/presentation/widgets/weekly_address_editor.dart';
@@ -22,10 +23,30 @@ class ScheduleScreen extends ConsumerWidget {
     final capabilities = ref.watch(roleCapabilitiesProvider);
     final canEdit = capabilities?.canChangeBoardingLocation ?? false;
 
-    return Scaffold(
-      appBar: const AppHeader(title: '등하원 일정'),
-      body: SafeArea(
-        child: canEdit ? const _ParentSection() : const _StudentSection(),
+    final edits = ref.watch(scheduleUnsavedEditsProvider);
+
+    // R32 P14 — 주소·변경 요청을 적다가 뒤로 가면 확인 없이 입력이 사라졌다. 적은 것이 있을 때만 묻는다.
+    return ListenableBuilder(
+      listenable: edits,
+      builder: (context, _) => PopScope(
+        canPop: !edits.hasAny,
+        onPopInvokedWithResult: (didPop, _) async {
+          if (didPop) return;
+          final leave = await showConfirmDialog(
+            context,
+            title: '입력을 그만할까요?',
+            body: '저장하지 않은 내용은 사라집니다.',
+            confirmLabel: '나가기',
+            cancelLabel: '계속 입력',
+          );
+          if (leave && context.mounted) context.pop();
+        },
+        child: Scaffold(
+          appBar: const AppHeader(title: '등하원 일정'),
+          body: SafeArea(
+            child: canEdit ? const _ParentSection() : const _StudentSection(),
+          ),
+        ),
       ),
     );
   }

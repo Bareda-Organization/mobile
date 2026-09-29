@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
@@ -6,6 +8,7 @@ import 'package:parent_app/app/di.dart';
 import 'package:parent_app/core/common/run_direction.dart';
 import 'package:parent_app/features/schedule/domain/weekly_address_entry.dart';
 import 'package:parent_app/features/schedule/presentation/schedule_providers.dart';
+import 'package:parent_app/features/schedule/presentation/unsaved_edits.dart';
 
 /// §3.7 요일×방향 주소 편집기.
 ///
@@ -35,16 +38,41 @@ class _WeeklyAddressEditorState extends ConsumerState<WeeklyAddressEditor> {
   Weekday _draftWeekday = Weekday.mon;
   RunDirection _draftDirection = RunDirection.toAcademy;
   final _draftController = TextEditingController();
+
+  /// 저장했거나 불러온 시점의 글자 — 이것과 다르면 저장하지 않은 입력이다(P14).
+  final Map<String, String> _baseline = {};
   bool _submitting = false;
   String? _banner;
   AlertTone _bannerTone = AlertTone.info;
 
+  /// dispose 에서는 `ref` 를 못 쓰므로 미리 잡아 둔다.
+  late final UnsavedEdits _edits;
+
+  @override
+  void initState() {
+    super.initState();
+    _edits = ref.read(scheduleUnsavedEditsProvider);
+    _draftController.addListener(_reportDirty);
+  }
+
   /// 항목마다 입력 controller 를 처음 필요할 때 만든다 — 저장 뒤 목록이 새로 오면 새 조합이 생길 수 있다.
   TextEditingController _controllerFor(WeeklyAddressEntry entry) =>
-      _controllers.putIfAbsent(
-        _keyFor(entry),
-        () => TextEditingController(text: entry.address),
-      );
+      _controllers.putIfAbsent(_keyFor(entry), () {
+        _baseline[_keyFor(entry)] = entry.address;
+        return TextEditingController(text: entry.address)
+          ..addListener(_reportDirty);
+      });
+
+  bool get _isDirty => widget.entries.isEmpty
+      ? _draftController.text.trim().isNotEmpty
+      : widget.entries.any(
+          (entry) => _controllerFor(entry).text != _baseline[_keyFor(entry)],
+        );
+
+  /// 저장하지 않은 입력이 있는지 일정 화면에 알린다(뒤로가기 확인용).
+  void _reportDirty() {
+    _edits.mark(this, dirty: _isDirty);
+  }
 
   @override
   void dispose() {
@@ -53,6 +81,8 @@ class _WeeklyAddressEditorState extends ConsumerState<WeeklyAddressEditor> {
     }
     _draftController.dispose();
     super.dispose();
+    // 화면이 그려지는 도중에 구독자(일정 화면)를 흔들지 않도록 한 박자 뒤에 지운다.
+    scheduleMicrotask(() => _edits.mark(this, dirty: false));
   }
 
   String _keyFor(WeeklyAddressEntry entry) =>
@@ -97,6 +127,12 @@ class _WeeklyAddressEditorState extends ConsumerState<WeeklyAddressEditor> {
         _bannerTone = AlertTone.boarded;
         _banner = '저장했습니다';
       });
+      // 저장한 글자가 새 기준이다 — 이후로는 고친 것이 없으므로 뒤로가기 확인이 뜨지 않는다.
+      for (final entry in widget.entries) {
+        _baseline[_keyFor(entry)] = _controllerFor(entry).text;
+      }
+      _draftController.clear();
+      _reportDirty();
       ref.invalidate(weeklyAddressProvider(widget.studentId));
     } on Failure catch (failure) {
       if (!mounted) return;

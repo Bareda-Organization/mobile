@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
@@ -8,6 +10,7 @@ import 'package:parent_app/core/runs/domain/student_run.dart';
 import 'package:parent_app/core/runs/presentation/run_providers.dart';
 import 'package:parent_app/core/ui/format_date_time.dart';
 import 'package:parent_app/features/schedule/presentation/schedule_providers.dart';
+import 'package:parent_app/features/schedule/presentation/unsaved_edits.dart';
 
 /// 회차 선택 목록에 쓰는 표시 문구 — `방향 · 버스번호번`. 위젯 시험이
 /// 이 문구를 직접 적어 두면 라벨 문구(`RunDirection.label`)가 바뀔 때
@@ -37,14 +40,31 @@ class _ChangeRequestPanelState extends ConsumerState<ChangeRequestPanel> {
   String? _banner;
   AlertTone _bannerTone = AlertTone.info;
 
+  /// dispose 에서는 `ref` 를 못 쓰므로 미리 잡아 둔다.
+  late final UnsavedEdits _edits;
+
   @override
   void initState() {
     super.initState();
+    _edits = ref.read(scheduleUnsavedEditsProvider);
     // 주소를 적는 동안 [제출할 수 없는 이유] 안내가 바로 사라지도록 글자 변화를 화면에 알린다.
-    _addressController.addListener(_onAddressChanged);
+    _addressController.addListener(_onInputChanged);
+    _reasonController.addListener(_reportDirty);
   }
 
-  void _onAddressChanged() => setState(() {});
+  void _onInputChanged() {
+    setState(() {});
+    _reportDirty();
+  }
+
+  /// 적어 둔 주소·사유가 있는지 일정 화면에 알린다(뒤로가기 확인용, R32 P14).
+  void _reportDirty() {
+    final dirty =
+        _reasonController.text.trim().isNotEmpty ||
+        (_type == ChangeRequestType.relocate &&
+            _addressController.text.trim().isNotEmpty);
+    _edits.mark(this, dirty: dirty);
+  }
 
   /// 지금 제출할 수 없다면 그 이유 — 제출 가능하면 null (R32 P12).
   String? get _missingInput {
@@ -61,6 +81,8 @@ class _ChangeRequestPanelState extends ConsumerState<ChangeRequestPanel> {
     _addressController.dispose();
     _reasonController.dispose();
     super.dispose();
+    // 화면이 그려지는 도중에 구독자(일정 화면)를 흔들지 않도록 한 박자 뒤에 지운다.
+    scheduleMicrotask(() => _edits.mark(this, dirty: false));
   }
 
   Future<void> _submit() async {
@@ -102,6 +124,10 @@ class _ChangeRequestPanelState extends ConsumerState<ChangeRequestPanel> {
             ? '승인 대기로 접수됐습니다${deadlineNote(result.deadlineAt)}.'
             : '변경 신청이 반영됐습니다.';
       });
+      // 접수한 내용은 더 이상 저장 안 된 입력이 아니다 — 비워서 같은 내용의 재접수도 막는다.
+      _addressController.clear();
+      _reasonController.clear();
+      _reportDirty();
       ref.invalidate(changeRequestsProvider(widget.studentId));
     } on Failure catch (failure) {
       if (!mounted) return;
@@ -182,9 +208,12 @@ class _ChangeRequestPanelState extends ConsumerState<ChangeRequestPanel> {
             BaraedaSelectOption('cancel', label: '탑승 취소'),
             BaraedaSelectOption('relocate', label: '승하차지 변경'),
           ],
-          onChanged: (value) => setState(
-            () => _type = ChangeRequestType.fromWireValue(value ?? 'cancel'),
-          ),
+          onChanged: (value) {
+            setState(
+              () => _type = ChangeRequestType.fromWireValue(value ?? 'cancel'),
+            );
+            _reportDirty();
+          },
         ),
         if (_type == ChangeRequestType.relocate) ...[
           const SizedBox(height: BaraedaSpacing.space2),

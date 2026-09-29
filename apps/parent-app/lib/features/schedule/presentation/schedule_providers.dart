@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:parent_app/app/di.dart';
 import 'package:parent_app/features/schedule/domain/weekly_address_entry.dart';
+import 'package:parent_app/features/schedule/presentation/unsaved_edits.dart';
 
 // `changeRequestsProvider`(§3.9)는 `home`(처리 대기 건수 배지, P-06) 도
 // 함께 쓰므로 `core/change_requests` 로 옮겼다 — `home_providers.dart` 가
@@ -20,3 +21,11 @@ final weeklyAddressProvider =
       final repository = ref.watch(weeklyAddressRepositoryProvider);
       return repository.getWeeklyAddress(studentId);
     });
+
+/// 일정 화면의 저장하지 않은 입력 모음 — 화면을 떠나면 함께 버린다(R32 P14).
+// ignore: specify_nonobvious_property_types
+final scheduleUnsavedEditsProvider = Provider.autoDispose<UnsavedEdits>((ref) {
+  final edits = UnsavedEdits();
+  ref.onDispose(edits.dispose);
+  return edits;
+});
