@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
@@ -17,12 +16,13 @@ import 'package:manager_app/core/run/run_termination_provider.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/core/wakelock/wakelock_port.dart';
 import 'package:manager_app/features/drive_mode/presentation/drive_mode_providers.dart';
-import 'package:manager_app/features/emergency/presentation/widgets/emergency_button.dart';
 import 'package:manager_app/features/drive_mode/presentation/widgets/drive_map_panel.dart';
+import 'package:manager_app/features/emergency/presentation/widgets/emergency_button.dart';
 import 'package:manager_app/features/home/data/models/manager_run.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
 import 'package:manager_app/features/position/data/models/position_request.dart';
 import 'package:manager_app/features/roster/data/models/roster_response.dart';
+import 'package:manager_app/features/roster/presentation/widgets/change_ack_banner.dart';
 
 /// DriveMode — 운행 시작(§4.4) · 승하차지 도착 처리(§4.5), 기사 전용
 /// (M-08·M-10, role_policy.dart `canOperateRun`).
@@ -275,6 +275,11 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
                 const SizedBox(height: 16),
                 DriveMapPanel(height: mapHeight, busPosition: _busPosition),
                 const SizedBox(height: 16),
+                // 노선 변경 확인(M-04, R32 M4) — 기사는 명단 화면에 가지 않으므로 여기서 확인한다.
+                ChangeAckBanner(
+                  runId: runId,
+                  ackRequired: run?.ackRequired ?? false,
+                ),
                 // rosterAsync.when(...) 의 모든 분기 바깥 — "명단 없음"(정상)과
                 // "연결 끊김"(비정상)을 구별해야 한다(목표 9, ManagerChannelBanner
                 // 문서 참고).

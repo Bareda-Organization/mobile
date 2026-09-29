@@ -12,12 +12,12 @@ import 'package:manager_app/core/run/manager_channel_banner.dart';
 import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/features/emergency/presentation/widgets/emergency_button.dart';
-import 'package:manager_app/features/home/presentation/home_providers.dart';
 import 'package:manager_app/features/offline_queue/domain/send_outcome.dart';
 import 'package:manager_app/features/roster/data/models/boarding_update_request.dart';
 import 'package:manager_app/features/roster/data/models/no_show_contact_request.dart';
 import 'package:manager_app/features/roster/data/models/roster_response.dart';
 import 'package:manager_app/features/roster/presentation/roster_providers.dart';
+import 'package:manager_app/features/roster/presentation/widgets/change_ack_banner.dart';
 
 /// StopRoster — 정류장별 탑승자 명단 (§4.2 M-03 · §4.6 M-12 · §4.7 M-13 ·
 /// §4.8 M-14 · §4.11 M-04 변경 확인).
@@ -29,10 +29,9 @@ import 'package:manager_app/features/roster/presentation/roster_providers.dart';
 /// 두지 않았다(정본 "권한 버스기사 · 동승자" 그대로). 배너 노출 여부는
 /// `selectedManagerRunProvider`(§4.1 `ack_required`, RUN-07)를 근거로
 /// 삼는다 — `GET /roster`(§4.2) 응답에는 이 플래그가 없어, 확인 응답이
-/// 성공하면 `todayRunsProvider` 를 무효화해 서버 값을 다시 받는다. 재요청이
-/// 끝나기 전 화면이 깜빡이지 않도록 `_changesAcked` 로 즉시 숨김도 함께
-/// 건다. 서버 쪽 미확인 표시는 관계자 대시보드(MON-05)의 몫이라 이 화면이
-/// 다시 확인하지 않는다.
+/// 성공하면 `todayRunsProvider` 를 무효화해 서버 값을 다시 받는다 — 띠와 그 동작은
+/// [ChangeAckBanner] 가 맡고 운행 화면도 같은 띠를 쓴다(R32 M4). 서버 쪽 미확인 표시는
+/// 관계자 대시보드(MON-05)의 몫이라 이 화면이 다시 확인하지 않는다.
 class RosterScreen extends ConsumerStatefulWidget {
   const RosterScreen({super.key});
 
@@ -43,8 +42,6 @@ class RosterScreen extends ConsumerStatefulWidget {
 class _RosterScreenState extends ConsumerState<RosterScreen> {
   String? _pendingRiderId;
   String? _errorMessage;
-  bool _acking = false;
-  bool _changesAcked = false;
 
   /// §1.7 M-06 — 통신 두절로 큐에 쌓인 승하차 처리를 알리는 문구
   /// ("처리되지 않았습니다 · 대기 중"). §1.9 는 성공을 미리 보여주는 것을
@@ -55,24 +52,6 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
   /// 도 같은 이유로 우회함 — baraeda_ui 는 이번 라운드 범위 밖). 이 화면
   /// 위쪽의 "변경 목록 확인" 안내와 같은 `AlertTone.moving` 을 재사용한다.
   String? _queueNotice;
-
-  Future<void> _ackChanges(String runId) async {
-    setState(() {
-      _acking = true;
-      _errorMessage = null;
-    });
-    try {
-      await ref.read(rosterRepositoryProvider).ackChanges(runId: runId);
-      ref.invalidate(todayRunsProvider);
-      if (!mounted) return;
-      setState(() => _changesAcked = true);
-    } on Failure catch (failure) {
-      if (!mounted) return;
-      setState(() => _errorMessage = describeFailure(failure));
-    } finally {
-      if (mounted) setState(() => _acking = false);
-    }
-  }
 
   Future<void> _updateStatus({
     required String runId,
@@ -225,7 +204,6 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
     final capabilities = ref.watch(roleCapabilitiesProvider);
     final canDecide = capabilities?.canDecideBoardingStatus ?? false;
     final run = ref.watch(selectedManagerRunProvider);
-    final hasChanges = !_changesAcked && (run?.ackRequired ?? false);
 
     // ManagerChannelBanner 는 rosterAsync.when(...) 의 모든 분기 바깥에
     // 둔다 — "명단 없음"(정상, data 분기)과 "연결 끊김"(비정상)이 화면에서
@@ -240,8 +218,12 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
           child: rosterAsync.when(
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (error, _) => Center(child: Text('명단을 불러오지 못했습니다: $error')),
-            data: (roster) =>
-                _buildRoster(runId, canDecide, hasChanges, roster),
+            data: (roster) => _buildRoster(
+              runId,
+              canDecide,
+              run?.ackRequired ?? false,
+              roster,
+            ),
           ),
         ),
       ],
@@ -251,24 +233,13 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
   Widget _buildRoster(
     String runId,
     bool canDecide,
-    bool hasChanges,
+    bool ackRequired,
     RosterResponse roster,
   ) {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        if (hasChanges) ...[
-          const AlertBanner(
-            tone: AlertTone.moving,
-            body: '승하차지·명단이 변경됐습니다 — 확인 후 계속 진행하세요',
-          ),
-          const SizedBox(height: 8),
-          BaraedaButton(
-            label: '변경 목록 확인',
-            onPressed: _acking ? null : () => _ackChanges(runId),
-          ),
-          const SizedBox(height: 16),
-        ],
+        ChangeAckBanner(runId: runId, ackRequired: ackRequired),
         Row(
           children: [
             Expanded(
