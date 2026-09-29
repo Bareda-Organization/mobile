@@ -187,6 +187,12 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
         actions: [
           // 비상(M-15, R32 M2) — 동승자도 발신한다. 노선·연결 상태와 무관하게 늘 보인다.
           const EmergencyButton(),
+          // 예외 보고(M-14, R32 M3) — 보호자 부재·도로 통제 등. 기사는 운행 화면의 종료 보고서로,
+          // 동승자는 여기서 보고한다.
+          TextButton(
+            onPressed: () => context.push(AppRoutes.runEnd),
+            child: const Text('예외 보고'),
+          ),
           if (caps?.canSendDelayNotification ?? false)
             TextButton(
               onPressed: () => context.push(AppRoutes.delay),

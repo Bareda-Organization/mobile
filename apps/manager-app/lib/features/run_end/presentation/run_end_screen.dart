@@ -5,9 +5,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/network/failure_messages.dart';
+import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/core/run/run_termination_provider.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/features/drive_mode/data/models/arrive_stop_result.dart';
+import 'package:manager_app/features/roster/presentation/roster_providers.dart';
 import 'package:manager_app/features/run_end/data/models/report_request.dart';
 import 'package:manager_app/features/run_end/data/models/report_result.dart';
 
@@ -18,6 +20,9 @@ import 'package:manager_app/features/run_end/data/models/report_result.dart';
 /// ([lastArriveResultProvider])을 그대로 재구성해 보여준다. 보고 작성
 /// (§4.13)은 기사·동승자 둘 다 가능해 role_policy.dart 에 capability 를
 /// 두지 않았다(`ReportsRepository` 주석과 같은 판단).
+///
+/// 동승자는 도착 처리 결과가 없어도 명단 화면의 `[예외 보고]` 로 이 화면에 들어온다(R32 M3) —
+/// 그때는 종료 요약 대신 "예외 보고" 화면이 되고, 보호자 부재 대상 학생은 명단에서 만든다.
 ///
 /// §4.11(변경 확인, M-04)은 이 화면이 아니라 StopRoster 의 몫이다
 /// (`roster_screen.dart` · `USER_FLOWS.md UF-D-02`) — 종료 시점의 변경
@@ -91,7 +96,9 @@ class _RunEndScreenState extends ConsumerState<RunEndScreen> {
     final termination = ref.watch(lastArriveResultProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('운행 종료')),
+      appBar: AppBar(
+        title: Text(termination == null ? '예외 보고' : '운행 종료'),
+      ),
       body: runId == null
           ? const Center(child: Text('선택된 운행이 없습니다 — 홈에서 운행을 선택하세요'))
           : SingleChildScrollView(
@@ -99,10 +106,12 @@ class _RunEndScreenState extends ConsumerState<RunEndScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _buildSummary(termination),
-                  const SizedBox(height: 20),
-                  const Divider(),
-                  const SizedBox(height: 12),
+                  if (termination != null) ...[
+                    _buildSummary(termination),
+                    const SizedBox(height: 20),
+                    const Divider(),
+                    const SizedBox(height: 12),
+                  ],
                   Text(
                     '현장 상황 보고',
                     style: Theme.of(context).textTheme.titleMedium,
@@ -115,17 +124,7 @@ class _RunEndScreenState extends ConsumerState<RunEndScreen> {
     );
   }
 
-  Widget _buildSummary(ArriveStopResult? termination) {
-    if (termination == null) {
-      // AlertTone.info 는 쓰지 않는다 — baraeda_ui 의 아이콘 매핑표
-      // (packages/baraeda_ui/lib/widgets/core/icon.dart)에 'info' 글리프가
-      // 없어 디버그 모드에서 단언 실패로 렌더링이 죽는다(F2 의
-      // pending_approval_screen.dart 도 같은 값을 써서 이미 잠재돼 있음 —
-      // baraeda_ui 는 범위 밖이라 그대로 두고 이 화면만 우회한다).
-      return const Center(
-        child: Text('종료 정보가 없습니다 — 운행 모드에서 최종 지점 도착 처리를 마치면 이 화면으로 이동합니다'),
-      );
-    }
+  Widget _buildSummary(ArriveStopResult termination) {
     final arrivedLabel = DateFormat(
       'HH:mm',
     ).format(termination.arrivedAt.toLocal());
@@ -143,8 +142,29 @@ class _RunEndScreenState extends ConsumerState<RunEndScreen> {
     );
   }
 
+  /// 보호자 부재 보고의 대상 학생. 도착 결과가 있으면 그 하차 대기 명단, 없으면(동승자가 명단에서
+  /// 들어온 경우) 명단에서 탑승 중이면서 혼자 귀가할 수 없는 학생이다(§4.13 · A-10).
+  List<({String riderId, String name})> _reportTargets(
+    ArriveStopResult? termination,
+  ) {
+    if (termination != null) {
+      return [
+        for (final rider in termination.remaining)
+          (riderId: rider.riderId, name: rider.name),
+      ];
+    }
+    final roster = ref.watch(rosterProvider).value;
+    if (roster == null) return const [];
+    return [
+      for (final stop in roster.stops)
+        for (final student in stop.students)
+          if (student.status == RiderStatus.boarded && !student.canGoAlone)
+            (riderId: student.riderId, name: student.name),
+    ];
+  }
+
   Widget _buildReportForm(String runId, ArriveStopResult? termination) {
-    final remaining = termination?.remaining ?? const <RemainingRider>[];
+    final remaining = _reportTargets(termination);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
