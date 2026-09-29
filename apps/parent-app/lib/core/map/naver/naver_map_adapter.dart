@@ -104,6 +104,7 @@ class _NaverMapAdapterState extends State<NaverMapAdapter> {
   /// 가짜 컨트롤러를 끼워 넣어 마커 동기화가 겹쳐 도는지 본다
   /// (`test/core/map/naver/naver_map_adapter_sync_test.dart` 전용).
   @visibleForTesting
+  // 시험 전용 메서드라 setter 로 바꾸지 않는다(getter 가 없어 다른 지적이 난다).
   // ignore: use_setters_to_change_properties
   void debugAttachControllerForTest(NaverMapController controller) {
     _controller = controller;
