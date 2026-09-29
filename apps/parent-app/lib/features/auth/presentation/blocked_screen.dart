@@ -11,8 +11,9 @@ import 'package:go_router/go_router.dart';
 /// 하지 않도록 예외 처리돼 있다).
 ///
 /// 차단 범위는 계정 단위뿐이다(IP 차단 아님) — 다른 기기·다른 계정 로그인은
-/// 이 화면과 무관하다. 자가 해제 수단은 없고 학원 메인 관리자만 해제할 수
-/// 있어, 이 화면은 안내와 로그인 화면 복귀만 제공한다.
+/// 이 화면과 무관하다. 자가 해제 수단은 없고 학원 메인 관리자만 해제할 수 있지만, 사용자에게는
+/// 그 구분을 알릴 이유가 없어 문의처를 "학원" 하나로만 적는다(R32 P13). 이 화면은 안내와
+/// 로그인 화면 복귀만 제공한다.
 class BlockedScreen extends StatelessWidget {
   /// `/blocked-account`. `LoginScreen` 이 `context.push` 로만 진입시킨다.
   const BlockedScreen({super.key});
@@ -28,8 +29,7 @@ class BlockedScreen extends StatelessWidget {
               icon: 'circle-alert',
               title: '계정이 차단되었습니다',
               body:
-                  '로그인 5회 실패로 계정이 잠겼습니다. 자가 해제는 지원하지 않으며, '
-                  '학원 관리자(메인 관리자)만 잠금을 해제할 수 있습니다. '
+                  '로그인 5회 실패로 계정이 잠겼습니다. 직접 풀 수는 없으니 '
                   '학원에 문의해 주세요.',
               action: BaraedaButton(
                 label: '로그인 화면으로 돌아가기',
