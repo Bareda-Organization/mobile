@@ -69,6 +69,16 @@ void main() {
     expect(find.text('123456'), findsOneWidget);
   });
 
+  // R32 P8 — 만료 시각이 `2026-09-12 00:00:00.000` 그대로 화면에 나왔다.
+  testWidgets('만료 시각을 읽기 쉬운 한국어 날짜로 보여준다', (tester) async {
+    await _pumpAsStudent(tester, _StubLinkRepository());
+
+    await tester.tap(find.text('코드 생성하기'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('만료 시각: 9월 12일 00:00'), findsOneWidget);
+  });
+
   testWidgets('학부모 갈래는 코드 입력만으로 연결이 완료된다', (tester) async {
     await _pumpAsParent(tester, _StubLinkRepository());
 

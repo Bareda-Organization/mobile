@@ -61,14 +61,38 @@ StudentRun _fixtureRun() => StudentRun(
   changeQuotaLeft: 1,
 );
 
-Future<void> _pumpAndSubmit(WidgetTester tester, Failure failure) async {
+Future<void> _pumpAndSubmit(WidgetTester tester, Failure failure) =>
+    _pumpAndSubmitWith(tester, _ThrowingChangeRequestRepository(failure));
+
+/// 접수 성공으로 응답하는 가짜 — 성공 안내 문구 시험용.
+class _AcceptingChangeRequestRepository implements ChangeRequestRepository {
+  _AcceptingChangeRequestRepository(this.result);
+
+  final ChangeRequestCreateResult result;
+
+  @override
+  Future<ChangeRequestCreateResult> createChangeRequest(
+    String studentId, {
+    required ChangeRequestType type,
+    required String runId,
+    String? newAddress,
+    String? reason,
+  }) async => result;
+
+  @override
+  Future<ChangeRequestPage> getChangeRequests(String studentId) async =>
+      const ChangeRequestPage(items: [], pendingCount: 0);
+}
+
+Future<void> _pumpAndSubmitWith(
+  WidgetTester tester,
+  ChangeRequestRepository repository,
+) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
         runRepositoryProvider.overrideWithValue(_FixedRunRepository()),
-        changeRequestRepositoryProvider.overrideWithValue(
-          _ThrowingChangeRequestRepository(failure),
-        ),
+        changeRequestRepositoryProvider.overrideWithValue(repository),
       ],
       // 실제 화면(schedule_screen.dart)도 `ListView` 안에 이 패널을 두므로
       // 여기서도 스크롤 가능한 조상을 둔다 — 그렇지 않으면 폼 높이가
@@ -100,6 +124,23 @@ void main() {
   // 그래서 문구 자체는 여기서 **손으로 적은 리터럴**로 한 번 고정한다.
   test('회차 라벨은 호차를 서버 값 그대로 쓴다 — 단위를 덧붙이지 않는다', () {
     expect(runOptionLabel(_fixtureRun()), '등원 · 1호차');
+  });
+
+  // R32 P8 — 승인 마감이 `2026-09-12 07:30:00.000` 그대로 나왔다.
+  testWidgets('P8 승인 대기 접수 안내의 마감 시각을 한국어 날짜로 보여준다', (tester) async {
+    await _pumpAndSubmitWith(
+      tester,
+      _AcceptingChangeRequestRepository(
+        ChangeRequestCreateResult(
+          changeRequestId: 'c-1',
+          status: ChangeRequestStatus.pending,
+          result: 'pending_approval',
+          deadlineAt: DateTime(2026, 9, 12, 7, 30),
+        ),
+      ),
+    );
+
+    expect(find.text('승인 대기로 접수됐습니다 (마감 9월 12일 07:30).'), findsOneWidget);
   });
 
   testWidgets('신청이 CHANGE_WINDOW_CLOSED 로 실패하면 운행 중 문구를 보여준다', (tester) async {

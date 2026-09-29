@@ -6,6 +6,7 @@ import 'package:parent_app/app/di.dart';
 import 'package:parent_app/core/change_requests/domain/change_request.dart';
 import 'package:parent_app/core/runs/domain/student_run.dart';
 import 'package:parent_app/core/runs/presentation/run_providers.dart';
+import 'package:parent_app/core/ui/format_date_time.dart';
 import 'package:parent_app/features/schedule/presentation/schedule_providers.dart';
 
 /// 회차 선택 목록에 쓰는 표시 문구 — `방향 · 버스번호번`. 위젯 시험이
@@ -79,7 +80,7 @@ class _ChangeRequestPanelState extends ConsumerState<ChangeRequestPanel> {
         _submitting = false;
         _bannerTone = AlertTone.boarded;
         _banner = result.result == 'pending_approval'
-            ? '승인 대기로 접수됐습니다 (마감 ${result.deadlineAt}).'
+            ? '승인 대기로 접수됐습니다${deadlineNote(result.deadlineAt)}.'
             : '변경 신청이 반영됐습니다.';
       });
       ref.invalidate(changeRequestsProvider(widget.studentId));

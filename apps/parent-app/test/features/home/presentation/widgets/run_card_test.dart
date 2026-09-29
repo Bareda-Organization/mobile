@@ -412,6 +412,35 @@ void main() {
     await tester.pumpAndSettle();
   });
 
+  // R32 P8 — 승인 마감이 `2026-09-12 07:30:00.000` 그대로 나왔다. 승인 주체도 사양(UF-P-05)
+  // 대로 학원 관리자다.
+  testWidgets('P8 승인 대기 안내의 마감 시각을 한국어 날짜로 보여준다', (tester) async {
+    await pumpRecording(
+      tester,
+      runStatus: RunStatus.confirmed,
+      confirmed: true,
+      recording: _RecordingRunRepository(
+        result: RunIntentResult(
+          result: RunIntentApplyResult.pendingApproval,
+          riding: true,
+          riderStatus: RiderStatus.waiting,
+          changeQuotaLeft: 0,
+          deadlineAt: DateTime(2026, 9, 12, 7, 30),
+        ),
+      ),
+    );
+
+    await tester.tap(find.byType(BaraedaSwitch));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('탑승 끄기'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('학원 관리자 승인 대기 중입니다 (마감 9월 12일 07:30).'),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('P4 확정 전이면 확정까지 남은 시간을 보여준다', (tester) async {
     // 출발 08:00 → 확정은 07:30. 지금 06:10 이면 1시간 20분 남았다.
     await pumpRecording(
@@ -447,7 +476,10 @@ class _FixedClock implements Clock {
 
 /// 호출된 `riding` 값을 순서대로 기록한다.
 class _RecordingRunRepository implements RunRepository {
-  _RecordingRunRepository({this.pending});
+  _RecordingRunRepository({this.pending, this.result});
+
+  /// 주어지면 `updateIntent` 가 이 결과를 돌려준다.
+  final RunIntentResult? result;
 
   final calls = <bool>[];
 
@@ -466,6 +498,7 @@ class _RecordingRunRepository implements RunRepository {
   }) async {
     calls.add(riding);
     if (pending != null) return pending!.future;
+    if (result != null) return result!;
     return RunIntentResult(
       result: RunIntentApplyResult.applied,
       riding: riding,

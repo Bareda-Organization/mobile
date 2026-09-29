@@ -8,6 +8,7 @@ import 'package:parent_app/app/di.dart';
 import 'package:parent_app/core/runs/domain/run_intent_result.dart';
 import 'package:parent_app/core/runs/domain/student_run.dart';
 import 'package:parent_app/core/ui/confirm_dialog.dart';
+import 'package:parent_app/core/ui/format_date_time.dart';
 import 'package:parent_app/features/home/presentation/home_providers.dart';
 
 /// 회차 1건 카드 — §3.5 조회 값 표시 + (학부모만) §3.6 등원 여부 토글.
@@ -81,7 +82,7 @@ class _RunCardState extends ConsumerState<RunCard> {
         _banner = switch (result.result) {
           RunIntentApplyResult.applied => null,
           RunIntentApplyResult.pendingApproval =>
-            '기사·동승자 승인 대기 중입니다 (마감 ${result.deadlineAt}).',
+            '학원 관리자 승인 대기 중입니다${deadlineNote(result.deadlineAt)}.',
           RunIntentApplyResult.appliedNoReroute => '운행이 시작돼 노선은 바뀌지 않고 반영됐습니다.',
         };
         _bannerTone = AlertTone.info;

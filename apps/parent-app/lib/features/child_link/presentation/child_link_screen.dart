@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:parent_app/app/di.dart';
 import 'package:parent_app/core/auth/auth_providers.dart';
 import 'package:parent_app/core/students/presentation/student_providers.dart';
+import 'package:parent_app/core/ui/format_date_time.dart';
 
 /// 자녀 연결 (FEATURE_SPEC §5.1 색인 기준 P-02, BRIEF 표기 "P-01" 은
 /// 정본과 어긋남 — 보고서 §2 참고) · 학생 코드 생성(S-05) 화면.
@@ -170,7 +171,9 @@ class _ChildLinkScreenState extends ConsumerState<ChildLinkScreen> {
         ),
         if (_generatedCodeExpiresAt != null) ...[
           const SizedBox(height: BaraedaSpacing.space2),
-          Center(child: Text('만료 시각: $_generatedCodeExpiresAt')),
+          Center(
+            child: Text('만료 시각: ${formatDateTime(_generatedCodeExpiresAt!)}'),
+          ),
         ],
       ],
       ..._buildMessages(),
