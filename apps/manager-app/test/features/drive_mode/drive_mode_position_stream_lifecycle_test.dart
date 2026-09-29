@@ -183,14 +183,21 @@ void main() {
     expect(platform.listenerCount, 0);
   });
 
-  testWidgets('화면이 dispose 되면 위치 스트림 구독이 0이 된다', (tester) async {
+  // R33 M1 — 위치 스트림도 화면이 아니라 운행 상태에 묶인다. 옛 시험(`화면이 dispose 되면
+  // 위치 스트림 구독이 0이 된다`)은 화면을 나가면 구독이 끊기는 결함을 고정하고 있었다 — 반대로
+  // 화면이 사라져도 구독이 1로 남는 것을 지킨다.
+  testWidgets('화면이 dispose 되어도 위치 스트림 구독은 1로 남는다', (tester) async {
     final platform = _FakeGeolocatorPlatform();
     GeolocatorPlatform.instance = platform;
+    final overrides = baseOverrides(
+      role: UserRole.driver,
+      currentRun: run(RunStatus.moving),
+    );
 
     await tester.pumpWidget(
-      _wrap(
-        const DriveModeScreen(),
-        baseOverrides(role: UserRole.driver, currentRun: run(RunStatus.moving)),
+      ProviderScope(
+        overrides: overrides,
+        child: const MaterialApp(home: DriveModeScreen()),
       ),
     );
     await tester.pump();
@@ -198,10 +205,12 @@ void main() {
     await tester.pump();
     expect(platform.listenerCount, 1);
 
-    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpWidget(
+      ProviderScope(overrides: overrides, child: const SizedBox.shrink()),
+    );
     await tester.pump();
 
-    expect(platform.listenerCount, 0);
+    expect(platform.listenerCount, 1);
   });
 
   testWidgets('동승자가 운행 화면에 들어가도 위치 스트림 구독은 열리지 않는다', (tester) async {

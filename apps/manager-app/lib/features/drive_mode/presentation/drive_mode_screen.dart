@@ -8,7 +8,6 @@ import 'package:intl/intl.dart';
 import 'package:manager_app/app/app_routes.dart';
 import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/auth/auth_providers.dart';
-import 'package:manager_app/core/constants/position_constants.dart';
 import 'package:manager_app/core/location/position_source.dart';
 import 'package:manager_app/core/network/failure_messages.dart';
 import 'package:manager_app/core/run/manager_channel_banner.dart';
@@ -23,7 +22,7 @@ import 'package:manager_app/features/drive_mode/presentation/widgets/remaining_s
 import 'package:manager_app/features/emergency/presentation/widgets/emergency_button.dart';
 import 'package:manager_app/features/home/data/models/manager_run.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
-import 'package:manager_app/features/position/data/models/position_request.dart';
+import 'package:manager_app/features/position/presentation/position_transmitter.dart';
 import 'package:manager_app/features/roster/data/models/roster_response.dart';
 import 'package:manager_app/features/roster/presentation/widgets/change_ack_banner.dart';
 
@@ -42,27 +41,7 @@ class DriveModeScreen extends ConsumerStatefulWidget {
 
 class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
   bool _submitting = false;
-
-  /// 운행 중 뒤로가기를 확인했는지 — `true` 인 동안 [PopScope] 가 나가기를 막지 않는다.
-  bool _leaving = false;
   String? _errorMessage;
-
-  /// §4.12 위치 전송 주기 타이머 — `_syncPositionTransmission` 이 운행 중
-  /// 여부·역할에 맞춰 시작·정지를 맡는다. `null` 이면 지금은 전송하지 않는
-  /// 상태.
-  Timer? _positionTimer;
-
-  /// 마지막 전송 시도에서 본 [PositionSource.availability] — 권한 거부·
-  /// 위치 서비스 꺼짐이면 화면에 안내 한 줄을 보여준다(LOC-01 할 일 2).
-  /// 전송 타이머가 돌 때만 갱신되므로(2초 주기), 타이머가 아예 안 도는
-  /// 상태(이동 중이 아니거나 동승자)에서는 계속 `null` — 안내를 보여줄
-  /// 근거가 없다.
-  PositionAvailability? _positionAvailability;
-
-  /// 기사 단말이 마지막으로 잰 좌표 — 지도의 버스 마커 자리(R32 M1). 위치 전송 주기(2초)마다
-  /// 갱신된다. 서버 방송에는 좌표가 없고(§7 매니저 채널) 기사 단말이 이미 스스로 재고 있어
-  /// 별도 요청을 만들지 않고 그 값을 그대로 쓴다.
-  ({double lat, double lng})? _busPosition;
 
   /// [initState] 에서 받아 둔 포트 — `ConsumerState.dispose()` 안에서는
   /// `ref.read` 가 안전하지 않다(위젯이 이미 unmount 되는 중이라 Riverpod
@@ -70,23 +49,16 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
   /// 쓰면 되고 `ref` 를 다시 묻지 않는다.
   late final WakelockPort _wakelockPort;
 
-  /// LOC-01 배경 송신(`Ruling 360`) — 위치 스트림(Android 포그라운드
-  /// 서비스 알림 · iOS 백그라운드 갱신)을 [initState] 에서 시작해 둔
-  /// 인스턴스. 기사만 채운다(`canTransmitPosition` 게이트) — 동승자는
-  /// `null` 로 남아 [PositionSource.start] 를 한 번도 부르지 않는다.
-  /// 위 [_wakelockPort] 와 같은 이유로 `dispose()` 가 쓸 수 있게 필드에
-  /// 저장해 둔다.
-  PositionSource? _positionSource;
-
-  /// [_positionAvailability] 를 화면 문구로 옮긴다 — 정상(`available`)이거나
+  /// 위치 송신 상태의 [PositionAvailability] 를 화면 문구로 옮긴다 — 정상(`available`)이거나
   /// 아직 모르면(`null`) 아무것도 보여주지 않는다.
-  String? get _positionGuidance => switch (_positionAvailability) {
-    PositionAvailability.permissionDenied =>
-      '위치 권한이 없어 위치를 보낼 수 없습니다. 설정에서 위치 권한을 허용해 주세요',
-    PositionAvailability.serviceDisabled =>
-      '기기 위치 서비스가 꺼져 있어 위치를 보낼 수 없습니다. 설정에서 위치 서비스를 켜 주세요',
-    PositionAvailability.available || null => null,
-  };
+  String? _positionGuidance(PositionAvailability? availability) =>
+      switch (availability) {
+        PositionAvailability.permissionDenied =>
+          '위치 권한이 없어 위치를 보낼 수 없습니다. 설정에서 위치 권한을 허용해 주세요',
+        PositionAvailability.serviceDisabled =>
+          '기기 위치 서비스가 꺼져 있어 위치를 보낼 수 없습니다. 설정에서 위치 서비스를 켜 주세요',
+        PositionAvailability.available || null => null,
+      };
 
   @override
   void initState() {
@@ -97,71 +69,18 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
     // 이 화면에 들어오는 모든 사용자(기사·동승자)에게 공통이다.
     _wakelockPort = ref.read(wakelockPortProvider);
     unawaited(_wakelockPort.enable());
-    // LOC-01 배경 송신(Ruling 360) — 위치 스트림은 화면 진입 시 기사만
-    // 시작한다(위 wakelock 과 달리 동승자는 시작하지 않는다, BRIEF-BG
-    // 할 일 3 · 지금 canTransmitPosition 게이트와 같은 기준).
+    // 위치 송신은 이 화면이 소유하지 않는다 — 앱 전역 송신기(`position_transmitter.dart`)가 운행 중인
+    // 기사 회차에 맞춰 돈다(R33 M1). 여기서는 기사에게 위치 권한 확인만 미리 띄우려고 소스를 만들어 둔다
+    // (운행을 시작하는 순간 권한 창이 뜨지 않게).
     if (ref.read(roleCapabilitiesProvider)?.canTransmitPosition ?? false) {
-      final source = ref.read(positionSourceProvider)..start();
-      _positionSource = source;
+      ref.read(positionSourceProvider);
     }
   }
 
   @override
   void dispose() {
-    _positionTimer?.cancel();
     unawaited(_wakelockPort.disable());
-    _positionSource?.stop();
     super.dispose();
-  }
-
-  /// [build] 가 매번 호출해도 안전하도록 멱등으로 짰다 — 이미 원하는
-  /// 상태(타이머 있음/없음)면 아무 것도 하지 않는다.
-  void _syncPositionTransmission({
-    required String? runId,
-    required bool shouldTransmit,
-  }) {
-    final wantTimer = shouldTransmit && runId != null;
-    if (wantTimer && _positionTimer == null) {
-      _positionTimer = Timer.periodic(
-        PositionConstants.transmissionInterval,
-        (_) => unawaited(_sendPositionTick(runId)),
-      );
-    } else if (!wantTimer && _positionTimer != null) {
-      _positionTimer!.cancel();
-      _positionTimer = null;
-    }
-  }
-
-  /// 주기마다 좌표를 읽어 §4.12 로 올린다. 화면 액션이 아니라 배경
-  /// 텔레메트리라 실패해도 `_errorMessage` 를 세우지 않는다 — 다음 주기
-  /// 전송이 실패를 대신 만회하고, 매번 배너를 띄우면 운전 중 방해만 된다.
-  Future<void> _sendPositionTick(String runId) async {
-    final source = ref.read(positionSourceProvider);
-    if (mounted && source.availability != _positionAvailability) {
-      setState(() => _positionAvailability = source.availability);
-    }
-    final sample = source.sample();
-    if (sample == null) return;
-    if (mounted) {
-      setState(() => _busPosition = (lat: sample.lat, lng: sample.lng));
-    }
-    try {
-      await ref
-          .read(positionRepositoryProvider)
-          .sendPosition(
-            runId: runId,
-            request: PositionRequest(
-              lat: sample.lat,
-              lng: sample.lng,
-              recordedAt: sample.recordedAt,
-              speed: sample.speed,
-              heading: sample.heading,
-            ),
-          );
-    } on Failure {
-      // 배경 전송 실패 — 다음 주기가 대신한다(§1.9 는 화면 액션의 낙관적
-      // 표시를 금지할 뿐, 이 텔레메트리는 화면 액션이 아니다).
-    }
   }
 
   Future<void> _startRun(String runId) async {
@@ -222,6 +141,8 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
       ref.invalidate(todayRunsProvider);
       if (!mounted) return;
       if (result.isFinal) {
+        // 종점에 닿았으니 위치 송신은 여기서 끝난다 — 하원 잔류로 서버 회차가 아직 `moving` 이어도 그렇다.
+        ref.read(transmissionEndedRunIdProvider.notifier).state = runId;
         ref.read(lastArriveResultProvider.notifier).state = result;
         unawaited(context.push(AppRoutes.runEnd));
       } else {
@@ -239,64 +160,34 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
   Widget build(BuildContext context) {
     final runId = ref.watch(selectedRunIdProvider);
     final run = ref.watch(driveModeRunProvider);
-    final canTransmitPosition =
-        ref.watch(roleCapabilitiesProvider)?.canTransmitPosition ?? false;
-    _syncPositionTransmission(
-      runId: runId,
-      shouldTransmit: canTransmitPosition && run?.runStatus == RunStatus.moving,
-    );
-    // 운행 종료(§4.10 이 `finished` 로 옮기는 순간) — 화면은 종료 보고서로
-    // 이동하지 않고 스택에 남을 수 있어(FIX-MF.md §2) dispose 만으로는
-    // 늦다. 위치 스트림을 여기서 바로 멈춘다(Ruling 360, BRIEF-BG 할 일 3).
-    if (run?.runStatus == RunStatus.finished) {
-      _positionSource?.stop();
-    }
+    final transmission = ref.watch(positionTransmitterProvider);
 
-    // 운행 중에 이 화면을 나가면 dispose 가 위치 송신을 멈춘다 — 확인 없이는 나가지 못하게 한다
-    // (R32 M15·M16). 운행 중이 아니면 바로 나간다.
-    return PopScope(
-      canPop: _leaving || run?.runStatus != RunStatus.moving,
-      onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) unawaited(_confirmLeave());
-      },
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('운행 모드'),
-          actions: [
-            // 비상(M-15, R32 M2) — 출발 전(확정)에도 눌린다.
-            const EmergencyButton(),
-            // 노선 지도(M-04·M-09)는 기사 전용이고, 기사가 홈에서 들어오는 화면은 여기뿐이다 —
-            // 명단 화면에만 두면 그 화면은 동승자만 들어가서 아무도 닿지 못한다(2026-09-23).
-            TextButton(
-              onPressed: () => unawaited(context.push(AppRoutes.routeMap)),
-              child: const Text('노선 지도'),
-            ),
-          ],
-        ),
-        body: runId == null
-            ? const Center(child: Text('선택된 운행이 없습니다 — 홈에서 운행을 선택하세요'))
-            : _buildBody(context, runId, run),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('운행 모드'),
+        actions: [
+          // 비상(M-15, R32 M2) — 출발 전(확정)에도 눌린다.
+          const EmergencyButton(),
+          // 노선 지도(M-04·M-09)는 기사 전용이고, 기사가 홈에서 들어오는 화면은 여기뿐이다 —
+          // 명단 화면에만 두면 그 화면은 동승자만 들어가서 아무도 닿지 못한다(2026-09-23).
+          TextButton(
+            onPressed: () => unawaited(context.push(AppRoutes.routeMap)),
+            child: const Text('노선 지도'),
+          ),
+        ],
       ),
+      body: runId == null
+          ? const Center(child: Text('선택된 운행이 없습니다 — 홈에서 운행을 선택하세요'))
+          : _buildBody(context, runId, run, transmission),
     );
   }
 
-  /// 운행 중 뒤로가기 확인 — 나가면 위치 송신이 멈추므로 그 사실을 알린다.
-  Future<void> _confirmLeave() async {
-    final leave = await confirmAction(
-      context,
-      title: '운행 화면을 나갈까요?',
-      body: '나가면 이 화면의 위치 송신이 멈춥니다. 학부모 앱의 버스 위치가 갱신되지 않습니다.',
-      confirmLabel: '나가기',
-      cancelLabel: '계속 운행',
-    );
-    if (!leave || !mounted) return;
-    // 나가기를 확인했으니 이번 한 번은 PopScope 가 막지 않게 푼 다음 다시 나간다.
-    setState(() => _leaving = true);
-    await WidgetsBinding.instance.endOfFrame;
-    if (mounted) await Navigator.of(context).maybePop();
-  }
-
-  Widget _buildBody(BuildContext context, String runId, ManagerRun? run) {
+  Widget _buildBody(
+    BuildContext context,
+    String runId,
+    ManagerRun? run,
+    PositionTransmission transmission,
+  ) {
     final rosterAsync = ref.watch(driveModeRosterProvider);
     // 지도 높이는 화면 비율로 정한다 — 작은 화면(360×640)에서도 아래 대형 버튼이 밀리지 않는다.
     final mapHeight = (MediaQuery.sizeOf(context).height * 0.3).clamp(
@@ -326,7 +217,10 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
                     nextStop: run.destination,
                   ),
                 const SizedBox(height: 16),
-                DriveMapPanel(height: mapHeight, busPosition: _busPosition),
+                DriveMapPanel(
+                  height: mapHeight,
+                  busPosition: transmission.busPosition,
+                ),
                 const SizedBox(height: 16),
                 // 노선 변경 확인(M-04, R32 M4) — 기사는 명단 화면에 가지 않으므로 여기서 확인한다.
                 ChangeAckBanner(
@@ -337,8 +231,9 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
                 // "연결 끊김"(비정상)을 구별해야 한다(목표 9, ManagerChannelBanner
                 // 문서 참고).
                 ManagerChannelBanner(runId: runId),
-                if (_positionGuidance != null) ...[
-                  AlertBanner(tone: AlertTone.missed, body: _positionGuidance),
+                if (_positionGuidance(transmission.availability)
+                    case final guidance?) ...[
+                  AlertBanner(tone: AlertTone.missed, body: guidance),
                   const SizedBox(height: 12),
                 ],
                 // 남은 승하차지(M-08, R32 M5) — 조회 전용. 끝난 운행에는 남은 곳이 없다.
