@@ -104,8 +104,10 @@ class _NaverMapAdapterState extends State<NaverMapAdapter> {
   /// 가짜 컨트롤러를 끼워 넣어 마커 동기화가 겹쳐 도는지 본다
   /// (`test/core/map/naver/naver_map_adapter_sync_test.dart` 전용).
   @visibleForTesting
-  set debugControllerForTest(NaverMapController controller) =>
-      _controller = controller;
+  // ignore: use_setters_to_change_properties
+  void debugAttachControllerForTest(NaverMapController controller) {
+    _controller = controller;
+  }
 
   /// 위젯 시험 전용 훅 — 실제 SDK 의 `onMapReady` 는 위젯 시험 환경(플랫폼
   /// 채널 부재)에서 오지 않아 `_frameTicker` 가 정상 경로(`_syncMarkers` →

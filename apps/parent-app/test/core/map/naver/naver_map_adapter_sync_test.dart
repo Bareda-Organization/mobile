@@ -47,7 +47,7 @@ void main() {
     final controller = _BlockingController();
 
     await tester.pumpWidget(_adapter(key, 'a'));
-    (key.currentState! as dynamic).debugControllerForTest = controller;
+    (key.currentState! as dynamic).debugAttachControllerForTest(controller);
 
     await tester.pumpWidget(_adapter(key, 'b'));
     await tester.pump();
