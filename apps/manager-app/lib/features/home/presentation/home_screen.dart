@@ -120,6 +120,18 @@ class ManagerHomeScreen extends ConsumerWidget {
                         ? () => _openRun(context, ref, run, capabilities)
                         : null,
                   ),
+                  // 확정 전 카드는 눌러도 반응이 없다 — 이유와 열리는 시각을 알린다(M-02, R32 M9).
+                  if (!run.confirmed)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4, left: 4),
+                      child: Text(
+                        run.confirmAt == null
+                            ? '출발 30분 전 확정 후 열립니다'
+                            : '출발 30분 전 확정 후 열립니다 '
+                                  '(${DateFormat('HH:mm').format(run.confirmAt!.toLocal())})',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ),
                   const SizedBox(height: 12),
                 ],
               ],
