@@ -143,6 +143,90 @@ void main() {
     expect(find.text('승인 대기로 접수됐습니다 (마감 9월 12일 07:30).'), findsOneWidget);
   });
 
+  // R32 P12 — 날짜 선택은 넣지 않았다: 서버가 회차를 그날 하루치만 만들어(DailyRunGenerator)
+  // 다른 날짜에는 고를 회차가 없다. 대신 버튼이 왜 눌리지 않는지 말해 준다.
+  group('P12 제출할 수 없는 이유 안내', () {
+    Future<void> pumpPanel(WidgetTester tester) async {
+      tester.view.physicalSize = const Size(800, 2400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            runRepositoryProvider.overrideWithValue(_FixedRunRepository()),
+            changeRequestRepositoryProvider.overrideWithValue(
+              _AcceptingChangeRequestRepository(
+                const ChangeRequestCreateResult(
+                  changeRequestId: 'c-1',
+                  status: ChangeRequestStatus.approved,
+                  result: 'applied',
+                ),
+              ),
+            ),
+          ],
+          child: MaterialApp(
+            home: Scaffold(
+              body: ListView(
+                children: const [ChangeRequestPanel(studentId: 's-1')],
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    bool submitEnabled(WidgetTester tester) =>
+        tester
+            .widget<BaraedaButton>(
+              find.widgetWithText(BaraedaButton, '변경 신청하기'),
+            )
+            .onPressed !=
+        null;
+
+    Future<void> chooseRun(WidgetTester tester) async {
+      await tester.tap(find.byType(BaraedaSelect).first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(runOptionLabel(_fixtureRun())).last);
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('회차를 고르기 전에는 버튼이 꺼져 있고 회차를 고르라고 알려 준다', (tester) async {
+      await pumpPanel(tester);
+
+      expect(submitEnabled(tester), isFalse);
+      expect(find.text('대상 회차를 골라 주세요'), findsOneWidget);
+    });
+
+    testWidgets('회차를 고르면 안내가 사라지고 버튼이 켜진다(탑승 취소)', (tester) async {
+      await pumpPanel(tester);
+      await chooseRun(tester);
+
+      expect(find.text('대상 회차를 골라 주세요'), findsNothing);
+      expect(submitEnabled(tester), isTrue);
+    });
+
+    testWidgets('승하차지 변경은 주소를 넣을 때까지 버튼이 꺼져 있고 주소를 넣으라고 알려 준다', (
+      tester,
+    ) async {
+      await pumpPanel(tester);
+      await chooseRun(tester);
+      await tester.tap(find.byType(BaraedaSelect).at(1));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('승하차지 변경').last);
+      await tester.pumpAndSettle();
+
+      expect(submitEnabled(tester), isFalse);
+      expect(find.text('변경할 주소를 입력해 주세요'), findsOneWidget);
+
+      await tester.enterText(find.byType(TextField).first, '서울시 강남구 3');
+      await tester.pumpAndSettle();
+
+      expect(find.text('변경할 주소를 입력해 주세요'), findsNothing);
+      expect(submitEnabled(tester), isTrue);
+    });
+  });
+
   testWidgets('신청이 CHANGE_WINDOW_CLOSED 로 실패하면 운행 중 문구를 보여준다', (tester) async {
     await _pumpAndSubmit(
       tester,

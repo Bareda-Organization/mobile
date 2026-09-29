@@ -38,6 +38,25 @@ class _ChangeRequestPanelState extends ConsumerState<ChangeRequestPanel> {
   AlertTone _bannerTone = AlertTone.info;
 
   @override
+  void initState() {
+    super.initState();
+    // 주소를 적는 동안 [제출할 수 없는 이유] 안내가 바로 사라지도록 글자 변화를 화면에 알린다.
+    _addressController.addListener(_onAddressChanged);
+  }
+
+  void _onAddressChanged() => setState(() {});
+
+  /// 지금 제출할 수 없다면 그 이유 — 제출 가능하면 null (R32 P12).
+  String? get _missingInput {
+    if (_selectedRunId == null) return '대상 회차를 골라 주세요';
+    if (_type == ChangeRequestType.relocate &&
+        _addressController.text.trim().isEmpty) {
+      return '변경할 주소를 입력해 주세요';
+    }
+    return null;
+  }
+
+  @override
   void dispose() {
     _addressController.dispose();
     _reasonController.dispose();
@@ -145,6 +164,8 @@ class _ChangeRequestPanelState extends ConsumerState<ChangeRequestPanel> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        const Text('오늘 운행하는 회차만 신청할 수 있습니다', style: BaraedaTypography.bodySm),
+        const SizedBox(height: BaraedaSpacing.space2),
         BaraedaSelect(
           label: '대상 회차',
           value: _selectedRunId,
@@ -176,9 +197,15 @@ class _ChangeRequestPanelState extends ConsumerState<ChangeRequestPanel> {
           AlertBanner(tone: _bannerTone, body: _banner),
           const SizedBox(height: BaraedaSpacing.space2),
         ],
+        // 날짜는 고르지 않는다 — 서버가 회차를 그날 하루치만 만들어 다른 날짜에는 고를 회차가 없다.
+        // 회차를 못 고른 이유는 이 안내로 대신한다.
+        if (_missingInput != null) ...[
+          Text(_missingInput!, style: BaraedaTypography.bodySm),
+          const SizedBox(height: BaraedaSpacing.space2),
+        ],
         BaraedaButton(
           label: '변경 신청하기',
-          onPressed: (_submitting || _selectedRunId == null) ? null : _submit,
+          onPressed: (_submitting || _missingInput != null) ? null : _submit,
         ),
       ],
     );
