@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:parent_app/app/di.dart';
+import 'package:parent_app/core/auth/account_session.dart';
 import 'package:parent_app/core/auth/domain/auth_repository.dart';
 import 'package:parent_app/core/devices/data/device_registration_storage.dart';
 import 'package:parent_app/core/devices/presentation/device_registration_panel.dart';
@@ -22,8 +23,8 @@ class _StubAuthRepository implements AuthRepository {
   /// `signupStatus` 호출 횟수 — [다시 확인] 이 실제로 서버를 다시 부르는지 본다.
   int signupStatusCalls = 0;
 
-  /// 두 번째 조회부터 거절로 응답한다(관리자가 그 사이에 거절한 상황).
-  bool rejectedFromSecondCall = false;
+  /// 두 번째 조회부터 이 상태로 응답한다(관리자가 그 사이에 승인·거절한 상황).
+  AccountStatus? statusFromSecondCall;
 
   @override
   Future<List<AcademySummary>> searchAcademies(String query) async => [];
@@ -36,8 +37,8 @@ class _StubAuthRepository implements AuthRepository {
   Future<SignupStatusResponse> signupStatus() async {
     signupStatusCalls++;
     return SignupStatusResponse(
-      status: rejectedFromSecondCall && signupStatusCalls > 1
-          ? AccountStatus.rejected
+      status: signupStatusCalls > 1
+          ? statusFromSecondCall ?? AccountStatus.pending
           : AccountStatus.pending,
       academyName: '바래다학원',
       academyRegion: '서울',
@@ -136,7 +137,8 @@ Future<void> _pumpPendingApproval(
 void main() {
   // R32 P9 — 상태를 처음 한 번만 조회해, 관리자가 승인·거절해도 앱을 껐다 켜야 알 수 있었다.
   testWidgets('P9 [상태 다시 확인] 을 누르면 승인 상태를 다시 조회해 화면에 반영한다', (tester) async {
-    final authRepository = _StubAuthRepository()..rejectedFromSecondCall = true;
+    final authRepository = _StubAuthRepository()
+      ..statusFromSecondCall = AccountStatus.rejected;
     await _pumpPendingApproval(tester, authRepository);
     expect(find.text('가입 승인을 기다리고 있습니다'), findsOneWidget);
 
@@ -145,6 +147,22 @@ void main() {
 
     expect(authRepository.signupStatusCalls, 2);
     expect(find.text('가입이 거절되었습니다'), findsOneWidget);
+  });
+
+  // 승인이 났는데 대기 화면에 남아 있으면 안 된다 — 계정 상태를 갱신해 라우터가 홈으로 보내게 한다.
+  testWidgets('P9 다시 확인했더니 승인됐으면 계정 상태를 active 로 바꾼다', (tester) async {
+    final authRepository = _StubAuthRepository()
+      ..statusFromSecondCall = AccountStatus.active;
+    await _pumpPendingApproval(tester, authRepository);
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(PendingApprovalScreen)),
+    );
+    expect(container.read(currentAccountStatusProvider), isNull);
+
+    await tester.tap(find.text('상태 다시 확인'));
+    await tester.pumpAndSettle();
+
+    expect(container.read(currentAccountStatusProvider), AccountStatus.active);
   });
 
   testWidgets('가입 승인 대기 화면에 단말 등록 패널이 도달 가능하다', (tester) async {

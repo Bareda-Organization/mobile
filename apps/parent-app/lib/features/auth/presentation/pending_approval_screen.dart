@@ -50,6 +50,22 @@ class _PendingApprovalScreenState extends ConsumerState<PendingApprovalScreen> {
   // 갈리는 비일관성이었다(FIX-P.md §2).
   Future<void> _logout() => confirmLogout(context, ref);
 
+  /// [상태 다시 확인] — 서버에서 다시 받아 화면에 반영한다. 승인(`active`)이 났으면 계정 상태를
+  /// 바꿔 라우터가 홈으로 보내게 한다(안 바꾸면 승인된 뒤에도 이 화면이 대기 중으로 남는다, R32 P9).
+  Future<void> _refreshStatus() async {
+    final future = ref.read(authRepositoryProvider).signupStatus();
+    setState(() => _statusFuture = future);
+    try {
+      final status = await future;
+      if (mounted && status.status == AccountStatus.active) {
+        ref.read(currentAccountStatusProvider.notifier).state =
+            AccountStatus.active;
+      }
+    } on Object {
+      // 실패는 FutureBuilder 가 [다시 시도하기] 화면으로 보여준다.
+    }
+  }
+
   Future<void> _reapply() async {
     final academy = _newAcademy;
     if (academy == null || _submittingReapply) return;
@@ -112,9 +128,7 @@ class _PendingApprovalScreenState extends ConsumerState<PendingApprovalScreen> {
               submittingReapply: _submittingReapply,
               reapplyError: _reapplyError,
               onLogout: _logout,
-              onRefresh: () => setState(() {
-                _statusFuture = ref.read(authRepositoryProvider).signupStatus();
-              }),
+              onRefresh: _refreshStatus,
               onStartReapply: () => setState(() => _reapplying = true),
               onAcademySelected: (academy) =>
                   setState(() => _newAcademy = academy),
