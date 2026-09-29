@@ -103,13 +103,23 @@ class _StudentScheduleBody extends ConsumerWidget {
             tone: AlertTone.missed,
             body: '주소를 불러오지 못했습니다',
           ),
-          data: (entries) =>
-              WeeklyAddressEditor(studentId: studentId, entries: entries),
+          // R32 P5 — 자녀 ID 를 key 로 건다. 없으면 이미 불러 둔 다른 자녀로 바꿀 때 입력칸이 이전
+          // 자녀의 글자를 그대로 들고 있어, 저장하면 다른 아이 이름으로 덮어쓴다.
+          data: (entries) => WeeklyAddressEditor(
+            key: ValueKey('weekly-address-$studentId'),
+            studentId: studentId,
+            entries: entries,
+          ),
         ),
         const SizedBox(height: BaraedaSpacing.sectionGap),
         const Text('일일 변경 신청', style: BaraedaTypography.h3),
         const SizedBox(height: BaraedaSpacing.space2),
-        ChangeRequestPanel(studentId: studentId),
+        // 같은 이유 — 고른 회차·입력한 주소가 자녀를 바꿔도 남으면 다른 자녀의 회차로 신청하거나
+        // (드롭다운이 목록에 없는 값을 들고 있어) 화면이 깨진다.
+        ChangeRequestPanel(
+          key: ValueKey('change-request-$studentId'),
+          studentId: studentId,
+        ),
       ],
     );
   }
