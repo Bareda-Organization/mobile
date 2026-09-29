@@ -42,6 +42,9 @@ class DriveModeScreen extends ConsumerStatefulWidget {
 
 class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
   bool _submitting = false;
+
+  /// 운행 중 뒤로가기를 확인했는지 — `true` 인 동안 [PopScope] 가 나가기를 막지 않는다.
+  bool _leaving = false;
   String? _errorMessage;
 
   /// §4.12 위치 전송 주기 타이머 — `_syncPositionTransmission` 이 운행 중
@@ -249,24 +252,48 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
       _positionSource?.stop();
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('운행 모드'),
-        actions: [
-          // 비상(M-15, R32 M2) — 출발 전(확정)에도 눌린다.
-          const EmergencyButton(),
-          // 노선 지도(M-04·M-09)는 기사 전용이고, 기사가 홈에서 들어오는 화면은 여기뿐이다 —
-          // 명단 화면에만 두면 그 화면은 동승자만 들어가서 아무도 닿지 못한다(2026-09-23).
-          TextButton(
-            onPressed: () => unawaited(context.push(AppRoutes.routeMap)),
-            child: const Text('노선 지도'),
-          ),
-        ],
+    // 운행 중에 이 화면을 나가면 dispose 가 위치 송신을 멈춘다 — 확인 없이는 나가지 못하게 한다
+    // (R32 M15·M16). 운행 중이 아니면 바로 나간다.
+    return PopScope(
+      canPop: _leaving || run?.runStatus != RunStatus.moving,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) unawaited(_confirmLeave());
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('운행 모드'),
+          actions: [
+            // 비상(M-15, R32 M2) — 출발 전(확정)에도 눌린다.
+            const EmergencyButton(),
+            // 노선 지도(M-04·M-09)는 기사 전용이고, 기사가 홈에서 들어오는 화면은 여기뿐이다 —
+            // 명단 화면에만 두면 그 화면은 동승자만 들어가서 아무도 닿지 못한다(2026-09-23).
+            TextButton(
+              onPressed: () => unawaited(context.push(AppRoutes.routeMap)),
+              child: const Text('노선 지도'),
+            ),
+          ],
+        ),
+        body: runId == null
+            ? const Center(child: Text('선택된 운행이 없습니다 — 홈에서 운행을 선택하세요'))
+            : _buildBody(context, runId, run),
       ),
-      body: runId == null
-          ? const Center(child: Text('선택된 운행이 없습니다 — 홈에서 운행을 선택하세요'))
-          : _buildBody(context, runId, run),
     );
+  }
+
+  /// 운행 중 뒤로가기 확인 — 나가면 위치 송신이 멈추므로 그 사실을 알린다.
+  Future<void> _confirmLeave() async {
+    final leave = await confirmAction(
+      context,
+      title: '운행 화면을 나갈까요?',
+      body: '나가면 이 화면의 위치 송신이 멈춥니다. 학부모 앱의 버스 위치가 갱신되지 않습니다.',
+      confirmLabel: '나가기',
+      cancelLabel: '계속 운행',
+    );
+    if (!leave || !mounted) return;
+    // 나가기를 확인했으니 이번 한 번은 PopScope 가 막지 않게 푼 다음 다시 나간다.
+    setState(() => _leaving = true);
+    await WidgetsBinding.instance.endOfFrame;
+    if (mounted) await Navigator.of(context).maybePop();
   }
 
   Widget _buildBody(BuildContext context, String runId, ManagerRun? run) {
