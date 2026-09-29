@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
@@ -11,12 +12,14 @@ import 'package:manager_app/core/network/failure_messages.dart';
 import 'package:manager_app/core/run/manager_channel_banner.dart';
 import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
-import 'package:manager_app/features/home/presentation/home_providers.dart';
+import 'package:manager_app/core/ui/confirm_dialog.dart';
+import 'package:manager_app/features/emergency/presentation/widgets/emergency_button.dart';
 import 'package:manager_app/features/offline_queue/domain/send_outcome.dart';
 import 'package:manager_app/features/roster/data/models/boarding_update_request.dart';
 import 'package:manager_app/features/roster/data/models/no_show_contact_request.dart';
 import 'package:manager_app/features/roster/data/models/roster_response.dart';
 import 'package:manager_app/features/roster/presentation/roster_providers.dart';
+import 'package:manager_app/features/roster/presentation/widgets/change_ack_banner.dart';
 
 /// StopRoster — 정류장별 탑승자 명단 (§4.2 M-03 · §4.6 M-12 · §4.7 M-13 ·
 /// §4.8 M-14 · §4.11 M-04 변경 확인).
@@ -28,10 +31,9 @@ import 'package:manager_app/features/roster/presentation/roster_providers.dart';
 /// 두지 않았다(정본 "권한 버스기사 · 동승자" 그대로). 배너 노출 여부는
 /// `selectedManagerRunProvider`(§4.1 `ack_required`, RUN-07)를 근거로
 /// 삼는다 — `GET /roster`(§4.2) 응답에는 이 플래그가 없어, 확인 응답이
-/// 성공하면 `todayRunsProvider` 를 무효화해 서버 값을 다시 받는다. 재요청이
-/// 끝나기 전 화면이 깜빡이지 않도록 `_changesAcked` 로 즉시 숨김도 함께
-/// 건다. 서버 쪽 미확인 표시는 관계자 대시보드(MON-05)의 몫이라 이 화면이
-/// 다시 확인하지 않는다.
+/// 성공하면 `todayRunsProvider` 를 무효화해 서버 값을 다시 받는다 — 띠와 그 동작은
+/// [ChangeAckBanner] 가 맡고 운행 화면도 같은 띠를 쓴다(R32 M4). 서버 쪽 미확인 표시는
+/// 관계자 대시보드(MON-05)의 몫이라 이 화면이 다시 확인하지 않는다.
 class RosterScreen extends ConsumerStatefulWidget {
   const RosterScreen({super.key});
 
@@ -42,8 +44,6 @@ class RosterScreen extends ConsumerStatefulWidget {
 class _RosterScreenState extends ConsumerState<RosterScreen> {
   String? _pendingRiderId;
   String? _errorMessage;
-  bool _acking = false;
-  bool _changesAcked = false;
 
   /// §1.7 M-06 — 통신 두절로 큐에 쌓인 승하차 처리를 알리는 문구
   /// ("처리되지 않았습니다 · 대기 중"). §1.9 는 성공을 미리 보여주는 것을
@@ -55,22 +55,46 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
   /// 위쪽의 "변경 목록 확인" 안내와 같은 `AlertTone.moving` 을 재사용한다.
   String? _queueNotice;
 
-  Future<void> _ackChanges(String runId) async {
-    setState(() {
-      _acking = true;
-      _errorMessage = null;
-    });
-    try {
-      await ref.read(rosterRepositoryProvider).ackChanges(runId: runId);
-      ref.invalidate(todayRunsProvider);
-      if (!mounted) return;
-      setState(() => _changesAcked = true);
-    } on Failure catch (failure) {
-      if (!mounted) return;
-      setState(() => _errorMessage = describeFailure(failure));
-    } finally {
-      if (mounted) setState(() => _acking = false);
+  /// 그 학생의 미승차 대기가 끝나는 시각 — 명단 응답의 `no_show_case.expires_at` 이다. 서버가
+  /// 학원 설정(A-17, 기본 3분)으로 계산해 주므로 앱에 대기 시간 상수를 두지 않는다(R32 M12).
+  DateTime? _waitEndsAtOf(RosterResponse roster, String riderId) {
+    for (final stop in roster.stops) {
+      for (final student in stop.students) {
+        if (student.riderId == riderId) return student.noShowCase?.expiresAt;
+      }
     }
+    return null;
+  }
+
+  /// 학생 이름 — 확인 창 문구용. 명단에 없으면 "학생" 으로 쓴다.
+  String _nameOf(RosterResponse roster, String riderId) {
+    for (final stop in roster.stops) {
+      for (final student in stop.students) {
+        if (student.riderId == riderId) return student.name;
+      }
+    }
+    return '학생';
+  }
+
+  /// [미승차]는 [탑승] 옆에 있어 잘못 눌리기 쉽고, 처리하면 학부모에게 알림이 나간다 — 한 번
+  /// 묻는다(R32 M7). 취소하면 요청을 보내지 않는다.
+  Future<void> _confirmNoShow({
+    required String runId,
+    required String riderId,
+    required String name,
+  }) async {
+    final confirmed = await confirmAction(
+      context,
+      title: '$name 학생을 미승차로 처리할까요?',
+      body: '처리하면 학부모·관계자에게 바로 알림이 나가고 연락 대기 시간이 시작됩니다',
+      confirmLabel: '미승차 처리',
+    );
+    if (!confirmed || !mounted) return;
+    await _updateStatus(
+      runId: runId,
+      riderId: riderId,
+      status: RiderStatus.noShow,
+    );
   }
 
   Future<void> _updateStatus({
@@ -143,11 +167,14 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
   Future<void> _recordNoShowContact({
     required String runId,
     required String riderId,
+    DateTime? waitEndsAt,
   }) async {
+    final clock = ref.read(clockProvider);
     final request = await showModalBottomSheet<NoShowContactRequest>(
       context: context,
       isScrollControlled: true,
-      builder: (context) => const _NoShowContactSheet(),
+      builder: (context) =>
+          _NoShowContactSheet(waitEndsAt: waitEndsAt, clock: clock),
     );
     if (request == null || !mounted) return;
     setState(() {
@@ -177,22 +204,25 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
 
     // 사양이 정한 진입점 — 둘 다 **명단 화면에서** 간다.
     //  · UF-E-05 "명단 → [지연 알림]"  — M-05 는 **동승자 전용**(기사는 운전 중)
-    //  · M-09 운행 정보 · 외부 내비     — **기사 전용**
+    //  · 노선 지도(M-09)는 기사 전용이라 기사가 들어오는 운행 화면에 있다 — 여기에는 두지 않는다(R32 M14)
     // 2026-09-21 까지 이 두 배선이 부재해 화면이 만들어져 있어도 도달할 수 없었다.
     final caps = ref.watch(roleCapabilitiesProvider);
     return Scaffold(
       appBar: AppBar(
         title: const Text('승하차 명단'),
         actions: [
+          // 비상(M-15, R32 M2) — 동승자도 발신한다. 노선·연결 상태와 무관하게 늘 보인다.
+          const EmergencyButton(),
+          // 예외 보고(M-14, R32 M3) — 보호자 부재·도로 통제 등. 기사는 운행 화면의 종료 보고서로,
+          // 동승자는 여기서 보고한다.
+          TextButton(
+            onPressed: () => context.push(AppRoutes.runEnd),
+            child: const Text('예외 보고'),
+          ),
           if (caps?.canSendDelayNotification ?? false)
             TextButton(
               onPressed: () => context.push(AppRoutes.delay),
               child: const Text('지연 알림'),
-            ),
-          if (caps?.canOperateRun ?? false)
-            TextButton(
-              onPressed: () => context.push(AppRoutes.routeMap),
-              child: const Text('노선 지도'),
             ),
           // ⚠ 오프라인 큐는 **이 화면에서만** 갈 수 있어야 한다.
           // `OfflineQueueScreen` 자바독이 "재전송은 이 화면의 버튼을 눌렀을 때만"
@@ -216,7 +246,6 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
     final capabilities = ref.watch(roleCapabilitiesProvider);
     final canDecide = capabilities?.canDecideBoardingStatus ?? false;
     final run = ref.watch(selectedManagerRunProvider);
-    final hasChanges = !_changesAcked && (run?.ackRequired ?? false);
 
     // ManagerChannelBanner 는 rosterAsync.when(...) 의 모든 분기 바깥에
     // 둔다 — "명단 없음"(정상, data 분기)과 "연결 끊김"(비정상)이 화면에서
@@ -230,9 +259,14 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
         Expanded(
           child: rosterAsync.when(
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (error, _) => Center(child: Text('명단을 불러오지 못했습니다: $error')),
-            data: (roster) =>
-                _buildRoster(runId, canDecide, hasChanges, roster),
+            error: (error, _) =>
+                Center(child: Text('명단을 불러오지 못했습니다: ${describeError(error)}')),
+            data: (roster) => _buildRoster(
+              runId,
+              canDecide,
+              run?.ackRequired ?? false,
+              roster,
+            ),
           ),
         ),
       ],
@@ -242,24 +276,13 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
   Widget _buildRoster(
     String runId,
     bool canDecide,
-    bool hasChanges,
+    bool ackRequired,
     RosterResponse roster,
   ) {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        if (hasChanges) ...[
-          const AlertBanner(
-            tone: AlertTone.moving,
-            body: '승하차지·명단이 변경됐습니다 — 확인 후 계속 진행하세요',
-          ),
-          const SizedBox(height: 8),
-          BaraedaButton(
-            label: '변경 목록 확인',
-            onPressed: _acking ? null : () => _ackChanges(runId),
-          ),
-          const SizedBox(height: 16),
-        ],
+        ChangeAckBanner(runId: runId, ackRequired: ackRequired),
         Row(
           children: [
             Expanded(
@@ -317,15 +340,18 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
               riderId: riderId,
               status: RiderStatus.alighted,
             ),
-            onNoShow: (riderId) => _updateStatus(
+            onNoShow: (riderId) => _confirmNoShow(
               runId: runId,
               riderId: riderId,
-              status: RiderStatus.noShow,
+              name: _nameOf(roster, riderId),
             ),
             onRevert: (riderId) =>
                 _revertStatus(runId: runId, riderId: riderId),
-            onRecordContact: (riderId) =>
-                _recordNoShowContact(runId: runId, riderId: riderId),
+            onRecordContact: (riderId) => _recordNoShowContact(
+              runId: runId,
+              riderId: riderId,
+              waitEndsAt: _waitEndsAtOf(roster, riderId),
+            ),
           ),
       ],
     );
@@ -535,8 +561,14 @@ class _StudentActions extends StatelessWidget {
 }
 
 /// §4.8 연락 시도 기록 입력 — 연락 수단·결과·(선택)최종 판단.
+///
+/// 최종 판단은 대기 시간이 끝난 뒤에만 고를 수 있다 — [waitEndsAt] 까지는 선택지를 끄고 남은 시간을
+/// 세어 보인다(R32 M12). [waitEndsAt] 을 모르면(`null`) 막지 않는다 — 서버가 최종 판정한다.
 class _NoShowContactSheet extends StatefulWidget {
-  const _NoShowContactSheet();
+  const _NoShowContactSheet({required this.waitEndsAt, required this.clock});
+
+  final DateTime? waitEndsAt;
+  final Clock clock;
 
   @override
   State<_NoShowContactSheet> createState() => _NoShowContactSheetState();
@@ -546,6 +578,32 @@ class _NoShowContactSheetState extends State<_NoShowContactSheet> {
   NoShowAttemptType _attemptType = NoShowAttemptType.call;
   NoShowContactResult _result = NoShowContactResult.noAnswer;
   NoShowDecision? _decision;
+  Timer? _ticker;
+
+  /// 대기가 끝나기까지 남은 시간 — 끝났거나 모르면 `Duration.zero`.
+  Duration get _remaining {
+    final end = widget.waitEndsAt;
+    if (end == null) return Duration.zero;
+    final left = end.difference(widget.clock.now());
+    return left.isNegative ? Duration.zero : left;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    if (_remaining > Duration.zero) {
+      _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+        if (_remaining == Duration.zero) _ticker?.cancel();
+        setState(() {});
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _ticker?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -588,7 +646,16 @@ class _NoShowContactSheetState extends State<_NoShowContactSheet> {
               ],
             ),
             const SizedBox(height: 16),
-            const Text('최종 판단 (3분 경과 후에만 선택)'),
+            const Text('최종 판단 (대기 시간이 끝난 뒤에만 선택)'),
+            if (_remaining > Duration.zero)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  '대기 시간이 끝나기까지 남은 시간 '
+                  '${_remaining.inMinutes}분 '
+                  '${(_remaining.inSeconds % 60).toString().padLeft(2, '0')}초',
+                ),
+              ),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
@@ -604,7 +671,9 @@ class _NoShowContactSheetState extends State<_NoShowContactSheet> {
                       decision == NoShowDecision.depart ? '출발 확정' : '재시도',
                     ),
                     selected: _decision == decision,
-                    onSelected: (_) => setState(() => _decision = decision),
+                    onSelected: _remaining > Duration.zero
+                        ? null
+                        : (_) => setState(() => _decision = decision),
                   ),
               ],
             ),

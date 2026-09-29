@@ -32,7 +32,14 @@ void main() {
           f.path.endsWith('app_routes.dart')) {
         continue; // 등록처·정의처는 세지 않는다
       }
-      for (final m in re.allMatches(f.readAsStringSync())) {
+      // 주석 속 언급은 세지 않는다 — `emergency_screen.dart` 문서 주석이 "죽은 라우트"라고
+      // 적으면서 `AppRoutes.emergency` 를 언급해, 갈 길이 없는데도 이 검사가 통과했다(R32 M2).
+      final code = f
+          .readAsStringSync()
+          .split('\n')
+          .where((line) => !line.trimLeft().startsWith('//'))
+          .join('\n');
+      for (final m in re.allMatches(code)) {
         targets.add(m.group(1)!);
       }
     }

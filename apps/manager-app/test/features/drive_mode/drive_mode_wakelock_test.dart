@@ -16,6 +16,8 @@ import 'package:manager_app/features/home/data/models/manager_run.dart';
 import 'package:manager_app/features/position/data/models/position_request.dart';
 import 'package:manager_app/features/position/domain/position_repository.dart';
 import 'package:manager_app/features/roster/data/models/roster_response.dart';
+import 'package:manager_app/features/route_map/data/models/route_response.dart';
+import 'package:manager_app/features/route_map/presentation/route_providers.dart';
 
 /// 호출 여부·횟수만 기록하는 가짜 포트 — `PositionSource` 가짜와 같은
 /// 발상(F2). 실제 플랫폼 호출(`wakelock_plus`)은 이 시험에 등장하지 않는다.
@@ -115,6 +117,8 @@ void main() {
     currentUserRoleProvider.overrideWith((ref) => UserRole.driver),
     selectedRunIdProvider.overrideWith((ref) => runId),
     driveModeRunProvider.overrideWithValue(run()),
+    // R32 M1 — 운행 화면이 노선을 조회한다. 실제 서버로 나가지 않게 빈 노선으로 막는다.
+    routeProvider.overrideWith((ref) async => const RouteResponse(stops: [])),
     driveModeRosterProvider.overrideWith((ref) async => _emptyRoster),
     positionSourceProvider.overrideWithValue(const _NoopPositionSource()),
     positionRepositoryProvider.overrideWithValue(_NoopPositionRepository()),

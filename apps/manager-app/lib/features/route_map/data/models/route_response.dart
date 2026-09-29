@@ -76,6 +76,8 @@ class RouteResponse {
     this.currentStop,
     this.nextStop,
     this.skippedNotice,
+    this.roadPath = const [],
+    this.fallbackUsed = false,
   });
 
   factory RouteResponse.fromJson(Map<String, dynamic> json) {
@@ -92,6 +94,15 @@ class RouteResponse {
           : RouteStop.fromJson(currentStopJson),
       nextStop: nextStopJson == null ? null : RouteStop.fromJson(nextStopJson),
       skippedNotice: json['skipped_notice'] as String?,
+      // R32-M1 — 서버가 이 두 필드를 얹기 전 응답에는 없다. 없으면 빈 선·근사 아님으로 읽는다.
+      roadPath: [
+        for (final point in json['road_path'] as List<dynamic>? ?? [])
+          (
+            lat: ((point as Map<String, dynamic>)['lat'] as num).toDouble(),
+            lng: (point['lng'] as num).toDouble(),
+          ),
+      ],
+      fallbackUsed: json['fallback_used'] as bool? ?? false,
     );
   }
 
@@ -99,4 +110,11 @@ class RouteResponse {
   final RouteStop? currentStop;
   final RouteStop? nextStop;
   final String? skippedNotice;
+
+  /// 확정 노선의 도로 좌표열(순서 있음, `road_path[{lat,lng}]`) — 없거나 비어 있을 수 있다.
+  /// 2점 미만이면 선으로 그릴 수 없으므로 화면은 승하차지 핀만 보인다.
+  final List<({double lat, double lng})> roadPath;
+
+  /// `true` 면 [roadPath] 가 실제 도로가 아니라 직선거리 근사다(`Ruling 309`) — 화면이 표시한다.
+  final bool fallbackUsed;
 }

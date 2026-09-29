@@ -48,6 +48,55 @@ class MapMarker {
   final int? seq;
 }
 
+/// 지도 위에 그릴 선 하나(예: 확정 노선의 도로 경로). 점은 순서대로 이어진다.
+class MapPolyline {
+  const MapPolyline({required this.id, required this.points});
+
+  final String id;
+  final List<({double lat, double lng})> points;
+}
+
+/// 마커·선이 전부 들어오는 최소 사각형 — 카메라를 내용에 맞출 때 쓴다.
+class MapBounds {
+  const MapBounds({
+    required this.south,
+    required this.west,
+    required this.north,
+    required this.east,
+  });
+
+  final double south;
+  final double west;
+  final double north;
+  final double east;
+
+  /// 점이 하나뿐이라 넓이가 0 인 경우 — 어댑터가 확대 수준을 따로 정한다.
+  bool get isPoint => south == north && west == east;
+}
+
+/// [markers]·[polylines] 의 모든 점을 감싸는 사각형. 점이 하나도 없으면 `null`.
+MapBounds? contentBounds(
+  Iterable<MapMarker> markers,
+  Iterable<MapPolyline> polylines,
+) {
+  final points = <({double lat, double lng})>[
+    for (final marker in markers) (lat: marker.lat, lng: marker.lng),
+    for (final line in polylines) ...line.points,
+  ];
+  if (points.isEmpty) return null;
+  var south = points.first.lat;
+  var north = south;
+  var west = points.first.lng;
+  var east = west;
+  for (final point in points) {
+    if (point.lat < south) south = point.lat;
+    if (point.lat > north) north = point.lat;
+    if (point.lng < west) west = point.lng;
+    if (point.lng > east) east = point.lng;
+  }
+  return MapBounds(south: south, west: west, north: north, east: east);
+}
+
 /// 지도 준비 완료 콜백 — SDK 가 타일을 그릴 준비를 마치면 호출된다.
 typedef MapReadyCallback = void Function();
 
@@ -65,6 +114,8 @@ class MapSurface extends StatelessWidget {
     required this.camera,
     super.key,
     this.markers = const [],
+    this.polylines = const [],
+    this.fitToContent = false,
     this.onReady,
     this.onAuthFailed,
   });
@@ -75,6 +126,14 @@ class MapSurface extends StatelessWidget {
 
   /// 지도 위에 찍을 마커 목록.
   final List<MapMarker> markers;
+
+  /// 지도 위에 그릴 선 목록(도로 경로 등).
+  final List<MapPolyline> polylines;
+
+  /// `true` 면 카메라를 마커·선이 전부 보이게 맞춘다 — 지도가 준비된 직후와, 마커 종류·개수가
+  /// 바뀔 때(예: 버스 위치가 처음 잡힐 때) 다시 맞춘다. 좌표만 바뀔 때는 맞추지 않는다(사용자가
+  /// 옮겨 둔 화면을 빼앗지 않는다). [camera] 는 맞추기 전 초기 위치가 된다.
+  final bool fitToContent;
 
   /// 지도 준비 완료 콜백.
   final MapReadyCallback? onReady;
@@ -87,6 +146,8 @@ class MapSurface extends StatelessWidget {
     return NaverMapAdapter(
       camera: camera,
       markers: markers,
+      polylines: polylines,
+      fitToContent: fitToContent,
       onReady: onReady,
       onAuthFailed: onAuthFailed,
     );

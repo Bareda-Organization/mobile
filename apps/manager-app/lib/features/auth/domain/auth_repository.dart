@@ -32,6 +32,12 @@ abstract interface class AuthRepository {
   /// §2.7.
   Future<void> logout();
 
+  /// §2.8 비밀번호 변경 — 성공하면 서버가 기존 refresh 토큰을 전량 무효화한다.
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  });
+
   /// §2.9. 자동 로그인 부트스트랩(`account_session.dart`)과 로그인 성공
   /// 직후 역할·상태 확인에 쓴다.
   Future<MeResponse> me();

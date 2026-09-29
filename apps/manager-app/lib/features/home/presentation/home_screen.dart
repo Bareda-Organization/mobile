@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,8 +8,10 @@ import 'package:manager_app/app/app_routes.dart';
 import 'package:manager_app/core/auth/account_session.dart';
 import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/core/auth/role_policy.dart';
+import 'package:manager_app/core/network/failure_messages.dart';
 import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
+import 'package:manager_app/features/emergency/presentation/widgets/emergency_button.dart';
 import 'package:manager_app/features/home/data/models/manager_run.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
 
@@ -36,6 +37,14 @@ class ManagerHomeScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('오늘 운행'),
         actions: [
+          // 비상(M-15, R32 M2) — 기사·동승자 모두, 확정된 회차가 있으면 운행 중이 아니어도 보낸다.
+          EmergencyButton(homeRuns: runsAsync.value),
+          // 비밀번호 변경(AUTH-07 · UF-X-09, R32 M13) — 기사·동승자 공통.
+          IconButton(
+            tooltip: '비밀번호 변경',
+            icon: const Icon(Icons.lock_outline),
+            onPressed: () => unawaited(context.push(AppRoutes.passwordChange)),
+          ),
           // 로그아웃(2026-09-23, 확인 대화 2026-09-26 추가·AUTH-09) —
           // 역할이 비면 라우터가 로그인 화면으로 보낸다. 기사·동승자 둘 다
           // 이 화면을 거쳐 운행 화면으로 들어가므로(§4.1) 둘 다 닿는 자리다.
@@ -53,7 +62,7 @@ class ManagerHomeScreen extends ConsumerWidget {
           error: (error, _) => ListView(
             children: [
               const SizedBox(height: 120),
-              Center(child: Text('오늘 운행을 불러오지 못했습니다: $error')),
+              Center(child: Text('오늘 운행을 불러오지 못했습니다: ${describeError(error)}')),
             ],
           ),
           data: (runs) {
@@ -117,6 +126,20 @@ class ManagerHomeScreen extends ConsumerWidget {
                         ? () => _openRun(context, ref, run, capabilities)
                         : null,
                   ),
+                  // 확정 전 카드는 눌러도 반응이 없다 — 이유와 열리는 시각을 알린다(M-02, R32 M9).
+                  if (!run.confirmed)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4, left: 4),
+                      child: Text(
+                        switch (run.confirmAt) {
+                          null => '출발 30분 전 확정 후 열립니다',
+                          final at =>
+                            '출발 30분 전 확정 후 열립니다 '
+                                '(${DateFormat('HH:mm').format(at.toLocal())})',
+                        },
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ),
                   const SizedBox(height: 12),
                 ],
               ],

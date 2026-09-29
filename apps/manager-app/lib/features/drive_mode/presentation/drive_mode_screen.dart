@@ -1,10 +1,10 @@
 import 'dart:async';
-
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:manager_app/app/app_routes.dart';
 import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/auth/auth_providers.dart';
@@ -15,20 +15,24 @@ import 'package:manager_app/core/run/manager_channel_banner.dart';
 import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/core/run/run_termination_provider.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
+import 'package:manager_app/core/ui/confirm_dialog.dart';
 import 'package:manager_app/core/wakelock/wakelock_port.dart';
 import 'package:manager_app/features/drive_mode/presentation/drive_mode_providers.dart';
+import 'package:manager_app/features/drive_mode/presentation/widgets/drive_map_panel.dart';
+import 'package:manager_app/features/drive_mode/presentation/widgets/remaining_stops_list.dart';
+import 'package:manager_app/features/emergency/presentation/widgets/emergency_button.dart';
 import 'package:manager_app/features/home/data/models/manager_run.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
 import 'package:manager_app/features/position/data/models/position_request.dart';
 import 'package:manager_app/features/roster/data/models/roster_response.dart';
+import 'package:manager_app/features/roster/presentation/widgets/change_ack_banner.dart';
 
 /// DriveMode — 운행 시작(§4.4) · 승하차지 도착 처리(§4.5), 기사 전용
 /// (M-08·M-10, role_policy.dart `canOperateRun`).
 ///
-/// §4.3(노선 정보 API)은 이번 라운드 범위 밖이라 지도 없이, §4.2 명단의
-/// `arrived_at` 로 다음 처리 대상을 계산한다(`drive_mode_providers.dart`
-/// 참고). 지도 자리는 비워 둔 화면 폭 전체 placeholder 뿐이다 — 실제 지도
-/// SDK 연동은 하지 않는다(브리프 제약).
+/// 다음 처리 대상은 §4.2 명단의 `arrived_at` 로 계산한다(`drive_mode_providers.dart`
+/// 참고). 가운데 지도(R32 M1)는 [DriveMapPanel] — 노선·승하차지·버스 위치를 보인다.
+/// 도착·종료 대형 버튼은 지도 아래가 아니라 화면 아래에 붙여 둔다 — 지도가 커져도 밀려나지 않는다.
 class DriveModeScreen extends ConsumerStatefulWidget {
   const DriveModeScreen({super.key});
 
@@ -38,6 +42,9 @@ class DriveModeScreen extends ConsumerStatefulWidget {
 
 class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
   bool _submitting = false;
+
+  /// 운행 중 뒤로가기를 확인했는지 — `true` 인 동안 [PopScope] 가 나가기를 막지 않는다.
+  bool _leaving = false;
   String? _errorMessage;
 
   /// §4.12 위치 전송 주기 타이머 — `_syncPositionTransmission` 이 운행 중
@@ -51,6 +58,11 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
   /// 상태(이동 중이 아니거나 동승자)에서는 계속 `null` — 안내를 보여줄
   /// 근거가 없다.
   PositionAvailability? _positionAvailability;
+
+  /// 기사 단말이 마지막으로 잰 좌표 — 지도의 버스 마커 자리(R32 M1). 위치 전송 주기(2초)마다
+  /// 갱신된다. 서버 방송에는 좌표가 없고(§7 매니저 채널) 기사 단말이 이미 스스로 재고 있어
+  /// 별도 요청을 만들지 않고 그 값을 그대로 쓴다.
+  ({double lat, double lng})? _busPosition;
 
   /// [initState] 에서 받아 둔 포트 — `ConsumerState.dispose()` 안에서는
   /// `ref.read` 가 안전하지 않다(위젯이 이미 unmount 되는 중이라 Riverpod
@@ -130,6 +142,9 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
     }
     final sample = source.sample();
     if (sample == null) return;
+    if (mounted) {
+      setState(() => _busPosition = (lat: sample.lat, lng: sample.lng));
+    }
     try {
       await ref
           .read(positionRepositoryProvider)
@@ -150,6 +165,14 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
   }
 
   Future<void> _startRun(String runId) async {
+    // 시작하면 노선이 잠기고 학부모·관계자에게 알림이 나간다 — 되돌릴 수 없어 한 번 묻는다(R32 M6).
+    final confirmed = await confirmAction(
+      context,
+      title: '운행을 시작할까요?',
+      body: '시작하면 학부모·관계자에게 운행 시작 알림이 나가고 노선이 잠깁니다',
+      confirmLabel: '시작하기',
+    );
+    if (!confirmed || !mounted) return;
     setState(() {
       _submitting = true;
       _errorMessage = null;
@@ -172,7 +195,22 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
     }
   }
 
-  Future<void> _arriveStop(String runId, String stopId) async {
+  Future<void> _arriveStop(
+    String runId,
+    String stopId, {
+    bool isLast = false,
+  }) async {
+    // 마지막 승하차지의 도착 처리는 곧 운행 종료다(C-15) — 되돌릴 수 없어 한 번 묻는다(R32 M6).
+    // 그 앞 승하차지는 운전 중에 자주 누르는 조작이라 묻지 않는다.
+    if (isLast) {
+      final confirmed = await confirmAction(
+        context,
+        title: '마지막 승하차지입니다',
+        body: '도착 처리하면 운행 종료 절차가 시작됩니다. 되돌릴 수 없습니다.',
+        confirmLabel: '도착했습니다',
+      );
+      if (!confirmed || !mounted) return;
+    }
     setState(() {
       _submitting = true;
       _errorMessage = null;
@@ -214,74 +252,127 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
       _positionSource?.stop();
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('운행 모드'),
-        actions: [
-          // 노선 지도(M-04·M-09)는 기사 전용이고, 기사가 홈에서 들어오는 화면은 여기뿐이다 —
-          // 명단 화면에만 두면 그 화면은 동승자만 들어가서 아무도 닿지 못한다(2026-09-23).
-          TextButton(
-            onPressed: () => unawaited(context.push(AppRoutes.routeMap)),
-            child: const Text('노선 지도'),
-          ),
-        ],
+    // 운행 중에 이 화면을 나가면 dispose 가 위치 송신을 멈춘다 — 확인 없이는 나가지 못하게 한다
+    // (R32 M15·M16). 운행 중이 아니면 바로 나간다.
+    return PopScope(
+      canPop: _leaving || run?.runStatus != RunStatus.moving,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) unawaited(_confirmLeave());
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('운행 모드'),
+          actions: [
+            // 비상(M-15, R32 M2) — 출발 전(확정)에도 눌린다.
+            const EmergencyButton(),
+            // 노선 지도(M-04·M-09)는 기사 전용이고, 기사가 홈에서 들어오는 화면은 여기뿐이다 —
+            // 명단 화면에만 두면 그 화면은 동승자만 들어가서 아무도 닿지 못한다(2026-09-23).
+            TextButton(
+              onPressed: () => unawaited(context.push(AppRoutes.routeMap)),
+              child: const Text('노선 지도'),
+            ),
+          ],
+        ),
+        body: runId == null
+            ? const Center(child: Text('선택된 운행이 없습니다 — 홈에서 운행을 선택하세요'))
+            : _buildBody(context, runId, run),
       ),
-      body: runId == null
-          ? const Center(child: Text('선택된 운행이 없습니다 — 홈에서 운행을 선택하세요'))
-          : _buildBody(context, runId, run),
     );
+  }
+
+  /// 운행 중 뒤로가기 확인 — 나가면 위치 송신이 멈추므로 그 사실을 알린다.
+  Future<void> _confirmLeave() async {
+    final leave = await confirmAction(
+      context,
+      title: '운행 화면을 나갈까요?',
+      body: '나가면 이 화면의 위치 송신이 멈춥니다. 학부모 앱의 버스 위치가 갱신되지 않습니다.',
+      confirmLabel: '나가기',
+      cancelLabel: '계속 운행',
+    );
+    if (!leave || !mounted) return;
+    // 나가기를 확인했으니 이번 한 번은 PopScope 가 막지 않게 푼 다음 다시 나간다.
+    setState(() => _leaving = true);
+    await WidgetsBinding.instance.endOfFrame;
+    if (mounted) await Navigator.of(context).maybePop();
   }
 
   Widget _buildBody(BuildContext context, String runId, ManagerRun? run) {
     final rosterAsync = ref.watch(driveModeRosterProvider);
+    // 지도 높이는 화면 비율로 정한다 — 작은 화면(360×640)에서도 아래 대형 버튼이 밀리지 않는다.
+    final mapHeight = (MediaQuery.sizeOf(context).height * 0.3).clamp(
+      140.0,
+      320.0,
+    );
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (run != null)
-            RunSummaryCard(
-              bus: run.busNo,
-              leg: run.direction == RunDirection.toAcademy ? '등원' : '하원',
-              status: run.runStatus == RunStatus.moving
-                  ? BaraedaStatus.moving
-                  : BaraedaStatus.idle,
-              statusLabel: run.runStatus == RunStatus.moving ? '운행 중' : '확정',
-              currentStop: run.origin,
-              nextStop: run.destination,
+    return Column(
+      children: [
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (run != null)
+                  RunSummaryCard(
+                    bus: run.busNo,
+                    leg: run.direction == RunDirection.toAcademy ? '등원' : '하원',
+                    status: run.runStatus == RunStatus.moving
+                        ? BaraedaStatus.moving
+                        : BaraedaStatus.idle,
+                    statusLabel: run.runStatus == RunStatus.moving
+                        ? '운행 중'
+                        : '확정',
+                    currentStop: run.origin,
+                    nextStop: run.destination,
+                  ),
+                const SizedBox(height: 16),
+                DriveMapPanel(height: mapHeight, busPosition: _busPosition),
+                const SizedBox(height: 16),
+                // 노선 변경 확인(M-04, R32 M4) — 기사는 명단 화면에 가지 않으므로 여기서 확인한다.
+                ChangeAckBanner(
+                  runId: runId,
+                  ackRequired: run?.ackRequired ?? false,
+                ),
+                // rosterAsync.when(...) 의 모든 분기 바깥 — "명단 없음"(정상)과
+                // "연결 끊김"(비정상)을 구별해야 한다(목표 9, ManagerChannelBanner
+                // 문서 참고).
+                ManagerChannelBanner(runId: runId),
+                if (_positionGuidance != null) ...[
+                  AlertBanner(tone: AlertTone.missed, body: _positionGuidance),
+                  const SizedBox(height: 12),
+                ],
+                // 남은 승하차지(M-08, R32 M5) — 조회 전용. 끝난 운행에는 남은 곳이 없다.
+                if (rosterAsync.value case final roster?
+                    when run?.runStatus != RunStatus.finished)
+                  RemainingStopsList(roster: roster),
+              ],
             ),
-          const SizedBox(height: 16),
-          // 지도 자리 — 실제 지도 SDK 는 이번 범위 밖(브리프 제약).
-          Container(
-            height: 160,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (_errorMessage != null) ...[
+                  AlertBanner(tone: AlertTone.missed, body: _errorMessage),
+                  const SizedBox(height: 12),
+                ],
+                rosterAsync.when(
+                  loading: () =>
+                      const Center(child: CircularProgressIndicator()),
+                  error: (error, _) =>
+                      Text('명단을 불러오지 못했습니다: ${describeError(error)}'),
+                  data: (roster) => _buildActionArea(runId, run, roster),
+                ),
+              ],
             ),
-            child: const Text('지도 자리 — 연동은 다음 라운드'),
           ),
-          const SizedBox(height: 16),
-          // rosterAsync.when(...) 의 모든 분기 바깥 — "명단 없음"(정상)과
-          // "연결 끊김"(비정상)을 구별해야 한다(목표 9, ManagerChannelBanner
-          // 문서 참고).
-          ManagerChannelBanner(runId: runId),
-          if (_positionGuidance != null) ...[
-            AlertBanner(tone: AlertTone.missed, body: _positionGuidance),
-            const SizedBox(height: 12),
-          ],
-          if (_errorMessage != null) ...[
-            AlertBanner(tone: AlertTone.missed, body: _errorMessage),
-            const SizedBox(height: 12),
-          ],
-          rosterAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (error, _) => Text('명단을 불러오지 못했습니다: $error'),
-            data: (roster) => _buildActionArea(runId, run, roster),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -304,7 +395,13 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
       final withinWindow =
           !now.isBefore(run.startWindowFrom) && !now.isAfter(run.startWindowTo);
       if (!withinWindow) {
-        return const Text('운행 시작 가능 시간(출발 ±10분)이 아닙니다');
+        // 언제부터 되는지를 알린다(R32 M10) — 이미 지났으면 지났다고 한다.
+        return Text(
+          now.isBefore(run.startWindowFrom)
+              ? '${DateFormat('HH:mm').format(run.startWindowFrom.toLocal())} '
+                    '부터 시작할 수 있습니다 (출발 ±10분)'
+              : '운행 시작 가능 시간(출발 ±10분)이 지났습니다',
+        );
       }
       return BaraedaButton(
         label: '운행 시작',
@@ -323,7 +420,11 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
         size: BaraedaButtonSize.lg,
         onPressed: _submitting
             ? null
-            : () => _arriveStop(runId, nextStop.stopId),
+            : () => _arriveStop(
+                runId,
+                nextStop.stopId,
+                isLast: isLastRemainingStop(roster, nextStop),
+              ),
       );
     }
 

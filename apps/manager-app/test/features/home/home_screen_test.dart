@@ -166,4 +166,46 @@ void main() {
       expect(find.text('DRIVE_MODE_SCREEN_MARKER'), findsNothing);
     },
   );
+
+  // R32 M9 — 확정 전 카드는 눌러도 반응이 없는데 이유를 알려 주지 않았다.
+  testWidgets('확정 전 회차는 언제 열리는지 알려 준다', (tester) async {
+    final run = ManagerRun(
+      runId: 'run-2',
+      busNo: '5호차',
+      direction: RunDirection.toAcademy,
+      departTime: DateTime(2026, 9, 30, 8),
+      origin: '기점',
+      destination: '학원',
+      estDurationMin: 30,
+      runStatus: RunStatus.idle,
+      confirmed: false,
+      confirmAt: DateTime(2026, 9, 30, 7, 30),
+      startWindowFrom: DateTime(2026, 9, 30, 7, 50),
+      startWindowTo: DateTime(2026, 9, 30, 8, 10),
+      addedCount: 0,
+      removedCount: 0,
+      ackRequired: false,
+    );
+    await tester.pumpWidget(
+      wrap([
+        todayRunsProvider.overrideWith((ref) async => [run]),
+        currentUserRoleProvider.overrideWith((ref) => UserRole.escort),
+      ]),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('출발 30분 전 확정 후 열립니다 (07:30)'), findsOneWidget);
+  });
+
+  testWidgets('확정된 회차에는 열리는 시각 안내가 없다', (tester) async {
+    await tester.pumpWidget(
+      wrap([
+        todayRunsProvider.overrideWith((ref) async => [confirmedRun()]),
+        currentUserRoleProvider.overrideWith((ref) => UserRole.escort),
+      ]),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('확정 후 열립니다'), findsNothing);
+  });
 }

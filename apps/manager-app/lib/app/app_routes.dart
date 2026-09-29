@@ -23,4 +23,5 @@ abstract final class AppRoutes {
   static const runEnd = '/run-end';
   static const emergency = '/emergency';
   static const offlineQueue = '/offline-queue';
+  static const passwordChange = '/password-change';
 }

@@ -18,6 +18,8 @@ import 'package:manager_app/features/drive_mode/presentation/drive_mode_screen.d
 import 'package:manager_app/features/home/data/models/manager_run.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
 import 'package:manager_app/features/roster/data/models/roster_response.dart';
+import 'package:manager_app/features/route_map/data/models/route_response.dart';
+import 'package:manager_app/features/route_map/presentation/route_providers.dart';
 
 /// M4 — `_startRun` 이 `Failure` 를 어떻게 다루는지만 보는 시험용 대역.
 /// `arriveStop` 은 이 파일의 시험 대상이 아니다.
@@ -132,6 +134,10 @@ void main() {
             startWindowTo: now.add(const Duration(minutes: 5)),
           ),
         ),
+        // R32 M1 — 운행 화면이 노선을 조회한다. 실제 서버로 나가지 않게 빈 노선으로 막는다.
+        routeProvider.overrideWith(
+          (ref) async => const RouteResponse(stops: []),
+        ),
         driveModeRosterProvider.overrideWith((ref) async => _emptyRoster),
       ]),
     );
@@ -153,13 +159,43 @@ void main() {
             startWindowTo: now.add(const Duration(minutes: 40)),
           ),
         ),
+        // R32 M1 — 운행 화면이 노선을 조회한다. 실제 서버로 나가지 않게 빈 노선으로 막는다.
+        routeProvider.overrideWith(
+          (ref) async => const RouteResponse(stops: []),
+        ),
         driveModeRosterProvider.overrideWith((ref) async => _emptyRoster),
       ]),
     );
     await tester.pumpAndSettle();
 
     expect(find.text('운행 시작'), findsNothing);
-    expect(find.text('운행 시작 가능 시간(출발 ±10분)이 아닙니다'), findsOneWidget);
+    // R32 M10 — 언제부터 되는지를 알려 준다(now = 08:00, 창 시작 = 08:20).
+    expect(find.text('08:20 부터 시작할 수 있습니다 (출발 ±10분)'), findsOneWidget);
+  });
+
+  testWidgets('출발 시간 창이 이미 지났으면 지났다고 알린다', (tester) async {
+    final now = DateTime(2026, 9, 12, 8);
+    await tester.pumpWidget(
+      _wrap(const DriveModeScreen(), [
+        clockProvider.overrideWithValue(_FixedClock(now)),
+        selectedRunIdProvider.overrideWith((ref) => runId),
+        driveModeRunProvider.overrideWithValue(
+          _managerRun(
+            startWindowFrom: now.subtract(const Duration(minutes: 40)),
+            startWindowTo: now.subtract(const Duration(minutes: 20)),
+          ),
+        ),
+        // R32 M1 — 운행 화면이 노선을 조회한다. 실제 서버로 나가지 않게 빈 노선으로 막는다.
+        routeProvider.overrideWith(
+          (ref) async => const RouteResponse(stops: []),
+        ),
+        driveModeRosterProvider.overrideWith((ref) async => _emptyRoster),
+      ]),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('운행 시작'), findsNothing);
+    expect(find.text('운행 시작 가능 시간(출발 ±10분)이 지났습니다'), findsOneWidget);
   });
 
   // M4(Ruling 340) — 취소된 회차(§4.1 목록에서도 제외)에 운행 시작을
@@ -184,6 +220,10 @@ void main() {
         // `driveModeRunProvider` 를 직접 override 하지 않는다 — 실제
         // 구현이 `todayRunsProvider` 를 읽어 유도하는 provider라, 여기서
         // 직접 값을 박으면 무효화가 이 provider 에 닿는지 확인할 수 없다.
+        // R32 M1 — 운행 화면이 노선을 조회한다. 실제 서버로 나가지 않게 빈 노선으로 막는다.
+        routeProvider.overrideWith(
+          (ref) async => const RouteResponse(stops: []),
+        ),
         driveModeRosterProvider.overrideWith((ref) async => _emptyRoster),
         driveModeRepositoryProvider.overrideWithValue(fakeRepo),
         todayRunsProvider.overrideWith((ref) async {
@@ -201,6 +241,9 @@ void main() {
     expect(todayRunsFetchCount, 1);
 
     await tester.tap(find.text('운행 시작'));
+    await tester.pumpAndSettle();
+    // R32 M6 — 시작은 확인 창을 거친다.
+    await tester.tap(find.text('시작하기'));
     await tester.pumpAndSettle();
 
     expect(find.text('취소된 회차입니다'), findsOneWidget);
@@ -232,6 +275,10 @@ void main() {
               startWindowTo: now.add(const Duration(minutes: 5)),
             ),
           ),
+          // R32 M1 — 운행 화면이 노선을 조회한다. 실제 서버로 나가지 않게 빈 노선으로 막는다.
+          routeProvider.overrideWith(
+            (ref) async => const RouteResponse(stops: []),
+          ),
           driveModeRosterProvider.overrideWith((ref) async => _emptyRoster),
         ],
         child: MaterialApp.router(routerConfig: router),
@@ -261,6 +308,10 @@ void main() {
               startWindowTo: now.add(const Duration(minutes: 5)),
             ),
           ),
+          // R32 M1 — 운행 화면이 노선을 조회한다. 실제 서버로 나가지 않게 빈 노선으로 막는다.
+          routeProvider.overrideWith(
+            (ref) async => const RouteResponse(stops: []),
+          ),
           driveModeRosterProvider.overrideWith((ref) => completer.future),
           tokenStorageProvider.overrideWithValue(
             _NeverResolvingTokenStorage(),
@@ -283,6 +334,10 @@ void main() {
               startWindowFrom: now.subtract(const Duration(minutes: 5)),
               startWindowTo: now.add(const Duration(minutes: 5)),
             ),
+          ),
+          // R32 M1 — 운행 화면이 노선을 조회한다. 실제 서버로 나가지 않게 빈 노선으로 막는다.
+          routeProvider.overrideWith(
+            (ref) async => const RouteResponse(stops: []),
           ),
           driveModeRosterProvider.overrideWith((ref) async => _emptyRoster),
           tokenStorageProvider.overrideWithValue(
@@ -313,6 +368,10 @@ void main() {
               startWindowFrom: now.subtract(const Duration(minutes: 5)),
               startWindowTo: now.add(const Duration(minutes: 5)),
             ),
+          ),
+          // R32 M1 — 운행 화면이 노선을 조회한다. 실제 서버로 나가지 않게 빈 노선으로 막는다.
+          routeProvider.overrideWith(
+            (ref) async => const RouteResponse(stops: []),
           ),
           driveModeRosterProvider.overrideWith((ref) async => empty),
           tokenStorageProvider.overrideWithValue(
