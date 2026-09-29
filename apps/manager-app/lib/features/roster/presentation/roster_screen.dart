@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
@@ -53,6 +54,17 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
   /// 도 같은 이유로 우회함 — baraeda_ui 는 이번 라운드 범위 밖). 이 화면
   /// 위쪽의 "변경 목록 확인" 안내와 같은 `AlertTone.moving` 을 재사용한다.
   String? _queueNotice;
+
+  /// 그 학생의 미승차 대기가 끝나는 시각 — 명단 응답의 `no_show_case.expires_at` 이다. 서버가
+  /// 학원 설정(A-17, 기본 3분)으로 계산해 주므로 앱에 대기 시간 상수를 두지 않는다(R32 M12).
+  DateTime? _waitEndsAtOf(RosterResponse roster, String riderId) {
+    for (final stop in roster.stops) {
+      for (final student in stop.students) {
+        if (student.riderId == riderId) return student.noShowCase?.expiresAt;
+      }
+    }
+    return null;
+  }
 
   /// 학생 이름 — 확인 창 문구용. 명단에 없으면 "학생" 으로 쓴다.
   String _nameOf(RosterResponse roster, String riderId) {
@@ -155,11 +167,14 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
   Future<void> _recordNoShowContact({
     required String runId,
     required String riderId,
+    DateTime? waitEndsAt,
   }) async {
+    final clock = ref.read(clockProvider);
     final request = await showModalBottomSheet<NoShowContactRequest>(
       context: context,
       isScrollControlled: true,
-      builder: (context) => const _NoShowContactSheet(),
+      builder: (context) =>
+          _NoShowContactSheet(waitEndsAt: waitEndsAt, clock: clock),
     );
     if (request == null || !mounted) return;
     setState(() {
@@ -337,8 +352,11 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
             ),
             onRevert: (riderId) =>
                 _revertStatus(runId: runId, riderId: riderId),
-            onRecordContact: (riderId) =>
-                _recordNoShowContact(runId: runId, riderId: riderId),
+            onRecordContact: (riderId) => _recordNoShowContact(
+              runId: runId,
+              riderId: riderId,
+              waitEndsAt: _waitEndsAtOf(roster, riderId),
+            ),
           ),
       ],
     );
@@ -548,8 +566,14 @@ class _StudentActions extends StatelessWidget {
 }
 
 /// §4.8 연락 시도 기록 입력 — 연락 수단·결과·(선택)최종 판단.
+///
+/// 최종 판단은 대기 시간이 끝난 뒤에만 고를 수 있다 — [waitEndsAt] 까지는 선택지를 끄고 남은 시간을
+/// 세어 보인다(R32 M12). [waitEndsAt] 을 모르면(`null`) 막지 않는다 — 서버가 최종 판정한다.
 class _NoShowContactSheet extends StatefulWidget {
-  const _NoShowContactSheet();
+  const _NoShowContactSheet({required this.waitEndsAt, required this.clock});
+
+  final DateTime? waitEndsAt;
+  final Clock clock;
 
   @override
   State<_NoShowContactSheet> createState() => _NoShowContactSheetState();
@@ -559,6 +583,32 @@ class _NoShowContactSheetState extends State<_NoShowContactSheet> {
   NoShowAttemptType _attemptType = NoShowAttemptType.call;
   NoShowContactResult _result = NoShowContactResult.noAnswer;
   NoShowDecision? _decision;
+  Timer? _ticker;
+
+  /// 대기가 끝나기까지 남은 시간 — 끝났거나 모르면 `Duration.zero`.
+  Duration get _remaining {
+    final end = widget.waitEndsAt;
+    if (end == null) return Duration.zero;
+    final left = end.difference(widget.clock.now());
+    return left.isNegative ? Duration.zero : left;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    if (_remaining > Duration.zero) {
+      _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+        if (_remaining == Duration.zero) _ticker?.cancel();
+        setState(() {});
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _ticker?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -601,7 +651,16 @@ class _NoShowContactSheetState extends State<_NoShowContactSheet> {
               ],
             ),
             const SizedBox(height: 16),
-            const Text('최종 판단 (3분 경과 후에만 선택)'),
+            const Text('최종 판단 (대기 시간이 끝난 뒤에만 선택)'),
+            if (_remaining > Duration.zero)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  '대기 시간이 끝나기까지 남은 시간 '
+                  '${_remaining.inMinutes}분 '
+                  '${(_remaining.inSeconds % 60).toString().padLeft(2, '0')}초',
+                ),
+              ),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
@@ -617,7 +676,9 @@ class _NoShowContactSheetState extends State<_NoShowContactSheet> {
                       decision == NoShowDecision.depart ? '출발 확정' : '재시도',
                     ),
                     selected: _decision == decision,
-                    onSelected: (_) => setState(() => _decision = decision),
+                    onSelected: _remaining > Duration.zero
+                        ? null
+                        : (_) => setState(() => _decision = decision),
                   ),
               ],
             ),
