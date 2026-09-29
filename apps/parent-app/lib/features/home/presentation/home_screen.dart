@@ -7,6 +7,7 @@ import 'package:parent_app/app/di.dart';
 import 'package:parent_app/core/auth/account_session.dart';
 import 'package:parent_app/core/auth/auth_providers.dart';
 import 'package:parent_app/core/students/presentation/selected_student.dart';
+import 'package:parent_app/core/time/service_date.dart';
 import 'package:parent_app/features/home/presentation/home_providers.dart';
 import 'package:parent_app/features/home/presentation/widgets/notification_list.dart';
 import 'package:parent_app/features/home/presentation/widgets/pending_change_badge.dart';
@@ -33,7 +34,7 @@ class HomeScreen extends ConsumerWidget {
       // 로그아웃을 머리말에도 둔다(2026-09-29 사용자 지적 · Ruling 362) — [설정] 맨 아래에만
       // 있어 찾지 못했다. 매니저 앱 홈과 같은 자리다. 설정 화면의 버튼은 그대로 둔다.
       appBar: AppHeader(
-        title: '오늘 운행',
+        title: '운행',
         actions: BaraedaButton(
           label: '로그아웃',
           size: BaraedaButtonSize.sm,
@@ -79,6 +80,7 @@ class HomeScreen extends ConsumerWidget {
   Future<void> _refresh(WidgetRef ref, {required bool isParent}) async {
     ref
       ..invalidate(runsForStudentProvider)
+      ..invalidate(runsForStudentOnProvider)
       ..invalidate(notificationsProvider);
     final base = isParent
         ? ref.refresh(myStudentsProvider.future)
@@ -238,35 +240,75 @@ class _StudentSection extends ConsumerWidget {
   }
 }
 
-class _RunsSection extends ConsumerWidget {
+/// 회차 영역 — [오늘 · 내일] 전환(UF-P-04 "전날~당일"). 내일은 한국 시간 내일 날짜로 §3.5 를 조회한다.
+/// 학생(`canToggle` false)도 내일 회차를 볼 수 있으나 토글은 없다.
+class _RunsSection extends ConsumerStatefulWidget {
   const _RunsSection({required this.studentId, required this.canToggle});
 
   final String studentId;
   final bool canToggle;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final runsAsync = ref.watch(runsForStudentProvider(studentId));
+  ConsumerState<_RunsSection> createState() => _RunsSectionState();
+}
 
-    return runsAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stack) => _ErrorBanner(
-        message: '오늘 회차를 불러오지 못했습니다',
-        onRetry: () => ref.invalidate(runsForStudentProvider(studentId)),
-      ),
-      data: (runs) => runs.isEmpty
-          ? const EmptyState(title: '오늘 예정된 회차가 없습니다')
-          : Column(
-              children: runs
-                  .map(
-                    (run) => RunCard(
-                      studentId: studentId,
-                      run: run,
-                      canToggle: canToggle,
-                    ),
-                  )
-                  .toList(),
-            ),
+class _RunsSectionState extends ConsumerState<_RunsSection> {
+  /// 0 = 오늘, 1 = 내일 (한국 시간).
+  int _dayOffset = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final studentId = widget.studentId;
+    final isToday = _dayOffset == 0;
+    final date = isToday
+        ? null
+        : koreaServiceDate(
+            ref.watch(clockProvider).now(),
+            plusDays: _dayOffset,
+          );
+    final runsAsync = date == null
+        ? ref.watch(runsForStudentProvider(studentId))
+        : ref.watch(runsForStudentOnProvider((studentId, date)));
+    final dayWord = isToday ? '오늘' : '내일';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SegmentedButton<int>(
+          segments: const [
+            ButtonSegment(value: 0, label: Text('오늘')),
+            ButtonSegment(value: 1, label: Text('내일')),
+          ],
+          selected: {_dayOffset},
+          showSelectedIcon: false,
+          onSelectionChanged: (selection) =>
+              setState(() => _dayOffset = selection.first),
+        ),
+        const SizedBox(height: BaraedaSpacing.space4),
+        runsAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, stack) => _ErrorBanner(
+            message: '$dayWord 회차를 불러오지 못했습니다',
+            onRetry: () => date == null
+                ? ref.invalidate(runsForStudentProvider(studentId))
+                : ref.invalidate(runsForStudentOnProvider((studentId, date))),
+          ),
+          data: (runs) => runs.isEmpty
+              ? EmptyState(title: '$dayWord 예정된 회차가 없습니다')
+              : Column(
+                  children: runs
+                      .map(
+                        (run) => RunCard(
+                          studentId: studentId,
+                          run: run,
+                          canToggle: widget.canToggle,
+                          date: date,
+                        ),
+                      )
+                      .toList(),
+                ),
+        ),
+      ],
     );
   }
 }

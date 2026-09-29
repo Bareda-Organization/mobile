@@ -15,16 +15,23 @@ import 'package:parent_app/features/home/presentation/home_providers.dart';
 ///
 /// **ETA·탑승 인원은 표시하지 않는다(C-08)** — [StudentRun] 자체에 그
 /// 필드가 부재하므로 이 위젯도 추가할 수 없다.
+///
+/// [date] 가 있으면 그날(내일) 회차 카드다 — 문구가 '내일 탑승' 이 되고, 확정까지 남은 시간
+/// (오늘 출발 판정용)과 지도 진입(운행 중에만 의미)은 뺀다(R34 P1).
 class RunCard extends ConsumerStatefulWidget {
   const RunCard({
     required this.studentId,
     required this.run,
     required this.canToggle,
+    this.date,
     super.key,
   });
 
   final String studentId;
   final StudentRun run;
+
+  /// 오늘이면 null, 내일 회차면 그 운행 날짜(한국 시간) — 쓰기 뒤 어느 목록을 다시 받을지 가른다.
+  final DateTime? date;
 
   /// 학부모만 true(`roleCapabilitiesProvider.canToggleAttendance`).
   final bool canToggle;
@@ -34,6 +41,8 @@ class RunCard extends ConsumerStatefulWidget {
 }
 
 class _RunCardState extends ConsumerState<RunCard> {
+  String get _dayWord => widget.date == null ? '오늘' : '내일';
+
   bool _submitting = false;
   String? _banner;
   AlertTone _bannerTone = AlertTone.info;
@@ -45,7 +54,7 @@ class _RunCardState extends ConsumerState<RunCard> {
     final run = widget.run;
     final confirmed = await showConfirmDialog(
       context,
-      title: '오늘 탑승을 끌까요?',
+      title: '$_dayWord 탑승을 끌까요?',
       body: switch (run.runStatus) {
         RunStatus.idle when !run.confirmed =>
           '바로 반영됩니다. 출발 30분 전까지는 다시 탑승으로 바꿀 수 있습니다.',
@@ -87,7 +96,12 @@ class _RunCardState extends ConsumerState<RunCard> {
         };
         _bannerTone = AlertTone.info;
       });
-      ref.invalidate(runsForStudentProvider(widget.studentId));
+      final date = widget.date;
+      ref.invalidate(
+        date == null
+            ? runsForStudentProvider(widget.studentId)
+            : runsForStudentOnProvider((widget.studentId, date)),
+      );
     } on Failure catch (failure) {
       if (!mounted) return;
       setState(() {
@@ -128,7 +142,9 @@ class _RunCardState extends ConsumerState<RunCard> {
             // 만들어져 있는데도 도달할 수 없었다(2026-09-21). 지도로 가는 눌림은 카드 윗부분만
             // 받는다 — 스위치 줄까지 감싸면 전송 중(스위치 비활성)에 누른 손이 지도를 연다(R32 P4).
             InkWell(
-              onTap: () => context.push(AppRoutes.liveMap),
+              onTap: widget.date == null
+                  ? () => context.push(AppRoutes.liveMap)
+                  : null,
               borderRadius: BorderRadius.circular(BaraedaRadius.md),
               child: Padding(
                 padding: const EdgeInsets.all(BaraedaSpacing.cardPadding),
@@ -152,7 +168,9 @@ class _RunCardState extends ConsumerState<RunCard> {
                     Text(
                       '${_formatTime(run.departTime)} 출발 · ${run.stop.name}',
                     ),
-                    if (_untilConfirm(run, ref.watch(clockProvider).now())
+                    if (widget.date == null
+                            ? _untilConfirm(run, ref.watch(clockProvider).now())
+                            : null
                         case final left?)
                       Text('확정까지 $left', style: BaraedaTypography.bodySm),
                   ],
@@ -173,7 +191,7 @@ class _RunCardState extends ConsumerState<RunCard> {
                     if (widget.canToggle)
                       BaraedaSwitch(
                         checked: run.riding,
-                        label: '오늘 탑승',
+                        label: '$_dayWord 탑승',
                         sublabel: '잔여 변경 ${run.changeQuotaLeft}회',
                         onChanged: _submitting ? null : _onSwitchChanged,
                       ),
