@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:parent_app/app/app_routes.dart';
 import 'package:parent_app/app/di.dart';
+import 'package:parent_app/core/auth/account_session.dart';
 import 'package:parent_app/core/auth/auth_providers.dart';
 import 'package:parent_app/core/students/presentation/selected_student.dart';
 import 'package:parent_app/features/home/presentation/home_providers.dart';
@@ -29,7 +30,17 @@ class HomeScreen extends ConsumerWidget {
     final isParent = capabilities?.canToggleAttendance ?? false;
 
     return Scaffold(
-      appBar: const AppHeader(title: '오늘 운행'),
+      // 로그아웃을 머리말에도 둔다(2026-09-29 사용자 지적 · Ruling 362) — [설정] 맨 아래에만
+      // 있어 찾지 못했다. 매니저 앱 홈과 같은 자리다. 설정 화면의 버튼은 그대로 둔다.
+      appBar: AppHeader(
+        title: '오늘 운행',
+        actions: BaraedaButton(
+          label: '로그아웃',
+          size: BaraedaButtonSize.sm,
+          variant: BaraedaButtonVariant.ghost,
+          onPressed: () => confirmLogout(context, ref),
+        ),
+      ),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(BaraedaSpacing.gutterMobile),

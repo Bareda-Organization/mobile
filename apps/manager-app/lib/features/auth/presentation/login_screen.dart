@@ -160,7 +160,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 label: '회원가입하기',
                 size: BaraedaButtonSize.lg,
                 variant: BaraedaButtonVariant.ghost,
-                onPressed: () => context.go(AppRoutes.signup),
+                onPressed: () => context.push(AppRoutes.signup),
               ),
               const SizedBox(height: BaraedaSpacing.space4),
               // M5(Ruling 329 · UF-X-04) — 매니저(기사·동승자)도 학부모·

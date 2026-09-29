@@ -4,6 +4,8 @@
 // 학부모 앱 홈의 제목 "오늘 운행" 이 상태 표시줄 시계와 **겹쳐 그려졌다.**
 // Material `AppBar` 는 안쪽에서 안전 영역을 처리하지만, 직접 만든
 // `PreferredSizeWidget` 은 그 일을 스스로 해야 한다.
+import 'dart:async';
+
 import 'package:baraeda_ui/theme/baraeda_theme.dart';
 import 'package:baraeda_ui/widgets/navigation/app_header.dart';
 import 'package:flutter/material.dart';
@@ -38,6 +40,35 @@ void main() {
     final top = tester.getTopLeft(find.byTooltip('뒤로')).dy;
     expect(top, greaterThanOrEqualTo(59),
         reason: '제목만 내리고 버튼을 두면 같은 줄이 어긋난다');
+  });
+
+  // 2026-09-29 사용자 지적 "앱 화면에서 뒤로가기 버튼" — 학부모 앱의 설정·일정·노선 상세·
+  // 자녀 연결·실시간 위치 5개 화면이 `onBack` 을 안 넘겨 뒤로 버튼이 없었다. 화면마다 넘기게
+  // 하면 다음 화면이 또 빠뜨린다 → 뒤에 화면이 있으면 머리말이 스스로 그린다.
+  testWidgets('뒤에 화면이 있으면 onBack 없이도 뒤로 버튼이 생기고, 누르면 돌아간다', (tester) async {
+    await tester.pumpWidget(MaterialApp(
+      theme: BaraedaTheme.light(),
+      home: const Scaffold(appBar: AppHeader(title: '오늘 운행'), body: SizedBox()),
+    ));
+    final homeContext = tester.element(find.text('오늘 운행'));
+    unawaited(Navigator.of(homeContext).push(MaterialPageRoute<void>(
+      builder: (_) =>
+          const Scaffold(appBar: AppHeader(title: '설정'), body: SizedBox()),
+    )));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('뒤로'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('설정'), findsNothing, reason: '뒤로 버튼을 눌렀는데 설정 화면이 그대로다');
+    expect(find.text('오늘 운행'), findsOneWidget);
+  });
+
+  testWidgets('첫 화면에는 뒤로 버튼이 없다', (tester) async {
+    await tester.pumpWidget(wrap(const AppHeader(title: '오늘 운행')));
+
+    expect(find.byTooltip('뒤로'), findsNothing,
+        reason: '돌아갈 화면이 없는데 버튼을 그리면 눌러도 아무 일이 없다');
   });
 
   testWidgets('상태 표시줄이 없는 기기에서는 여백을 더하지 않는다', (tester) async {

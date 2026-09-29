@@ -28,7 +28,9 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
   /// 호차·매니저 등 메타 한 줄.
   final String? subtitle;
 
-  /// 지정하면 뒤로가기 버튼을 그린다.
+  /// 뒤로가기 동작. 비우면 뒤에 화면이 있을 때만 돌아가는 버튼을 그린다
+  /// (Material `AppBar` 의 `automaticallyImplyLeading` 과 같은 규칙 —
+  /// 2026-09-29, 화면마다 넘기게 두었더니 학부모 앱 5개 화면이 빠뜨렸다).
   final VoidCallback? onBack;
 
   /// 오른쪽 아이콘 버튼 영역.
@@ -46,6 +48,8 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
     final background = inverse ? colors.surfaceChrome : colors.bgBase;
     final foreground = inverse ? colors.textOnChrome : colors.textPrimary;
     final borderColor = inverse ? colors.borderChrome : colors.borderSubtle;
+    final back = onBack ??
+        (Navigator.canPop(context) ? () => Navigator.maybePop(context) : null);
 
     return Semantics(
       header: true,
@@ -70,9 +74,9 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
           ),
           child: Row(
             children: [
-              if (onBack != null)
+              if (back != null)
                 IconButton(
-                  onPressed: onBack,
+                  onPressed: back,
                   tooltip: '뒤로',
                   icon: BaraedaIcon(
                     'chevron-left',
