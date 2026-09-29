@@ -11,6 +11,7 @@ import 'package:manager_app/features/emergency/data/models/emergency_raise_reque
 import 'package:manager_app/features/emergency/data/models/emergency_raise_result.dart';
 import 'package:manager_app/features/emergency/data/models/emergency_type.dart';
 import 'package:manager_app/features/emergency/presentation/emergency_providers.dart';
+import 'package:manager_app/features/emergency/presentation/widgets/emergency_button.dart';
 import 'package:manager_app/features/offline_queue/domain/send_outcome.dart';
 
 /// EmergencyScreen — 비상 발신·취소·이력 조회 (API_SPEC §4.14·§4.15, M-15,
@@ -23,15 +24,12 @@ import 'package:manager_app/features/offline_queue/domain/send_outcome.dart';
 /// 판단한다 — 클라이언트가 `발신 시각 + 1분` 을 계산하면 단말·서버 시계가
 /// 어긋났을 때(clock skew) 실제와 다른 창을 보여준다.
 ///
-/// 실시간 확인 반영(WS `emergency_acked`, Ruling 277)은 F4 로 구현됐지만
-/// 이 화면이 직접 구독하지는 않는다 — `AppRoutes.emergency` 는 라우트
-/// 등록만 있고 앱 안에서 이동해 들어오는 호출부가 없는 죽은 라우트라
-/// (`router.dart` 확인), 이 화면이 떠 있는 채로 방송을 기다릴 상황
-/// 자체가 없다. 대신 `ManagerRunChannelController`(DriveMode·StopRoster
-/// 가 호스팅)가 `emergency_acked` 를 받을 때마다 `emergencyListProvider`
-/// 를 무효화해 두므로, 이 화면에 다시 들어오면(재진입 시 재조회) 이미
-/// 최신 `acked` 상태를 본다 — 별도 WebSocket 클라이언트를 이 화면에
-/// 두지 않는다(보고서 §1).
+/// 진입점은 홈·운행·명단 화면 머리말의 [EmergencyButton] 이다(R32 M2 — 그 전에는 라우트만
+/// 있고 갈 길이 없었다). 실시간 확인 반영(WS `emergency_acked`, Ruling 277)은 이 화면이
+/// 직접 구독하지 않는다 — `ManagerRunChannelController`(DriveMode·StopRoster 가 호스팅)가
+/// `emergency_acked` 를 받을 때마다 `emergencyListProvider` 를 무효화해 두므로, 이 화면에
+/// 들어오면(재진입 시 재조회) 이미 최신 `acked` 상태를 본다 — 별도 WebSocket 클라이언트를
+/// 이 화면에 두지 않는다(보고서 §1).
 class EmergencyScreen extends ConsumerStatefulWidget {
   const EmergencyScreen({super.key});
 

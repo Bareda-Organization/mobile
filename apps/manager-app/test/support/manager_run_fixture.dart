@@ -1,0 +1,31 @@
+import 'package:manager_app/core/run/run_enums.dart';
+import 'package:manager_app/features/home/data/models/manager_run.dart';
+
+/// 화면 시험이 쓰는 회차 한 건 — 필요한 값만 바꾸고 나머지는 같은 기본값을 쓴다.
+ManagerRun managerRunFixture({
+  String runId = 'run-1',
+  String busNo = '3호차',
+  RunStatus status = RunStatus.confirmed,
+  bool confirmed = true,
+  RunDirection direction = RunDirection.toAcademy,
+  DateTime? departTime,
+  bool ackRequired = false,
+}) {
+  final depart = departTime ?? DateTime(2026, 9, 30, 8);
+  return ManagerRun(
+    runId: runId,
+    busNo: busNo,
+    direction: direction,
+    departTime: depart,
+    origin: '기점',
+    destination: '학원',
+    estDurationMin: 30,
+    runStatus: status,
+    confirmed: confirmed,
+    startWindowFrom: depart.subtract(const Duration(minutes: 10)),
+    startWindowTo: depart.add(const Duration(minutes: 10)),
+    addedCount: 0,
+    removedCount: 0,
+    ackRequired: ackRequired,
+  );
+}

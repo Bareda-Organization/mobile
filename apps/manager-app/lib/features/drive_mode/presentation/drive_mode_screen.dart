@@ -17,6 +17,7 @@ import 'package:manager_app/core/run/run_termination_provider.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/core/wakelock/wakelock_port.dart';
 import 'package:manager_app/features/drive_mode/presentation/drive_mode_providers.dart';
+import 'package:manager_app/features/emergency/presentation/widgets/emergency_button.dart';
 import 'package:manager_app/features/drive_mode/presentation/widgets/drive_map_panel.dart';
 import 'package:manager_app/features/home/data/models/manager_run.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
@@ -226,6 +227,8 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
       appBar: AppBar(
         title: const Text('운행 모드'),
         actions: [
+          // 비상(M-15, R32 M2) — 출발 전(확정)에도 눌린다.
+          const EmergencyButton(),
           // 노선 지도(M-04·M-09)는 기사 전용이고, 기사가 홈에서 들어오는 화면은 여기뿐이다 —
           // 명단 화면에만 두면 그 화면은 동승자만 들어가서 아무도 닿지 못한다(2026-09-23).
           TextButton(

@@ -11,6 +11,7 @@ import 'package:manager_app/core/network/failure_messages.dart';
 import 'package:manager_app/core/run/manager_channel_banner.dart';
 import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
+import 'package:manager_app/features/emergency/presentation/widgets/emergency_button.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
 import 'package:manager_app/features/offline_queue/domain/send_outcome.dart';
 import 'package:manager_app/features/roster/data/models/boarding_update_request.dart';
@@ -184,6 +185,8 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
       appBar: AppBar(
         title: const Text('승하차 명단'),
         actions: [
+          // 비상(M-15, R32 M2) — 동승자도 발신한다. 노선·연결 상태와 무관하게 늘 보인다.
+          const EmergencyButton(),
           if (caps?.canSendDelayNotification ?? false)
             TextButton(
               onPressed: () => context.push(AppRoutes.delay),

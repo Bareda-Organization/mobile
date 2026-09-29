@@ -11,6 +11,7 @@ import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/core/auth/role_policy.dart';
 import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
+import 'package:manager_app/features/emergency/presentation/widgets/emergency_button.dart';
 import 'package:manager_app/features/home/data/models/manager_run.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
 
@@ -36,6 +37,8 @@ class ManagerHomeScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('오늘 운행'),
         actions: [
+          // 비상(M-15, R32 M2) — 기사·동승자 모두, 확정된 회차가 있으면 운행 중이 아니어도 보낸다.
+          EmergencyButton(homeRuns: runsAsync.value),
           // 로그아웃(2026-09-23, 확인 대화 2026-09-26 추가·AUTH-09) —
           // 역할이 비면 라우터가 로그인 화면으로 보낸다. 기사·동승자 둘 다
           // 이 화면을 거쳐 운행 화면으로 들어가므로(§4.1) 둘 다 닿는 자리다.
