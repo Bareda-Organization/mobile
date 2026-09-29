@@ -11,6 +11,7 @@ import 'package:manager_app/core/network/failure_messages.dart';
 import 'package:manager_app/core/run/manager_channel_banner.dart';
 import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
+import 'package:manager_app/core/ui/confirm_dialog.dart';
 import 'package:manager_app/features/emergency/presentation/widgets/emergency_button.dart';
 import 'package:manager_app/features/offline_queue/domain/send_outcome.dart';
 import 'package:manager_app/features/roster/data/models/boarding_update_request.dart';
@@ -52,6 +53,37 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
   /// 도 같은 이유로 우회함 — baraeda_ui 는 이번 라운드 범위 밖). 이 화면
   /// 위쪽의 "변경 목록 확인" 안내와 같은 `AlertTone.moving` 을 재사용한다.
   String? _queueNotice;
+
+  /// 학생 이름 — 확인 창 문구용. 명단에 없으면 "학생" 으로 쓴다.
+  String _nameOf(RosterResponse roster, String riderId) {
+    for (final stop in roster.stops) {
+      for (final student in stop.students) {
+        if (student.riderId == riderId) return student.name;
+      }
+    }
+    return '학생';
+  }
+
+  /// [미승차]는 [탑승] 옆에 있어 잘못 눌리기 쉽고, 처리하면 학부모에게 알림이 나간다 — 한 번
+  /// 묻는다(R32 M7). 취소하면 요청을 보내지 않는다.
+  Future<void> _confirmNoShow({
+    required String runId,
+    required String riderId,
+    required String name,
+  }) async {
+    final confirmed = await confirmAction(
+      context,
+      title: '$name 학생을 미승차로 처리할까요?',
+      body: '처리하면 학부모·관계자에게 바로 알림이 나가고 연락 대기 시간이 시작됩니다',
+      confirmLabel: '미승차 처리',
+    );
+    if (!confirmed || !mounted) return;
+    await _updateStatus(
+      runId: runId,
+      riderId: riderId,
+      status: RiderStatus.noShow,
+    );
+  }
 
   Future<void> _updateStatus({
     required String runId,
@@ -297,10 +329,10 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
               riderId: riderId,
               status: RiderStatus.alighted,
             ),
-            onNoShow: (riderId) => _updateStatus(
+            onNoShow: (riderId) => _confirmNoShow(
               runId: runId,
               riderId: riderId,
-              status: RiderStatus.noShow,
+              name: _nameOf(roster, riderId),
             ),
             onRevert: (riderId) =>
                 _revertStatus(runId: runId, riderId: riderId),
