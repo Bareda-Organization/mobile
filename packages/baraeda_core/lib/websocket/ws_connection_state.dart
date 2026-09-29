@@ -1,6 +1,5 @@
-/// [BaraedaWebSocketClient] 의 연결 상태 — 화면이 배지·재연결 안내를 그리는
-/// 데 쓴다. 참고: `BaraedaWebSocketClient` 는 같은 파일이 아니라
-/// `baraeda_websocket_client.dart` 에 있다(문서 링크 목적으로만 이름 언급).
+/// `BaraedaWebSocketClient` 의 연결 상태 — 화면이 배지·재연결 안내를 그리는
+/// 데 쓴다. 그 클래스는 이 파일이 아니라 `baraeda_websocket_client.dart` 에 있다.
 enum WsConnectionState {
   /// 연결 시도 전, 또는 `disconnect()` 호출 이후 — 재연결 타이머도 없다.
   disconnected,

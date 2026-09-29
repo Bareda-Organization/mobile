@@ -17,6 +17,7 @@ import 'dart:math';
 /// 분리해 두면 "3번째 재시도의 대기가 정확히 몇 ms 인가"를 `Timer` 없이
 /// 바로 검사할 수 있다.
 class WsBackoffPolicy {
+  /// 기본값은 1·2·4·8·16·30초 6회.
   const WsBackoffPolicy({
     this.initialDelay = const Duration(seconds: 1),
     this.maxDelay = const Duration(seconds: 30),

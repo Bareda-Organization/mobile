@@ -89,13 +89,12 @@ class _FlakyStompServer {
     server.listen((request) async {
       attempts += 1;
       final accept =
-          _acceptFromAttempt != null && attempts >= _acceptFromAttempt!;
+          _acceptFromAttempt != null && attempts >= _acceptFromAttempt;
       if (!accept) {
         // 서버가 꺼져 있는 상태를 흉내 — 업그레이드를 거부해 클라이언트
         // 쪽 `WebSocket.connect` 가 예외를 던지게 한다.
-        request.response
-          ..statusCode = HttpStatus.serviceUnavailable
-          ..close();
+        request.response.statusCode = HttpStatus.serviceUnavailable;
+        unawaited(request.response.close());
         return;
       }
       final socket = await WebSocketTransformer.upgrade(request);
@@ -139,8 +138,6 @@ void main() {
         backoffPolicy: const WsBackoffPolicy(
           initialDelay: Duration(milliseconds: 30),
           maxDelay: Duration(milliseconds: 200),
-          multiplier: 2,
-          maxAttempts: 6,
         ),
       );
       addTearDown(client.dispose);
@@ -176,7 +173,6 @@ void main() {
         backoffPolicy: const WsBackoffPolicy(
           initialDelay: Duration(milliseconds: 20),
           maxDelay: Duration(milliseconds: 50),
-          multiplier: 2,
           maxAttempts: 2,
         ),
       );

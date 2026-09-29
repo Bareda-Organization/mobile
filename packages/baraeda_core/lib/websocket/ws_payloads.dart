@@ -13,6 +13,7 @@ import 'package:baraeda_core/id/as_id_string.dart';
 
 /// `position` — 학부모·학생 채널은 [eta] 가 항상 `null`(C-08), 관제 채널만 값이 온다.
 class WsPositionPayload {
+  /// 값을 그대로 받는다.
   const WsPositionPayload({
     required this.lat,
     required this.lng,
@@ -21,6 +22,7 @@ class WsPositionPayload {
     this.eta,
   });
 
+  /// 봉투 `payload` 원문을 파싱한다 — 키는 `API_SPEC §7.1` 의 snake_case.
   factory WsPositionPayload.fromJson(Map<String, dynamic> json) =>
       WsPositionPayload(
         lat: (json['lat'] as num).toDouble(),
@@ -33,16 +35,26 @@ class WsPositionPayload {
         eta: json['eta']?.toString(),
       );
 
+  /// 위도.
   final double lat;
+
+  /// 경도.
   final double lng;
+
+  /// 서버가 좌표를 받은 시각.
   final DateTime receivedAt;
+
+  /// 직전에 도착한 승하차지 이름 — 아직 없으면 null.
   final String? currentStopName;
+
+  /// 도착 예정 원문 — 관제 채널에서만 값이 온다.
   final String? eta;
 }
 
 /// `stop_arrived` — 기사 포인터 전진의 방송. 동승자 처리 명단은 이 이벤트로
 /// 바뀌지 않는다(`rider_changed` 가 별도로 온다).
 class WsStopArrivedPayload {
+  /// 값을 그대로 받는다.
   const WsStopArrivedPayload({
     required this.stopId,
     required this.seq,
@@ -51,6 +63,7 @@ class WsStopArrivedPayload {
     required this.nextStopId,
   });
 
+  /// 봉투 `payload` 원문을 파싱한다 — 키는 `API_SPEC §7.1` 의 snake_case.
   factory WsStopArrivedPayload.fromJson(Map<String, dynamic> json) =>
       WsStopArrivedPayload(
         stopId: asIdString(json['stop_id']),
@@ -63,16 +76,26 @@ class WsStopArrivedPayload {
             : asIdString(json['next_stop_id']),
       );
 
+  /// 승하차지 id.
   final String stopId;
+
+  /// 회차 안의 정차 순번.
   final int seq;
+
+  /// 도착한 승하차지 이름.
   final String name;
+
+  /// 승하차지에 도착한 시각.
   final DateTime arrivedAt;
+
+  /// 다음 승하차지 id — 마지막이면 null.
   final String? nextStopId;
 }
 
 /// `rider_changed` — 5초 이내 반영. `counts`·`status` 의 정확한 하위 구조는
 /// 사양이 값 사전을 별도로 두지 않아 원문 그대로 넘긴다.
 class WsRiderChangedPayload {
+  /// 값을 그대로 받는다.
   const WsRiderChangedPayload({
     required this.riderId,
     required this.studentId,
@@ -84,6 +107,7 @@ class WsRiderChangedPayload {
     required this.stopSkipped,
   });
 
+  /// 봉투 `payload` 원문을 파싱한다 — 키는 `API_SPEC §7.1` 의 snake_case.
   factory WsRiderChangedPayload.fromJson(Map<String, dynamic> json) =>
       WsRiderChangedPayload(
         riderId: asIdString(json['rider_id']),
@@ -98,13 +122,28 @@ class WsRiderChangedPayload {
         stopSkipped: json['stop_skipped'] as bool,
       );
 
+  /// 동승자 id.
   final String riderId;
+
+  /// 학생 id.
   final String studentId;
+
+  /// 학생 이름.
   final String studentName;
+
+  /// `RunRider.status` 원문(waiting·boarded·alighted·absent·no_show).
   final String status;
+
+  /// 승하차지 id.
   final String stopId;
+
+  /// 상태가 바뀐 시각.
   final DateTime changedAt;
+
+  /// 인원 집계 원문.
   final Map<String, dynamic> counts;
+
+  /// 이 승하차지에 정차하지 않는지.
   final bool stopSkipped;
 }
 
@@ -113,12 +152,14 @@ class WsRiderChangedPayload {
 /// [autoBoardedCount] 는 매니저·관제 채널에만 실린다 — 학생 채널은 인원수를
 /// 싣지 않는다(C-08, Ruling 335).
 class WsRunStartedPayload {
+  /// 값을 그대로 받는다.
   const WsRunStartedPayload({
     required this.runStatus,
     required this.startedAt,
     this.autoBoardedCount,
   });
 
+  /// 봉투 `payload` 원문을 파싱한다 — 키는 `API_SPEC §7.1` 의 snake_case.
   factory WsRunStartedPayload.fromJson(Map<String, dynamic> json) =>
       WsRunStartedPayload(
         runStatus: json['run_status'] as String,
@@ -126,8 +167,13 @@ class WsRunStartedPayload {
         autoBoardedCount: json['auto_boarded_count'] as int?,
       );
 
+  /// 회차 상태 원문.
   final String runStatus;
+
+  /// 운행을 시작한 시각.
   final DateTime startedAt;
+
+  /// 자동 승차 처리 인원 — 학생 채널에는 없다.
   final int? autoBoardedCount;
 }
 
@@ -136,12 +182,14 @@ class WsRunStartedPayload {
 /// [autoAlightedCount] 는 매니저·관제 채널에만 실린다 — 학생 채널은 인원수를
 /// 싣지 않는다(C-08, Ruling 335).
 class WsRunEndedPayload {
+  /// 값을 그대로 받는다.
   const WsRunEndedPayload({
     required this.runStatus,
     required this.finishedAt,
     this.autoAlightedCount,
   });
 
+  /// 봉투 `payload` 원문을 파싱한다 — 키는 `API_SPEC §7.1` 의 snake_case.
   factory WsRunEndedPayload.fromJson(Map<String, dynamic> json) =>
       WsRunEndedPayload(
         runStatus: json['run_status'] as String,
@@ -149,19 +197,26 @@ class WsRunEndedPayload {
         autoAlightedCount: json['auto_alighted_count'] as int?,
       );
 
+  /// 회차 상태 원문.
   final String runStatus;
+
+  /// 운행을 마친 시각.
   final DateTime finishedAt;
+
+  /// 자동 하차 처리 인원 — 학생 채널에는 없다.
   final int? autoAlightedCount;
 }
 
 /// [WsEmergencyRaisedPayload.raisedBy] 하위 객체.
 class WsEmergencyRaisedBy {
+  /// 값을 그대로 받는다.
   const WsEmergencyRaisedBy({
     required this.name,
     required this.role,
     required this.phone,
   });
 
+  /// 봉투 `payload` 원문을 파싱한다 — 키는 `API_SPEC §7.1` 의 snake_case.
   factory WsEmergencyRaisedBy.fromJson(Map<String, dynamic> json) =>
       WsEmergencyRaisedBy(
         name: json['name'] as String,
@@ -169,27 +224,38 @@ class WsEmergencyRaisedBy {
         phone: json['phone'] as String,
       );
 
+  /// 신고자 이름.
   final String name;
+
+  /// 신고자 역할 원문.
   final String role;
+
+  /// 신고자 연락처.
   final String phone;
 }
 
 /// [WsEmergencyRaisedPayload.position] 하위 객체 — 발신 시점 좌표.
 class WsEmergencyPosition {
+  /// 값을 그대로 받는다.
   const WsEmergencyPosition({required this.lat, required this.lng});
 
+  /// 봉투 `payload` 원문을 파싱한다 — 키는 `API_SPEC §7.1` 의 snake_case.
   factory WsEmergencyPosition.fromJson(Map<String, dynamic> json) =>
       WsEmergencyPosition(
         lat: (json['lat'] as num).toDouble(),
         lng: (json['lng'] as num).toDouble(),
       );
 
+  /// 위도.
   final double lat;
+
+  /// 경도.
   final double lng;
 }
 
 /// `emergency_raised` — 관계자·메인 관리자 채널 전용(C-17).
 class WsEmergencyRaisedPayload {
+  /// 값을 그대로 받는다.
   const WsEmergencyRaisedPayload({
     required this.emergencyId,
     required this.type,
@@ -200,6 +266,7 @@ class WsEmergencyRaisedPayload {
     required this.raisedAt,
   });
 
+  /// 봉투 `payload` 원문을 파싱한다 — 키는 `API_SPEC §7.1` 의 snake_case.
   factory WsEmergencyRaisedPayload.fromJson(Map<String, dynamic> json) =>
       WsEmergencyRaisedPayload(
         emergencyId: asIdString(json['emergency_id']),
@@ -216,23 +283,38 @@ class WsEmergencyRaisedPayload {
         raisedAt: DateTime.parse(json['raised_at'] as String),
       );
 
+  /// 비상 신고 id.
   final String emergencyId;
+
+  /// 비상 유형 원문.
   final String type;
+
+  /// 호차 이름.
   final String busNo;
+
+  /// 신고자.
   final WsEmergencyRaisedBy raisedBy;
+
+  /// 신고 시점 좌표.
   final WsEmergencyPosition position;
+
+  /// 신고 시점 회차에 배정된 동승자 전원 수.
   final int riderCount;
+
+  /// 신고 시각.
   final DateTime raisedAt;
 }
 
 /// `emergency_acked` — 매니저 채널 전용. 발신자 앱에 "학원이 확인했습니다" 표시(A-16).
 class WsEmergencyAckedPayload {
+  /// 값을 그대로 받는다.
   const WsEmergencyAckedPayload({
     required this.emergencyId,
     required this.ackedByName,
     required this.ackedAt,
   });
 
+  /// 봉투 `payload` 원문을 파싱한다 — 키는 `API_SPEC §7.1` 의 snake_case.
   factory WsEmergencyAckedPayload.fromJson(Map<String, dynamic> json) =>
       WsEmergencyAckedPayload(
         emergencyId: asIdString(json['emergency_id']),
@@ -240,13 +322,19 @@ class WsEmergencyAckedPayload {
         ackedAt: DateTime.parse(json['acked_at'] as String),
       );
 
+  /// 비상 신고 id.
   final String emergencyId;
+
+  /// 확인한 관계자 이름.
   final String ackedByName;
+
+  /// 확인한 시각.
   final DateTime ackedAt;
 }
 
 /// `approval_requested` — 관계자 채널 전용(REQ-05).
 class WsApprovalRequestedPayload {
+  /// 값을 그대로 받는다.
   const WsApprovalRequestedPayload({
     required this.approvalId,
     required this.studentName,
@@ -255,6 +343,7 @@ class WsApprovalRequestedPayload {
     required this.deadlineAt,
   });
 
+  /// 봉투 `payload` 원문을 파싱한다 — 키는 `API_SPEC §7.1` 의 snake_case.
   factory WsApprovalRequestedPayload.fromJson(Map<String, dynamic> json) =>
       WsApprovalRequestedPayload(
         approvalId: asIdString(json['approval_id']),
@@ -264,9 +353,18 @@ class WsApprovalRequestedPayload {
         deadlineAt: DateTime.parse(json['deadline_at'] as String),
       );
 
+  /// 승인 요청 id.
   final String approvalId;
+
+  /// 학생 이름.
   final String studentName;
+
+  /// 회차 id.
   final String runId;
+
+  /// 승하차지 이름.
   final String stopName;
+
+  /// 승인 마감 시각.
   final DateTime deadlineAt;
 }

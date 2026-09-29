@@ -1,8 +1,6 @@
 @Tags(['real_backend'])
 library;
 
-import 'dart:async';
-
 import 'package:baraeda_core/auth/auth_api.dart';
 import 'package:baraeda_core/network/api_client.dart';
 import 'package:baraeda_core/storage/token_storage.dart';
@@ -136,25 +134,25 @@ void main() {
           .timeout(const Duration(seconds: 10));
 
       // STOMP 1.2 CONNECT 프레임 — 널 문자(`\x00`)로 끝난다.
-      socket.sendText(
-        'CONNECT\n'
-        'accept-version:1.2\n'
-        'host:localhost\n'
-        'Authorization:Bearer $token\n'
-        '\n'
-        '\x00',
-      );
-
-      // parentA1(학부모)은 매니저 채널(기사·동승자 전용)에 권한이 없다 —
-      // CONNECTED 응답을 기다리지 않고 바로 SUBSCRIBE 를 보내도 서버는
-      // 프레임 순서대로 처리하므로 문제 없다.
-      socket.sendText(
-        'SUBSCRIBE\n'
-        'id:sub-0\n'
-        'destination:${WsChannel.managerRun('1')}\n'
-        '\n'
-        '\x00',
-      );
+      socket
+        ..sendText(
+          'CONNECT\n'
+          'accept-version:1.2\n'
+          'host:localhost\n'
+          'Authorization:Bearer $token\n'
+          '\n'
+          '\x00',
+        )
+        // parentA1(학부모)은 매니저 채널(기사·동승자 전용)에 권한이 없다 —
+        // CONNECTED 응답을 기다리지 않고 바로 SUBSCRIBE 를 보내도 서버는
+        // 프레임 순서대로 처리하므로 문제 없다.
+        ..sendText(
+          'SUBSCRIBE\n'
+          'id:sub-0\n'
+          'destination:${WsChannel.managerRun('1')}\n'
+          '\n'
+          '\x00',
+        );
 
       final close = await closeFuture;
       expect(close.code, 4403);

@@ -1,12 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:stomp_dart_client/stomp_dart_client.dart';
-
 import 'package:baraeda_core/storage/token_storage.dart';
 import 'package:baraeda_core/websocket/websocket_envelope.dart';
 import 'package:baraeda_core/websocket/ws_backoff_policy.dart';
 import 'package:baraeda_core/websocket/ws_connection_state.dart';
+import 'package:stomp_dart_client/stomp_dart_client.dart';
 
 /// `/ws/location` 하나에 STOMP 로 붙는 공용 클라이언트 — `API_SPEC §7`.
 ///
@@ -38,15 +37,14 @@ import 'package:baraeda_core/websocket/ws_connection_state.dart';
 /// 모르므로 구독을 자동으로 추적·정리하지 않는다 — 강제로 추적하면
 /// 화면 프레임워크(위젯 트리)에 대한 가정이 이 패키지에 스며든다.
 class BaraedaWebSocketClient {
+  /// `url` 은 `/ws/location` 주소, `tokenStorage` 는 CONNECT 인증 토큰의 출처다.
   BaraedaWebSocketClient({
-    required String url,
-    required TokenStorage tokenStorage,
+    required this._url,
+    required this._tokenStorage,
     this.backoffPolicy = const WsBackoffPolicy(),
     Future<String?> Function()? refreshAccessToken,
     void Function(String message)? onDebugMessage,
-  }) : _url = url,
-       _tokenStorage = tokenStorage,
-       // 필드는 비공개, 파라미터는 공개 이름(`refreshAccessToken:`)을
+  }) : // 필드는 비공개, 파라미터는 공개 이름(`refreshAccessToken:`)을
        // 유지한다(`token_refresher.dart` 와 같은 이유).
        // ignore: prefer_initializing_formals
        _refreshAccessToken = refreshAccessToken,
@@ -122,6 +120,7 @@ class BaraedaWebSocketClient {
   /// 동기 조회.
   WsConnectionState get state => _state;
 
+  /// 서버가 구독을 거부(`FORBIDDEN`)하면 그 구독의 destination 이 흘러온다.
   Stream<String> get forbiddenSubscriptions => _forbiddenController.stream;
 
   /// 재발급까지 실패해 세션을 되살릴 수 없을 때 흘러가는 신호 — 클래스
@@ -185,16 +184,16 @@ class BaraedaWebSocketClient {
         if (message == 'FORBIDDEN' && !_forbiddenController.isClosed) {
           // 프레임 자체에는 `destination` 헤더가 없다 — 위 필드 문서 참고.
           // 이번 연결에서 걸어 둔 미해제 구독 전부를 거부로 흘려보낸다.
-          for (final destination in _pendingSubscriptions) {
-            // `_setState` 의 `isClosed` 가드와 같은 사정 — dispose 이후
-            // 지연 도착한 ERROR 프레임이 닫힌 컨트롤러에 add 되는 것을
-            // 막는다.
-            _forbiddenController.add(destination);
-          }
-          _pendingSubscriptions.clear();
+          // `_setState` 의 `isClosed` 가드(위 조건)와 같은 사정 — dispose 이후
+          // 지연 도착한 ERROR 프레임이 닫힌 컨트롤러에 add 되는 것을 막는다.
+          _pendingSubscriptions
+            ..forEach(_forbiddenController.add)
+            ..clear();
         }
-        _onDebugMessage('[BaraedaWebSocketClient] STOMP ERROR: '
-            '${frame.headers} ${frame.body}');
+        _onDebugMessage(
+          '[BaraedaWebSocketClient] STOMP ERROR: '
+          '${frame.headers} ${frame.body}',
+        );
       },
       onWebSocketError: (error) {
         _onDebugMessage('[BaraedaWebSocketClient] WebSocket error: $error');
