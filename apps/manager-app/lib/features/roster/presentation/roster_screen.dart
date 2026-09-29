@@ -204,7 +204,7 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
 
     // 사양이 정한 진입점 — 둘 다 **명단 화면에서** 간다.
     //  · UF-E-05 "명단 → [지연 알림]"  — M-05 는 **동승자 전용**(기사는 운전 중)
-    //  · M-09 운행 정보 · 외부 내비     — **기사 전용**
+    //  · 노선 지도(M-09)는 기사 전용이라 기사가 들어오는 운행 화면에 있다 — 여기에는 두지 않는다(R32 M14)
     // 2026-09-21 까지 이 두 배선이 부재해 화면이 만들어져 있어도 도달할 수 없었다.
     final caps = ref.watch(roleCapabilitiesProvider);
     return Scaffold(
@@ -223,11 +223,6 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
             TextButton(
               onPressed: () => context.push(AppRoutes.delay),
               child: const Text('지연 알림'),
-            ),
-          if (caps?.canOperateRun ?? false)
-            TextButton(
-              onPressed: () => context.push(AppRoutes.routeMap),
-              child: const Text('노선 지도'),
             ),
           // ⚠ 오프라인 큐는 **이 화면에서만** 갈 수 있어야 한다.
           // `OfflineQueueScreen` 자바독이 "재전송은 이 화면의 버튼을 눌렀을 때만"
