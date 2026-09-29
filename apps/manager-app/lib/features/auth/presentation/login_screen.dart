@@ -186,7 +186,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 onPick: (loginId, password) {
                   _loginIdController.text = loginId;
                   _passwordController.text = password;
-                  _submit();
+                  unawaited(_submit());
                 },
               ),
             ],

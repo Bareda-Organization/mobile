@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/auth/account_session.dart';
-import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/core/auth/user_role.dart';
 import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
@@ -48,8 +47,8 @@ class _RunsRepository implements ManagerRunRepository {
 /// 로그인 복구 직후 오늘 운행 중(`moving`)이고 내가 기사로 배치된 회차를 다시 골라 송신기를 잇는다.
 void main() {
   Future<ProviderContainer> recover({
-    AccountRole role = AccountRole.driver,
     required List<ManagerRun> runs,
+    AccountRole role = AccountRole.driver,
   }) async {
     final container = ProviderContainer(
       overrides: [

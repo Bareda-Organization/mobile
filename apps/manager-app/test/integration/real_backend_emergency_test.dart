@@ -121,7 +121,7 @@ void main() {
   }
 
   test(
-    '§4.14 — 실 서버로 비상 알림을 발신하면 emergency_id·raised_at·'
+    '§4.14 — 실 서버로 비상 알림을 발신하면 emergency_id·raised_at· '
     'cancelable_until·notified 4항이 예외 없이 파싱되고, 그 결과가 화면의 '
     '취소 버튼 노출 조건(now.isBefore(cancelableUntil))을 즉시 만족한다',
     () async {
