@@ -61,6 +61,66 @@ StudentRun _fixtureRun() => StudentRun(
   changeQuotaLeft: 1,
 );
 
+
+/// 요청받은 날짜를 기록하고 날짜별로 다른 회차 목록을 돌려주는 가짜 — R33 P1.
+class _DatedRunRepository implements RunRepository {
+  _DatedRunRepository(this.byDate);
+
+  /// `YYYY-MM-DD` → 그날 회차. 없는 날짜는 빈 목록.
+  final Map<String, List<StudentRun>> byDate;
+  final List<DateTime?> requestedDates = [];
+
+  @override
+  Future<List<StudentRun>> getRuns(String studentId, {DateTime? date}) async {
+    requestedDates.add(date);
+    if (date == null) return [_fixtureRun()];
+    final key =
+        '${date.year}-${date.month.toString().padLeft(2, '0')}-'
+        '${date.day.toString().padLeft(2, '0')}';
+    return byDate[key] ?? const [];
+  }
+
+  @override
+  Future<RunIntentResult> updateIntent(
+    String studentId,
+    String runId, {
+    required bool riding,
+  }) => throw UnimplementedError();
+}
+
+/// 접수된 신청의 `run_id` 를 기록하는 가짜.
+class _RecordingChangeRequestRepository implements ChangeRequestRepository {
+  final List<String> runIds = [];
+
+  @override
+  Future<ChangeRequestCreateResult> createChangeRequest(
+    String studentId, {
+    required ChangeRequestType type,
+    required String runId,
+    String? newAddress,
+    String? reason,
+  }) async {
+    runIds.add(runId);
+    return const ChangeRequestCreateResult(
+      changeRequestId: 'c-1',
+      status: ChangeRequestStatus.approved,
+      result: 'applied',
+    );
+  }
+
+  @override
+  Future<ChangeRequestPage> getChangeRequests(String studentId) async =>
+      const ChangeRequestPage(items: [], pendingCount: 0);
+}
+
+class _FixedClock implements Clock {
+  const _FixedClock(this._value);
+  final DateTime _value;
+
+  @override
+  DateTime now() => _value;
+}
+
 Future<void> _pumpAndSubmit(WidgetTester tester, Failure failure) =>
     _pumpAndSubmitWith(tester, _ThrowingChangeRequestRepository(failure));
 
@@ -224,6 +284,121 @@ void main() {
 
       expect(find.text('변경할 주소를 입력해 주세요'), findsNothing);
       expect(submitEnabled(tester), isTrue);
+    });
+  });
+
+  // R33 P1 — 변경 신청 날짜는 오늘·내일 중에서 고른다(한국 시간 기준).
+  group('P1 날짜 선택 — 오늘 · 내일', () {
+    // 세계 표준시 9월 30일 16:00 = 한국 시간 10월 1일 01:00 — 기기가 어느 시간대여도 한국 날짜로 센다.
+    final now = DateTime.utc(2026, 9, 30, 16);
+    final tomorrowRun = StudentRun(
+      runId: 'run-tomorrow',
+      direction: RunDirection.fromAcademy,
+      busNo: '2호차',
+      departTime: DateTime(2026, 10, 2, 18),
+      runStatus: RunStatus.idle,
+      confirmed: false,
+      riding: true,
+      riderStatus: RiderStatus.waiting,
+      stop: const RunStop(stopId: 'stop-2', name: '후문'),
+      changeQuotaLeft: 1,
+    );
+
+    Future<void> pumpPanel(
+      WidgetTester tester,
+      _DatedRunRepository runs,
+      ChangeRequestRepository changes,
+    ) async {
+      tester.view.physicalSize = const Size(800, 2400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            clockProvider.overrideWithValue(_FixedClock(now)),
+            runRepositoryProvider.overrideWithValue(runs),
+            changeRequestRepositoryProvider.overrideWithValue(changes),
+          ],
+          child: MaterialApp(
+            home: Scaffold(
+              body: ListView(
+                children: const [ChangeRequestPanel(studentId: 's-1')],
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('내일을 고르면 한국 시간 기준 내일 날짜로 회차를 조회한다', (tester) async {
+      final runs = _DatedRunRepository({
+        '2026-10-02': [tomorrowRun],
+      });
+      await pumpPanel(tester, runs, _RecordingChangeRequestRepository());
+
+      await tester.tap(find.text('내일'));
+      await tester.pumpAndSettle();
+
+      final requested = runs.requestedDates.last!;
+      expect((requested.year, requested.month, requested.day), (2026, 10, 2));
+    });
+
+    testWidgets('내일 회차가 없으면 그날 운행이 아직 없다고 알려 준다', (tester) async {
+      await pumpPanel(
+        tester,
+        _DatedRunRepository({}),
+        _RecordingChangeRequestRepository(),
+      );
+
+      await tester.tap(find.text('내일'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('그날 운행이 아직 없습니다'), findsOneWidget);
+      // 날짜를 다시 오늘로 되돌릴 수 있도록 선택 버튼은 남아 있다.
+      expect(find.text('오늘'), findsOneWidget);
+    });
+
+    testWidgets('내일 회차를 골라 신청하면 본문 run_id 가 고른 회차다', (tester) async {
+      final changes = _RecordingChangeRequestRepository();
+      await pumpPanel(
+        tester,
+        _DatedRunRepository({
+          '2026-10-02': [tomorrowRun],
+        }),
+        changes,
+      );
+
+      await tester.tap(find.text('내일'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(BaraedaSelect).first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(runOptionLabel(tomorrowRun)).last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('변경 신청하기'));
+      await tester.pumpAndSettle();
+
+      expect(changes.runIds, ['run-tomorrow']);
+    });
+
+    testWidgets('날짜를 바꾸면 앞서 고른 회차는 비워진다', (tester) async {
+      await pumpPanel(
+        tester,
+        _DatedRunRepository({
+          '2026-10-02': [tomorrowRun],
+        }),
+        _RecordingChangeRequestRepository(),
+      );
+      await tester.tap(find.byType(BaraedaSelect).first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(runOptionLabel(_fixtureRun())).last);
+      await tester.pumpAndSettle();
+      expect(find.text('대상 회차를 골라 주세요'), findsNothing);
+
+      await tester.tap(find.text('내일'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('대상 회차를 골라 주세요'), findsOneWidget);
     });
   });
 

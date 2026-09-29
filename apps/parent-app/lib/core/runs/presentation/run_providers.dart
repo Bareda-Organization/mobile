@@ -18,3 +18,14 @@ final runsForStudentProvider = FutureProvider.family<List<StudentRun>, String>((
 ) {
   return ref.watch(runRepositoryProvider).getRuns(studentId);
 });
+
+/// §3.5 `?date=` — 학생별 **특정 날짜** 회차. 변경 신청이 오늘 말고 내일 회차도
+/// 고를 수 있게 하는 조회다(R33 P1). 오늘 조회는 위 [runsForStudentProvider] 를 그대로 쓴다.
+// ignore: specify_nonobvious_property_types
+final runsForStudentOnProvider =
+    FutureProvider.family<List<StudentRun>, (String studentId, DateTime date)>((
+      ref,
+      key,
+    ) {
+      return ref.watch(runRepositoryProvider).getRuns(key.$1, date: key.$2);
+    });

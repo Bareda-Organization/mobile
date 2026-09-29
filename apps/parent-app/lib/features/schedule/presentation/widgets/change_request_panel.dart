@@ -8,6 +8,7 @@ import 'package:parent_app/app/di.dart';
 import 'package:parent_app/core/change_requests/domain/change_request.dart';
 import 'package:parent_app/core/runs/domain/student_run.dart';
 import 'package:parent_app/core/runs/presentation/run_providers.dart';
+import 'package:parent_app/core/time/service_date.dart';
 import 'package:parent_app/core/ui/format_date_time.dart';
 import 'package:parent_app/features/schedule/presentation/schedule_providers.dart';
 import 'package:parent_app/features/schedule/presentation/unsaved_edits.dart';
@@ -20,8 +21,8 @@ import 'package:parent_app/features/schedule/presentation/unsaved_edits.dart';
 String runOptionLabel(StudentRun run) =>
     '${run.direction.label} · ${run.busNo}';
 
-/// §3.8·§3.9 — 일일 변경 신청. 회차 선택은 `core/runs` 의 §3.5 조회 결과를
-/// 그대로 쓴다(변경 신청은 반드시 오늘의 특정 회차를 대상으로 한다).
+/// §3.8·§3.9 — 일일 변경 신청. 날짜(오늘·내일, 한국 시간)를 고르면 `core/runs` 의
+/// §3.5 조회가 그날 회차를 주고, 그중 하나를 대상으로 신청한다.
 class ChangeRequestPanel extends ConsumerStatefulWidget {
   const ChangeRequestPanel({required this.studentId, super.key});
 
@@ -35,6 +36,9 @@ class _ChangeRequestPanelState extends ConsumerState<ChangeRequestPanel> {
   final _addressController = TextEditingController();
   final _reasonController = TextEditingController();
   String? _selectedRunId;
+
+  /// 0 = 오늘, 1 = 내일 (한국 시간).
+  int _dayOffset = 0;
   ChangeRequestType _type = ChangeRequestType.cancel;
   bool _submitting = false;
   String? _banner;
@@ -149,21 +153,34 @@ class _ChangeRequestPanelState extends ConsumerState<ChangeRequestPanel> {
 
   @override
   Widget build(BuildContext context) {
-    final runsAsync = ref.watch(runsForStudentProvider(widget.studentId));
+    // 오늘은 서버 기본값(당일) 조회를 그대로 쓰고, 내일은 한국 시간 날짜를 `date` 로 보낸다.
+    final runsAsync = _dayOffset == 0
+        ? ref.watch(runsForStudentProvider(widget.studentId))
+        : ref.watch(
+            runsForStudentOnProvider((
+              widget.studentId,
+              koreaServiceDate(
+                ref.watch(clockProvider).now(),
+                plusDays: _dayOffset,
+              ),
+            )),
+          );
     final requestsAsync = ref.watch(changeRequestsProvider(widget.studentId));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        _buildDayPicker(),
+        const SizedBox(height: BaraedaSpacing.space2),
         runsAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (error, stack) => const AlertBanner(
             tone: AlertTone.missed,
-            body: '오늘 회차를 불러오지 못했습니다',
+            body: '회차를 불러오지 못했습니다',
           ),
           data: (runs) {
             if (runs.isEmpty) {
-              return const Text('오늘 신청 가능한 회차가 없습니다');
+              return const Text('그날 운행이 아직 없습니다');
             }
             final runOptions = runs
                 .map((r) => (r.runId, runOptionLabel(r)))
@@ -186,12 +203,26 @@ class _ChangeRequestPanelState extends ConsumerState<ChangeRequestPanel> {
     );
   }
 
+  /// 신청할 날짜 — 오늘·내일 두 가지. 날짜를 바꾸면 앞서 고른 회차는 다른 날 것이라 비운다.
+  Widget _buildDayPicker() {
+    return SegmentedButton<int>(
+      segments: const [
+        ButtonSegment(value: 0, label: Text('오늘')),
+        ButtonSegment(value: 1, label: Text('내일')),
+      ],
+      selected: {_dayOffset},
+      showSelectedIcon: false,
+      onSelectionChanged: (selection) => setState(() {
+        _dayOffset = selection.first;
+        _selectedRunId = null;
+      }),
+    );
+  }
+
   Widget _buildForm(List<(String, String)> runOptions) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text('오늘 운행하는 회차만 신청할 수 있습니다', style: BaraedaTypography.bodySm),
-        const SizedBox(height: BaraedaSpacing.space2),
         BaraedaSelect(
           label: '대상 회차',
           value: _selectedRunId,
@@ -226,8 +257,7 @@ class _ChangeRequestPanelState extends ConsumerState<ChangeRequestPanel> {
           AlertBanner(tone: _bannerTone, body: _banner),
           const SizedBox(height: BaraedaSpacing.space2),
         ],
-        // 날짜는 고르지 않는다 — 서버가 회차를 그날 하루치만 만들어 다른 날짜에는 고를 회차가 없다.
-        // 회차를 못 고른 이유는 이 안내로 대신한다.
+        // 버튼이 왜 눌리지 않는지 알려 준다.
         if (_missingInput != null) ...[
           Text(_missingInput!, style: BaraedaTypography.bodySm),
           const SizedBox(height: BaraedaSpacing.space2),
