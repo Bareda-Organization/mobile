@@ -172,7 +172,7 @@ void main() {
       wrap(AppRoutes.home, [
         todayRunsProvider.overrideWith(
           (ref) async => [
-            managerRunFixture(busNo: '3호차'),
+            managerRunFixture(),
             managerRunFixture(
               runId: 'run-2',
               busNo: '5호차',

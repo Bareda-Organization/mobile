@@ -131,10 +131,12 @@ class ManagerHomeScreen extends ConsumerWidget {
                     Padding(
                       padding: const EdgeInsets.only(top: 4, left: 4),
                       child: Text(
-                        run.confirmAt == null
-                            ? '출발 30분 전 확정 후 열립니다'
-                            : '출발 30분 전 확정 후 열립니다 '
-                                  '(${DateFormat('HH:mm').format(run.confirmAt!.toLocal())})',
+                        switch (run.confirmAt) {
+                          null => '출발 30분 전 확정 후 열립니다',
+                          final at =>
+                            '출발 30분 전 확정 후 열립니다 '
+                                '(${DateFormat('HH:mm').format(at.toLocal())})',
+                        },
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                     ),
