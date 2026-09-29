@@ -47,6 +47,17 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<void> logout() => _guard(_authApi.logout);
 
   @override
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) => _guard(
+    () => _authApi.changePassword(
+      currentPassword: currentPassword,
+      newPassword: newPassword,
+    ),
+  );
+
+  @override
   Future<MeResponse> me() => _guard(_authApi.me);
 
   /// `DioException` → [Failure] 변환 지점 하나 — 메서드마다 반복하지 않는다.

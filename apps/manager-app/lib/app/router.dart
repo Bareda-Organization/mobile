@@ -7,6 +7,7 @@ import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/core/auth/user_role.dart';
 import 'package:manager_app/features/auth/presentation/blocked_screen.dart';
 import 'package:manager_app/features/auth/presentation/login_screen.dart';
+import 'package:manager_app/features/auth/presentation/password_change_screen.dart';
 import 'package:manager_app/features/auth/presentation/pending_approval_screen.dart';
 import 'package:manager_app/features/auth/presentation/signup_screen.dart';
 import 'package:manager_app/features/delay/presentation/delay_screen.dart';
@@ -107,6 +108,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.emergency,
         builder: (context, state) => const EmergencyScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.passwordChange,
+        builder: (context, state) => const PasswordChangeScreen(),
       ),
       GoRoute(
         path: AppRoutes.offlineQueue,

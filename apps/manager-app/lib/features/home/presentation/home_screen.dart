@@ -39,6 +39,12 @@ class ManagerHomeScreen extends ConsumerWidget {
         actions: [
           // 비상(M-15, R32 M2) — 기사·동승자 모두, 확정된 회차가 있으면 운행 중이 아니어도 보낸다.
           EmergencyButton(homeRuns: runsAsync.value),
+          // 비밀번호 변경(AUTH-07 · UF-X-09, R32 M13) — 기사·동승자 공통.
+          IconButton(
+            tooltip: '비밀번호 변경',
+            icon: const Icon(Icons.lock_outline),
+            onPressed: () => unawaited(context.push(AppRoutes.passwordChange)),
+          ),
           // 로그아웃(2026-09-23, 확인 대화 2026-09-26 추가·AUTH-09) —
           // 역할이 비면 라우터가 로그인 화면으로 보낸다. 기사·동승자 둘 다
           // 이 화면을 거쳐 운행 화면으로 들어가므로(§4.1) 둘 다 닿는 자리다.
