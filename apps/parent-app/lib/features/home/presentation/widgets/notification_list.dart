@@ -1,12 +1,16 @@
+import 'dart:async';
+
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:parent_app/app/app_routes.dart';
 import 'package:parent_app/app/di.dart';
 import 'package:parent_app/features/home/domain/notification_item.dart';
 import 'package:parent_app/features/home/presentation/home_providers.dart';
 
 /// §3.12 알림 1페이지를 홈 화면에 압축해 보여준다(§1.8 — 무한 스크롤이
-/// 아니라 1페이지). 항목을 누르면 §3.13 로 읽음 처리한다.
+/// 아니라 1페이지). 항목을 누르면 §3.13 로 읽음 처리하고, 종류에 맞는 화면이 있으면 이동한다.
 class NotificationList extends ConsumerWidget {
   const NotificationList({required this.page, required this.now, super.key});
 
@@ -45,8 +49,21 @@ class NotificationList extends ConsumerWidget {
       meta: item.studentName,
       time: _relativeTime(item.sentAt, now),
       unread: item.isUnread,
-      onTap: item.isUnread ? () => _markRead(ref, item.notificationId) : null,
+      onTap: item.isUnread || _routeOf(item.type) != null
+          ? () => _open(context, ref, item)
+          : null,
     );
+  }
+
+  /// 안 읽은 알림이면 읽음 처리하고, 종류에 맞는 화면이 있으면 그리로 간다(R32 P10).
+  Future<void> _open(
+    BuildContext context,
+    WidgetRef ref,
+    NotificationItem item,
+  ) async {
+    final route = _routeOf(item.type);
+    if (route != null) unawaited(context.push<void>(route));
+    if (item.isUnread) await _markRead(ref, item.notificationId);
   }
 
   Future<void> _markRead(WidgetRef ref, String notificationId) async {
@@ -54,6 +71,21 @@ class NotificationList extends ConsumerWidget {
     ref.invalidate(notificationsProvider);
   }
 }
+
+/// 알림 종류(§9.7) → 눌렀을 때 갈 화면. 없으면 읽음 처리만 한다.
+/// 운행·승하차·도착·지연은 실시간 지도(UF-P-07), 변경 결과는 일정 화면의 신청 이력(UF-P-06).
+String? _routeOf(String type) => switch (type) {
+  'boarding' ||
+  'alighting' ||
+  'boarding_canceled' ||
+  'alighting_canceled' ||
+  'no_show' ||
+  'arrive' ||
+  'delay' ||
+  'run_started' => AppRoutes.liveMap,
+  'change_decided' => AppRoutes.schedule,
+  _ => null,
+};
 
 /// 알림 종류(§9.7) → 상태 태그. 색 규칙은 `FEATURE_SPEC C-09` —
 /// 그린(완료) · 앰버(이동·지연) · 레드(미승차·긴급) · 스톤(대기·종료).

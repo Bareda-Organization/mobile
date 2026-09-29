@@ -2,7 +2,11 @@ import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
+import 'package:parent_app/app/app_routes.dart';
+import 'package:parent_app/app/di.dart';
 import 'package:parent_app/features/home/domain/notification_item.dart';
+import 'package:parent_app/features/home/domain/notification_repository.dart';
 import 'package:parent_app/features/home/presentation/widgets/notification_list.dart';
 
 final _sentAt = DateTime(2026, 9, 21, 8, 30);
@@ -85,4 +89,118 @@ void main() {
     expect(pill.label, '안내');
     expect(pill.status, BaraedaStatus.idle);
   });
+
+  // R32 P10 — 알림을 눌러도 읽음 처리만 되고 관련 화면으로 가지 않았다.
+  group('알림을 누르면 관련 화면으로 간다', () {
+    Future<({List<String> pushed, List<String> marked})> pumpTappable(
+      WidgetTester tester,
+      String type, {
+      bool unread = true,
+    }) async {
+      final pushed = <String>[];
+      final marked = <String>[];
+      final item = NotificationItem(
+        notificationId: 'n-1',
+        type: type,
+        title: '알림 제목',
+        body: '본문',
+        sentAt: _sentAt,
+        popup: false,
+        studentName: '김영희',
+        readAt: unread ? null : _sentAt,
+      );
+      final router = GoRouter(
+        routes: [
+          GoRoute(
+            path: '/',
+            builder: (_, _) => Scaffold(
+              body: NotificationList(
+                page: NotificationPage(
+                  items: [item],
+                  page: 1,
+                  size: 20,
+                  totalCount: 1,
+                  hasNext: false,
+                  unreadCount: unread ? 1 : 0,
+                ),
+                now: _sentAt.add(const Duration(minutes: 3)),
+              ),
+            ),
+          ),
+          for (final path in [AppRoutes.liveMap, AppRoutes.schedule])
+            GoRoute(
+              path: path,
+              builder: (_, _) {
+                pushed.add(path);
+                return const Scaffold(body: Text('도착'));
+              },
+            ),
+        ],
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            notificationRepositoryProvider.overrideWithValue(
+              _MarkingRepository(marked),
+            ),
+          ],
+          child: MaterialApp.router(routerConfig: router),
+        ),
+      );
+      await tester.tap(find.text('알림 제목'));
+      await tester.pumpAndSettle();
+      return (pushed: pushed, marked: marked);
+    }
+
+    testWidgets('승차·하차·미승차·도착·지연·운행 시작은 실시간 지도로 간다', (tester) async {
+      for (final type in const [
+        'boarding',
+        'alighting',
+        'no_show',
+        'arrive',
+        'delay',
+        'run_started',
+      ]) {
+        final result = await pumpTappable(tester, type);
+        expect(result.pushed, [AppRoutes.liveMap], reason: type);
+        expect(result.marked, ['n-1'], reason: '$type 은 읽음 처리도 한다');
+      }
+    });
+
+    testWidgets('변경 결과 알림은 일정(신청 이력) 화면으로 간다', (tester) async {
+      final result = await pumpTappable(tester, 'change_decided');
+
+      expect(result.pushed, [AppRoutes.schedule]);
+    });
+
+    testWidgets('이미 읽은 알림도 눌러서 관련 화면으로 갈 수 있고 다시 읽음 처리하지 않는다', (tester) async {
+      final result = await pumpTappable(tester, 'delay', unread: false);
+
+      expect(result.pushed, [AppRoutes.liveMap]);
+      expect(result.marked, isEmpty);
+    });
+
+    testWidgets('갈 화면이 없는 알림은 읽음 처리만 한다', (tester) async {
+      final result = await pumpTappable(tester, 'signup_decided');
+
+      expect(result.pushed, isEmpty);
+      expect(result.marked, ['n-1']);
+    });
+  });
+}
+
+/// 읽음 처리 호출을 기록하는 가짜.
+class _MarkingRepository implements NotificationRepository {
+  _MarkingRepository(this.marked);
+
+  final List<String> marked;
+
+  @override
+  Future<NotificationPage> getNotifications({int page = 0, int size = 20}) =>
+      throw UnimplementedError();
+
+  @override
+  Future<void> markRead(String notificationId) async {
+    marked.add(notificationId);
+  }
 }
