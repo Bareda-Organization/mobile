@@ -36,3 +36,9 @@ String describeFailure(Failure failure) => switch (failure) {
   UnauthenticatedFailure() => '로그인이 만료됐습니다. 다시 로그인해 주세요',
   UnknownFailure() => '요청을 처리하지 못했습니다',
 };
+
+/// `AsyncValue.error` 로 온 값 → 화면 문구. [Failure] 면 [describeFailure], 그 밖의 예외는
+/// 원문(`Exception: …`)을 그대로 보이지 않고 일반 문구로 바꾼다(R32 M8).
+String describeError(Object error) => describeFailure(
+  error is Failure ? error : const Failure.unknown(),
+);

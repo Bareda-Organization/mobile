@@ -2,6 +2,7 @@ import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:manager_app/core/map/map_surface.dart';
+import 'package:manager_app/core/network/failure_messages.dart';
 import 'package:manager_app/core/run/manager_channel_banner.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/features/route_map/data/models/route_response.dart';
@@ -69,7 +70,8 @@ class _RouteMapScreenState extends ConsumerState<RouteMapScreen> {
         Expanded(
           child: routeAsync.when(
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (error, _) => Center(child: Text('노선을 불러오지 못했습니다: $error')),
+            error: (error, _) =>
+                Center(child: Text('노선을 불러오지 못했습니다: ${describeError(error)}')),
             data: _buildMap,
           ),
         ),

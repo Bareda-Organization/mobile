@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:manager_app/app/di.dart';
+import 'package:manager_app/core/network/failure_messages.dart';
 import 'package:manager_app/features/offline_queue/data/models/pending_request_summary.dart';
 import 'package:manager_app/features/offline_queue/presentation/offline_queue_providers.dart';
 
@@ -81,7 +82,8 @@ class _OfflineQueueScreenState extends ConsumerState<OfflineQueueScreen> {
                 padding: EdgeInsets.symmetric(vertical: 24),
                 child: Center(child: CircularProgressIndicator()),
               ),
-              error: (error, _) => Text('대기열을 불러오지 못했습니다: $error'),
+              error: (error, _) =>
+                  Text('대기열을 불러오지 못했습니다: ${describeError(error)}'),
               data: _buildList,
             ),
           ],

@@ -249,7 +249,8 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
         Expanded(
           child: rosterAsync.when(
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (error, _) => Center(child: Text('명단을 불러오지 못했습니다: $error')),
+            error: (error, _) =>
+                Center(child: Text('명단을 불러오지 못했습니다: ${describeError(error)}')),
             data: (roster) => _buildRoster(
               runId,
               canDecide,

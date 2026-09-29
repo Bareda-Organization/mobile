@@ -336,7 +336,8 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
                 rosterAsync.when(
                   loading: () =>
                       const Center(child: CircularProgressIndicator()),
-                  error: (error, _) => Text('명단을 불러오지 못했습니다: $error'),
+                  error: (error, _) =>
+                      Text('명단을 불러오지 못했습니다: ${describeError(error)}'),
                   data: (roster) => _buildActionArea(runId, run, roster),
                 ),
               ],

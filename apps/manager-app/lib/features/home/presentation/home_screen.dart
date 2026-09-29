@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,6 +8,7 @@ import 'package:manager_app/app/app_routes.dart';
 import 'package:manager_app/core/auth/account_session.dart';
 import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/core/auth/role_policy.dart';
+import 'package:manager_app/core/network/failure_messages.dart';
 import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/features/emergency/presentation/widgets/emergency_button.dart';
@@ -56,7 +56,7 @@ class ManagerHomeScreen extends ConsumerWidget {
           error: (error, _) => ListView(
             children: [
               const SizedBox(height: 120),
-              Center(child: Text('오늘 운행을 불러오지 못했습니다: $error')),
+              Center(child: Text('오늘 운행을 불러오지 못했습니다: ${describeError(error)}')),
             ],
           ),
           data: (runs) {
