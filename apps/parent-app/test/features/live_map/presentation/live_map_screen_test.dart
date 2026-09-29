@@ -182,6 +182,22 @@ void main() {
       ],
     );
 
+    // R32 P6 — 노선 자세히 보기(S-04)가 학부모 화면에만 있어 학생은 노선 상세로 갈 길이 없었다.
+    testWidgets('학생 지도 화면에도 [노선 자세히 보기] 가 있다', (tester) async {
+      await pumpAsStudent(tester, studentId: 's-1');
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('노선 자세히 보기'), findsOneWidget);
+    });
+
+    testWidgets('본인 student_id 가 없으면 [노선 자세히 보기] 를 보여주지 않는다', (tester) async {
+      await pumpAsStudent(tester, studentId: null);
+      await tester.pumpAndSettle();
+
+      expect(find.text('노선 자세히 보기'), findsNothing);
+    });
+
     testWidgets('본인 student_id 가 없으면 안내만 뜬다', (tester) async {
       await pumpAsStudent(tester, studentId: null);
       await tester.pumpAndSettle();

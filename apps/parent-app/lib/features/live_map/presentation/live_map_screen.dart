@@ -100,17 +100,26 @@ class _ParentLiveMap extends ConsumerWidget {
               ],
               Expanded(child: _LiveMapBody(studentId: selectedId)),
               const SizedBox(height: BaraedaSpacing.space4),
-              // UF-P-07 — 지도 다음 단계가 "[노선 자세히 보기]" 다. 이 버튼이 없어서
-              // RouteDetailScreen 에 도달할 길이 부재했다(2026-09-21).
-              BaraedaButton(
-                label: '노선 자세히 보기',
-                variant: BaraedaButtonVariant.ghost,
-                onPressed: () => context.push(AppRoutes.routeDetail),
-              ),
+              const _RouteDetailButton(),
             ],
           ),
         );
       },
+    );
+  }
+}
+
+/// UF-P-07 — 지도 다음 단계가 "[노선 자세히 보기]" 다. 이 버튼이 없어서 RouteDetailScreen 에
+/// 도달할 길이 부재했다(2026-09-21). 학생(S-04)도 같은 화면을 본다(R32 P6).
+class _RouteDetailButton extends StatelessWidget {
+  const _RouteDetailButton();
+
+  @override
+  Widget build(BuildContext context) {
+    return BaraedaButton(
+      label: '노선 자세히 보기',
+      variant: BaraedaButtonVariant.ghost,
+      onPressed: () => context.push(AppRoutes.routeDetail),
     );
   }
 }
@@ -131,7 +140,14 @@ class _StudentLiveMap extends ConsumerWidget {
           ? const EmptyState(title: '학생 계정 정보가 없습니다')
           : Padding(
               padding: const EdgeInsets.all(BaraedaSpacing.gutterMobile),
-              child: _LiveMapBody(studentId: studentId),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(child: _LiveMapBody(studentId: studentId)),
+                  const SizedBox(height: BaraedaSpacing.space4),
+                  const _RouteDetailButton(),
+                ],
+              ),
             ),
     );
   }
