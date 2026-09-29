@@ -25,14 +25,21 @@ class PendingChangeBadge extends ConsumerWidget {
         if (page.pendingCount <= 0) return const SizedBox.shrink();
         return Padding(
           padding: const EdgeInsets.only(bottom: BaraedaSpacing.space4),
-          child: GestureDetector(
+          // R32 P15 — 화면 읽기 프로그램에는 "처리 대기 · 2" 대신 "처리 대기 2건" 으로 읽힌다.
+          child: Semantics(
+            button: true,
+            label: '처리 대기 ${page.pendingCount}건',
+            excludeSemantics: true,
             onTap: () => context.push(AppRoutes.schedule),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: BaraedaBadge(
-                label: '처리 대기',
-                tone: BaraedaBadgeTone.amber,
-                count: page.pendingCount,
+            child: GestureDetector(
+              onTap: () => context.push(AppRoutes.schedule),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: BaraedaBadge(
+                  label: '처리 대기',
+                  tone: BaraedaBadgeTone.amber,
+                  count: page.pendingCount,
+                ),
               ),
             ),
           ),

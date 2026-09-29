@@ -58,4 +58,13 @@ void main() {
 
     expect(find.text('처리 대기 · 2'), findsOneWidget);
   });
+
+  // R32 P15 — 화면 읽기 프로그램은 배지를 "처리 대기 · 2" 로 읽어 건수인지 알기 어려웠다.
+  testWidgets('P15 배지는 화면 읽기용 설명 "처리 대기 2건" 을 가진다', (tester) async {
+    final handle = tester.ensureSemantics();
+    await _pumpWith(tester, 2);
+
+    expect(find.bySemanticsLabel('처리 대기 2건'), findsOneWidget);
+    handle.dispose();
+  });
 }
