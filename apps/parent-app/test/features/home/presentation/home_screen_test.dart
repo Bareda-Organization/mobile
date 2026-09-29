@@ -8,10 +8,10 @@ import 'package:parent_app/app/di.dart';
 import 'package:parent_app/core/auth/auth_providers.dart';
 import 'package:parent_app/core/auth/role_policy.dart';
 import 'package:parent_app/core/auth/user_role.dart';
-import 'package:parent_app/core/runs/domain/student_run.dart';
-import 'package:parent_app/core/students/domain/student.dart';
 import 'package:parent_app/core/change_requests/domain/change_request.dart';
 import 'package:parent_app/core/change_requests/presentation/change_request_providers.dart';
+import 'package:parent_app/core/runs/domain/student_run.dart';
+import 'package:parent_app/core/students/domain/student.dart';
 import 'package:parent_app/features/home/domain/notification_item.dart';
 import 'package:parent_app/features/home/presentation/home_providers.dart';
 import 'package:parent_app/features/home/presentation/home_screen.dart';
@@ -164,7 +164,7 @@ void main() {
   }
 
   final children = [
-    Student(studentId: 's-1', name: '첫째', linkedAt: DateTime(2026, 9, 1)),
+    Student(studentId: 's-1', name: '첫째', linkedAt: DateTime(2026, 9)),
   ];
 
   testWidgets('P1 학생 홈에 [부모 연결 코드] 진입이 있고 누르면 연결 화면으로 간다', (tester) async {

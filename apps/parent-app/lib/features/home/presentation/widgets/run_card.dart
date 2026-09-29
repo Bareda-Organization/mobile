@@ -7,6 +7,7 @@ import 'package:parent_app/app/app_routes.dart';
 import 'package:parent_app/app/di.dart';
 import 'package:parent_app/core/runs/domain/run_intent_result.dart';
 import 'package:parent_app/core/runs/domain/student_run.dart';
+import 'package:parent_app/core/ui/confirm_dialog.dart';
 import 'package:parent_app/features/home/presentation/home_providers.dart';
 
 /// 회차 1건 카드 — §3.5 조회 값 표시 + (학부모만) §3.6 등원 여부 토글.
@@ -35,6 +36,30 @@ class _RunCardState extends ConsumerState<RunCard> {
   bool _submitting = false;
   String? _banner;
   AlertTone _bannerTone = AlertTone.info;
+
+  /// 끄기만 확인을 거친다(켜기는 바로) — 구간마다 결과가 달라 문구를 가른다(UF-P-04·05).
+  /// 구간 판정은 서버가 준 `run_status`·`confirmed` 로만 한다(시각으로 계산하지 않는다).
+  Future<void> _onSwitchChanged(bool value) async {
+    if (value) return _toggle(true);
+    final run = widget.run;
+    final confirmed = await showConfirmDialog(
+      context,
+      title: '오늘 탑승을 끌까요?',
+      body: switch (run.runStatus) {
+        RunStatus.idle when !run.confirmed =>
+          '바로 반영됩니다. 출발 30분 전까지는 다시 탑승으로 바꿀 수 있습니다.',
+        RunStatus.idle || RunStatus.confirmed =>
+          '출발 30분 전이 지나 학원 관리자의 승인이 필요합니다. '
+              '승인 요청은 이 회차에서 1번만 보낼 수 있습니다.',
+        RunStatus.moving || RunStatus.finished =>
+          '운행이 시작돼 바로 반영되며 다시 탑승으로 바꿀 수 없습니다. '
+              '노선은 바뀌지 않고 이 승하차지에는 정차하지 않습니다.',
+      },
+      confirmLabel: '탑승 끄기',
+    );
+    if (!confirmed || !mounted) return;
+    await _toggle(false);
+  }
 
   Future<void> _toggle(bool value) async {
     if (_submitting) return;
@@ -90,51 +115,93 @@ class _RunCardState extends ConsumerState<RunCard> {
 
     return Padding(
       padding: const EdgeInsets.only(bottom: BaraedaSpacing.cardGap),
-      // UF-P-07 — "홈 · 실시간 운행 정보 → [지도 진입]". 이 배선이 없어서 지도 화면이
-      // 만들어져 있는데도 도달할 수 없었다(2026-09-21).
-      child: InkWell(
-        onTap: () => context.push(AppRoutes.liveMap),
-        borderRadius: BorderRadius.circular(BaraedaRadius.md),
-        child: Container(
-          padding: const EdgeInsets.all(BaraedaSpacing.cardPadding),
-          decoration: BoxDecoration(
-            border: Border.all(color: Theme.of(context).dividerColor),
-            borderRadius: BorderRadius.circular(BaraedaRadius.md),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    '${run.direction.label} · ${run.busNo}',
-                    style: BaraedaTypography.bodyLg,
-                  ),
-                  BaraedaStatusPill(status: status.status, label: status.label),
-                ],
-              ),
-              const SizedBox(height: BaraedaSpacing.space1),
-              Text('${_formatTime(run.departTime)} 출발 · ${run.stop.name}'),
-              if (widget.canToggle) ...[
-                const SizedBox(height: BaraedaSpacing.space2),
-                BaraedaSwitch(
-                  checked: run.riding,
-                  label: '오늘 탑승',
-                  sublabel: '잔여 변경 ${run.changeQuotaLeft}회',
-                  onChanged: _submitting ? null : _toggle,
+      child: Container(
+        decoration: BoxDecoration(
+          border: Border.all(color: Theme.of(context).dividerColor),
+          borderRadius: BorderRadius.circular(BaraedaRadius.md),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // UF-P-07 — "홈 · 실시간 운행 정보 → [지도 진입]". 이 배선이 없어서 지도 화면이
+            // 만들어져 있는데도 도달할 수 없었다(2026-09-21). 지도로 가는 눌림은 카드 윗부분만
+            // 받는다 — 스위치 줄까지 감싸면 전송 중(스위치 비활성)에 누른 손이 지도를 연다(R32 P4).
+            InkWell(
+              onTap: () => context.push(AppRoutes.liveMap),
+              borderRadius: BorderRadius.circular(BaraedaRadius.md),
+              child: Padding(
+                padding: const EdgeInsets.all(BaraedaSpacing.cardPadding),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '${run.direction.label} · ${run.busNo}',
+                          style: BaraedaTypography.bodyLg,
+                        ),
+                        BaraedaStatusPill(
+                          status: status.status,
+                          label: status.label,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: BaraedaSpacing.space1),
+                    Text(
+                      '${_formatTime(run.departTime)} 출발 · ${run.stop.name}',
+                    ),
+                    if (_untilConfirm(run, ref.watch(clockProvider).now())
+                        case final left?)
+                      Text('확정까지 $left', style: BaraedaTypography.bodySm),
+                  ],
                 ),
-              ],
-              if (_banner != null) ...[
-                const SizedBox(height: BaraedaSpacing.space2),
-                AlertBanner(tone: _bannerTone, body: _banner),
-              ],
-            ],
-          ),
+              ),
+            ),
+            if (widget.canToggle || _banner != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  BaraedaSpacing.cardPadding,
+                  0,
+                  BaraedaSpacing.cardPadding,
+                  BaraedaSpacing.cardPadding,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (widget.canToggle)
+                      BaraedaSwitch(
+                        checked: run.riding,
+                        label: '오늘 탑승',
+                        sublabel: '잔여 변경 ${run.changeQuotaLeft}회',
+                        onChanged: _submitting ? null : _onSwitchChanged,
+                      ),
+                    if (_banner != null) ...[
+                      const SizedBox(height: BaraedaSpacing.space2),
+                      AlertBanner(tone: _bannerTone, body: _banner),
+                    ],
+                  ],
+                ),
+              ),
+          ],
         ),
       ),
     );
   }
+}
+
+/// 확정(출발 30분 전)까지 남은 시간 문구 — 확정 전(`idle`·미확정)이고 아직 남았을 때만.
+String? _untilConfirm(StudentRun run, DateTime now) {
+  if (run.runStatus != RunStatus.idle || run.confirmed) return null;
+  final left = run.departTime
+      .subtract(const Duration(minutes: 30))
+      .difference(now);
+  if (left <= Duration.zero) return null;
+  if (left.inMinutes < 1) return '1분 미만';
+  final hours = left.inHours;
+  final minutes = left.inMinutes % 60;
+  if (hours == 0) return '$minutes분';
+  return minutes == 0 ? '$hours시간' : '$hours시간 $minutes분';
 }
 
 ({BaraedaStatus status, String label}) _statusFor(StudentRun run) {

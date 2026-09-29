@@ -1,8 +1,12 @@
+import 'dart:async';
+
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
+import 'package:parent_app/app/app_routes.dart';
 import 'package:parent_app/app/di.dart';
 import 'package:parent_app/core/common/run_direction.dart';
 import 'package:parent_app/core/runs/domain/run_intent_result.dart';
@@ -71,6 +75,11 @@ Future<void> _pumpWith(
   );
   await tester.tap(find.byType(BaraedaSwitch));
   await tester.pumpAndSettle();
+  // R32 P4 — 끄기는 확인 창을 거친다. 실패 문구 시험은 확인까지 눌러 요청을 보낸다.
+  if (find.text('탑승 끄기').evaluate().isNotEmpty) {
+    await tester.tap(find.text('탑승 끄기'));
+    await tester.pumpAndSettle();
+  }
 }
 
 void main() {
@@ -248,4 +257,236 @@ void main() {
     expect(find.byType(BaraedaSwitch), findsNothing);
     expect(find.text('오늘 탑승'), findsNothing);
   });
+
+  // ---- R32 P4 — 확인 창 · 스위치 줄의 지도 이동 제외 · 확정까지 남은 시간 ----
+
+  /// 호출을 기록하는 가짜 저장소 — 취소하면 요청이 나가지 않는다는 시험에 쓴다.
+  Future<_RecordingRunRepository> pumpRecording(
+    WidgetTester tester, {
+    bool riding = true,
+    RunStatus runStatus = RunStatus.idle,
+    bool confirmed = false,
+    DateTime? departTime,
+    DateTime? now,
+    List<String>? pushed,
+    _RecordingRunRepository? recording,
+  }) async {
+    final repository = recording ?? _RecordingRunRepository();
+    final router = GoRouter(
+      routes: [
+        GoRoute(
+          path: '/',
+          builder: (_, _) => Scaffold(
+            body: RunCard(
+              studentId: 's-1',
+              run: _fixtureRun(
+                riding: riding,
+                departTime: departTime,
+              ).copyForTest(runStatus: runStatus, confirmed: confirmed),
+              canToggle: true,
+            ),
+          ),
+        ),
+        GoRoute(
+          path: AppRoutes.liveMap,
+          builder: (_, _) {
+            pushed?.add(AppRoutes.liveMap);
+            return const Scaffold(body: Text('지도 화면'));
+          },
+        ),
+      ],
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          runRepositoryProvider.overrideWithValue(repository),
+          if (now != null) clockProvider.overrideWithValue(_FixedClock(now)),
+        ],
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    return repository;
+  }
+
+  testWidgets('P4 끄려고 스위치를 누르면 확인 창이 뜨고 취소하면 요청이 나가지 않는다', (tester) async {
+    final repository = await pumpRecording(tester);
+
+    await tester.tap(find.byType(BaraedaSwitch));
+    await tester.pumpAndSettle();
+    expect(find.text('탑승 끄기'), findsOneWidget);
+
+    await tester.tap(find.text('취소'));
+    await tester.pumpAndSettle();
+
+    expect(repository.calls, isEmpty);
+  });
+
+  testWidgets('P4 확인 창에서 [탑승 끄기] 를 누르면 그때 요청이 나간다', (tester) async {
+    final repository = await pumpRecording(tester);
+
+    await tester.tap(find.byType(BaraedaSwitch));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('탑승 끄기'));
+    await tester.pumpAndSettle();
+
+    expect(repository.calls, [false]);
+  });
+
+  testWidgets('P4 켜기는 확인 창 없이 바로 요청이 나간다', (tester) async {
+    final repository = await pumpRecording(tester, riding: false);
+
+    await tester.tap(find.byType(BaraedaSwitch));
+    await tester.pumpAndSettle();
+
+    expect(find.text('탑승 끄기'), findsNothing);
+    expect(repository.calls, [true]);
+  });
+
+  testWidgets('P4 확정 전(①구간) 확인 문구는 즉시 반영을 알린다', (tester) async {
+    await pumpRecording(tester);
+
+    await tester.tap(find.byType(BaraedaSwitch));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('바로 반영'), findsOneWidget);
+    expect(find.textContaining('승인'), findsNothing);
+  });
+
+  testWidgets('P4 확정 뒤(②구간) 확인 문구는 승인 요청과 회차당 1회를 알린다', (tester) async {
+    await pumpRecording(
+      tester,
+      runStatus: RunStatus.confirmed,
+      confirmed: true,
+    );
+
+    await tester.tap(find.byType(BaraedaSwitch));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('승인'), findsOneWidget);
+    expect(find.textContaining('1번'), findsOneWidget);
+    expect(find.textContaining('바로 반영'), findsNothing);
+  });
+
+  testWidgets('P4 스위치 줄을 눌러도 지도 화면으로 이동하지 않는다 — 카드 윗부분은 이동한다', (
+    tester,
+  ) async {
+    final pushed = <String>[];
+    await pumpRecording(tester, pushed: pushed);
+
+    await tester.tap(find.byType(BaraedaSwitch));
+    await tester.pumpAndSettle();
+    expect(pushed, isEmpty);
+    await tester.tap(find.text('취소'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('등원 · 1호차'));
+    await tester.pumpAndSettle();
+    expect(pushed, [AppRoutes.liveMap]);
+  });
+
+  // 전송 중에는 스위치가 비활성이 되어 눌림이 바깥 카드로 새면 지도 화면이 열렸다.
+  testWidgets('P4 전송 중에 스위치 줄을 눌러도 지도 화면이 열리지 않는다', (tester) async {
+    final pushed = <String>[];
+    final pending = Completer<RunIntentResult>();
+    await pumpRecording(
+      tester,
+      riding: false,
+      pushed: pushed,
+      recording: _RecordingRunRepository(pending: pending),
+    );
+
+    await tester.tap(find.byType(BaraedaSwitch));
+    await tester.pump();
+    await tester.tap(find.byType(BaraedaSwitch));
+    await tester.pump();
+
+    expect(pushed, isEmpty);
+    pending.complete(
+      const RunIntentResult(
+        result: RunIntentApplyResult.applied,
+        riding: true,
+        riderStatus: RiderStatus.waiting,
+        changeQuotaLeft: 1,
+      ),
+    );
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('P4 확정 전이면 확정까지 남은 시간을 보여준다', (tester) async {
+    // 출발 08:00 → 확정은 07:30. 지금 06:10 이면 1시간 20분 남았다.
+    await pumpRecording(
+      tester,
+      departTime: DateTime(2026, 9, 12, 8),
+      now: DateTime(2026, 9, 12, 6, 10),
+    );
+
+    expect(find.text('확정까지 1시간 20분'), findsOneWidget);
+  });
+
+  testWidgets('P4 확정된 회차에는 남은 시간을 보여주지 않는다', (tester) async {
+    await pumpRecording(
+      tester,
+      runStatus: RunStatus.confirmed,
+      confirmed: true,
+      departTime: DateTime(2026, 9, 12, 8),
+      now: DateTime(2026, 9, 12, 7, 40),
+    );
+
+    expect(find.textContaining('확정까지'), findsNothing);
+  });
+}
+
+class _FixedClock implements Clock {
+  const _FixedClock(this._value);
+
+  final DateTime _value;
+
+  @override
+  DateTime now() => _value;
+}
+
+/// 호출된 `riding` 값을 순서대로 기록한다.
+class _RecordingRunRepository implements RunRepository {
+  _RecordingRunRepository({this.pending});
+
+  final calls = <bool>[];
+
+  /// 주어지면 이 값이 완료될 때까지 응답을 미룬다.
+  final Completer<RunIntentResult>? pending;
+
+  @override
+  Future<List<StudentRun>> getRuns(String studentId, {DateTime? date}) async =>
+      const [];
+
+  @override
+  Future<RunIntentResult> updateIntent(
+    String studentId,
+    String runId, {
+    required bool riding,
+  }) async {
+    calls.add(riding);
+    if (pending != null) return pending!.future;
+    return RunIntentResult(
+      result: RunIntentApplyResult.applied,
+      riding: riding,
+      riderStatus: RiderStatus.waiting,
+      changeQuotaLeft: 1,
+    );
+  }
+}
+
+extension on StudentRun {
+  /// 시험용 — 구간 판정에 쓰는 두 값만 바꾼 사본.
+  StudentRun copyForTest({RunStatus? runStatus, bool? confirmed}) => StudentRun(
+    runId: runId,
+    direction: direction,
+    busNo: busNo,
+    departTime: departTime,
+    runStatus: runStatus ?? this.runStatus,
+    confirmed: confirmed ?? this.confirmed,
+    riding: riding,
+    riderStatus: riderStatus,
+    stop: stop,
+    changeQuotaLeft: changeQuotaLeft,
+  );
 }
