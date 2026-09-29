@@ -59,6 +59,7 @@ const _rawDetail = 'raw-internal-detail-7f3a';
 
 /// 실패한 provider 를 던지는 값 — [Failure] 는 Exception 이 아니라서 `Object` 로 던진다.
 Never _fail(Object error) {
+  // Failure 는 Exception/Error 를 상속하지 않아 only_throw_errors 에 걸린다(다른 시험의 같은 패턴).
   // ignore: only_throw_errors
   throw error;
 }

@@ -19,7 +19,6 @@ import 'package:manager_app/features/roster/data/models/revert_result.dart';
 import 'package:manager_app/features/roster/data/models/rider_update_result.dart';
 import 'package:manager_app/features/roster/data/models/roster_response.dart';
 import 'package:manager_app/features/roster/domain/roster_repository.dart';
-import 'package:manager_app/features/roster/presentation/roster_providers.dart';
 import 'package:manager_app/features/roster/presentation/roster_screen.dart';
 
 import '../../support/manager_run_fixture.dart';
