@@ -62,4 +62,80 @@ void main() {
 
     expect(find.text('주소를 확인할 수 없습니다. 다시 입력해 주세요'), findsOneWidget);
   });
+
+  // R32 P11 — 등록된 주소가 하나도 없으면 편집할 칸이 없어 주소를 넣을 방법이 없었다.
+  group('P11 빈 목록에서 추가', () {
+    Future<_RecordingWeeklyAddressRepository> pumpEmpty(
+      WidgetTester tester,
+    ) async {
+      final repository = _RecordingWeeklyAddressRepository();
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            weeklyAddressRepositoryProvider.overrideWithValue(repository),
+          ],
+          child: const MaterialApp(
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: WeeklyAddressEditor(studentId: 's-1', entries: []),
+              ),
+            ),
+          ),
+        ),
+      );
+      return repository;
+    }
+
+    testWidgets('빈 목록에는 안내와 [추가] 버튼이 있다', (tester) async {
+      await pumpEmpty(tester);
+
+      expect(find.text('등록된 등하원 주소가 없습니다'), findsOneWidget);
+      expect(find.text('추가'), findsOneWidget);
+    });
+
+    testWidgets('[추가] 로 연 입력칸에 주소를 넣고 저장하면 그 주소가 서버로 간다', (tester) async {
+      final repository = await pumpEmpty(tester);
+
+      await tester.tap(find.text('추가'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), '서울시 강남구 2');
+      await tester.tap(find.text('저장하기'));
+      await tester.pumpAndSettle();
+
+      expect(repository.saved, hasLength(1));
+      expect(repository.saved.single.weekday, Weekday.mon);
+      expect(repository.saved.single.direction, RunDirection.toAcademy);
+      expect(repository.saved.single.address, '서울시 강남구 2');
+    });
+
+    testWidgets('주소를 비워 두고 저장하면 요청이 나가지 않고 입력 안내를 보여준다', (tester) async {
+      final repository = await pumpEmpty(tester);
+
+      await tester.tap(find.text('추가'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('저장하기'));
+      await tester.pumpAndSettle();
+
+      expect(repository.saved, isEmpty);
+      expect(find.text('주소를 입력해 주세요'), findsOneWidget);
+    });
+  });
+}
+
+/// 저장 요청을 기록하는 가짜.
+class _RecordingWeeklyAddressRepository implements WeeklyAddressRepository {
+  List<WeeklyAddressEntry> saved = const [];
+
+  @override
+  Future<List<WeeklyAddressEntry>> getWeeklyAddress(String studentId) async =>
+      const [];
+
+  @override
+  Future<List<WeeklyAddressEntry>> updateWeeklyAddress(
+    String studentId,
+    List<WeeklyAddressEntry> entries,
+  ) async {
+    saved = entries;
+    return entries;
+  }
 }
