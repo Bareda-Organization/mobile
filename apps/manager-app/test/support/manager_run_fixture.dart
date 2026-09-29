@@ -1,3 +1,4 @@
+import 'package:manager_app/core/auth/user_role.dart';
 import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/features/home/data/models/manager_run.dart';
 
@@ -10,6 +11,7 @@ ManagerRun managerRunFixture({
   RunDirection direction = RunDirection.toAcademy,
   DateTime? departTime,
   bool ackRequired = false,
+  UserRole? roleInRun,
 }) {
   final depart = departTime ?? DateTime(2026, 9, 30, 8);
   return ManagerRun(
@@ -27,5 +29,6 @@ ManagerRun managerRunFixture({
     addedCount: 0,
     removedCount: 0,
     ackRequired: ackRequired,
+    roleInRun: roleInRun,
   );
 }
