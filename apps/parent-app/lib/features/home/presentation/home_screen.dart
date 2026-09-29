@@ -42,31 +42,53 @@ class HomeScreen extends ConsumerWidget {
         ),
       ),
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(BaraedaSpacing.gutterMobile),
-          children: [
-            if (isParent) const _ParentSection() else const _StudentSection(),
-            const SizedBox(height: BaraedaSpacing.sectionGap),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text('알림', style: BaraedaTypography.h3),
-                // UF-P-08 — "홈 → [알림] → … → [알림 설정]". 이 배선이 없어서
-                // SettingsScreen 에 도달할 길이 부재했다(2026-09-21).
-                BaraedaButton(
-                  label: '설정',
-                  size: BaraedaButtonSize.sm,
-                  variant: BaraedaButtonVariant.ghost,
-                  onPressed: () => context.push(AppRoutes.settings),
-                ),
-              ],
-            ),
-            const SizedBox(height: BaraedaSpacing.space4),
-            const _NotificationSection(),
-          ],
+        // 당겨서 새로고침 — 내용이 화면보다 짧아도 당겨지도록 항상 스크롤 가능하게 둔다.
+        child: RefreshIndicator(
+          onRefresh: () => _refresh(ref, isParent: isParent),
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(BaraedaSpacing.gutterMobile),
+            children: [
+              if (isParent) const _ParentSection() else const _StudentSection(),
+              const SizedBox(height: BaraedaSpacing.sectionGap),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('알림', style: BaraedaTypography.h3),
+                  // UF-P-08 — "홈 → [알림] → … → [알림 설정]". 이 배선이 없어서
+                  // SettingsScreen 에 도달할 길이 부재했다(2026-09-21).
+                  BaraedaButton(
+                    label: '설정',
+                    size: BaraedaButtonSize.sm,
+                    variant: BaraedaButtonVariant.ghost,
+                    onPressed: () => context.push(AppRoutes.settings),
+                  ),
+                ],
+              ),
+              const SizedBox(height: BaraedaSpacing.space4),
+              const _NotificationSection(),
+            ],
+          ),
         ),
       ),
     );
+  }
+
+  /// 화면을 아래로 당기면 자녀·회차·알림을 서버에서 다시 받는다. 실패해도 각 영역의 오류 띠가
+  /// 이유를 보여주므로 여기서는 끝나기만 기다린다.
+  Future<void> _refresh(WidgetRef ref, {required bool isParent}) async {
+    ref
+      ..invalidate(runsForStudentProvider)
+      ..invalidate(notificationsProvider);
+    final base = isParent
+        ? ref.refresh(myStudentsProvider.future)
+        : ref.refresh(myStudentIdProvider.future);
+    await Future.wait([
+      base.then<void>((_) {}, onError: (_) {}),
+      ref
+          .read(notificationsProvider.future)
+          .then<void>((_) {}, onError: (_) {}),
+    ]);
   }
 }
 
@@ -80,8 +102,10 @@ class _ParentSection extends ConsumerWidget {
 
     return studentsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stack) =>
-          const AlertBanner(tone: AlertTone.missed, body: '자녀 목록을 불러오지 못했습니다'),
+      error: (error, stack) => _ErrorBanner(
+        message: '자녀 목록을 불러오지 못했습니다',
+        onRetry: () => ref.invalidate(myStudentsProvider),
+      ),
       data: (students) {
         if (students.isEmpty) {
           return EmptyState(
@@ -126,6 +150,28 @@ class _ParentSection extends ConsumerWidget {
   }
 }
 
+/// 불러오기 실패 띠 — 띠만 있으면 화면을 나갔다 들어오는 수밖에 없어 [다시 시도] 를 붙인다(R32 P7).
+class _ErrorBanner extends StatelessWidget {
+  const _ErrorBanner({required this.message, required this.onRetry});
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertBanner(
+      tone: AlertTone.missed,
+      body: message,
+      action: BaraedaButton(
+        label: '다시 시도',
+        size: BaraedaButtonSize.sm,
+        variant: BaraedaButtonVariant.secondary,
+        onPressed: onRetry,
+      ),
+    );
+  }
+}
+
 /// 학부모 홈의 항상 보이는 진입 둘 — 등하원 일정(P-05·P-06)과 자녀 추가(P-02).
 class _ParentShortcuts extends StatelessWidget {
   const _ParentShortcuts();
@@ -165,8 +211,10 @@ class _StudentSection extends ConsumerWidget {
 
     return studentIdAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stack) =>
-          const AlertBanner(tone: AlertTone.missed, body: '내 정보를 불러오지 못했습니다'),
+      error: (error, stack) => _ErrorBanner(
+        message: '내 정보를 불러오지 못했습니다',
+        onRetry: () => ref.invalidate(myStudentIdProvider),
+      ),
       data: (studentId) => studentId == null
           ? const EmptyState(title: '학생 계정 정보가 없습니다')
           : Column(
@@ -202,8 +250,10 @@ class _RunsSection extends ConsumerWidget {
 
     return runsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stack) =>
-          const AlertBanner(tone: AlertTone.missed, body: '오늘 회차를 불러오지 못했습니다'),
+      error: (error, stack) => _ErrorBanner(
+        message: '오늘 회차를 불러오지 못했습니다',
+        onRetry: () => ref.invalidate(runsForStudentProvider(studentId)),
+      ),
       data: (runs) => runs.isEmpty
           ? const EmptyState(title: '오늘 예정된 회차가 없습니다')
           : Column(
@@ -230,8 +280,10 @@ class _NotificationSection extends ConsumerWidget {
 
     return pageAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stack) =>
-          const AlertBanner(tone: AlertTone.missed, body: '알림을 불러오지 못했습니다'),
+      error: (error, stack) => _ErrorBanner(
+        message: '알림을 불러오지 못했습니다',
+        onRetry: () => ref.invalidate(notificationsProvider),
+      ),
       data: (page) =>
           NotificationList(page: page, now: ref.watch(clockProvider).now()),
     );

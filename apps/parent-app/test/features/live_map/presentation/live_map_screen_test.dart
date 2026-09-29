@@ -60,9 +60,13 @@ class _FakeWsClient extends BaraedaWebSocketClient {
   @override
   Stream<String> get forbiddenSubscriptions => _forbiddenController.stream;
 
+  /// `connect()` 가 불린 횟수 — [다시 시도] 가 실제로 재연결을 거는지 본다.
+  int connectCalls = 0;
+
   @override
   void connect() {
     // 실 소켓을 열지 않는다 — 시험은 [emit] 으로 상태 전이를 직접 민다.
+    connectCalls++;
   }
 
   /// 실 서버 대신 연결 상태 전이를 흘려보낸다.
@@ -408,6 +412,28 @@ void main() {
         ),
         findsOneWidget,
       );
+    });
+
+    // R32 P7 — 연결 끊김 띠에 다시 시도가 없어, 화면을 벗어났다 돌아오는 수밖에 없었다.
+    testWidgets('연결 끊김 띠의 [다시 시도] 가 재연결을 건다', (tester) async {
+      await pumpConnected(tester);
+      client.emit(WsConnectionState.gaveUp);
+      await tester.pump();
+      final before = client.connectCalls;
+
+      await tester.tap(find.text('다시 시도'));
+      await tester.pump();
+
+      expect(client.connectCalls, before + 1);
+    });
+
+    testWidgets('조회 권한 없음 띠에는 [다시 시도] 를 두지 않는다 — 다시 해도 거절된다', (tester) async {
+      await pumpConnected(tester);
+      client.forbid(WsChannel.studentRun('s-1'));
+      await tester.pump();
+
+      expect(find.text('조회 권한 없음'), findsOneWidget);
+      expect(find.text('다시 시도'), findsNothing);
     });
 
     testWidgets(

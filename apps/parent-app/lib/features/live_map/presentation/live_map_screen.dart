@@ -232,12 +232,24 @@ class _LiveMapBodyState extends ConsumerState<_LiveMapBody> {
     // 순서가 핵심이다 — 연결 끊김을 먼저 걸러야 "데이터 없음"과 겹치지
     // 않는다(위 클래스 문서 참고).
     if (connection.isLost) {
+      final forbidden = connection == LiveMapConnection.forbidden;
       return AlertBanner(
         tone: AlertTone.missed,
-        title: connection == LiveMapConnection.forbidden ? '조회 권한 없음' : '연결 끊김',
-        body: connection == LiveMapConnection.forbidden
+        title: forbidden ? '조회 권한 없음' : '연결 끊김',
+        body: forbidden
             ? '이 회차의 위치 정보를 볼 권한이 없습니다'
             : '실시간 위치 연결이 끊어졌습니다. 다시 시도해 주세요',
+        // 권한 거절은 다시 해도 같은 결과라 버튼을 두지 않는다. 그 외에는 이 자녀의 연결 상태를
+        // 새로 만들어(구독·재연결·위치 스냅샷 재조회) 화면을 나갔다 오는 것과 같게 한다(R32 P7).
+        action: forbidden
+            ? null
+            : BaraedaButton(
+                label: '다시 시도',
+                size: BaraedaButtonSize.sm,
+                variant: BaraedaButtonVariant.secondary,
+                onPressed: () =>
+                    ref.invalidate(liveMapStateProvider(widget.studentId)),
+              ),
       );
     }
 
