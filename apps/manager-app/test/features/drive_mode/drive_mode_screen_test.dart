@@ -169,7 +169,33 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('운행 시작'), findsNothing);
-    expect(find.text('운행 시작 가능 시간(출발 ±10분)이 아닙니다'), findsOneWidget);
+    // R32 M10 — 언제부터 되는지를 알려 준다(now = 08:00, 창 시작 = 08:20).
+    expect(find.text('08:20 부터 시작할 수 있습니다 (출발 ±10분)'), findsOneWidget);
+  });
+
+  testWidgets('출발 시간 창이 이미 지났으면 지났다고 알린다', (tester) async {
+    final now = DateTime(2026, 9, 12, 8);
+    await tester.pumpWidget(
+      _wrap(const DriveModeScreen(), [
+        clockProvider.overrideWithValue(_FixedClock(now)),
+        selectedRunIdProvider.overrideWith((ref) => runId),
+        driveModeRunProvider.overrideWithValue(
+          _managerRun(
+            startWindowFrom: now.subtract(const Duration(minutes: 40)),
+            startWindowTo: now.subtract(const Duration(minutes: 20)),
+          ),
+        ),
+        // R32 M1 — 운행 화면이 노선을 조회한다. 실제 서버로 나가지 않게 빈 노선으로 막는다.
+        routeProvider.overrideWith(
+          (ref) async => const RouteResponse(stops: []),
+        ),
+        driveModeRosterProvider.overrideWith((ref) async => _emptyRoster),
+      ]),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('운행 시작'), findsNothing);
+    expect(find.text('운행 시작 가능 시간(출발 ±10분)이 지났습니다'), findsOneWidget);
   });
 
   // M4(Ruling 340) — 취소된 회차(§4.1 목록에서도 제외)에 운행 시작을

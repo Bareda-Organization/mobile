@@ -4,6 +4,7 @@ import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:manager_app/app/app_routes.dart';
 import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/auth/auth_providers.dart';
@@ -367,7 +368,13 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
       final withinWindow =
           !now.isBefore(run.startWindowFrom) && !now.isAfter(run.startWindowTo);
       if (!withinWindow) {
-        return const Text('운행 시작 가능 시간(출발 ±10분)이 아닙니다');
+        // 언제부터 되는지를 알린다(R32 M10) — 이미 지났으면 지났다고 한다.
+        return Text(
+          now.isBefore(run.startWindowFrom)
+              ? '${DateFormat('HH:mm').format(run.startWindowFrom.toLocal())} '
+                    '부터 시작할 수 있습니다 (출발 ±10분)'
+              : '운행 시작 가능 시간(출발 ±10분)이 지났습니다',
+        );
       }
       return BaraedaButton(
         label: '운행 시작',
