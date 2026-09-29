@@ -216,6 +216,9 @@ void main() {
 
     await tester.tap(find.text('운행 시작'));
     await tester.pumpAndSettle();
+    // R32 M6 — 시작은 확인 창을 거친다.
+    await tester.tap(find.text('시작하기'));
+    await tester.pumpAndSettle();
 
     expect(find.text('취소된 회차입니다'), findsOneWidget);
     expect(todayRunsFetchCount, 2);

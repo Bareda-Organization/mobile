@@ -14,9 +14,11 @@ import 'package:manager_app/core/run/manager_channel_banner.dart';
 import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/core/run/run_termination_provider.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
+import 'package:manager_app/core/ui/confirm_dialog.dart';
 import 'package:manager_app/core/wakelock/wakelock_port.dart';
 import 'package:manager_app/features/drive_mode/presentation/drive_mode_providers.dart';
 import 'package:manager_app/features/drive_mode/presentation/widgets/drive_map_panel.dart';
+import 'package:manager_app/features/drive_mode/presentation/widgets/remaining_stops_list.dart';
 import 'package:manager_app/features/emergency/presentation/widgets/emergency_button.dart';
 import 'package:manager_app/features/home/data/models/manager_run.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
@@ -159,6 +161,14 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
   }
 
   Future<void> _startRun(String runId) async {
+    // 시작하면 노선이 잠기고 학부모·관계자에게 알림이 나간다 — 되돌릴 수 없어 한 번 묻는다(R32 M6).
+    final confirmed = await confirmAction(
+      context,
+      title: '운행을 시작할까요?',
+      body: '시작하면 학부모·관계자에게 운행 시작 알림이 나가고 노선이 잠깁니다',
+      confirmLabel: '시작하기',
+    );
+    if (!confirmed || !mounted) return;
     setState(() {
       _submitting = true;
       _errorMessage = null;
@@ -181,7 +191,22 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
     }
   }
 
-  Future<void> _arriveStop(String runId, String stopId) async {
+  Future<void> _arriveStop(
+    String runId,
+    String stopId, {
+    bool isLast = false,
+  }) async {
+    // 마지막 승하차지의 도착 처리는 곧 운행 종료다(C-15) — 되돌릴 수 없어 한 번 묻는다(R32 M6).
+    // 그 앞 승하차지는 운전 중에 자주 누르는 조작이라 묻지 않는다.
+    if (isLast) {
+      final confirmed = await confirmAction(
+        context,
+        title: '마지막 승하차지입니다',
+        body: '도착 처리하면 운행 종료 절차가 시작됩니다. 되돌릴 수 없습니다.',
+        confirmLabel: '도착했습니다',
+      );
+      if (!confirmed || !mounted) return;
+    }
     setState(() {
       _submitting = true;
       _errorMessage = null;
@@ -288,6 +313,10 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
                   AlertBanner(tone: AlertTone.missed, body: _positionGuidance),
                   const SizedBox(height: 12),
                 ],
+                // 남은 승하차지(M-08, R32 M5) — 조회 전용. 끝난 운행에는 남은 곳이 없다.
+                if (rosterAsync.value case final roster?
+                    when run?.runStatus != RunStatus.finished)
+                  RemainingStopsList(roster: roster),
               ],
             ),
           ),
@@ -356,7 +385,11 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
         size: BaraedaButtonSize.lg,
         onPressed: _submitting
             ? null
-            : () => _arriveStop(runId, nextStop.stopId),
+            : () => _arriveStop(
+                runId,
+                nextStop.stopId,
+                isLast: isLastRemainingStop(roster, nextStop),
+              ),
       );
     }
 

@@ -40,3 +40,14 @@ RosterStop? nextUnarrivedStop(RosterResponse roster) {
   }
   return null;
 }
+
+/// [stop] 뒤에 도착 처리할 승하차지가 더 없으면 `true` — 이 승하차지의 도착 처리가 운행 종료를
+/// 일으킨다(C-15). 미경유(skipped)와 이미 도착한 곳은 세지 않는다.
+bool isLastRemainingStop(RosterResponse roster, RosterStop stop) {
+  final index = roster.stops.indexWhere((s) => s.stopId == stop.stopId);
+  for (final later in roster.stops.skip(index + 1)) {
+    if (later.change == StopChange.skipped) continue;
+    if (later.arrivedAt == null) return false;
+  }
+  return true;
+}
