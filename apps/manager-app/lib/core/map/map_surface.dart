@@ -4,6 +4,8 @@
 /// 교체해도 화면은 이 파일의 타입만 알면 된다.
 library;
 
+import 'dart:math' as math;
+
 import 'package:flutter/widgets.dart';
 import 'package:manager_app/core/map/naver/naver_map_adapter.dart';
 
@@ -97,6 +99,68 @@ MapBounds? contentBounds(
   return MapBounds(south: south, west: west, north: north, east: east);
 }
 
+/// 버스를 카메라 맞춤에 넣는 거리 — 노선 사각형을 이만큼(약 2km) 넓힌 범위 안의 버스만 넣는다.
+/// 이보다 멀면 화면이 버스까지 넓어져 노선이 점처럼 작아지므로 맞춤 대상에서 뺀다.
+const double busFitMarginMeters = 2000;
+
+/// 위도 1도의 길이(미터). 경도 1도의 길이는 여기에 `cos(위도)` 를 곱한다.
+const double _metersPerDegreeLatitude = 111320;
+
+/// 카메라 맞춤 결과 — 맞출 사각형과 그 안에 넣은 마커 id.
+class MapFit {
+  const MapFit({required this.bounds, required this.markerIds});
+
+  final MapBounds bounds;
+
+  /// 사각형에 넣은 마커의 id. 이 집합이 달라질 때만 카메라를 다시 맞춘다 — 버스가 노선 근처로
+  /// 들어와 포함 여부가 바뀌면 id 에 `bus` 가 생겨 다시 맞춘다.
+  final Set<String> markerIds;
+
+  /// [markerIds] 를 정렬해 이은 값 — 어댑터가 "지난번 맞춘 것과 같은가" 를 비교한다.
+  String get signature => (markerIds.toList()..sort()).join(',');
+}
+
+/// 카메라를 맞출 대상을 정한다 — 노선(버스가 아닌 마커 + [polylines])이 기준이고, 버스 마커는
+/// 노선 사각형을 [busFitMarginMeters] 넓힌 범위 안일 때만 넣는다. 노선이 없으면(점이 하나도 없으면)
+/// 있는 것을 전부 맞춘다. 맞출 점이 없으면 `null`.
+MapFit? cameraFit(
+  Iterable<MapMarker> markers,
+  Iterable<MapPolyline> polylines,
+) {
+  final routeMarkers = [
+    for (final marker in markers)
+      if (marker.kind != MapMarkerKind.bus) marker,
+  ];
+  final route = contentBounds(routeMarkers, polylines);
+  if (route == null) {
+    final all = contentBounds(markers, polylines);
+    if (all == null) return null;
+    return MapFit(bounds: all, markerIds: {for (final m in markers) m.id});
+  }
+  final nearBuses = [
+    for (final marker in markers)
+      if (marker.kind == MapMarkerKind.bus && _isNear(route, marker)) marker,
+  ];
+  final included = [...routeMarkers, ...nearBuses];
+  return MapFit(
+    bounds: contentBounds(included, polylines)!,
+    markerIds: {for (final m in included) m.id},
+  );
+}
+
+/// [marker] 가 [route] 를 [busFitMarginMeters] 넓힌 사각형 안인가 — 경도는 그 위도의 실제 거리로 잰다.
+bool _isNear(MapBounds route, MapMarker marker) {
+  const latMargin = busFitMarginMeters / _metersPerDegreeLatitude;
+  final midLat = (route.south + route.north) / 2;
+  final lngMargin =
+      busFitMarginMeters /
+      (_metersPerDegreeLatitude * math.cos(midLat * math.pi / 180));
+  return marker.lat >= route.south - latMargin &&
+      marker.lat <= route.north + latMargin &&
+      marker.lng >= route.west - lngMargin &&
+      marker.lng <= route.east + lngMargin;
+}
+
 /// 지도 준비 완료 콜백 — SDK 가 타일을 그릴 준비를 마치면 호출된다.
 typedef MapReadyCallback = void Function();
 
@@ -130,9 +194,10 @@ class MapSurface extends StatelessWidget {
   /// 지도 위에 그릴 선 목록(도로 경로 등).
   final List<MapPolyline> polylines;
 
-  /// `true` 면 카메라를 마커·선이 전부 보이게 맞춘다 — 지도가 준비된 직후와, 마커 종류·개수가
-  /// 바뀔 때(예: 버스 위치가 처음 잡힐 때) 다시 맞춘다. 좌표만 바뀔 때는 맞추지 않는다(사용자가
-  /// 옮겨 둔 화면을 빼앗지 않는다). [camera] 는 맞추기 전 초기 위치가 된다.
+  /// `true` 면 카메라를 노선(승하차지 핀·도로 경로)이 전부 보이게 맞춘다 — 지도가 준비된 직후와,
+  /// 맞춤 대상이 바뀔 때 다시 맞춘다. 버스 마커는 노선 사각형을 약 2km 넓힌 범위 안일 때만 맞춤에
+  /// 넣고(`cameraFit`), 버스가 그 범위를 드나들어 포함 여부가 바뀌면 다시 맞춘다. 좌표만 바뀔 때는
+  /// 맞추지 않는다(사용자가 옮겨 둔 화면을 빼앗지 않는다). [camera] 는 맞추기 전 초기 위치가 된다.
   final bool fitToContent;
 
   /// 지도 준비 완료 콜백.

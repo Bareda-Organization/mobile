@@ -279,7 +279,7 @@ void main() {
     expect(find.text('근사 경로 — 실제 도로와 다를 수 있습니다'), findsOneWidget);
   });
 
-  testWidgets('카메라를 노선·버스가 전부 보이게 맞추도록 지시한다', (tester) async {
+  testWidgets('카메라를 노선이 보이게 맞추도록 지시한다', (tester) async {
     await pumpScreen(tester, overrides());
 
     final surface = tester.widget<MapSurface>(find.byType(MapSurface));
