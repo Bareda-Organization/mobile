@@ -3,6 +3,9 @@ import 'dart:io';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:manager_app/features/offline_queue/data/offline_queue_database.dart';
+// sqlite3 는 drift 의 전이 의존이다 — v2 스키마를 손으로 만들려면 원시 연결이 필요하고, 이 시험 하나 때문에
+// pubspec 에 직접 의존을 더하지 않는다.
+// ignore: depend_on_referenced_packages
 import 'package:sqlite3/sqlite3.dart' as sqlite3;
 
 void main() {
@@ -15,8 +18,8 @@ void main() {
     final path = '${dir.path}/oq.sqlite';
 
     // v2 스키마를 손으로 만든다 — 실기기의 v2 로컬 DB 를 흉내 낸다.
-    final raw = sqlite3.sqlite3.open(path);
-    raw.execute('''
+    sqlite3.sqlite3.open(path)
+      ..execute('''
       CREATE TABLE pending_requests (
         id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
         client_key TEXT NOT NULL,
@@ -25,12 +28,12 @@ void main() {
         payload TEXT NOT NULL,
         created_at INTEGER NOT NULL DEFAULT (unixepoch())
       );
-    ''');
-    raw.execute(
-      "INSERT INTO pending_requests (client_key, endpoint, payload) VALUES ('K1', '/x', '{}')",
-    );
-    raw.execute('PRAGMA user_version = 2');
-    raw.dispose();
+    ''')
+      ..execute(
+        "INSERT INTO pending_requests (client_key, endpoint, payload) VALUES ('K1', '/x', '{}')",
+      )
+      ..execute('PRAGMA user_version = 2')
+      ..close();
 
     final db = OfflineQueueDatabase.forTesting(NativeDatabase(File(path)));
     // 아무 쿼리나 던지면 drift 가 open 시점에 마이그레이션을 실행한다.
@@ -45,7 +48,7 @@ void main() {
         .select('PRAGMA table_info(pending_requests)')
         .map((r) => r['name'] as String)
         .toList();
-    raw2.dispose();
+    raw2.close();
     expect(columns, isNot(contains('client_key')));
   });
 }

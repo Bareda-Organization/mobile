@@ -7,6 +7,8 @@ import 'package:flutter_riverpod/legacy.dart';
 import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/core/auth/user_role.dart';
+import 'package:manager_app/core/run/selected_run_provider.dart';
+import 'package:manager_app/features/home/presentation/home_providers.dart';
 
 /// 계정 **상태**(`pending`·`active`·`rejected`) 를 담는다.
 ///
@@ -51,11 +53,28 @@ final authBootstrapProvider = FutureProvider<void>((ref) async {
       role: me.role,
       status: me.status,
     );
+    if (me.status == AccountStatus.active && me.role == AccountRole.driver) {
+      await _resumeMovingRun(ref);
+    }
   } on Object {
     // 재발급까지 실패하면 인터셉터가 이미 토큰을 지웠다(§ api_client.dart
     // onError) — 여기서는 로그인 화면으로 남기는 것으로 충분하다.
   }
 });
+
+/// 운행 중에 앱을 완전히 껐다 켜면 메모리 값인 선택 회차가 비어 위치 송신이 멎는다 — 오늘 회차(§4.1)에서
+/// 운행 중이고 내가 기사인 회차를 찾아 채우면 앱 전역 송신기가 그대로 돈다. 화면은 옮기지 않는다
+/// (기사가 보던 곳을 가로채지 않는다). 목록을 못 받으면 조용히 넘어간다 — 홈에서 직접 고르면 된다.
+Future<void> _resumeMovingRun(Ref ref) async {
+  try {
+    final runs = await ref.read(managerRunRepositoryProvider).fetchRuns();
+    final run = pickResumableRun(runs);
+    final selected = ref.read(selectedRunIdProvider.notifier);
+    if (run != null && selected.state == null) selected.state = run.runId;
+  } on Object {
+    // 송신 재개는 부가 동작이라 실패해도 로그인 복구를 막지 않는다.
+  }
+}
 
 /// 로그아웃(2026-09-23 사용자 지시) — 서버에 알리고, **실패해도** 이 기기의 역할·상태를 비운다. 역할이
 /// 비면 라우터가 로그인 화면으로 보낸다(판정은 라우터 한 곳). 토큰은 `AuthApi.logout` 이 성패와 무관하게
