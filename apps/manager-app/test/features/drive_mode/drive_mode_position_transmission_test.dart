@@ -17,6 +17,8 @@ import 'package:manager_app/features/home/data/models/manager_run.dart';
 import 'package:manager_app/features/position/data/models/position_request.dart';
 import 'package:manager_app/features/position/domain/position_repository.dart';
 import 'package:manager_app/features/roster/data/models/roster_response.dart';
+import 'package:manager_app/features/route_map/data/models/route_response.dart';
+import 'package:manager_app/features/route_map/presentation/route_providers.dart';
 
 /// 시각을 고정하는 가짜 시계 — `drive_mode_screen_test.dart` 와 같은 패턴.
 class _FixedClock implements Clock {
@@ -132,6 +134,8 @@ void main() {
     driveModeRunProvider.overrideWithValue(
       _managerRun(runStatus: runStatus, now: now),
     ),
+    // R32 M1 — 운행 화면이 노선을 조회한다. 실제 서버로 나가지 않게 빈 노선으로 막는다.
+    routeProvider.overrideWith((ref) async => const RouteResponse(stops: [])),
     driveModeRosterProvider.overrideWith((ref) async => _emptyRoster),
     positionSourceProvider.overrideWithValue(positionSource),
     positionRepositoryProvider.overrideWithValue(positionRepository),
@@ -165,6 +169,10 @@ void main() {
           currentUserRoleProvider.overrideWith((ref) => UserRole.driver),
           selectedRunIdProvider.overrideWith((ref) => runId),
           driveModeRunProvider.overrideWith((ref) => ref.watch(runState)),
+          // R32 M1 — 운행 화면이 노선을 조회한다. 실제 서버로 나가지 않게 빈 노선으로 막는다.
+          routeProvider.overrideWith(
+            (ref) async => const RouteResponse(stops: []),
+          ),
           driveModeRosterProvider.overrideWith((ref) async => _emptyRoster),
           positionSourceProvider.overrideWithValue(source),
           positionRepositoryProvider.overrideWithValue(repository),

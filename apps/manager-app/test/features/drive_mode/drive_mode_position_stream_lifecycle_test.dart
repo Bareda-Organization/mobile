@@ -18,6 +18,8 @@ import 'package:manager_app/features/home/data/models/manager_run.dart';
 import 'package:manager_app/features/position/data/models/position_request.dart';
 import 'package:manager_app/features/position/domain/position_repository.dart';
 import 'package:manager_app/features/roster/data/models/roster_response.dart';
+import 'package:manager_app/features/route_map/data/models/route_response.dart';
+import 'package:manager_app/features/route_map/presentation/route_providers.dart';
 
 /// LOC-01 백그라운드 송신(`Ruling 360`) — 실제 GeolocatorPositionSource 를
 /// `_FakeGeolocatorPlatform`(`position_source_test.dart` 와 같은 발상)
@@ -43,8 +45,7 @@ class _FakeGeolocatorPlatform extends GeolocatorPlatform {
   Future<LocationPermission> checkPermission() async => checkPermissionResult;
 
   @override
-  Future<LocationPermission> requestPermission() async =>
-      checkPermissionResult;
+  Future<LocationPermission> requestPermission() async => checkPermissionResult;
 
   @override
   Future<bool> isLocationServiceEnabled() async => serviceEnabled;
@@ -72,7 +73,10 @@ class _NoopPositionRepository implements PositionRepository {
 }
 
 Widget _wrap(Widget child, List<Override> overrides) {
-  return ProviderScope(overrides: overrides, child: MaterialApp(home: child));
+  return ProviderScope(
+    overrides: overrides,
+    child: MaterialApp(home: child),
+  );
 }
 
 const _emptyRoster = RosterResponse(
@@ -117,6 +121,8 @@ void main() {
     currentUserRoleProvider.overrideWith((ref) => role),
     selectedRunIdProvider.overrideWith((ref) => runId),
     driveModeRunProvider.overrideWithValue(currentRun),
+    // R32 M1 — 운행 화면이 노선을 조회한다. 실제 서버로 나가지 않게 빈 노선으로 막는다.
+    routeProvider.overrideWith((ref) async => const RouteResponse(stops: [])),
     driveModeRosterProvider.overrideWith((ref) async => _emptyRoster),
     positionRepositoryProvider.overrideWithValue(_NoopPositionRepository()),
   ];
@@ -148,6 +154,10 @@ void main() {
         currentUserRoleProvider.overrideWith((ref) => UserRole.driver),
         selectedRunIdProvider.overrideWith((ref) => runId),
         driveModeRunProvider.overrideWith((ref) => ref.watch(runState)),
+        // R32 M1 — 운행 화면이 노선을 조회한다. 실제 서버로 나가지 않게 빈 노선으로 막는다.
+        routeProvider.overrideWith(
+          (ref) async => const RouteResponse(stops: []),
+        ),
         driveModeRosterProvider.overrideWith((ref) async => _emptyRoster),
         positionRepositoryProvider.overrideWithValue(
           _NoopPositionRepository(),
