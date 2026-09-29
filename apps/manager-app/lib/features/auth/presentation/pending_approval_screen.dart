@@ -38,6 +38,25 @@ class _PendingApprovalScreenState extends ConsumerState<PendingApprovalScreen> {
 
   Future<void> _logout() => signOut(ref);
 
+  /// [상태 다시 확인] — 서버에서 다시 받아 화면에 반영한다. 승인(`active`)이 났으면 계정 상태를
+  /// 바꿔 라우터가 홈으로 보내게 한다(안 바꾸면 승인된 뒤에도 이 화면이 대기 중으로 남는다).
+  /// `parent_app` 의 같은 화면과 같은 동작이다(R33 M3).
+  Future<void> _refreshStatus() async {
+    final future = ref.read(authRepositoryProvider).signupStatus();
+    setState(() {
+      _statusFuture = future;
+    });
+    try {
+      final status = await future;
+      if (mounted && status.status == AccountStatus.active) {
+        ref.read(currentAccountStatusProvider.notifier).state =
+            AccountStatus.active;
+      }
+    } on Object {
+      // 실패는 FutureBuilder 가 [다시 시도하기] 화면으로 보여준다.
+    }
+  }
+
   Future<void> _reapply() async {
     final academy = _newAcademy;
     if (academy == null || _submittingReapply) return;
@@ -100,6 +119,7 @@ class _PendingApprovalScreenState extends ConsumerState<PendingApprovalScreen> {
               submittingReapply: _submittingReapply,
               reapplyError: _reapplyError,
               onLogout: _logout,
+              onRefresh: _refreshStatus,
               onStartReapply: () => setState(() => _reapplying = true),
               onAcademySelected: (academy) =>
                   setState(() => _newAcademy = academy),
@@ -142,6 +162,7 @@ class _StatusBody extends StatelessWidget {
     required this.submittingReapply,
     required this.reapplyError,
     required this.onLogout,
+    required this.onRefresh,
     required this.onStartReapply,
     required this.onAcademySelected,
     required this.onSubmitReapply,
@@ -154,6 +175,7 @@ class _StatusBody extends StatelessWidget {
   final bool submittingReapply;
   final String? reapplyError;
   final VoidCallback onLogout;
+  final VoidCallback onRefresh;
   final VoidCallback onStartReapply;
   final ValueChanged<AcademySummary> onAcademySelected;
   final VoidCallback onSubmitReapply;
@@ -187,6 +209,14 @@ class _StatusBody extends StatelessWidget {
           ),
           _InfoRow(label: '현재 상태', value: _isRejected ? '거절됨' : '승인 대기'),
           _InfoRow(label: '학원 문의처', value: status.academyContact),
+          const SizedBox(height: BaraedaSpacing.space6),
+          // 상태를 처음 한 번만 조회하면 승인·거절이 나도 앱을 껐다 켜야 알 수 있다.
+          BaraedaButton(
+            label: '상태 다시 확인',
+            variant: BaraedaButtonVariant.secondary,
+            block: true,
+            onPressed: onRefresh,
+          ),
           const SizedBox(height: BaraedaSpacing.space6),
           if (_isRejected && !reapplying)
             BaraedaButton(
