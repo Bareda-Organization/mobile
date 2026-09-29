@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:baraeda_core/baraeda_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:parent_app/core/map/frame_ticker.dart';
@@ -40,6 +41,12 @@ class _NaverMapAdapterState extends State<NaverMapAdapter> {
   late final Future<void> _initFuture;
   StreamSubscription<Object>? _authFailedSub;
   NaverMapController? _controller;
+
+  /// 마커 동기화를 한 번에 하나만 — 겹치면 핀 이미지가 빈 파일로 저장돼 iOS 에서 앱이 종료된다([SerialSync]).
+  late final SerialSync _sync = SerialSync(() async {
+    final controller = _controller;
+    if (controller != null && mounted) await _syncMarkers(controller);
+  });
   final Map<String, NMarker> _markersById = {};
 
   /// 마커 id 별 보간 상태 — 계산 자체는 `MarkerMotionController`(순수)에
@@ -66,7 +73,7 @@ class _NaverMapAdapterState extends State<NaverMapAdapter> {
     super.didUpdateWidget(oldWidget);
     final controller = _controller;
     if (controller != null) {
-      unawaited(_syncMarkers(controller));
+      unawaited(_sync.request());
       if (!_sameCamera(oldWidget.camera, widget.camera)) {
         unawaited(
           controller.updateCamera(
@@ -92,6 +99,13 @@ class _NaverMapAdapterState extends State<NaverMapAdapter> {
     unawaited(_authFailedSub?.cancel());
     super.dispose();
   }
+
+  /// 위젯 시험 전용 훅 — 실제 컨트롤러는 SDK 의 `onMapReady` 로만 오는데 위젯 시험에는 그 경로가 없다.
+  /// 가짜 컨트롤러를 끼워 넣어 마커 동기화가 겹쳐 도는지 본다
+  /// (`test/core/map/naver/naver_map_adapter_sync_test.dart` 전용).
+  @visibleForTesting
+  set debugControllerForTest(NaverMapController controller) =>
+      _controller = controller;
 
   /// 위젯 시험 전용 훅 — 실제 SDK 의 `onMapReady` 는 위젯 시험 환경(플랫폼
   /// 채널 부재)에서 오지 않아 `_frameTicker` 가 정상 경로(`_syncMarkers` →
@@ -131,7 +145,7 @@ class _NaverMapAdapterState extends State<NaverMapAdapter> {
           ),
           onMapReady: (controller) {
             _controller = controller;
-            unawaited(_syncMarkers(controller));
+            unawaited(_sync.request());
             widget.onReady?.call();
           },
         );
