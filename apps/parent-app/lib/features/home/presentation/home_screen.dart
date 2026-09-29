@@ -115,11 +115,42 @@ class _ParentSection extends ConsumerWidget {
               ),
               const SizedBox(height: BaraedaSpacing.space4),
             ],
+            // P2·P3 — 처리 대기 배지는 0건이면 사라져 일정 화면·둘째 연결로 갈 길이 없었다.
+            const _ParentShortcuts(),
             PendingChangeBadge(studentId: selectedId),
             _RunsSection(studentId: selectedId, canToggle: true),
           ],
         );
       },
+    );
+  }
+}
+
+/// 학부모 홈의 항상 보이는 진입 둘 — 등하원 일정(P-05·P-06)과 자녀 추가(P-02).
+class _ParentShortcuts extends StatelessWidget {
+  const _ParentShortcuts();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: BaraedaSpacing.space4),
+      child: Row(
+        children: [
+          BaraedaButton(
+            label: '일정',
+            size: BaraedaButtonSize.sm,
+            variant: BaraedaButtonVariant.secondary,
+            onPressed: () => context.push(AppRoutes.schedule),
+          ),
+          const SizedBox(width: BaraedaSpacing.space2),
+          BaraedaButton(
+            label: '자녀 추가',
+            size: BaraedaButtonSize.sm,
+            variant: BaraedaButtonVariant.ghost,
+            onPressed: () => context.push(AppRoutes.childLink),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -138,7 +169,23 @@ class _StudentSection extends ConsumerWidget {
           const AlertBanner(tone: AlertTone.missed, body: '내 정보를 불러오지 못했습니다'),
       data: (studentId) => studentId == null
           ? const EmptyState(title: '학생 계정 정보가 없습니다')
-          : _RunsSection(studentId: studentId, canToggle: false),
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // P1 — 연결 코드(S-05)는 일정 화면에만 있어 학생은 갈 길이 없었다.
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: BaraedaButton(
+                    label: '부모 연결 코드',
+                    size: BaraedaButtonSize.sm,
+                    variant: BaraedaButtonVariant.secondary,
+                    onPressed: () => context.push(AppRoutes.childLink),
+                  ),
+                ),
+                const SizedBox(height: BaraedaSpacing.space4),
+                _RunsSection(studentId: studentId, canToggle: false),
+              ],
+            ),
     );
   }
 }
