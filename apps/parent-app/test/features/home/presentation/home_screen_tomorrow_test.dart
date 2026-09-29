@@ -94,7 +94,11 @@ void main() {
           myStudentIdProvider.overrideWith((ref) async => 's-1'),
           myStudentsProvider.overrideWith(
             (ref) async => [
-              Student(studentId: 's-1', name: '첫째', linkedAt: DateTime(2026, 9)),
+              Student(
+                studentId: 's-1',
+                name: '첫째',
+                linkedAt: DateTime(2026, 9),
+              ),
             ],
           ),
           notificationsProvider.overrideWith(

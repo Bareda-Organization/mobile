@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:baraeda_core/baraeda_core.dart';
-import 'package:baraeda_ui/widgets/dev/dev_quick_login.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -180,7 +179,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 onPick: (loginId, password) {
                   _loginIdController.text = loginId;
                   _passwordController.text = password;
-                  _submit();
+                  unawaited(_submit());
                 },
               ),
             ],

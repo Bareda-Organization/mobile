@@ -7,7 +7,6 @@
 //
 // 용어도 어긋났다 — 이 서비스에는 **공용 정류장 개념이 부재**하고 단위는 **승하차지**다
 // (`FEATURE_SPEC C-12` · `PRD §6`). "정류장" 은 구 기획에서 뒤집힌 말이다.
-import 'package:baraeda_ui/theme/baraeda_theme.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';

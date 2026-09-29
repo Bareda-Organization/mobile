@@ -18,7 +18,10 @@ void main() {
       theme: BaraedaTheme.light(),
       home: MediaQuery(
         data: MediaQueryData(padding: EdgeInsets.only(top: statusBar)),
-        child: Scaffold(appBar: header as PreferredSizeWidget, body: const SizedBox()),
+        child: Scaffold(
+          appBar: header as PreferredSizeWidget,
+          body: const SizedBox(),
+        ),
       ),
     );
   }
@@ -72,7 +75,9 @@ void main() {
   });
 
   testWidgets('상태 표시줄이 없는 기기에서는 여백을 더하지 않는다', (tester) async {
-    await tester.pumpWidget(wrap(const AppHeader(title: '오늘 운행'), statusBar: 0));
+    await tester.pumpWidget(
+      wrap(const AppHeader(title: '오늘 운행'), statusBar: 0),
+    );
 
     expect(tester.getTopLeft(find.text('오늘 운행')).dy, lessThan(56),
         reason: '고정값을 더하면 여백이 없는 기기에서 머리말이 쓸데없이 두꺼워진다');
