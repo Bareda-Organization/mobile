@@ -54,7 +54,9 @@ class _PendingApprovalScreenState extends ConsumerState<PendingApprovalScreen> {
   /// 바꿔 라우터가 홈으로 보내게 한다(안 바꾸면 승인된 뒤에도 이 화면이 대기 중으로 남는다, R32 P9).
   Future<void> _refreshStatus() async {
     final future = ref.read(authRepositoryProvider).signupStatus();
-    setState(() => _statusFuture = future);
+    setState(() {
+      _statusFuture = future;
+    });
     try {
       final status = await future;
       if (mounted && status.status == AccountStatus.active) {
