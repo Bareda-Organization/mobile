@@ -46,7 +46,7 @@ class BaraedaButton extends StatelessWidget {
   /// 뒤쪽 [BaraedaIcon] 이름.
   final String? iconEnd;
 
-  /// 가로 100%.
+  /// 가로 100%. false 면 내용 폭(Column stretch 처럼 부모가 폭을 강제하는 자리는 그 폭).
   final bool block;
 
   bool get _disabled => onPressed == null;
@@ -108,7 +108,9 @@ class BaraedaButton extends StatelessWidget {
                 border: palette.border,
                 borderRadius: BorderRadius.circular(BaraedaRadius.control),
               ),
-              child: Center(child: content),
+              // block 이 아니면 내용 폭 — 디자인 킷 `inline-flex`(R43).
+              // 부모가 폭 상한만 줘도 늘어나지 않는다.
+              child: Center(widthFactor: block ? null : 1, child: content),
             ),
           ),
         ),
