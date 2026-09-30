@@ -260,4 +260,29 @@ void main() {
     await tester.pumpAndSettle();
     expect(fakeRepo.callCount, 1);
   });
+
+  // N-08 — 현장 예외 보고 memo 는 200자까지다(API_SPEC 자유 입력 메모 상한, 넘으면 422).
+  testWidgets('메모 입력칸은 200자에서 멈춘다', (tester) async {
+    await tester.pumpWidget(
+      _wrap(const RunEndScreen(), [
+        selectedRunIdProvider.overrideWith((ref) => runId),
+        lastArriveResultProvider.overrideWith((ref) => null),
+        reportsRepositoryProvider.overrideWithValue(
+          _FakeReportsRepository(
+            result: ReportResult(
+              reportId: 'rep-1',
+              reportedAt: DateTime(2026, 9, 12, 8, 31, 5),
+            ),
+          ),
+        ),
+      ]),
+    );
+
+    await tester.enterText(find.byType(TextField), '가' * 250);
+
+    expect(
+      tester.widget<TextField>(find.byType(TextField)).controller!.text.length,
+      200,
+    );
+  });
 }

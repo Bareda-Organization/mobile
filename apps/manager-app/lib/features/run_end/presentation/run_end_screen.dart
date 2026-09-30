@@ -8,6 +8,7 @@ import 'package:manager_app/core/network/failure_messages.dart';
 import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/core/run/run_termination_provider.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
+import 'package:manager_app/core/ui/limited_text_controller.dart';
 import 'package:manager_app/features/drive_mode/data/models/arrive_stop_result.dart';
 import 'package:manager_app/features/roster/presentation/roster_providers.dart';
 import 'package:manager_app/features/run_end/data/models/report_request.dart';
@@ -37,7 +38,7 @@ class RunEndScreen extends ConsumerStatefulWidget {
 
 class _RunEndScreenState extends ConsumerState<RunEndScreen> {
   ReportType _type = ReportType.guardianAbsent;
-  final _memoController = TextEditingController();
+  final _memoController = LimitedTextController();
   String? _selectedRiderId;
 
   bool _submitting = false;
