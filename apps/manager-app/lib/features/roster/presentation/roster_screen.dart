@@ -221,34 +221,41 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('승하차 명단'),
-        actions: [
+        actions: const [
           // 비상(M-15, R32 M2) — 동승자도 발신한다. 노선·연결 상태와 무관하게 늘 보인다.
-          const EmergencyButton(),
-          // 예외 보고(M-14, R32 M3) — 보호자 부재·도로 통제 등. 기사는 운행 화면의 종료 보고서로,
-          // 동승자는 여기서 보고한다.
-          TextButton(
-            onPressed: () => context.push(AppRoutes.runEnd),
-            child: const Text('예외 보고'),
-          ),
-          if (caps?.canSendDelayNotification ?? false)
-            TextButton(
-              onPressed: () => context.push(AppRoutes.delay),
-              child: const Text('지연 알림'),
-            ),
-          // ⚠ 오프라인 큐는 **이 화면에서만** 갈 수 있어야 한다.
-          // `OfflineQueueScreen` 자바독이 "재전송은 이 화면의 버튼을 눌렀을 때만"
-          // 이라고 적는다 — 도달 불가면 통신 두절로 쌓인 승하차 처리가 **영영 안 나간다**.
-          // 승하차를 처리하는 주체(동승자)에게 연다(M-06 · UF-E-07).
-          if (caps?.canDecideBoardingStatus ?? false)
-            TextButton(
-              onPressed: () => context.push(AppRoutes.offlineQueue),
-              child: const Text('대기열'),
-            ),
+          // 제목이 글자 버튼 4개에 밀려 사라졌다 — 나머지 셋은 본문 위 줄로 내렸다(R46).
+          EmergencyButton(),
         ],
       ),
-      body: runId == null
-          ? const Center(child: Text('선택된 운행이 없습니다 — 홈에서 운행을 선택하세요'))
-          : _buildBody(context, runId),
+      body: Column(
+        children: [
+          _ActionsBar(
+            // 예외 보고(M-14, R32 M3) — 보호자 부재·도로 통제 등. 기사는 운행 화면의 종료 보고서로,
+            // 동승자는 여기서 보고한다.
+            onExceptionReport: () => context.push(AppRoutes.runEnd),
+            // UF-E-05 "명단 → [지연 알림]" — M-05 는 **동승자 전용**(기사는 운전 중).
+            // 노선 지도(M-09)는 기사 전용이라 기사가 들어오는 운행 화면에 있다 — 여기에는 두지 않는다(R32 M14).
+            // 2026-09-21 까지 이 배선이 부재해 화면이 만들어져 있어도 도달할 수 없었다.
+            onDelay: (caps?.canSendDelayNotification ?? false)
+                ? () => context.push(AppRoutes.delay)
+                : null,
+            // ⚠ 오프라인 큐는 **이 화면에서만** 갈 수 있어야 한다.
+            // `OfflineQueueScreen` 자바독이 "재전송은 이 화면의 버튼을 눌렀을 때만"
+            // 이라고 적는다 — 도달 불가면 통신 두절로 쌓인 승하차 처리가 **영영 안 나간다**.
+            // 승하차를 처리하는 주체(동승자)에게 연다(M-06 · UF-E-07).
+            onOfflineQueue: (caps?.canDecideBoardingStatus ?? false)
+                ? () => context.push(AppRoutes.offlineQueue)
+                : null,
+          ),
+          Expanded(
+            child: runId == null
+                ? const Center(
+                    child: Text('선택된 운행이 없습니다 — 홈에서 운행을 선택하세요'),
+                  )
+                : _buildBody(context, runId),
+          ),
+        ],
+      ),
     );
   }
 
@@ -268,7 +275,10 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
           child: ManagerChannelBanner(runId: runId),
         ),
         Expanded(
+          // 갱신이 실패해도 마지막으로 받은 명단을 지우지 않는다 — 오류는 목록 위에 따로 알린다(R46).
           child: rosterAsync.when(
+            skipLoadingOnReload: true,
+            skipError: true,
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (error, _) =>
                 Center(child: Text('명단을 불러오지 못했습니다: ${describeError(error)}')),
@@ -291,9 +301,25 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
     RosterResponse roster,
   ) {
     final photoHeaders = ref.watch(rosterPhotoHeadersProvider).value;
+    final refreshError = ref.watch(rosterProvider).error;
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        if (refreshError != null) ...[
+          AlertBanner(
+            tone: AlertTone.missed,
+            body:
+                '최신 명단을 불러오지 못했습니다 · 이전 명단을 보고 있습니다: '
+                '${describeError(refreshError)}',
+            action: BaraedaButton(
+              label: '다시 시도',
+              size: BaraedaButtonSize.sm,
+              variant: BaraedaButtonVariant.secondary,
+              onPressed: () => ref.invalidate(rosterProvider),
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
         ChangeAckBanner(runId: runId, ackRequired: ackRequired),
         Row(
           children: [
@@ -458,6 +484,10 @@ class _StopSection extends StatelessWidget {
                 if (student.change == RiderChange.added) '신규',
                 student.className,
                 student.guardianPhone,
+                // 만료 시각은 행 오른쪽 버튼 줄에서 이 줄로 옮겼다 — 이름 칸을 좁히지 않는다(R46).
+                if (student.status == RiderStatus.noShow &&
+                    student.noShowCase?.expiresAt != null)
+                  '${DateFormat('HH:mm:ss').format(student.noShowCase!.expiresAt!.toLocal())} 만료',
               ].whereType<String>().join(' · '),
               ride: _rideStatusOf(student),
               // M1(Ruling 341, BR-016) — `absent`(`change=removed`) 행은
@@ -497,6 +527,60 @@ class _StopSection extends StatelessWidget {
   };
 }
 
+/// 명단 화면 본문 위 버튼 줄 — 예외 보고 · 지연 알림 · 대기열. 큰 글자에서는 다음 줄로 넘어간다.
+class _ActionsBar extends StatelessWidget {
+  const _ActionsBar({
+    required this.onExceptionReport,
+    required this.onDelay,
+    required this.onOfflineQueue,
+  });
+
+  final VoidCallback onExceptionReport;
+
+  /// `null` 이면 버튼을 그리지 않는다(동승자만 지연 알림).
+  final VoidCallback? onDelay;
+
+  /// `null` 이면 버튼을 그리지 않는다(승하차를 처리하는 동승자만 대기열).
+  final VoidCallback? onOfflineQueue;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      child: Align(
+        alignment: Alignment.centerRight,
+        child: Wrap(
+          alignment: WrapAlignment.end,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 8,
+          children: [
+            BaraedaButton(
+              label: '예외 보고',
+              size: BaraedaButtonSize.sm,
+              variant: BaraedaButtonVariant.secondary,
+              onPressed: onExceptionReport,
+            ),
+            if (onDelay != null)
+              BaraedaButton(
+                label: '지연 알림',
+                size: BaraedaButtonSize.sm,
+                variant: BaraedaButtonVariant.secondary,
+                onPressed: onDelay,
+              ),
+            if (onOfflineQueue != null)
+              BaraedaButton(
+                label: '대기열',
+                size: BaraedaButtonSize.sm,
+                variant: BaraedaButtonVariant.secondary,
+                onPressed: onOfflineQueue,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 /// 탑승자 한 명의 상태 전환 버튼 — 현재 [RiderStatus] 에 따라 다음 동작만
 /// 보여준다. `busy` 인 동안(요청 진행 중) 전부 비활성화한다.
 class _StudentActions extends StatelessWidget {
@@ -532,6 +616,7 @@ class _StudentActions extends StatelessWidget {
     switch (student.status) {
       case RiderStatus.waiting:
         return Wrap(
+          alignment: WrapAlignment.end,
           spacing: 6,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
@@ -550,6 +635,7 @@ class _StudentActions extends StatelessWidget {
         );
       case RiderStatus.boarded:
         return Wrap(
+          alignment: WrapAlignment.end,
           spacing: 6,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
@@ -562,16 +648,11 @@ class _StudentActions extends StatelessWidget {
           ],
         );
       case RiderStatus.noShow:
-        final expiresAt = student.noShowCase?.expiresAt;
         return Wrap(
+          alignment: WrapAlignment.end,
           spacing: 6,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            if (expiresAt != null)
-              Text(
-                '${DateFormat('HH:mm:ss').format(expiresAt.toLocal())} 만료',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
             BaraedaButton(
               label: '연락 기록',
               size: BaraedaButtonSize.sm,

@@ -93,6 +93,8 @@ class _ManagerHomeScreenState extends ConsumerState<ManagerHomeScreen>
         child: runsAsync.when(
           // 주기 갱신 중에는 받아 둔 목록을 그대로 두고 바꿔 그린다 — 30초마다 스피너가 뜨지 않게.
           skipLoadingOnReload: true,
+          // 갱신이 실패해도 마지막으로 받은 목록을 지우지 않는다 — 오류는 목록 위에 따로 알린다(R46).
+          skipError: true,
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (error, _) => ListView(
             children: [
@@ -101,11 +103,31 @@ class _ManagerHomeScreenState extends ConsumerState<ManagerHomeScreen>
             ],
           ),
           data: (runs) {
+            final refreshError = runsAsync.error;
+            final staleBanner = refreshError == null
+                ? null
+                : Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: AlertBanner(
+                      tone: AlertTone.missed,
+                      body:
+                          '최신 운행을 불러오지 못했습니다 · 이전 목록을 보고 있습니다: '
+                          '${describeError(refreshError)}',
+                      action: BaraedaButton(
+                        label: '다시 시도',
+                        size: BaraedaButtonSize.sm,
+                        variant: BaraedaButtonVariant.secondary,
+                        onPressed: () => ref.invalidate(todayRunsProvider),
+                      ),
+                    ),
+                  );
             if (runs.isEmpty) {
               return ListView(
-                children: const [
-                  SizedBox(height: 120),
-                  Center(child: Text('오늘 배정된 운행이 없습니다')),
+                padding: const EdgeInsets.all(16),
+                children: [
+                  ?staleBanner,
+                  const SizedBox(height: 120),
+                  const Center(child: Text('오늘 배정된 운행이 없습니다')),
                 ],
               );
             }
@@ -118,6 +140,7 @@ class _ManagerHomeScreenState extends ConsumerState<ManagerHomeScreen>
             return ListView(
               padding: const EdgeInsets.all(16),
               children: [
+                ?staleBanner,
                 Row(
                   children: [
                     Expanded(

@@ -9,6 +9,7 @@ import 'package:parent_app/app/di.dart';
 import 'package:parent_app/core/auth/account_session.dart';
 import 'package:parent_app/core/auth/auth_providers.dart';
 import 'package:parent_app/core/change_requests/presentation/change_request_providers.dart';
+import 'package:parent_app/core/refresh/visible_poller.dart';
 import 'package:parent_app/core/students/presentation/selected_student.dart';
 import 'package:parent_app/core/time/service_date.dart';
 import 'package:parent_app/core/ui/failure_message.dart';
@@ -31,31 +32,27 @@ class HomeScreen extends ConsumerStatefulWidget {
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-/// 푸시 SDK 가 아직 없어 앱 안 갱신이 유일한 통지 수단이다(F05-06) — 당기지 않아도 앱에 돌아오거나
-/// [_autoRefreshInterval] 이 지나면 회차를 다시 받는다(알림은 `AppShell` 이 받는다).
-class _HomeScreenState extends ConsumerState<HomeScreen>
-    with WidgetsBindingObserver {
-  static const _autoRefreshInterval = Duration(seconds: 30);
-
-  Timer? _timer;
+/// 푸시 SDK 가 아직 없어 앱 안 갱신이 유일한 통지 수단이다(F05-06) — 당기지 않아도 [pollInterval] 마다 · 앱에
+/// 돌아올 때 회차를 다시 받는다. 앱이 백그라운드이거나 다른 화면이 홈 위에 있으면
+/// 멈춘다(`VisiblePoller`, R46 D #7).
+/// 알림은 `AppShell` 이 받는다.
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  late final VisiblePoller _poller = VisiblePoller(
+    interval: pollInterval,
+    onTick: _reloadQuietly,
+    isCovered: () => isCoveredFrom(context, {AppRoutes.home}),
+  );
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
-    _timer = Timer.periodic(_autoRefreshInterval, (_) => _reloadQuietly());
+    _poller.start();
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
-    WidgetsBinding.instance.removeObserver(this);
+    _poller.dispose();
     super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) _reloadQuietly();
   }
 
   /// 화면을 스피너로 바꾸지 않고(무효화는 옛 값을 유지한 채 다시 받는다) 서버 값으로 갈아 끼운다.
@@ -289,6 +286,12 @@ class _RunsSectionState extends ConsumerState<_RunsSection> {
         ? ref.watch(runsForStudentProvider(studentId))
         : ref.watch(runsForStudentOnProvider((studentId, date)));
     final dayWord = isToday ? '오늘' : '내일';
+    Widget retryBanner(String message) => _ErrorBanner(
+      message: message,
+      onRetry: () => date == null
+          ? ref.invalidate(runsForStudentProvider(studentId))
+          : ref.invalidate(runsForStudentOnProvider((studentId, date))),
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -304,34 +307,33 @@ class _RunsSectionState extends ConsumerState<_RunsSection> {
         ),
         const SizedBox(height: BaraedaSpacing.space4),
         runsAsync.when(
+          // 갱신이 실패해도 마지막으로 받은 회차를 지우지 않는다 — 엘리베이터·지하철에서 카드가 오류 배너로
+          // 바뀌지 않게, 오류는 카드 위에 따로 알린다(R46). 퇴원 학생 오류는 화면을 대체한다.
+          skipError:
+              !(runsAsync.hasError && isWithdrawnStudent(runsAsync.error!)),
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (error, stack) => isWithdrawnStudent(error)
               ? const AlertBanner(
                   tone: AlertTone.missed,
                   body: withdrawnStudentMessage,
                 )
-              : _ErrorBanner(
-                  message: '$dayWord 회차를 불러오지 못했습니다',
-                  onRetry: () => date == null
-                      ? ref.invalidate(runsForStudentProvider(studentId))
-                      : ref.invalidate(
-                          runsForStudentOnProvider((studentId, date)),
-                        ),
-                ),
-          data: (runs) => runs.isEmpty
-              ? EmptyState(title: '$dayWord 예정된 회차가 없습니다')
-              : Column(
-                  children: runs
-                      .map(
-                        (run) => RunCard(
-                          studentId: studentId,
-                          run: run,
-                          canToggle: widget.canToggle,
-                          date: date,
-                        ),
-                      )
-                      .toList(),
-                ),
+              : retryBanner('$dayWord 회차를 불러오지 못했습니다'),
+          data: (runs) => Column(
+            children: [
+              if (runsAsync.hasError)
+                retryBanner('최신 $dayWord 회차를 불러오지 못했습니다 · 이전 정보입니다'),
+              if (runs.isEmpty)
+                EmptyState(title: '$dayWord 예정된 회차가 없습니다')
+              else
+                for (final run in runs)
+                  RunCard(
+                    studentId: studentId,
+                    run: run,
+                    canToggle: widget.canToggle,
+                    date: date,
+                  ),
+            ],
+          ),
         ),
       ],
     );

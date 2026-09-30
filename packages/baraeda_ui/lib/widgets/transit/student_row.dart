@@ -1,6 +1,8 @@
 // 탑승자 명단의 한 줄 — 매니저 앱 정류장별 명단, 관계자 웹 학생 명부 공통.
 // 원본: `frontend/design-system/components/transit/StudentRow.jsx`.
 
+import 'dart:math' as math;
+
 import 'package:baraeda_ui/theme/baraeda_colors.dart';
 import 'package:baraeda_ui/tokens/spacing.dart';
 import 'package:baraeda_ui/tokens/typography.dart';
@@ -8,6 +10,11 @@ import 'package:baraeda_ui/widgets/core/baraeda_status.dart';
 import 'package:baraeda_ui/widgets/core/icon.dart';
 import 'package:baraeda_ui/widgets/core/status_pill.dart';
 import 'package:flutter/material.dart';
+
+const double _avatarWidth = 38;
+
+/// 이름·번호 칸의 최소 폭 — 13자리 번호가 한 줄에 들어가는 폭이다.
+const double _nameMinWidth = 140;
 
 /// 동승자 앱이 결정하는 탑승 상태.
 enum RideStatus { boarded, alighted, absent, missed, waiting }
@@ -93,67 +100,90 @@ class StudentRow extends StatelessWidget {
             decoration: BoxDecoration(
               border: Border(bottom: BorderSide(color: colors.borderSubtle)),
             ),
-            child: Row(
-              children: [
-                Container(
-                  width: 38,
-                  height: 38,
-                  alignment: Alignment.center,
-                  clipBehavior: Clip.antiAlias,
-                  decoration: BoxDecoration(
-                    color: colors.bgSubtle,
-                    shape: BoxShape.circle,
-                  ),
-                  // 이니셜은 이름을 줄인 그림일 뿐이라 낭독하지 않는다 — 이름 Text 가 읽는다(F07-10).
-                  child: ExcludeSemantics(
-                    child: _StudentAvatar(
-                      photoUrl: photoUrl,
-                      photoHeaders: photoHeaders,
-                      initials: initials,
-                      textColor: colors.textBrand,
+            child: LayoutBuilder(
+              builder: (context, box) => Row(
+                children: [
+                  Container(
+                    width: _avatarWidth,
+                    height: _avatarWidth,
+                    alignment: Alignment.center,
+                    clipBehavior: Clip.antiAlias,
+                    decoration: BoxDecoration(
+                      color: colors.bgSubtle,
+                      shape: BoxShape.circle,
+                    ),
+                    // 이니셜은 이름을 줄인 그림일 뿐이라 낭독하지 않는다 — 이름 Text 가 읽는다(F07-10).
+                    child: ExcludeSemantics(
+                      child: _StudentAvatar(
+                        photoUrl: photoUrl,
+                        photoHeaders: photoHeaders,
+                        initials: initials,
+                        textColor: colors.textBrand,
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: BaraedaSpacing.space3),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (name != null)
-                        Text(
-                          name!,
-                          style: BaraedaTypography.bodySm.copyWith(
-                            height: 1.4,
-                            fontWeight: BaraedaFontWeight.medium,
+                  const SizedBox(width: BaraedaSpacing.space3),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (name != null)
+                          Text(
+                            name!,
+                            style: BaraedaTypography.bodySm.copyWith(
+                              height: 1.4,
+                              fontWeight: BaraedaFontWeight.medium,
+                            ),
                           ),
-                        ),
-                      if (meta != null)
-                        Text(
-                          meta!,
-                          style: BaraedaTypography.micro.copyWith(
-                            color: colors.textSecondary,
+                        if (meta != null)
+                          Text(
+                            meta!,
+                            style: BaraedaTypography.micro.copyWith(
+                              color: colors.textSecondary,
+                            ),
                           ),
-                        ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-                if (phone != null && onCall != null)
+                  if (phone != null && onCall != null)
+                    Padding(
+                      padding: const EdgeInsets.only(
+                        left: BaraedaSpacing.space2,
+                      ),
+                      child: _CallButton(onCall: onCall!),
+                    ),
                   Padding(
                     padding: const EdgeInsets.only(left: BaraedaSpacing.space2),
-                    child: _CallButton(onCall: onCall!),
-                  ),
-                Padding(
-                  padding: const EdgeInsets.only(left: BaraedaSpacing.space2),
-                  child:
-                      actions ??
-                      BaraedaStatusPill(
-                        status: rideMeta.status,
-                        label: rideMeta.label,
-                        dot: false,
+                    // 이름·번호 칸이 [_nameMinWidth] 밑으로 좁아지지 않도록 오른쪽 컨트롤의 폭을 제한한다 —
+                    // 안 그러면 큰 글자·좁은 폭에서 이름이 한 글자씩 세로로 쪼개진다(R46). 넘치는 컨트롤은
+                    // 자기 안에서 다음 줄로 넘어간다(`Wrap`).
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxWidth: math.max(
+                          0,
+                          box.maxWidth -
+                              _avatarWidth -
+                              BaraedaSpacing.space3 -
+                              BaraedaSpacing.space2 -
+                              (phone != null && onCall != null
+                                  ? BaraedaSpacing.space2 +
+                                        BaraedaSpacing.tapMin
+                                  : 0) -
+                              _nameMinWidth,
+                        ),
                       ),
-                ),
-              ],
+                      child:
+                          actions ??
+                          BaraedaStatusPill(
+                            status: rideMeta.status,
+                            label: rideMeta.label,
+                            dot: false,
+                          ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

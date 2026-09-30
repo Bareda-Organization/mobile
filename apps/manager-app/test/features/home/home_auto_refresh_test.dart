@@ -1,3 +1,4 @@
+import 'package:baraeda_core/baraeda_core.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -81,5 +82,43 @@ void main() {
 
     expect(find.text('EMERGENCY_MARKER'), findsOneWidget);
     expect(find.textContaining('확정된 운행이 있을 때'), findsNothing);
+  });
+
+  // R46 A — 갱신이 실패해도 마지막으로 받은 목록이 남고, 오류는 목록 위에 따로 알린다.
+  testWidgets('R46 주기 갱신이 실패해도 마지막 목록이 남고 오류를 알린다', (tester) async {
+    var calls = 0;
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          todayRunsProvider.overrideWith((ref) async {
+            if (++calls > 1) {
+              // Failure 는 Exception/Error 를 상속하지 않는다(다른 시험의 같은 패턴).
+              // ignore: only_throw_errors
+              throw const NetworkFailure();
+            }
+            return [managerRunFixture(status: RunStatus.moving)];
+          }),
+        ],
+        child: MaterialApp.router(
+          routerConfig: GoRouter(
+            routes: [
+              GoRoute(
+                path: '/',
+                builder: (_, _) => const ManagerHomeScreen(),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byType(RunSummaryCard), findsOneWidget);
+
+    await tester.pump(todayRunsRefreshInterval);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(RunSummaryCard), findsOneWidget);
+    expect(find.textContaining('최신 운행을 불러오지 못했습니다'), findsOneWidget);
+    expect(find.text('다시 시도'), findsOneWidget);
   });
 }

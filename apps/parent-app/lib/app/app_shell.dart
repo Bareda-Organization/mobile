@@ -4,6 +4,8 @@ import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:parent_app/app/app_routes.dart';
+import 'package:parent_app/core/refresh/visible_poller.dart';
 import 'package:parent_app/features/notifications/presentation/notification_providers.dart';
 
 /// 로그인 뒤 화면 아래의 탭 막대 — `[홈]` `[알림]` `[설정]` (학부모·학생 공통, R44).
@@ -13,7 +15,8 @@ import 'package:parent_app/features/notifications/presentation/notification_prov
 /// 이 위젯은 그 위에 막대를 얹는다. 로그인·가입·대기·차단 화면과 지도·일정 같은 하위 화면은 탭 밖 경로라 막대가 없다.
 ///
 /// 알림 탭 배지는 서버가 세는 안 읽은 수(§3.12 `unread_count`)다. 푸시 SDK 가 아직 없어 앱 안 갱신이 유일한
-/// 통지 수단이므로(F05-06), 알림 탭을 열지 않아도 배지가 최신이 되도록 여기서 30초마다·앱에 돌아올 때 목록을 다시 받는다.
+/// 통지 수단이므로(F05-06), 알림 탭을 열지 않아도 배지가 최신이 되도록
+/// 여기서 [pollInterval] 마다·앱에 돌아올 때 목록을 다시 받는다.
 class AppShell extends ConsumerStatefulWidget {
   const AppShell({required this.navigationShell, super.key});
 
@@ -23,29 +26,28 @@ class AppShell extends ConsumerStatefulWidget {
   ConsumerState<AppShell> createState() => _AppShellState();
 }
 
-class _AppShellState extends ConsumerState<AppShell>
-    with WidgetsBindingObserver {
-  static const _autoRefreshInterval = Duration(seconds: 30);
-
-  Timer? _timer;
+class _AppShellState extends ConsumerState<AppShell> {
+  late final VisiblePoller _poller = VisiblePoller(
+    interval: pollInterval,
+    onTick: _refreshQuietly,
+    // 탭 막대는 탭 화면에서만 보인다 — 지도·일정 같은 하위 화면이 위에 있으면 배지도 안 보이므로 쉰다.
+    isCovered: () => isCoveredFrom(context, {
+      AppRoutes.home,
+      AppRoutes.notifications,
+      AppRoutes.settings,
+    }),
+  );
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
-    _timer = Timer.periodic(_autoRefreshInterval, (_) => _refreshQuietly());
+    _poller.start();
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
-    WidgetsBinding.instance.removeObserver(this);
+    _poller.dispose();
     super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) _refreshQuietly();
   }
 
   void _refreshQuietly() =>

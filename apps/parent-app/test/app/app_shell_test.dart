@@ -269,12 +269,12 @@ void main() {
 
   // F05-06 — 푸시 SDK 가 없어 앱 안 갱신이 유일한 통지 수단이다. 알림 탭을 열지 않아도 배지는 최신이어야 한다.
   group('자동 갱신', () {
-    testWidgets('30초가 지나면 알림을 다시 받아 배지가 최신이 된다', (tester) async {
+    testWidgets('90초가 지나면 알림을 다시 받아 배지가 최신이 된다', (tester) async {
       final repository = await pumpApp(tester);
       final before = repository.requests.length;
 
       await repository.markRead('a'); // 서버 쪽에서 읽음 처리됨
-      await tester.pump(const Duration(seconds: 31));
+      await tester.pump(const Duration(seconds: 91));
       await tester.pumpAndSettle();
 
       expect(repository.requests.length, greaterThan(before));
