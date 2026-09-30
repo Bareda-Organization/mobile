@@ -15,6 +15,8 @@ import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/features/emergency/presentation/widgets/emergency_button.dart';
 import 'package:manager_app/features/home/data/models/manager_run.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
+import 'package:manager_app/features/notifications/presentation/notification_providers.dart';
+import 'package:manager_app/features/notifications/presentation/widgets/notification_bell_button.dart';
 
 /// ManagerHome — 오늘의 담당 회차 목록(§4.1, M-02·M-07).
 ///
@@ -43,7 +45,7 @@ class _ManagerHomeScreenState extends ConsumerState<ManagerHomeScreen>
     WidgetsBinding.instance.addObserver(this);
     _refreshTimer = Timer.periodic(
       todayRunsRefreshInterval,
-      (_) => ref.invalidate(todayRunsProvider),
+      (_) => _reloadQuietly(),
     );
   }
 
@@ -56,7 +58,13 @@ class _ManagerHomeScreenState extends ConsumerState<ManagerHomeScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) ref.invalidate(todayRunsProvider);
+    if (state == AppLifecycleState.resumed) _reloadQuietly();
+  }
+
+  /// 회차 목록과 알림(배지)을 스피너 없이 다시 받는다 — 푸시 SDK 가 없어 앱 안 갱신이 유일한 통지 수단이다.
+  void _reloadQuietly() {
+    ref.invalidate(todayRunsProvider);
+    unawaited(ref.read(notificationFeedProvider.notifier).refresh());
   }
 
   @override
@@ -73,6 +81,8 @@ class _ManagerHomeScreenState extends ConsumerState<ManagerHomeScreen>
         actions: [
           // 비상(M-15, R32 M2) — 기사·동승자 모두, 확정된 회차가 있으면 운행 중이 아니어도 보낸다.
           EmergencyButton(homeRuns: runsAsync.value),
+          // 알림 목록(NTF-08, R46) — 안 읽은 수 배지. 운행 중 화면에는 두지 않는다(운전 중 시선).
+          const NotificationBellButton(),
           // 비밀번호 변경(AUTH-07 · UF-X-09, R32 M13) — 기사·동승자 공통.
           BaraedaIconButton(
             icon: 'lock',

@@ -21,6 +21,7 @@ import 'package:manager_app/features/roster/presentation/roster_screen.dart';
 import 'package:manager_app/features/route_map/presentation/route_map_screen.dart';
 import 'package:manager_app/features/route_map/presentation/route_providers.dart';
 
+import '../support/fake_notification_repository.dart';
 import '../support/manager_run_fixture.dart';
 
 /// R32 M8 — 불러오기에 실패했을 때 예외 원문(`Exception: …` · `Instance of …`)을 화면에 그대로
@@ -73,6 +74,10 @@ void main() {
     positionSourceProvider.overrideWithValue(_NoSample()),
     selectedRunIdProvider.overrideWith((ref) => 'run-1'),
     currentUserRoleProvider.overrideWith((ref) => UserRole.driver),
+    // 머리말 알림 배지가 실제 서버를 부르지 않게 한다(R46).
+    notificationRepositoryProvider.overrideWithValue(
+      FakeNotificationRepository(const []),
+    ),
   ];
   final okRuns = todayRunsProvider.overrideWith(
     (ref) async => [managerRunFixture()],

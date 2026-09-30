@@ -24,4 +24,7 @@ abstract final class AppRoutes {
   static const emergency = '/emergency';
   static const offlineQueue = '/offline-queue';
   static const passwordChange = '/password-change';
+
+  /// 알림 목록(NTF-08) — 홈 머리말의 [알림] 에서 `push`. 운행 중 화면에는 진입점이 없다.
+  static const notifications = '/notifications';
 }

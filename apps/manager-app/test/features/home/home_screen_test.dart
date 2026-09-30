@@ -7,12 +7,15 @@ import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:manager_app/app/app_routes.dart';
+import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/core/auth/user_role.dart';
 import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/features/home/data/models/manager_run.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
 import 'package:manager_app/features/home/presentation/home_screen.dart';
+
+import '../../support/fake_notification_repository.dart';
 
 /// `ManagerHomeScreen` 3갈래(로딩·성공·실패)와 역할별 이동 대상(§4.1, M-02·
 /// M-07)을 직접 무는 시험 — 지금까지 이 화면을 검사하는 파일이 없었다.
@@ -63,7 +66,13 @@ void main() {
 
   Widget wrap(List<Override> overrides) {
     return ProviderScope(
-      overrides: overrides,
+      overrides: [
+        // 머리말 알림 배지가 실제 서버를 부르지 않게 한다(R46).
+        notificationRepositoryProvider.overrideWithValue(
+          FakeNotificationRepository(const []),
+        ),
+        ...overrides,
+      ],
       child: MaterialApp.router(routerConfig: buildRouter()),
     );
   }

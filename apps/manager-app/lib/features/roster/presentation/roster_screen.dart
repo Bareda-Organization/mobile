@@ -485,9 +485,8 @@ class _StopSection extends StatelessWidget {
                 student.className,
                 student.guardianPhone,
                 // 만료 시각은 행 오른쪽 버튼 줄에서 이 줄로 옮겼다 — 이름 칸을 좁히지 않는다(R46).
-                if (student.status == RiderStatus.noShow &&
-                    student.noShowCase?.expiresAt != null)
-                  '${DateFormat('HH:mm:ss').format(student.noShowCase!.expiresAt!.toLocal())} 만료',
+                if (student.status == RiderStatus.noShow)
+                  ?_expiryLabel(student.noShowCase?.expiresAt),
               ].whereType<String>().join(' · '),
               ride: _rideStatusOf(student),
               // M1(Ruling 341, BR-016) — `absent`(`change=removed`) 행은
@@ -515,6 +514,11 @@ class _StopSection extends StatelessWidget {
       ),
     );
   }
+
+  /// 미승차 대기 만료 시각 표기 — 시각을 모르면 `null`.
+  String? _expiryLabel(DateTime? expiresAt) => expiresAt == null
+      ? null
+      : '${DateFormat('HH:mm:ss').format(expiresAt.toLocal())} 만료';
 
   RideStatus _rideStatusOf(RosterStudent student) => switch (student.status) {
     RiderStatus.waiting => RideStatus.waiting,

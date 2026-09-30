@@ -195,3 +195,15 @@ final emergencyRepositoryProvider = Provider<EmergencyRepository>((ref) {
     offlineQueue: ref.watch(offlineQueueRepositoryProvider),
   );
 });
+
+/// API_SPEC §3.12·§3.13 — 알림 목록·읽음 처리. `NotificationApi` 는 `baraeda_core` 소유라
+/// 학부모·학생 앱과 같은 것을 쓴다.
+final notificationApiProvider = Provider<NotificationApi>((ref) {
+  return NotificationApi(dio: ref.watch(apiClientProvider).dio);
+});
+
+final notificationRepositoryProvider = Provider<NotificationRepository>((ref) {
+  return NotificationRepositoryImpl(
+    notificationApi: ref.watch(notificationApiProvider),
+  );
+});

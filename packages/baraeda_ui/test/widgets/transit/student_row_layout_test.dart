@@ -49,7 +49,10 @@ void main() {
       final nameText = tester.widget<Text>(find.text('김서준서준'));
       final oneLine =
           nameText.style!.fontSize! * nameText.style!.height! * scale;
-      expect(tester.getSize(find.text('김서준서준')).height, lessThan(oneLine * 1.5));
+      expect(
+        tester.getSize(find.text('김서준서준')).height,
+        lessThan(oneLine * 1.5),
+      );
       expect(tester.takeException(), isNull);
     });
   }

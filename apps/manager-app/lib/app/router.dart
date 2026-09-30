@@ -14,6 +14,7 @@ import 'package:manager_app/features/delay/presentation/delay_screen.dart';
 import 'package:manager_app/features/drive_mode/presentation/drive_mode_screen.dart';
 import 'package:manager_app/features/emergency/presentation/emergency_screen.dart';
 import 'package:manager_app/features/home/presentation/home_screen.dart';
+import 'package:manager_app/features/notifications/presentation/notifications_screen.dart';
 import 'package:manager_app/features/offline_queue/presentation/offline_queue_screen.dart';
 import 'package:manager_app/features/roster/presentation/roster_screen.dart';
 import 'package:manager_app/features/route_map/presentation/route_map_screen.dart';
@@ -116,6 +117,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.offlineQueue,
         builder: (context, state) => const OfflineQueueScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.notifications,
+        builder: (context, state) => const NotificationsScreen(),
       ),
     ],
   );

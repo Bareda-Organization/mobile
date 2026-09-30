@@ -63,9 +63,10 @@ class _FakeRosterRepository implements RosterRepository {
   @override
   Future<RosterResponse> fetchRoster(String runId) async {
     fetchRosterCallCount++;
-    // ignore: only_throw_errors
     if (failFetchFromCall != null &&
         fetchRosterCallCount >= failFetchFromCall!) {
+      // Failure 는 Exception/Error 를 상속하지 않는다(위 ackChanges 와 같은 패턴).
+      // ignore: only_throw_errors
       throw const NetworkFailure();
     }
     return roster;

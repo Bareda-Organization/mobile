@@ -5,11 +5,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:manager_app/app/app_routes.dart';
+import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/features/emergency/presentation/widgets/emergency_button.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
 import 'package:manager_app/features/home/presentation/home_screen.dart';
+import 'package:manager_app/features/notifications/presentation/widgets/notification_bell_button.dart';
 
+import '../../support/fake_notification_repository.dart';
 import '../../support/manager_run_fixture.dart';
 
 /// F06-13 — 홈 회차 목록은 한 번 받고 고정이라 확정 시각(출발 30분 전)이 지나도 카드가 잠긴 채였고,
@@ -120,5 +123,38 @@ void main() {
     expect(find.byType(RunSummaryCard), findsOneWidget);
     expect(find.textContaining('최신 운행을 불러오지 못했습니다'), findsOneWidget);
     expect(find.text('다시 시도'), findsOneWidget);
+  });
+
+  // R46 B — 홈 머리말 알림 배지는 회차 목록과 같은 주기로 다시 받는다(푸시 SDK 부재).
+  testWidgets('R46 홈에 알림 진입 버튼이 있고 주기마다 알림도 다시 받는다', (tester) async {
+    final notifications = FakeNotificationRepository(const []);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          todayRunsProvider.overrideWith(
+            (ref) async => [managerRunFixture(status: RunStatus.moving)],
+          ),
+          notificationRepositoryProvider.overrideWithValue(notifications),
+        ],
+        child: MaterialApp.router(
+          routerConfig: GoRouter(
+            routes: [
+              GoRoute(
+                path: '/',
+                builder: (_, _) => const ManagerHomeScreen(),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byType(NotificationBellButton), findsOneWidget);
+    final before = notifications.requests.length;
+
+    await tester.pump(todayRunsRefreshInterval);
+    await tester.pumpAndSettle();
+
+    expect(notifications.requests.length, greaterThan(before));
   });
 }

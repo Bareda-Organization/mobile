@@ -67,15 +67,13 @@ RosterResponse _roster(String stopName) => RosterResponse(
       stopId: 's1',
       seq: 1,
       name: stopName,
-      arrivedAt: null,
       students: const [],
     ),
-    RosterStop(
+    const RosterStop(
       stopId: 's2',
       seq: 2,
       name: '학원',
-      arrivedAt: null,
-      students: const [],
+      students: [],
     ),
   ],
 );
@@ -124,6 +122,7 @@ void main() {
       roster: (call) {
         if (call == 0) return _roster('1번 승하차지');
         // Failure 는 Exception/Error 를 상속하지 않는다(다른 시험의 같은 패턴).
+        // 위와 같은 이유.
         // ignore: only_throw_errors
         throw const NetworkFailure();
       },
@@ -145,6 +144,7 @@ void main() {
     await _pumpDrive(
       tester,
       roster: (call) {
+        // 위와 같은 이유.
         // ignore: only_throw_errors
         throw const NetworkFailure();
       },
