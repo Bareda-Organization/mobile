@@ -52,6 +52,9 @@ class _NoopPositionSource implements PositionSource {
   const _NoopPositionSource();
 
   @override
+  Future<void> recheck() async {}
+
+  @override
   void start() {}
 
   @override

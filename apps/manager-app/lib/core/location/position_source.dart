@@ -31,6 +31,10 @@ abstract interface class PositionSource {
   /// 중복 구독을 만들지 않는다.
   void start();
 
+  /// 권한·위치 서비스 상태만 다시 확인해 [availability] 를 갱신한다 — 스트림(포그라운드 서비스 알림)은
+  /// 켜지 않고 권한 창도 다시 띄우지 않는다. 운행 시작 전 화면이 설정을 바꾼 것을 알아채는 용도다(M2-02).
+  Future<void> recheck();
+
   /// 위치 스트림 구독을 멈춘다 — 운행 종료·로그아웃 등 송신기가 멎을 때 부른다.
   /// [start] 로 켜진 Android 포그라운드 서비스 알림·iOS 백그라운드 갱신도
   /// 이 호출로 함께 멎는다. 이미 멈췄으면 아무 것도 하지 않는다(멱등).
@@ -144,6 +148,9 @@ class UnavailablePositionSource implements PositionSource {
   PositionAvailability get availability => PositionAvailability.available;
 
   @override
+  Future<void> recheck() async {}
+
+  @override
   void start() {}
 
   @override
@@ -217,6 +224,12 @@ class GeolocatorPositionSource implements PositionSource {
     }
     _started = true;
     unawaited(_startStream());
+  }
+
+  @override
+  Future<void> recheck() async {
+    await _ready;
+    await _recheck();
   }
 
   Future<void> _recheck() async {

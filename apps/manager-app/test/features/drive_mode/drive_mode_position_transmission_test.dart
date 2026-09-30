@@ -53,6 +53,9 @@ class _FakePositionSource implements PositionSource {
   }
 
   @override
+  Future<void> recheck() async {}
+
+  @override
   void start() {}
 
   @override

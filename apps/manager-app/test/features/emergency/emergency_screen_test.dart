@@ -114,6 +114,9 @@ class _FakePositionSource implements PositionSource {
   PositionAvailability get availability => PositionAvailability.available;
 
   @override
+  Future<void> recheck() async {}
+
+  @override
   void start() {}
 
   @override

@@ -50,6 +50,9 @@ class _FakeSource implements PositionSource {
       PositionSample(lat: 37.5, lng: 127, recordedAt: DateTime(2020));
 
   @override
+  Future<void> recheck() async {}
+
+  @override
   void start() => startCalls++;
 
   @override

@@ -70,6 +70,9 @@ class _NoSample implements PositionSource {
   PositionSample? sample() => null;
 
   @override
+  Future<void> recheck() async {}
+
+  @override
   void start() {}
 
   @override

@@ -48,6 +48,9 @@ class _FakePositionSource implements PositionSource {
   PositionSample? sample() => _sample;
 
   @override
+  Future<void> recheck() async {}
+
+  @override
   void start() {}
 
   @override

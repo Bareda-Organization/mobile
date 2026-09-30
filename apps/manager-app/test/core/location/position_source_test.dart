@@ -25,9 +25,14 @@ class _FakeGeolocatorPlatform extends GeolocatorPlatform {
   @override
   Future<bool> isLocationServiceEnabled() async => serviceEnabled;
 
+  /// 위치 스트림이 열린 횟수 — 재확인이 스트림(포그라운드 서비스 알림)을 켜지 않는지 본다.
+  int streamOpens = 0;
+
   @override
-  Stream<Position> getPositionStream({LocationSettings? locationSettings}) =>
-      _positionController.stream;
+  Stream<Position> getPositionStream({LocationSettings? locationSettings}) {
+    streamOpens++;
+    return _positionController.stream;
+  }
 
   void emit(Position position) => _positionController.add(position);
 
@@ -233,6 +238,22 @@ void main() {
 
     expect(source.availability, PositionAvailability.available);
     expect(source.sample(), isNotNull);
+  });
+
+  // M2-02 — 운행 시작 전 화면이 권한·서비스만 다시 본다. 스트림은 start() 가 있어야만 열린다.
+  test('recheck() 는 start() 없이 상태만 갱신하고 스트림은 열지 않는다', () async {
+    final platform = _FakeGeolocatorPlatform()
+      ..checkPermissionResult = LocationPermission.denied;
+    GeolocatorPlatform.instance = platform;
+    final source = GeolocatorPositionSource();
+    await source.ready;
+    expect(source.availability, PositionAvailability.permissionDenied);
+
+    platform.checkPermissionResult = LocationPermission.whileInUse;
+    await source.recheck();
+
+    expect(source.availability, PositionAvailability.available);
+    expect(platform.streamOpens, 0);
   });
 
   // BRIEF-BG2 — 스트림 좌표가 없을 때(비상 발신, 동승자 단말·송신 두절
