@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -65,9 +66,12 @@ class _FakeSecureStoragePlatform
 /// `/auth/refresh` 호출마다 순서대로 응답하는 가짜 어댑터 — 호출 수를 세어
 /// "동시 재발급은 1회만 나간다"(완료 조건 9)를 검증하는 데 쓴다.
 class _ScriptedAdapter implements HttpClientAdapter {
-  _ScriptedAdapter(this.responses);
+  _ScriptedAdapter(this.responses, {this.gate});
 
   final List<ResponseBody Function()> responses;
+
+  /// 주면 응답을 이 Future 가 끝날 때까지 붙잡는다 — 재발급이 "진행 중" 인 구간을 시험이 만든다.
+  final Future<void>? gate;
   int callCount = 0;
 
   @override
@@ -80,6 +84,7 @@ class _ScriptedAdapter implements HttpClientAdapter {
     Future<void>? cancelFuture,
   ) async {
     callCount += 1;
+    await gate;
     return responses.removeAt(0)();
   }
 }
@@ -248,6 +253,85 @@ void main() {
       expect(first, 'a2');
       expect(second, 'a3');
       expect(adapter.callCount, 2);
+    });
+    test('네트워크 오류·5xx 로 실패하면 토큰을 남기고 그 오류를 던진다 — 유효한 세션을 지우지 않는다', () async {
+      // F07-02
+      for (final failing in <ResponseBody Function()>[
+        () => _json(503, {
+          'error': {'code': 'SERVICE_UNAVAILABLE', 'message': '점검'},
+        }),
+        () => throw DioException.connectionError(
+          requestOptions: RequestOptions(path: '/auth/refresh'),
+          reason: '끊김',
+        ),
+      ]) {
+        final storage = _buildTokenStorage();
+        await storage.saveTokens(accessToken: 'old', refreshToken: 'r1');
+        final refresher = TokenRefresher(
+          refreshDio: _dioWithAdapter(_ScriptedAdapter([failing])),
+          tokenStorage: storage,
+          clientType: 'app',
+        );
+
+        await expectLater(refresher.refresh(), throwsA(isA<DioException>()));
+
+        expect(await storage.readAccessToken(), 'old');
+        expect(await storage.readRefreshToken(), 'r1');
+      }
+    });
+
+    test('서버가 401 로 거절하면 sessionInvalidated 로 알린다', () async {
+      // F07-07 — REST·WS 가 같이 쓰는 재로그인 신호의 출처.
+      final storage = _buildTokenStorage();
+      await storage.saveTokens(accessToken: 'old', refreshToken: 'dead');
+      final refresher = TokenRefresher(
+        refreshDio: _dioWithAdapter(
+          _ScriptedAdapter([
+            () => _json(401, {
+              'error': {'code': 'TOKEN_EXPIRED', 'message': '무효'},
+            }),
+          ]),
+        ),
+        tokenStorage: storage,
+        clientType: 'app',
+      );
+      var count = 0;
+      final sub = refresher.sessionInvalidated.listen((_) => count += 1);
+
+      await refresher.refresh();
+      await Future<void>.delayed(Duration.zero);
+
+      expect(count, 1);
+      await sub.cancel();
+    });
+
+    test('재발급이 도는 중 로그아웃(clear)되면 응답이 와도 토큰을 다시 저장하지 않는다', () async {
+      // F07-06 — 예전엔 로그아웃이 지운 토큰을 재발급 완료가 되살렸다.
+      final storage = _buildTokenStorage();
+      await storage.saveTokens(accessToken: 'old', refreshToken: 'r1');
+      final gate = Completer<void>();
+      final refresher = TokenRefresher(
+        refreshDio: _dioWithAdapter(
+          _ScriptedAdapter([
+            () => _json(200, {
+              'success': true,
+              'data': {'access_token': 'new-a', 'refresh_token': 'new-r'},
+              'message': null,
+            }),
+          ], gate: gate.future),
+        ),
+        tokenStorage: storage,
+        clientType: 'app',
+      );
+
+      final pending = refresher.refresh();
+      await Future<void>.delayed(Duration.zero);
+      await storage.clear(); // 로그아웃
+      gate.complete();
+
+      expect(await pending, isNull);
+      expect(await storage.readAccessToken(), isNull);
+      expect(await storage.readRefreshToken(), isNull);
     });
   });
 }

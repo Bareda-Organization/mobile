@@ -54,9 +54,20 @@ class NotificationCard extends StatelessWidget {
         ? BaraedaShadows.cardDark
         : BaraedaShadows.cardLight;
 
+    // 카드 전체를 한 번에 읽는다 — 안 읽음 점(색만의 표시)은 문구로 싣고, 자식 Text 는 가려
+    // 같은 문구가 두 번 읽히지 않게 한다(F07-10).
     return Semantics(
       button: onTap != null,
-      label: [title, meta].whereType<String>().join(' · '),
+      onTap: onTap,
+      label: [
+        if (unread) '안 읽음',
+        statusLabel ?? status.label,
+        title,
+        meta,
+        sub,
+        time,
+      ].whereType<String>().join(' · '),
+      excludeSemantics: true,
       child: Material(
         color: colors.surfaceCard,
         borderRadius: BorderRadius.circular(BaraedaRadius.card),

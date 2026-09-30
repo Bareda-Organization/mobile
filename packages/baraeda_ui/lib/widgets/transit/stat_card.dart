@@ -49,6 +49,8 @@ class StatCard extends StatelessWidget {
     return Semantics(
       container: true,
       label: [label, value, unit, sub].whereType<String>().join(' · '),
+      // 합친 라벨이 있으니 자식 Text 는 가린다 — 두 번 읽히지 않게(F07-10).
+      excludeSemantics: true,
       child: Container(
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(

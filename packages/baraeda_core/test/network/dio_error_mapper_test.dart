@@ -22,7 +22,9 @@ DioException _badResponse({
 
 void main() {
   group('mapDioExceptionToFailure — API_SPEC §8 에러 코드', () {
-    test('401 TOKEN_EXPIRED 를 Failure.api 로 코드까지 그대로 옮긴다', () {
+    test('401 TOKEN_EXPIRED 는 재로그인이 필요한 Failure.unauthenticated 로 옮긴다', () {
+      // F07-07 — `Failure.unauthenticated` 는 선언만 있고 만들어지는 곳이 없었다.
+      // 인터셉터가 재발급까지 실패한 401 을 그대로 던지므로 여기서 옮긴다.
       final exception = _badResponse(
         statusCode: 401,
         body: {
@@ -30,13 +32,24 @@ void main() {
         },
       );
 
+      expect(
+        mapDioExceptionToFailure(exception),
+        isA<UnauthenticatedFailure>(),
+      );
+    });
+
+    test('401 INVALID_CREDENTIALS 는 로그인 실패이지 세션 만료가 아니라 Failure.api 로 남긴다', () {
+      final exception = _badResponse(
+        statusCode: 401,
+        body: {
+          'error': {'code': 'INVALID_CREDENTIALS', 'message': '불일치'},
+        },
+      );
+
       final failure = mapDioExceptionToFailure(exception);
 
       expect(failure, isA<ApiFailure>());
-      final api = failure as ApiFailure;
-      expect(api.statusCode, 401);
-      expect(api.code, 'TOKEN_EXPIRED');
-      expect(api.message, '재로그인이 필요합니다');
+      expect((failure as ApiFailure).code, 'INVALID_CREDENTIALS');
     });
 
     test('409 CAPACITY_EXCEEDED 는 details 까지 옮긴다', () {

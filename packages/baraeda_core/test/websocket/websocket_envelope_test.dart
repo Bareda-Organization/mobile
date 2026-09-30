@@ -49,5 +49,26 @@ void main() {
 
       expect(envelope.payload, {'lat': 37.5, 'lng': 127.0});
     });
+    test(
+      'payload 가 없거나 null 이어도 죽지 않고 빈 Map 이 된다 — route_changed 는 본문이 필요 없다',
+      () {
+        // F07-08 — `null as Map` TypeError 였다.
+        for (final json in <Map<String, dynamic>>[
+          {
+            'event': 'route_changed',
+            'run_id': 1,
+            'occurred_at': '2026-09-30T10:00:00Z',
+          },
+          {
+            'event': 'route_changed',
+            'run_id': 1,
+            'occurred_at': '2026-09-30T10:00:00Z',
+            'payload': null,
+          },
+        ]) {
+          expect(WebSocketEnvelope.fromJson(json).payload, isEmpty);
+        }
+      },
+    );
   });
 }

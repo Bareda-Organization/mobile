@@ -23,6 +23,7 @@ class WsBackoffPolicy {
     this.maxDelay = const Duration(seconds: 30),
     this.multiplier = 2,
     this.maxAttempts = 6,
+    this.jitterRatio = 0.3,
   });
 
   /// 1회차 재연결 대기.
@@ -40,6 +41,9 @@ class WsBackoffPolicy {
   /// 않으면서도, 순간적인 서버 재기동(수 초~수십 초)은 흡수한다.
   final int maxAttempts;
 
+  /// [jitteredDelayFor] 가 대기를 최대 이 비율만큼 **줄이는** 폭. 0 이면 지터 없음.
+  final double jitterRatio;
+
   /// `attempt` 는 1부터 시작(첫 재연결 시도). `initialDelay * multiplier^(attempt-1)`
   /// 을 계산하고 [maxDelay] 로 자른다.
   Duration delayFor(int attempt) {
@@ -47,6 +51,16 @@ class WsBackoffPolicy {
     final rawMs = initialDelay.inMilliseconds * pow(multiplier, attempt - 1);
     final cappedMs = min(rawMs, maxDelay.inMilliseconds.toDouble());
     return Duration(milliseconds: cappedMs.round());
+  }
+
+  /// [delayFor] 에서 무작위로 최대 [jitterRatio] 만큼 줄인 대기. 서버 재배포로 모든 앱이 동시에
+  /// 끊기면 고정 간격은 같은 순간에 재접속이 몰린다(서버는 1대) — 간격을 흩어 그 몰림을
+  /// 푼다. 줄이는 방향으로만 더해 [maxDelay] 를 넘지 않는다.
+  Duration jitteredDelayFor(int attempt, Random random) {
+    final ms = delayFor(attempt).inMilliseconds;
+    return Duration(
+      milliseconds: (ms * (1 - random.nextDouble() * jitterRatio)).round(),
+    );
   }
 
   /// `attempt` 번째 시도를 하기 전에 이미 포기 조건에 도달했는가.

@@ -37,7 +37,7 @@ void main() {
       expect(BaraedaColors.light.statusBoarded, BaraedaPalette.green600);
       expect(BaraedaColors.light.statusMoving, BaraedaPalette.amberInk);
       expect(BaraedaColors.light.statusMissed, BaraedaPalette.redInk);
-      expect(BaraedaColors.light.statusIdle, BaraedaPalette.stone500);
+      expect(BaraedaColors.light.statusIdle, BaraedaPalette.stone600);
     });
 
     test('다크: boarded/moving 는 액션이 앰버로, missed 는 밝은 레드로 바뀐다', () {

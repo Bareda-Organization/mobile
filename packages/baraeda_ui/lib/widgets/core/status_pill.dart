@@ -40,8 +40,10 @@ class BaraedaStatusPill extends StatelessWidget {
     // 문구를 안 주면 상태 기본 라벨 — 디자인 시스템 StatusPill 의 규칙이다.
     final text = label ?? status.label;
 
+    // 자식 Text 가 같은 문구를 이미 갖고 있어 자식을 가린다 — 안 그러면 두 번 읽힌다(F07-10).
     return Semantics(
       label: text,
+      excludeSemantics: true,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(

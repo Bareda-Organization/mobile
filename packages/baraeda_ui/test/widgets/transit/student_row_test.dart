@@ -132,6 +132,33 @@ void main() {
     }
   });
 
+  // F07-12 — 38px 아바타인데 원본 해상도로 디코딩하면 행 수만큼 메모리가 오른다.
+  testWidgets('사진은 표시 크기(38px × 기기 픽셀 비율)로 줄여 디코딩한다', (tester) async {
+    final httpClient = _FakeHttpClient()
+      ..response.contentLength = _transparentPng.length
+      ..response.content = [_transparentPng];
+    try {
+      await pumpRow(
+        tester,
+        httpClient,
+        photoUrl: 'https://cdn.example/s/301.jpg',
+      );
+      await tester.runAsync(() async {
+        await Future<void>.delayed(const Duration(milliseconds: 200));
+      });
+      await tester.pumpAndSettle();
+
+      final image = tester.widget<Image>(find.byType(Image)).image;
+      expect(image, isA<ResizeImage>());
+      expect(
+        (image as ResizeImage).width,
+        (38 * tester.view.devicePixelRatio).round(),
+      );
+    } finally {
+      restore();
+    }
+  });
+
   testWidgets('photoUrl 로드가 실패하면(404) 이니셜로 떨어진다', (tester) async {
     final httpClient = _FakeHttpClient()
       ..response.statusCode = HttpStatus.notFound;
