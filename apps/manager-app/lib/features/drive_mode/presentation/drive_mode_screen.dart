@@ -267,6 +267,7 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
                     statusLabel: run.runStatus == RunStatus.moving
                         ? '운행 중'
                         : '확정',
+                    eta: _departLabel(run),
                     origin: run.origin,
                     destination: run.destination,
                   ),
@@ -365,6 +366,10 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
       ],
     );
   }
+
+  /// 카드에 적는 출발 시각 — 시각만 크게 있으면 출발인지 도착인지 모른다(R46).
+  String _departLabel(ManagerRun run) =>
+      '출발 ${DateFormat('HH:mm').format(run.departTime.toLocal())}';
 
   /// 명단 조회 실패 안내 + [다시 시도]. [stale] 이면 화면의 명단이 마지막 성공분이라는 뜻이다.
   Widget _rosterFailure(Object error, {bool stale = false}) => AlertBanner(

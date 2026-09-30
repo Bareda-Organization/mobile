@@ -169,6 +169,13 @@ void main() {
     });
   });
 
+  testWidgets('운행 화면 카드에도 출발 시각이 있다 (R46, B2 #25)', (tester) async {
+    await pumpDrive(tester);
+
+    // managerRunFixture 의 출발 시각은 2026-09-30 08:00.
+    expect(find.text('출발 08:00'), findsOneWidget);
+  });
+
   group('B2 #19 위치 권한 배너 [설정 열기]', () {
     testWidgets('권한이 없으면 [설정 열기] 가 앱 설정을 연다 (R46)', (tester) async {
       final harness = await pumpDrive(

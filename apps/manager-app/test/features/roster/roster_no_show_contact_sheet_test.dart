@@ -107,6 +107,13 @@ void main() {
     return clock;
   }
 
+  testWidgets('연락 기록 시트 제목은 사양 용어 "미승차" 를 쓴다 (R46, B2 #25)', (tester) async {
+    await openSheet(tester, expiresAt: start.add(const Duration(minutes: 1)));
+
+    expect(find.text('미승차 연락 기록'), findsOneWidget);
+    expect(find.textContaining('미탑승'), findsNothing);
+  });
+
   testWidgets('대기 시간 안에는 최종 판단 선택지가 꺼지고 남은 시간이 보인다', (tester) async {
     await openSheet(
       tester,

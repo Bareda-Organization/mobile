@@ -171,7 +171,7 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
     final clock = ref.read(clockProvider);
     final request = await showBaraedaBottomSheet<NoShowContactRequest>(
       context: context,
-      title: '미탑승 연락 기록',
+      title: '미승차 연락 기록',
       builder: (context) =>
           _NoShowContactSheet(waitEndsAt: waitEndsAt, clock: clock),
     );
