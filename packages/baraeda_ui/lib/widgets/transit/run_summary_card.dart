@@ -113,8 +113,8 @@ class RunSummaryCard extends StatelessWidget {
                       Expanded(
                         child: _RunStopTile(
                           icon: 'navigation',
-                          // [origin] — **출발지**다(`API_SPEC §4.1`). "현재 이동 중" 으로 적으면
-                          // 출발 전 회차에도 버스가 움직이는 것처럼 보인다.
+                          // [origin] — **출발지**다(`API_SPEC §4.1`). "현재 이동 중" 으로
+                          // 적으면 출발 전 회차에도 버스가 움직이는 것처럼 보인다.
                           label: '출발',
                           value: origin,
                         ),
