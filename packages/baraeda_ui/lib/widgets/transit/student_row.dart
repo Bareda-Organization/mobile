@@ -188,6 +188,8 @@ class _StudentAvatar extends StatelessWidget {
       headers: photoHeaders,
       width: 38,
       height: 38,
+      // 38px 자리에 원본(수 MP)을 그대로 디코딩하면 행 수만큼 메모리가 오른다.
+      cacheWidth: (38 * MediaQuery.devicePixelRatioOf(context)).round(),
       fit: BoxFit.cover,
       // `loadingBuilder` 의 progress 는 "시작 전"과 "다 됨"이 똑같이 null
       // 이라 두 상태를 못 가른다. `frameBuilder` 의 frame 은 프레임이 실제로
