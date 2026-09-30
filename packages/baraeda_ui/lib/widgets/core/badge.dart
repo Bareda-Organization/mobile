@@ -30,8 +30,10 @@ class BaraedaBadge extends StatelessWidget {
     final palette = _paletteFor(tone, context.colors);
     final text = count == null ? label : '$label · $count';
 
+    // 자식 Text 와 같은 문구라 자식을 가린다 — 두 번 읽히지 않게(F07-10).
     return Semantics(
       label: text,
+      excludeSemantics: true,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
         decoration: BoxDecoration(

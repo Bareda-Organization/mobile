@@ -106,13 +106,25 @@ class _StopTimelineRow extends StatelessWidget {
         ? colors.statusBoarded
         : colors.borderSubtle;
 
+    // 진행 상태(지남·현재·다음·이후)는 점 색과 크기로만 드러나므로 낭독 문구에 말로 싣고,
+    // 자식 Text 는 가려 같은 문구가 두 번 읽히지 않게 한다(F07-10).
     return Semantics(
       button: onTap != null,
+      onTap: onTap,
       label: [
         stop.name,
         stop.address,
         stop.time,
+        switch (stop.state) {
+          StopState.done => '지남',
+          StopState.current => '현재 정류장',
+          StopState.next => '다음 정류장',
+          StopState.upcoming => '이후 정류장',
+        },
+        if (stop.riders != null) '${stop.riders}명',
+        if (stop.missed != null) '미탑승 ${stop.missed}',
       ].whereType<String>().join(' · '),
+      excludeSemantics: true,
       child: InkWell(
         onTap: onTap,
         child: IntrinsicHeight(

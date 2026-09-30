@@ -74,9 +74,9 @@ class AlertBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final style = _AlertToneStyle.of(context, tone);
+    // 제목·본문·버튼을 자식이 각자 읽는다 — 라벨을 또 얹으면 제목이 두 번 읽힌다(F07-10).
     return Semantics(
       container: true,
-      label: title,
       child: Container(
         padding: const EdgeInsets.symmetric(
           horizontal: BaraedaSpacing.space4,
