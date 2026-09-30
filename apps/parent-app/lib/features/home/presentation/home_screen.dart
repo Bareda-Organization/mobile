@@ -11,6 +11,7 @@ import 'package:parent_app/core/auth/auth_providers.dart';
 import 'package:parent_app/core/change_requests/presentation/change_request_providers.dart';
 import 'package:parent_app/core/students/presentation/selected_student.dart';
 import 'package:parent_app/core/time/service_date.dart';
+import 'package:parent_app/core/ui/failure_message.dart';
 import 'package:parent_app/features/home/presentation/home_providers.dart';
 import 'package:parent_app/features/home/presentation/widgets/notification_list.dart';
 import 'package:parent_app/features/home/presentation/widgets/pending_change_badge.dart';
@@ -331,12 +332,19 @@ class _RunsSectionState extends ConsumerState<_RunsSection> {
         const SizedBox(height: BaraedaSpacing.space4),
         runsAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, stack) => _ErrorBanner(
-            message: '$dayWord 회차를 불러오지 못했습니다',
-            onRetry: () => date == null
-                ? ref.invalidate(runsForStudentProvider(studentId))
-                : ref.invalidate(runsForStudentOnProvider((studentId, date))),
-          ),
+          error: (error, stack) => isWithdrawnStudent(error)
+              ? const AlertBanner(
+                  tone: AlertTone.missed,
+                  body: withdrawnStudentMessage,
+                )
+              : _ErrorBanner(
+                  message: '$dayWord 회차를 불러오지 못했습니다',
+                  onRetry: () => date == null
+                      ? ref.invalidate(runsForStudentProvider(studentId))
+                      : ref.invalidate(
+                          runsForStudentOnProvider((studentId, date)),
+                        ),
+                ),
           data: (runs) => runs.isEmpty
               ? EmptyState(title: '$dayWord 예정된 회차가 없습니다')
               : Column(

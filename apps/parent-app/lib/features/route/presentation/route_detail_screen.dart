@@ -7,6 +7,7 @@ import 'package:parent_app/app/app_routes.dart';
 import 'package:parent_app/core/auth/auth_providers.dart';
 import 'package:parent_app/core/students/presentation/selected_student.dart';
 import 'package:parent_app/core/students/presentation/student_providers.dart';
+import 'package:parent_app/core/ui/failure_message.dart';
 import 'package:parent_app/features/route/domain/route_detail.dart';
 import 'package:parent_app/features/route/presentation/route_providers.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -135,8 +136,12 @@ class _RouteDetailBody extends ConsumerWidget {
 
     return routeAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stack) =>
-          const AlertBanner(tone: AlertTone.missed, body: '노선 정보를 불러오지 못했습니다'),
+      error: (error, stack) => AlertBanner(
+        tone: AlertTone.missed,
+        body: isWithdrawnStudent(error)
+            ? withdrawnStudentMessage
+            : '노선 정보를 불러오지 못했습니다',
+      ),
       data: (route) => _RouteDetailView(
         route: route,
         onRefresh: () async {
