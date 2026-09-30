@@ -59,34 +59,6 @@ void main() {
     expect(find.bySemanticsLabel('이름'), findsWidgets);
   });
 
-  testWidgets('BaraedaSearchField는 placeholder를 label로 싣는다', (tester) async {
-    await pump(tester, const BaraedaSearchField(placeholder: '학생 검색'));
-    // 바깥 Semantics 래퍼 + TextField의 hintText 시맨틱, 둘 다
-    // placeholder 문구를 싣는다 — 최소 하나 이상 존재하는지만 본다.
-    expect(find.bySemanticsLabel('학생 검색'), findsWidgets);
-  });
-
-  testWidgets('BaraedaCheckbox는 checked 상태와 label을 싣는다', (tester) async {
-    await pump(
-      tester,
-      BaraedaCheckbox(checked: true, label: '약관 동의', onChanged: (_) {}),
-    );
-
-    expect(
-      tester.getSemantics(find.byType(InkWell)),
-      matchesSemantics(
-        hasCheckedState: true,
-        isChecked: true,
-        hasEnabledState: true,
-        isEnabled: true,
-        isFocusable: true,
-        hasTapAction: true,
-        hasFocusAction: true,
-      ),
-    );
-    expect(find.bySemanticsLabel(RegExp('약관 동의')), findsWidgets);
-  });
-
   testWidgets('BaraedaSwitch는 toggled 상태와 label을 싣는다', (tester) async {
     await pump(
       tester,

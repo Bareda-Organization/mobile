@@ -41,6 +41,8 @@ const Map<String, IconData> _kBaraedaIconGlyphs = {
   'list': Icons.list,
   'layout-dashboard': Icons.dashboard,
   'log-out': Icons.logout,
+  // 매니저 앱 머리줄의 비밀번호 변경(`BaraedaIconButton`)이 쓴다.
+  'lock': Icons.lock_outline,
   'house': Icons.home,
   // 학부모·학생 앱의 자녀 연결 화면(S-05)이 쓰는 아이콘 2종 — 기존 매핑에
   // 빠져 있어 그 화면을 렌더링하는 즉시 `assert(glyph != null)` 로 죽었다

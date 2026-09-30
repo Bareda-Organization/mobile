@@ -86,9 +86,9 @@ class BaraedaInput extends StatelessWidget {
                     ),
               prefixIconConstraints: const BoxConstraints(),
               suffixIcon: suffix,
-              border: _borderFor(colors.borderDefault),
+              border: _borderFor(colors.borderControl),
               enabledBorder: _borderFor(
-                hasError ? colors.statusMissed : colors.borderDefault,
+                hasError ? colors.statusMissed : colors.borderControl,
               ),
               focusedBorder: _borderFor(
                 hasError ? colors.statusMissed : colors.accentPrimary,

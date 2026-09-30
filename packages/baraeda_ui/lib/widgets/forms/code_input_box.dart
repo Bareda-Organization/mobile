@@ -31,7 +31,7 @@ class BaraedaCodeInputBox extends StatelessWidget {
     } else if (active) {
       borderColor = colors.accentPrimary;
     } else {
-      borderColor = colors.borderDefault;
+      borderColor = colors.borderControl;
     }
 
     return Container(

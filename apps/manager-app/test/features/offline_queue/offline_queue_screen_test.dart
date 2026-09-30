@@ -278,7 +278,7 @@ void main() {
     // 서버에 아직 반영되지 않은 처리를 버리는 일이라 한 번 묻는다.
     await tester.tap(
       find.descendant(
-        of: find.byType(AlertDialog),
+        of: find.byType(BaraedaDialog),
         matching: find.text('삭제'),
       ),
     );

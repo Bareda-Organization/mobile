@@ -1,5 +1,5 @@
 import 'package:baraeda_core/baraeda_core.dart';
-import 'package:flutter/material.dart';
+import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:manager_app/app/app.dart';
@@ -118,7 +118,7 @@ void main() {
   }
 
   Finder dialogButton(String text) => find.descendant(
-    of: find.byType(AlertDialog),
+    of: find.byType(BaraedaDialog),
     matching: find.text(text),
   );
 
@@ -131,15 +131,29 @@ void main() {
     await tester.tap(find.text('로그아웃'));
     await tester.pumpAndSettle();
 
-    expect(find.byType(AlertDialog), findsOneWidget);
+    expect(find.byType(BaraedaDialog), findsOneWidget);
     expect(repository.logoutCalls, 0);
 
     await tester.tap(dialogButton('취소'));
     await tester.pumpAndSettle();
 
-    expect(find.byType(AlertDialog), findsNothing);
+    expect(find.byType(BaraedaDialog), findsNothing);
     expect(repository.logoutCalls, 0);
     expect(find.byType(LoginScreen), findsNothing);
+  });
+
+  testWidgets('뒤로가기는 대화상자만 닫고 로그아웃도 화면 이탈도 없다', (tester) async {
+    final repository = _StubAuthRepository();
+    await pump(tester, authRepository: repository);
+
+    await tester.tap(find.text('로그아웃'));
+    await tester.pumpAndSettle();
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+
+    expect(find.byType(BaraedaDialog), findsNothing);
+    expect(repository.logoutCalls, 0);
+    expect(find.text('오늘 운행'), findsOneWidget);
   });
 
   testWidgets('확인하면 로그아웃하고 로그인 화면으로 이동한다', (tester) async {

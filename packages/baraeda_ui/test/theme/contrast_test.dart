@@ -48,4 +48,42 @@ void main() {
       });
     }
   });
+
+  // 비텍스트 UI 경계 3:1 (WCAG 1.4.11) — 조작 요소 전용 토큰
+  // `borderControl` (F07-09, Ruling 403).
+  // 경계선은 자기 안쪽 면(입력칸 배경 = 카드)과 바깥 면(페이지 바탕·카드) 양쪽에서 구분돼야 한다.
+  group('조작 요소 경계 명도 대비 3:1', () {
+    const minUi = 3.0;
+    final themes = <String, BaraedaColors>{
+      '라이트': BaraedaColors.light,
+      '다크': BaraedaColors.dark,
+    };
+    for (final MapEntry(key: name, value: c) in themes.entries) {
+      final surfaces = <String, Color>{
+        '카드': c.surfaceCard,
+        '페이지 바탕': c.bgBase,
+        '떠 있는 면': c.surfaceRaised,
+      };
+      for (final MapEntry(key: surfaceName, value: surface)
+          in surfaces.entries) {
+        test('$name borderControl on $surfaceName 은 3:1 이상', () {
+          expect(
+            _contrast(c.borderControl, surface),
+            greaterThanOrEqualTo(minUi),
+          );
+        });
+      }
+    }
+
+    test('borderControl 은 불투명이다 — computeLuminance 는 알파를 무시하므로', () {
+      for (final c in themes.values) {
+        expect(c.borderControl.a, 1.0);
+      }
+    });
+
+    test('카드 외곽선 borderDefault 는 그대로 둔다(전 화면 테두리가 진해지지 않게)', () {
+      expect(BaraedaColors.light.borderDefault, BaraedaPalette.stone300);
+      expect(BaraedaColors.dark.borderDefault, const Color(0x3DEDF2EF));
+    });
+  });
 }

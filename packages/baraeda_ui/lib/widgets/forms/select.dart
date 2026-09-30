@@ -80,9 +80,9 @@ class BaraedaSelect extends StatelessWidget {
                 horizontal: 14,
                 vertical: 13,
               ),
-              border: _borderFor(colors.borderDefault),
+              border: _borderFor(colors.borderControl),
               enabledBorder: _borderFor(
-                hasError ? colors.statusMissed : colors.borderDefault,
+                hasError ? colors.statusMissed : colors.borderControl,
               ),
               focusedBorder: _borderFor(
                 hasError ? colors.statusMissed : colors.accentPrimary,

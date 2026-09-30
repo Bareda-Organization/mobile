@@ -74,9 +74,9 @@ class _ManagerHomeScreenState extends ConsumerState<ManagerHomeScreen>
           // 비상(M-15, R32 M2) — 기사·동승자 모두, 확정된 회차가 있으면 운행 중이 아니어도 보낸다.
           EmergencyButton(homeRuns: runsAsync.value),
           // 비밀번호 변경(AUTH-07 · UF-X-09, R32 M13) — 기사·동승자 공통.
-          IconButton(
-            tooltip: '비밀번호 변경',
-            icon: const Icon(Icons.lock_outline),
+          BaraedaIconButton(
+            icon: 'lock',
+            label: '비밀번호 변경',
             onPressed: () => unawaited(context.push(AppRoutes.passwordChange)),
           ),
           // 로그아웃(2026-09-23, 확인 대화 2026-09-26 추가·AUTH-09) —
@@ -233,38 +233,30 @@ class _ManagerHomeScreenState extends ConsumerState<ManagerHomeScreen>
   ) async {
     // 창은 바로 띄우고 건수는 읽히는 대로 채운다 — 대기열 읽기가 로그아웃 확인을 막지 않게.
     final pendingCount = _pendingCount();
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showBaraedaConfirmDialog(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('로그아웃하시겠습니까?'),
-        content: FutureBuilder<int>(
-          future: pendingCount,
-          initialData: 0,
-          builder: (context, snapshot) => Text(
-            [
-              if (hasMovingRun)
-                '운행 중에 로그아웃하면 명단·위치 송신이 멈춥니다'
-              else
-                '다시 로그인해야 이 앱을 계속 쓸 수 있습니다',
-              // M2-01 — 큐에는 계정 열이 없어 로그아웃하면 비운다(F06-02). 있을 때만 알린다.
-              if ((snapshot.data ?? 0) > 0)
-                '아직 보내지 못한 처리 ${snapshot.data}건은 버려집니다',
-            ].join('\n'),
+      title: '로그아웃하시겠습니까?',
+      confirmLabel: '로그아웃',
+      content: FutureBuilder<int>(
+        future: pendingCount,
+        initialData: 0,
+        builder: (context, snapshot) => Text(
+          [
+            if (hasMovingRun)
+              '운행 중에 로그아웃하면 명단·위치 송신이 멈춥니다'
+            else
+              '다시 로그인해야 이 앱을 계속 쓸 수 있습니다',
+            // M2-01 — 큐에는 계정 열이 없어 로그아웃하면 비운다(F06-02). 있을 때만 알린다.
+            if ((snapshot.data ?? 0) > 0)
+              '아직 보내지 못한 처리 ${snapshot.data}건은 버려집니다',
+          ].join('\n'),
+          style: BaraedaTypography.bodySm.copyWith(
+            color: context.colors.textSecondary,
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('취소'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('로그아웃'),
-          ),
-        ],
       ),
     );
-    if (confirmed ?? false) {
+    if (confirmed) {
       try {
         await signOut(ref);
       } on Object {
