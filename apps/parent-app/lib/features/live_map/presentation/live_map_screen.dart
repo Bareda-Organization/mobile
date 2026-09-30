@@ -10,6 +10,8 @@ import 'package:parent_app/app/app_routes.dart';
 import 'package:parent_app/app/di.dart';
 import 'package:parent_app/core/auth/auth_providers.dart';
 import 'package:parent_app/core/map/map_surface.dart';
+import 'package:parent_app/core/routes/domain/route_detail.dart';
+import 'package:parent_app/core/routes/presentation/route_providers.dart';
 import 'package:parent_app/core/students/presentation/selected_student.dart';
 import 'package:parent_app/core/students/presentation/student_providers.dart';
 import 'package:parent_app/features/live_map/domain/bus_position.dart';
@@ -402,25 +404,50 @@ class _LiveMapBodyState extends ConsumerState<_LiveMapBody> {
 /// "연결 끊김"과 "지도 인증 실패"가 같은 `copyWith` 경합에 얽혀 순서
 /// 버그를 만들기 쉽다 — 화면에 한 번 그려지고 나면 다시 사라질 일이
 /// 없는 상태라 `StatefulWidget` 로 충분하다.
-class _BusMapSection extends StatefulWidget {
+class _BusMapSection extends ConsumerStatefulWidget {
   const _BusMapSection({required this.studentId, required this.position});
 
   final String studentId;
   final WsPositionPayload position;
 
   @override
-  State<_BusMapSection> createState() => _BusMapSectionState();
+  ConsumerState<_BusMapSection> createState() => _BusMapSectionState();
 }
 
-class _BusMapSectionState extends State<_BusMapSection> {
+class _BusMapSectionState extends ConsumerState<_BusMapSection> {
   bool _authFailed = false;
 
-  /// F05-09 — 카메라는 처음 좌표에 두고 새 좌표마다 옮기지 않는다(옮기면 2초마다 사용자가 조작한 확대·이동이
-  /// 되돌아간다). 마커만 새 좌표를 따라가고, 버스를 다시 보려면 [버스 위치로] 를 누른다.
+  /// R46 P3 — 버스를 따라가는 중인가. 켜 두면 새 좌표마다 카메라가 버스로 옮겨 가고, 사용자가 손으로 지도를
+  /// 움직이면 꺼진다(F05-09 — 2초마다 사용자가 옮긴 지도를 되돌리지 않는다). [버스 위치로] 가 다시 켠다.
+  bool _following = true;
+
   late MapCamera _camera = MapCamera(
     lat: widget.position.lat,
     lng: widget.position.lng,
   );
+
+  @override
+  void didUpdateWidget(covariant _BusMapSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_following) _camera = _busCamera();
+  }
+
+  MapCamera _busCamera() =>
+      MapCamera(lat: widget.position.lat, lng: widget.position.lng);
+
+  /// 내 승하차지 — §3.10 이 준 좌표 그대로다. 노선을 못 받았거나 좌표가 없으면 핀만 뺀다(버스 표시는 그대로).
+  RouteStop? _myStop() {
+    final route = ref.watch(routeDetailProvider(widget.studentId)).value;
+    if (route == null) return null;
+    for (final stop in route.stops) {
+      if (stop.stopId == route.myStopId &&
+          stop.lat != null &&
+          stop.lng != null) {
+        return stop;
+      }
+    }
+    return null;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -431,6 +458,7 @@ class _BusMapSectionState extends State<_BusMapSection> {
       );
     }
 
+    final myStop = _myStop();
     return Padding(
       padding: const EdgeInsets.only(bottom: BaraedaSpacing.space4),
       child: Column(
@@ -447,7 +475,18 @@ class _BusMapSectionState extends State<_BusMapSection> {
                   lng: widget.position.lng,
                   kind: MapMarkerKind.bus,
                 ),
+                if (myStop != null)
+                  MapMarker(
+                    id: 'my-stop-${widget.studentId}',
+                    lat: myStop.lat!,
+                    lng: myStop.lng!,
+                    kind: MapMarkerKind.stop,
+                    label: '내 승하차지',
+                  ),
               ],
+              onUserGesture: () {
+                if (_following) setState(() => _following = false);
+              },
               onAuthFailed: (exception) {
                 debugPrint('네이버 지도 인증 실패: $exception');
                 if (mounted) setState(() => _authFailed = true);
@@ -456,18 +495,32 @@ class _BusMapSectionState extends State<_BusMapSection> {
           ),
           Align(
             alignment: Alignment.centerLeft,
-            child: BaraedaButton(
-              label: '버스 위치로',
-              size: BaraedaButtonSize.sm,
-              variant: BaraedaButtonVariant.ghost,
-              onPressed: () => setState(
-                () => _camera = MapCamera(
-                  lat: widget.position.lat,
-                  lng: widget.position.lng,
+            child: Wrap(
+              children: [
+                BaraedaButton(
+                  label: '버스 위치로',
+                  size: BaraedaButtonSize.sm,
+                  variant: BaraedaButtonVariant.ghost,
+                  onPressed: () => setState(() {
+                    _following = true;
+                    _camera = _busCamera();
+                  }),
                 ),
-              ),
+                if (myStop != null)
+                  BaraedaButton(
+                    label: '내 승하차지로',
+                    size: BaraedaButtonSize.sm,
+                    variant: BaraedaButtonVariant.ghost,
+                    onPressed: () => setState(() {
+                      _following = false;
+                      _camera = MapCamera(lat: myStop.lat!, lng: myStop.lng!);
+                    }),
+                  ),
+              ],
             ),
           ),
+          if (myStop != null)
+            Text('내 승하차지 · ${myStop.name}', style: BaraedaTypography.body),
         ],
       ),
     );

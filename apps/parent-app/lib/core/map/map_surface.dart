@@ -38,12 +38,16 @@ class MapMarker {
     required this.lat,
     required this.lng,
     required this.kind,
+    this.label,
   });
 
   final String id;
   final double lat;
   final double lng;
   final MapMarkerKind kind;
+
+  /// 마커 옆에 붙는 짧은 글자 — 없으면 종류별 기본 글자(`버스`·`승하차지`·`학생`)를 쓴다.
+  final String? label;
 }
 
 /// 화면이 실제로 그리는 지도 위젯. 내부 구현은 전부
@@ -56,6 +60,7 @@ class MapSurface extends StatelessWidget {
     this.markers = const [],
     this.onReady,
     this.onAuthFailed,
+    this.onUserGesture,
   });
 
   final MapCamera camera;
@@ -68,6 +73,9 @@ class MapSurface extends StatelessWidget {
   /// (팀 공통 규칙 — 오류 분류는 호출부가 한다).
   final void Function(Object exception)? onAuthFailed;
 
+  /// 사용자가 손으로 지도를 움직이거나 확대·축소했을 때 호출된다 — 코드가 카메라를 옮긴 경우는 부르지 않는다.
+  final VoidCallback? onUserGesture;
+
   @override
   Widget build(BuildContext context) {
     return NaverMapAdapter(
@@ -75,6 +83,7 @@ class MapSurface extends StatelessWidget {
       markers: markers,
       onReady: onReady,
       onAuthFailed: onAuthFailed,
+      onUserGesture: onUserGesture,
     );
   }
 }

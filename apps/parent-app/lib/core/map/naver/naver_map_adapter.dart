@@ -23,12 +23,14 @@ class NaverMapAdapter extends StatefulWidget {
     this.markers = const [],
     this.onReady,
     this.onAuthFailed,
+    this.onUserGesture,
   });
 
   final MapCamera camera;
   final List<MapMarker> markers;
   final VoidCallback? onReady;
   final void Function(Object exception)? onAuthFailed;
+  final VoidCallback? onUserGesture;
 
   @override
   State<NaverMapAdapter> createState() => _NaverMapAdapterState();
@@ -158,6 +160,13 @@ class _NaverMapAdapterState extends State<NaverMapAdapter> {
             unawaited(_sync.request());
             widget.onReady?.call();
           },
+          // 코드가 옮긴 카메라(`developer`)와 사용자가 옮긴 카메라를 가른다 — 따라가기를 끄는 근거다.
+          onCameraChange: (reason, animated) {
+            if (reason == NCameraUpdateReason.gesture ||
+                reason == NCameraUpdateReason.control) {
+              widget.onUserGesture?.call();
+            }
+          },
         );
       },
     );
@@ -203,7 +212,9 @@ class _NaverMapAdapterState extends State<NaverMapAdapter> {
         final marker = NMarker(
           id: entry.key,
           position: NLatLng(target.lat, target.lng),
-          caption: NOverlayCaption(text: _captionFor(entry.value.kind)),
+          caption: NOverlayCaption(
+            text: entry.value.label ?? _captionFor(entry.value.kind),
+          ),
         );
         _markersById[entry.key] = marker;
         toAdd.add(marker);

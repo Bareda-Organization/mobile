@@ -1,8 +1,8 @@
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:dio/dio.dart';
+import 'package:parent_app/core/routes/domain/route_detail.dart';
+import 'package:parent_app/core/routes/domain/route_repository.dart';
 import 'package:parent_app/features/route/data/route_api.dart';
-import 'package:parent_app/features/route/domain/route_detail.dart';
-import 'package:parent_app/features/route/domain/route_repository.dart';
 
 class RouteRepositoryImpl implements RouteRepository {
   const RouteRepositoryImpl({required this._routeApi});
