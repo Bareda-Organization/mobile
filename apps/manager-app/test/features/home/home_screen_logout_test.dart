@@ -12,6 +12,8 @@ import 'package:manager_app/features/auth/domain/auth_repository.dart';
 import 'package:manager_app/features/auth/presentation/login_screen.dart';
 import 'package:manager_app/features/home/data/models/manager_run.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
+import 'package:manager_app/features/offline_queue/data/models/pending_request_summary.dart';
+import 'package:manager_app/features/offline_queue/domain/offline_queue_repository.dart';
 
 import '../../support/fake_token_storage.dart';
 
@@ -28,6 +30,32 @@ class _StubAuthRepository implements AuthRepository {
     logoutCalls++;
     if (fail) throw Exception('network down');
   }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
+}
+
+/// 대기 목록만 쓰는 가짜 — 로그아웃 확인 창이 미전송 건수를 세는 데만 쓴다(M2-01).
+class _StubQueueRepository implements OfflineQueueRepository {
+  _StubQueueRepository(this.pendingCount);
+
+  final int pendingCount;
+
+  @override
+  Future<List<PendingRequestSummary>> fetchPending() async => List.generate(
+    pendingCount,
+    (i) => PendingRequestSummary(
+      id: i,
+      endpoint: '/runs/run-1/riders/$i',
+      method: 'PATCH',
+      payload: '{}',
+      createdAt: DateTime(2026, 9, 26, 8),
+    ),
+  );
+
+  /// 로그아웃하면 대기열을 비운다(F06-02) — 여기서는 아무것도 하지 않는다.
+  @override
+  Future<void> clear() async {}
 
   @override
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
@@ -63,6 +91,7 @@ void main() {
     WidgetTester tester, {
     required AuthRepository authRepository,
     RunStatus? extraMovingRun,
+    int pendingCount = 0,
   }) async {
     await tester.pumpWidget(
       ProviderScope(
@@ -73,6 +102,9 @@ void main() {
             (ref) => AccountStatus.active,
           ),
           authRepositoryProvider.overrideWithValue(authRepository),
+          offlineQueueRepositoryProvider.overrideWithValue(
+            _StubQueueRepository(pendingCount),
+          ),
           todayRunsProvider.overrideWith(
             (ref) async => [
               _run(runStatus: extraMovingRun ?? RunStatus.confirmed),
@@ -162,5 +194,24 @@ void main() {
       find.textContaining('운행 중에 로그아웃하면 명단·위치 송신이 멈춥니다'),
       findsNothing,
     );
+  });
+
+  // M2-01(Ruling 388) — 로그아웃하면 미전송 대기열이 버려진다. 비어 있지 않을 때만 알린다.
+  testWidgets('미전송 대기 요청이 있으면 확인 문구에 버려진다는 경고와 건수가 붙는다', (tester) async {
+    await pump(tester, authRepository: _StubAuthRepository(), pendingCount: 2);
+
+    await tester.tap(find.text('로그아웃'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('아직 보내지 못한 처리 2건은 버려집니다'), findsOneWidget);
+  });
+
+  testWidgets('미전송 대기 요청이 없으면 버려진다는 경고가 없다', (tester) async {
+    await pump(tester, authRepository: _StubAuthRepository());
+
+    await tester.tap(find.text('로그아웃'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('버려집니다'), findsNothing);
   });
 }

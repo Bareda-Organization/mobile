@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:manager_app/app/app_routes.dart';
+import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/auth/account_session.dart';
 import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/core/auth/role_policy.dart';
@@ -211,6 +212,16 @@ class _ManagerHomeScreenState extends ConsumerState<ManagerHomeScreen>
     unawaited(context.push(destination));
   }
 
+  /// 아직 서버에 보내지 못한 오프라인 대기 요청 수. 읽지 못하면 0 으로 보고 로그아웃을 막지 않는다.
+  Future<int> _pendingCount() async {
+    try {
+      return (await ref.read(offlineQueueRepositoryProvider).fetchPending())
+          .length;
+    } on Object {
+      return 0;
+    }
+  }
+
   /// 로그아웃 확인 대화상자(AUTH-09) — [hasMovingRun] 이면 명단·위치 송신이
   /// 멈춘다는 경고를 덧붙인다(`USER_FLOWS` UF-O-04 와 같은 이유 — 로그인
   /// 유지 중 로그아웃하면 명단 조회가 끊겨 하차 처리가 중단된다). 확인해야만
@@ -220,14 +231,21 @@ class _ManagerHomeScreenState extends ConsumerState<ManagerHomeScreen>
     BuildContext context,
     bool hasMovingRun,
   ) async {
+    final pendingCount = await _pendingCount();
+    if (!context.mounted) return;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('로그아웃하시겠습니까?'),
         content: Text(
-          hasMovingRun
-              ? '운행 중에 로그아웃하면 명단·위치 송신이 멈춥니다'
-              : '다시 로그인해야 이 앱을 계속 쓸 수 있습니다',
+          [
+            if (hasMovingRun)
+              '운행 중에 로그아웃하면 명단·위치 송신이 멈춥니다'
+            else
+              '다시 로그인해야 이 앱을 계속 쓸 수 있습니다',
+            // M2-01 — 큐에는 계정 열이 없어 로그아웃하면 비운다(F06-02). 있을 때만 알린다.
+            if (pendingCount > 0) '아직 보내지 못한 처리 $pendingCount건은 버려집니다',
+          ].join('\n'),
         ),
         actions: [
           TextButton(
