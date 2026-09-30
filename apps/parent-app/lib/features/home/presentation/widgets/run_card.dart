@@ -11,6 +11,7 @@ import 'package:parent_app/core/runs/domain/student_run.dart';
 import 'package:parent_app/core/ui/confirm_dialog.dart';
 import 'package:parent_app/core/ui/failure_message.dart';
 import 'package:parent_app/core/ui/format_date_time.dart';
+import 'package:parent_app/core/ui/minute_ticker.dart';
 import 'package:parent_app/features/home/presentation/home_providers.dart';
 
 /// 회차 1건 카드 — §3.5 조회 값 표시 + (학부모만) §3.6 등원 여부 토글.
@@ -26,6 +27,7 @@ class RunCard extends ConsumerStatefulWidget {
     required this.run,
     required this.canToggle,
     this.date,
+    this.isApprovalPending = false,
     super.key,
   });
 
@@ -38,6 +40,9 @@ class RunCard extends ConsumerStatefulWidget {
   /// 학부모만 true(`roleCapabilitiesProvider.canToggleAttendance`).
   final bool canToggle;
 
+  /// 이 회차에 ②구간 변경 신청이 관리자 승인을 기다리는 중인가 — 홈이 §3.9 신청 이력에서 가려 넘긴다.
+  final bool isApprovalPending;
+
   @override
   ConsumerState<RunCard> createState() => _RunCardState();
 }
@@ -49,14 +54,14 @@ class _RunCardState extends ConsumerState<RunCard> {
   String? _banner;
   AlertTone _bannerTone = AlertTone.info;
 
-  /// 끄기만 확인을 거친다(켜기는 바로) — 구간마다 결과가 달라 문구를 가른다(UF-P-04·05).
+  /// 탑승 취소(끄기)만 확인을 거친다(켜기는 바로) — 구간마다 결과가 달라 문구를 가른다(UF-P-04·05).
   /// 구간 판정은 서버가 준 `run_status`·`confirmed` 로만 한다(시각으로 계산하지 않는다).
   Future<void> _onSwitchChanged(bool value) async {
     if (value) return _toggle(true);
     final run = widget.run;
     final confirmed = await showConfirmDialog(
       context,
-      title: '$_dayWord 탑승을 끌까요?',
+      title: '$_dayWord 탑승을 취소할까요?',
       body: switch (run.runStatus) {
         RunStatus.idle when !run.confirmed =>
           '바로 반영됩니다. 출발 30분 전까지는 다시 탑승으로 바꿀 수 있습니다.',
@@ -67,7 +72,9 @@ class _RunCardState extends ConsumerState<RunCard> {
           '운행이 시작돼 바로 반영되며 다시 탑승으로 바꿀 수 없습니다. '
               '노선은 바뀌지 않고 이 승하차지에는 정차하지 않습니다.',
       },
-      confirmLabel: '탑승 끄기',
+      confirmLabel: '탑승 취소',
+      // 확인 버튼이 "탑승 취소" 라 창을 닫는 쪽을 "취소" 로 두면 두 버튼이 같은 말이 된다.
+      cancelLabel: '닫기',
     );
     if (!confirmed || !mounted) return;
     await _toggle(false);
@@ -173,11 +180,42 @@ class _RunCardState extends ConsumerState<RunCard> {
                     Text(
                       '${_formatTime(run.departTime)} 출발 · ${run.stop.name}',
                     ),
-                    if (widget.date == null
-                            ? _untilConfirm(run, ref.watch(clockProvider).now())
-                            : null
-                        case final left?)
-                      Text('확정까지 $left', style: BaraedaTypography.bodySm),
+                    if (widget.date == null)
+                      MinuteTicker(
+                        builder: (context, now) => Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (_untilConfirm(run, now) case final left?)
+                              Text(
+                                '확정까지 $left',
+                                style: BaraedaTypography.bodySm,
+                              ),
+                          ],
+                        ),
+                      ),
+                    if (widget.isApprovalPending)
+                      MinuteTicker(
+                        builder: (context, now) => Text(
+                          _approvalWaitText(run.departTime, now),
+                          style: BaraedaTypography.bodySm,
+                        ),
+                      ),
+                    // UF-P-07 진입 표시 — 카드 전체가 눌리는데 그 표시가 없어
+                    // 지도로 가는 길을 못 찾았다(R46 B2 #11).
+                    // 지도에 볼 것이 있는 운행 중 오늘 카드에만 붙인다.
+                    if (widget.date == null &&
+                        run.runStatus == RunStatus.moving)
+                      Padding(
+                        padding: const EdgeInsets.only(
+                          top: BaraedaSpacing.space2,
+                        ),
+                        child: Text(
+                          '실시간 위치 보기 ›',
+                          style: BaraedaTypography.bodySm.copyWith(
+                            color: context.colors.accentPrimary,
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -220,12 +258,15 @@ String? _untilConfirm(StudentRun run, DateTime now) {
   final left = run.departTime
       .subtract(const Duration(minutes: 30))
       .difference(now);
-  if (left <= Duration.zero) return null;
-  if (left.inMinutes < 1) return '1분 미만';
-  final hours = left.inHours;
-  final minutes = left.inMinutes % 60;
-  if (hours == 0) return '$minutes분';
-  return minutes == 0 ? '$hours시간' : '$hours시간 $minutes분';
+  return left <= Duration.zero ? null : formatRemaining(left);
+}
+
+/// ②구간 변경 신청은 출발 시각이 되면 서버가 자동 거절한다(`FEATURE_SPEC C-04`) — 그때까지 남은 시간이 카운트다운이다.
+String _approvalWaitText(DateTime departTime, DateTime now) {
+  final left = departTime.difference(now);
+  return left <= Duration.zero
+      ? '승인 대기'
+      : '승인 대기 · 출발까지 ${formatRemaining(left)}';
 }
 
 ({BaraedaStatus status, String label}) _statusFor(StudentRun run) {

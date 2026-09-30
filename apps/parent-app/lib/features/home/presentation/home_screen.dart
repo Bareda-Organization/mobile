@@ -8,6 +8,7 @@ import 'package:parent_app/app/app_routes.dart';
 import 'package:parent_app/app/di.dart';
 import 'package:parent_app/core/auth/account_session.dart';
 import 'package:parent_app/core/auth/auth_providers.dart';
+import 'package:parent_app/core/change_requests/domain/change_request.dart';
 import 'package:parent_app/core/change_requests/presentation/change_request_providers.dart';
 import 'package:parent_app/core/refresh/visible_poller.dart';
 import 'package:parent_app/core/students/presentation/selected_student.dart';
@@ -286,6 +287,16 @@ class _RunsSectionState extends ConsumerState<_RunsSection> {
         ? ref.watch(runsForStudentProvider(studentId))
         : ref.watch(runsForStudentOnProvider((studentId, date)));
     final dayWord = isToday ? '오늘' : '내일';
+    // P-03 — ②구간 신청이 승인을 기다리는 회차는 카드에 출발까지 남은 시간을 붙인다.
+    // 신청 이력이 아직 없거나 실패면 붙이지 않는다.
+    final waitingRunIds = {
+      for (final request
+          in ref.watch(changeRequestsProvider(studentId)).value?.items ??
+              const <ChangeRequest>[])
+        if (request.status == ChangeRequestStatus.pending &&
+            request.runId != null)
+          request.runId,
+    };
     Widget retryBanner(String message) => _ErrorBanner(
       message: message,
       onRetry: () => date == null
@@ -331,6 +342,7 @@ class _RunsSectionState extends ConsumerState<_RunsSection> {
                     run: run,
                     canToggle: widget.canToggle,
                     date: date,
+                    isApprovalPending: waitingRunIds.contains(run.runId),
                   ),
             ],
           ),
