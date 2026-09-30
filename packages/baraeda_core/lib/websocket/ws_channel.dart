@@ -14,7 +14,8 @@ class WsChannel {
       '/topic/students/$studentId/run';
 
   /// 해당 회차에 배치된 기사·동승자 전용 — 방송: `rider_changed` ·
-  /// `stop_arrived` · `run_started` · `run_ended` · `emergency_acked`.
+  /// `stop_arrived` · `run_started` · `run_ended` · `emergency_acked` ·
+  /// `route_changed`(R36-FE FE6 — 서버 방송 추가 대기, `WsEventType.routeChanged`).
   static String managerRun(String runId) => '/topic/manager/runs/$runId';
 
   /// 해당 학원 관계자 전용 — 방송: `position` · `rider_changed` ·
