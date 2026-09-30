@@ -110,6 +110,11 @@ void main() {
       expect(calls, isEmpty);
     });
 
+    test('매니저 채널이 방송하지 않는 이벤트(emergencyCanceled)는 전부 무시', () {
+      dispatch(WsEventType.emergencyCanceled);
+      expect(calls, isEmpty);
+    });
+
     test('매니저 채널이 방송하지 않는 이벤트(approvalRequested)는 전부 무시', () {
       dispatch(WsEventType.approvalRequested);
       expect(calls, isEmpty);

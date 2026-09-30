@@ -64,7 +64,7 @@ ManagerChannelStatus mapConnectionState(WsConnectionState state) =>
 /// 다시 조회한다"만 하고 payload 필드를 직접 쓰지 않기 때문이다(로스터·명단
 /// 재조회가 서버 정본을 그대로 반영하므로 payload 를 화면 상태에 수동으로
 /// 병합할 이유가 없다 — 병합 로직은 곧 또 하나의 정합성 버그 원인이 된다).
-/// `position`·`emergency_raised`·`approval_requested` 는 매니저 채널이
+/// `position`·`emergency_raised`·`emergency_canceled`·`approval_requested` 는 매니저 채널이
 /// 방송하지 않는 이벤트라(`WsChannel.managerRun` 문서 참고) 무시한다.
 void dispatchManagerChannelEvent(
   WsEventType? event, {
@@ -90,6 +90,7 @@ void dispatchManagerChannelEvent(
       onRouteChanged();
     case WsEventType.position:
     case WsEventType.emergencyRaised:
+    case WsEventType.emergencyCanceled:
     case WsEventType.approvalRequested:
     case null:
       break;
