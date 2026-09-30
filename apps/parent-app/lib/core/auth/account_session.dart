@@ -180,16 +180,22 @@ class RouterRefreshNotifier extends ChangeNotifier {
     _sessionExpiredSubscription = _ref
         .read(webSocketClientProvider)
         .sessionExpired
-        .listen((_) {
-          applyRoleAndStatus(
-            _ref.read(unsupportedRoleProvider.notifier),
-            _ref.read(currentUserRoleProvider.notifier),
-            _ref.read(currentAccountStatusProvider.notifier),
-            role: null,
-            status: null,
-          );
-        });
+        .listen((_) => _clearSession());
+    // K-01 — REST 재발급이 401 로 거절돼도 같은 처리다(`ApiClient.sessionExpired`).
+    // 이 구독이 없으면 토큰만 지워지고 화면은 로그인된 채 오류 띠만 반복한다(F05-07).
+    _restSessionExpiredSubscription = _ref
+        .read(apiClientProvider)
+        .sessionExpired
+        .listen((_) => _clearSession());
   }
+
+  void _clearSession() => applyRoleAndStatus(
+    _ref.read(unsupportedRoleProvider.notifier),
+    _ref.read(currentUserRoleProvider.notifier),
+    _ref.read(currentAccountStatusProvider.notifier),
+    role: null,
+    status: null,
+  );
 
   final Ref _ref;
   late final ProviderSubscription<UserRole?> _roleSub;
@@ -197,6 +203,7 @@ class RouterRefreshNotifier extends ChangeNotifier {
   late final ProviderSubscription<bool> _unsupportedSub;
   late final StreamSubscription<AccountGateReason> _gateSubscription;
   late final StreamSubscription<void> _sessionExpiredSubscription;
+  late final StreamSubscription<void> _restSessionExpiredSubscription;
 
   @override
   void dispose() {
@@ -205,6 +212,7 @@ class RouterRefreshNotifier extends ChangeNotifier {
     _unsupportedSub.close();
     unawaited(_gateSubscription.cancel());
     unawaited(_sessionExpiredSubscription.cancel());
+    unawaited(_restSessionExpiredSubscription.cancel());
     super.dispose();
   }
 }

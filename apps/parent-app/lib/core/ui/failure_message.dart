@@ -8,6 +8,7 @@ String failureMessage(Failure failure, {required String fallback}) =>
     switch (failure) {
       NetworkFailure() => '네트워크 상태를 확인해 주세요',
       ApiFailure(:final message) => message,
+      UnauthenticatedFailure() => '로그인이 만료되었습니다. 다시 로그인해 주세요',
       _ => fallback,
     };
 
