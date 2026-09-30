@@ -13,7 +13,7 @@ enum BaraedaButtonVariant { primary, secondary, soft, ghost, danger }
 
 /// 버튼 높이. sm 36 · md 48 · lg 52(앱 주요 버튼은 lg).
 /// md 는 터치 최소 `BaraedaSpacing.tapMin` 까지 키웠다(디자인 킷은 44, F07-10).
-/// sm 은 조밀 배치용이라 그보다 작다.
+/// sm 은 조밀 배치용이라 보이는 크기만 36 이고, **누르는 영역은 48×48 이상**이다.
 enum BaraedaButtonSize { sm, md, lg }
 
 /// 바래다 기본 버튼.
@@ -81,7 +81,7 @@ class BaraedaButton extends StatelessWidget {
     );
 
     // 버튼 역할과 활성 여부를 낭독기에 싣는다. 라벨은 자식 Text 가 읽는다(F07-10).
-    return Semantics(
+    final button = Semantics(
       button: true,
       enabled: !_disabled,
       child: Opacity(
@@ -111,6 +111,26 @@ class BaraedaButton extends StatelessWidget {
               child: Center(child: content),
             ),
           ),
+        ),
+      ),
+    );
+
+    // 보이는 크기가 터치 최소보다 작으면(sm 36) 누르는 영역만 48 로 넓힌다(Ruling 404).
+    // 영역이 레이아웃 박스 안이라 이웃 버튼과 겹치지 않는다. 낭독 노드는 위 Semantics 하나만 둔다.
+    if (metrics.height >= BaraedaSpacing.tapMin) return button;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      excludeFromSemantics: true,
+      onTap: _disabled ? null : onPressed,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(
+          minWidth: BaraedaSpacing.tapMin,
+          minHeight: BaraedaSpacing.tapMin,
+        ),
+        child: Center(
+          widthFactor: block ? null : 1,
+          heightFactor: 1,
+          child: button,
         ),
       ),
     );
