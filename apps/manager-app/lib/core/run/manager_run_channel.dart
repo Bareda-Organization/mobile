@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/auth/account_session.dart';
-import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/core/constants/api_constants.dart';
 import 'package:manager_app/features/drive_mode/presentation/drive_mode_providers.dart';
 import 'package:manager_app/features/emergency/presentation/emergency_providers.dart';
@@ -199,13 +198,7 @@ class ManagerRunChannelController extends StateNotifier<ManagerChannelStatus> {
   /// 토큰으로 다시 거부되므로 클라이언트도 멈춘다.
   void _onSessionExpired() {
     _client.disconnect();
-    applyRoleAndStatus(
-      _ref.read(unsupportedRoleProvider.notifier),
-      _ref.read(currentUserRoleProvider.notifier),
-      _ref.read(currentAccountStatusProvider.notifier),
-      role: null,
-      status: null,
-    );
+    endSessionAsExpired(_ref);
   }
 
   void _onEnvelope(WebSocketEnvelope envelope) {

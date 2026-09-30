@@ -31,6 +31,24 @@ final StateProvider<bool> unsupportedRoleProvider = StateProvider<bool>(
   (ref) => false,
 );
 
+/// 세션이 만료돼(재발급 거절) 로그인 화면으로 돌아왔을 때 그 화면이 보여 줄 안내 — 처음 열었거나 직접 로그아웃했으면
+/// `null` 이다. 로그인에 성공하면 로그인 화면이 비운다(R46).
+final StateProvider<String?> sessionExpiredNoticeProvider =
+    StateProvider<String?>((ref) => null);
+
+/// 재발급이 거절돼 로그인이 풀렸다 — REST·WS 두 경로가 같은 처리를 한다. 안내를 남기고 역할을 비운다(R46).
+void endSessionAsExpired(Ref ref) {
+  ref.read(sessionExpiredNoticeProvider.notifier).state =
+      '로그인이 만료됐습니다. 다시 로그인해 주세요';
+  applyRoleAndStatus(
+    ref.read(unsupportedRoleProvider.notifier),
+    ref.read(currentUserRoleProvider.notifier),
+    ref.read(currentAccountStatusProvider.notifier),
+    role: null,
+    status: null,
+  );
+}
+
 /// 앱 시작 시 저장된 refresh 토큰으로 자동 로그인을 시도한다(UF-X-03 분기
 /// "앱 재실행"). refresh 토큰이 없으면 즉시 로그아웃 상태로 끝난다 —
 /// `/me` 를 부르지 않는다(빈 토큰으로 호출해 401 을 만들 이유가 없다).
@@ -170,22 +188,14 @@ class RouterRefreshNotifier extends ChangeNotifier {
     _sessionExpiredSubscription = _ref
         .read(webSocketClientProvider)
         .sessionExpired
-        .listen((_) => _clearSession());
+        .listen((_) => endSessionAsExpired(_ref));
     // K-01 — REST 재발급이 401 로 거절돼도 같은 처리다(`ApiClient.sessionExpired`).
     // 이 구독이 없으면 토큰만 지워지고 화면은 로그인된 채 오류 띠만 반복한다(F05-07).
     _restSessionExpiredSubscription = _ref
         .read(apiClientProvider)
         .sessionExpired
-        .listen((_) => _clearSession());
+        .listen((_) => endSessionAsExpired(_ref));
   }
-
-  void _clearSession() => applyRoleAndStatus(
-    _ref.read(unsupportedRoleProvider.notifier),
-    _ref.read(currentUserRoleProvider.notifier),
-    _ref.read(currentAccountStatusProvider.notifier),
-    role: null,
-    status: null,
-  );
 
   final Ref _ref;
   late final ProviderSubscription<UserRole?> _roleSub;
