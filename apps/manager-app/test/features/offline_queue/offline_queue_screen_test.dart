@@ -4,10 +4,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:manager_app/app/di.dart';
+import 'package:manager_app/core/run/run_enums.dart';
+import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/features/offline_queue/data/models/pending_request_summary.dart';
 import 'package:manager_app/features/offline_queue/domain/offline_queue_repository.dart';
 import 'package:manager_app/features/offline_queue/domain/send_outcome.dart';
+import 'package:manager_app/features/offline_queue/presentation/offline_queue_providers.dart';
 import 'package:manager_app/features/offline_queue/presentation/offline_queue_screen.dart';
+import 'package:manager_app/features/roster/data/models/roster_response.dart';
+import 'package:manager_app/features/roster/presentation/roster_providers.dart';
 
 /// 테스트 전용 대역 — 이 화면은 `sendOrQueue` 를 직접 부르지 않으므로(즉시
 /// 전송·재생 경로는 각 기능 화면에서 이미 검증됨) 여기서는 미구현으로 두고,
@@ -79,6 +84,39 @@ Widget _wrap(Widget child, List<Override> overrides) {
     child: MaterialApp(home: child),
   );
 }
+
+RosterResponse _rosterOf(String runId) => RosterResponse(
+  runId: runId,
+  busNo: '3호차',
+  direction: RunDirection.toAcademy,
+  counts: const RosterCounts(boarded: 0, waiting: 1, noShow: 0, absentN: 0),
+  stops: [
+    const RosterStop(
+      stopId: 'stop-1',
+      seq: 1,
+      name: '정류장1',
+      students: [
+        RosterStudent(
+          riderId: 'rider-1',
+          studentId: 'student-1',
+          name: '김철수',
+          photoUrl: null,
+          guardianPhone: null,
+          canGoAlone: false,
+          status: RiderStatus.waiting,
+        ),
+      ],
+    ),
+  ],
+);
+
+PendingRequestSummary _riderRequest() => PendingRequestSummary(
+  id: 1,
+  endpoint: '/runs/run-1/riders/rider-1',
+  method: 'PATCH',
+  payload: '{"status":"no_show","client_key":"K"}',
+  createdAt: DateTime(2026, 9, 12, 10),
+);
 
 void main() {
   testWidgets('대기 중인 요청이 없으면 빈 상태를 보여준다', (tester) async {
@@ -272,5 +310,47 @@ void main() {
       find.widgetWithText(BaraedaButton, '재시도'),
     );
     expect(button.onPressed, isNotNull);
+  });
+
+  // M2-03(F06-15 나머지) — 페이로드에 이름이 없어 명단 캐시에서 찾는다. 못 찾으면 지금 표기 그대로다.
+  testWidgets('받아 둔 명단에 그 학생이 있으면 행에 학생 이름을 함께 보여준다', (tester) async {
+    await tester.pumpWidget(
+      _wrap(const OfflineQueueScreen(), [
+        offlineQueueRepositoryProvider.overrideWithValue(
+          _FakeOfflineQueueRepository(pending: [_riderRequest()]),
+        ),
+        selectedRunIdProvider.overrideWith((ref) => 'run-1'),
+        rosterProvider.overrideWith((ref) async => _rosterOf('run-1')),
+      ]),
+    );
+    // 홈·명단 화면이 이미 받아 둔 캐시를 흉내 낸다.
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(OfflineQueueScreen)),
+    );
+    await container.read(rosterProvider.future);
+    container.invalidate(pendingRequestsProvider);
+    await tester.pumpAndSettle();
+
+    expect(find.text('미승차 처리 · 김철수'), findsOneWidget);
+  });
+
+  testWidgets('받아 둔 명단이 다른 회차면 이름 없이 지금 표기 그대로 보여준다', (tester) async {
+    await tester.pumpWidget(
+      _wrap(const OfflineQueueScreen(), [
+        offlineQueueRepositoryProvider.overrideWithValue(
+          _FakeOfflineQueueRepository(pending: [_riderRequest()]),
+        ),
+        selectedRunIdProvider.overrideWith((ref) => 'run-2'),
+        rosterProvider.overrideWith((ref) async => _rosterOf('run-2')),
+      ]),
+    );
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(OfflineQueueScreen)),
+    );
+    await container.read(rosterProvider.future);
+    container.invalidate(pendingRequestsProvider);
+    await tester.pumpAndSettle();
+
+    expect(find.text('미승차 처리'), findsOneWidget);
   });
 }

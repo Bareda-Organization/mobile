@@ -9,6 +9,7 @@ import 'package:manager_app/core/network/failure_messages.dart';
 import 'package:manager_app/core/ui/confirm_dialog.dart';
 import 'package:manager_app/features/offline_queue/data/models/pending_request_summary.dart';
 import 'package:manager_app/features/offline_queue/presentation/offline_queue_providers.dart';
+import 'package:manager_app/features/roster/presentation/roster_providers.dart';
 
 /// OfflineQueueScreen — 오프라인 큐 조회·수동 재전송 (API_SPEC §1.7, M-06,
 /// UF-E-07).
@@ -134,13 +135,35 @@ class _OfflineQueueScreenState extends ConsumerState<OfflineQueueScreen> {
     );
   }
 
+  /// 처리 이름에 학생 이름을 덧붙인다(M2-03) — 페이로드에 이름이 없어, 이미 받아 둔 명단(홈·명단 화면이 채운
+  /// 캐시)에서 같은 회차·같은 승차 기록을 찾는다. 명단을 새로 받지 않고(오프라인일 수 있다), 못 찾으면 이름 없이 둔다.
+  String _titleOf(PendingRequestSummary item) {
+    final match = RegExp(r'^/runs/([^/]+)/riders/([^/]+)$').firstMatch(
+      item.endpoint,
+    );
+    if (match == null || !ref.exists(rosterProvider)) return item.description;
+    final roster = ref.read(rosterProvider).value;
+    if (roster == null || roster.runId != match[1]) return item.description;
+    for (final stop in roster.stops) {
+      for (final student in stop.students) {
+        if (student.riderId == match[2]) {
+          return '${item.description} · ${student.name}';
+        }
+      }
+    }
+    return item.description;
+  }
+
   Widget _buildListItem(PendingRequestSummary item) {
     return BaraedaCard(
       accent: BaraedaStatus.missed,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(item.description, style: Theme.of(context).textTheme.titleSmall),
+          Text(
+            _titleOf(item),
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
           const SizedBox(height: 4),
           Text(DateFormat('MM/dd HH:mm:ss').format(item.createdAt.toLocal())),
           const SizedBox(height: 4),
