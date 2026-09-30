@@ -143,6 +143,7 @@ void main() {
       endpoint: '/runs/1/riders/$riderId',
       method: 'PATCH',
       payload: {'status': status, 'client_key': key},
+      // `Failure` 는 Exception/Error 를 상속하지 않는다(위 시험과 같은 패턴).
       // ignore: only_throw_errors
       send: () => throw const Failure.network(),
     );
