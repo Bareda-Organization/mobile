@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('WsEventType.fromWireValueOrNull', () {
-    test('8개 이벤트 전부 원문 값으로 매칭된다', () {
+    test('9개 이벤트 전부 원문 값으로 매칭된다', () {
       expect(
         WsEventType.fromWireValueOrNull('position'),
         WsEventType.position,
