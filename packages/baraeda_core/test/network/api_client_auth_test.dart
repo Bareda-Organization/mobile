@@ -61,7 +61,6 @@ class _FakeSecureStoragePlatform
   }) async => const SecureStorageUpgradeStatus(
     state: SecureStorageUpgradeState.ok,
   );
-
 }
 
 /// 응답을 경로별로 미리 정해 둔 순서대로 돌려주는 가짜 dio 어댑터.
@@ -339,4 +338,160 @@ void main() {
       client.dispose();
     },
   );
+  // --- F07-01 · F07-02 · F07-05 · F07-07 (2026-09-30 전체 검사) ---
+
+  Map<String, dynamic> refreshOk() => {
+    'success': true,
+    'data': {'access_token': 'new-access', 'refresh_token': 'new-refresh'},
+    'message': null,
+  };
+
+  test(
+    '재발급에 성공한 뒤 재시도가 업무 오류(409)로 끝나면 새 토큰을 지키고 그 409 를 그대로 던진다',
+    () async {
+      // F07-01 — 예전 코드는 재시도가 어떤 DioException 으로 끝나도 저장소를 통째로
+      // 비우고 재시도의 진짜 오류 대신 옛 401 을 돌려줬다.
+      final storage = tokenStorage();
+      await storage.saveTokens(accessToken: 'expired', refreshToken: 'r1');
+      final adapter = _ScriptedAdapter({
+        '/runs/1/arrive': [
+          () => _json(401, {
+            'error': {'code': 'TOKEN_EXPIRED', 'message': '만료'},
+          }),
+          () => _json(409, {
+            'error': {'code': 'DUPLICATE_ARRIVE', 'message': '이미 도착 처리'},
+          }),
+        ],
+        '/auth/refresh': [() => _json(200, refreshOk())],
+      });
+      final client = _clientWith(storage, adapter);
+      var sessionExpiredCount = 0;
+      final sub = client.sessionExpired.listen((_) => sessionExpiredCount += 1);
+
+      final error = await client.dio
+          .post<dynamic>('/runs/1/arrive')
+          .then<DioException?>((_) => null)
+          .catchError((Object e) => e as DioException);
+
+      expect(error?.response?.statusCode, 409);
+      expect(await storage.readAccessToken(), 'new-access');
+      expect(await storage.readRefreshToken(), 'new-refresh');
+      await Future<void>.delayed(Duration.zero);
+      expect(sessionExpiredCount, 0);
+      await sub.cancel();
+      client.dispose();
+    },
+  );
+
+  test(
+    '재발급 요청이 네트워크 오류로 실패하면 토큰을 지우지 않고 그 네트워크 오류를 던진다',
+    () async {
+      // F07-02 — 일시 장애를 로그아웃으로 옮기지 않는다.
+      final storage = tokenStorage();
+      await storage.saveTokens(accessToken: 'expired', refreshToken: 'r1');
+      final adapter = _ScriptedAdapter({
+        '/students/1': [
+          () => _json(401, {
+            'error': {'code': 'TOKEN_EXPIRED', 'message': '만료'},
+          }),
+        ],
+        '/auth/refresh': [
+          () => throw DioException.connectionError(
+            requestOptions: RequestOptions(path: '/auth/refresh'),
+            reason: '연결 끊김',
+          ),
+        ],
+      });
+      final client = _clientWith(storage, adapter);
+      var sessionExpiredCount = 0;
+      final sub = client.sessionExpired.listen((_) => sessionExpiredCount += 1);
+
+      final error = await client.dio
+          .get<dynamic>('/students/1')
+          .then<DioException?>((_) => null)
+          .catchError((Object e) => e as DioException);
+
+      expect(error?.type, DioExceptionType.connectionError);
+      expect(await storage.readAccessToken(), 'expired');
+      expect(await storage.readRefreshToken(), 'r1');
+      await Future<void>.delayed(Duration.zero);
+      expect(sessionExpiredCount, 0);
+      await sub.cancel();
+      client.dispose();
+    },
+  );
+
+  test(
+    '재발급을 서버가 401 로 거절하면 sessionExpired 로 한 번 알린다 — REST 에도 재로그인 신호가 있다',
+    () async {
+      // F07-07 — 예전엔 WS 쪽에만 만료 신호가 있어 REST 만 쓰는 화면은 토큰이 지워져도
+      // 요청마다 401 띠만 반복했다.
+      final storage = tokenStorage();
+      await storage.saveTokens(accessToken: 'expired', refreshToken: 'dead');
+      final adapter = _ScriptedAdapter({
+        '/students/1': [
+          () => _json(401, {
+            'error': {'code': 'TOKEN_EXPIRED', 'message': '만료'},
+          }),
+        ],
+        '/auth/refresh': [
+          () => _json(401, {
+            'error': {'code': 'TOKEN_EXPIRED', 'message': 'refresh 무효'},
+          }),
+        ],
+      });
+      final client = _clientWith(storage, adapter);
+      var sessionExpiredCount = 0;
+      final sub = client.sessionExpired.listen((_) => sessionExpiredCount += 1);
+
+      await expectLater(
+        client.dio.get<dynamic>('/students/1'),
+        throwsA(isA<DioException>()),
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      expect(sessionExpiredCount, 1);
+      await sub.cancel();
+      client.dispose();
+    },
+  );
+
+  test('저장된 토큰이 없는 로그인 실패(401)는 sessionExpired 를 울리지 않는다', () async {
+    final storage = tokenStorage();
+    final adapter = _ScriptedAdapter({
+      '/auth/login': [
+        () => _json(401, {
+          'error': {'code': 'INVALID_CREDENTIALS', 'message': '불일치'},
+        }),
+      ],
+    });
+    final client = _clientWith(storage, adapter);
+    var sessionExpiredCount = 0;
+    final sub = client.sessionExpired.listen((_) => sessionExpiredCount += 1);
+
+    await expectLater(
+      client.dio.post<dynamic>('/auth/login'),
+      throwsA(isA<DioException>()),
+    );
+    await Future<void>.delayed(Duration.zero);
+
+    expect(sessionExpiredCount, 0);
+    await sub.cancel();
+    client.dispose();
+  });
+
+  test('기본 dio 와 재발급 dio 는 연결·송신·수신 제한 시간을 갖는다', () {
+    // F07-05 — dio 5 의 기본은 제한 없음이다. 재발급 하나가 멈추면 합류한 모든 요청이
+    // 같이 멈춘다.
+    final client = ApiClient(
+      tokenStorage: tokenStorage(),
+      baseUrl: 'https://api.test',
+    );
+    for (final dio in [client.dio, client.refreshDio]) {
+      expect(dio.options.connectTimeout, isNotNull);
+      expect(dio.options.sendTimeout, isNotNull);
+      expect(dio.options.receiveTimeout, isNotNull);
+    }
+    client.dispose();
+  });
 }

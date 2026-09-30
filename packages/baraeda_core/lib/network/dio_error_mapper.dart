@@ -29,6 +29,11 @@ Failure _mapBadResponse(DioException exception) {
   // API_SPEC §1.10 — { "error": { "code", "message", "details" } }
   if (body is Map<String, dynamic> && body['error'] is Map<String, dynamic>) {
     final error = body['error'] as Map<String, dynamic>;
+    // API_SPEC §8 — 재발급까지 실패해 재로그인이 필요한 401. 로그인 실패(`INVALID_CREDENTIALS`)
+    // 같은 다른 401 은 업무 오류로 남긴다.
+    if (statusCode == 401 && error['code'] == 'TOKEN_EXPIRED') {
+      return const Failure.unauthenticated();
+    }
     return Failure.api(
       statusCode: statusCode ?? 0,
       code: error['code'] as String? ?? 'UNKNOWN',
