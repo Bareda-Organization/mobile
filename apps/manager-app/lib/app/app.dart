@@ -34,6 +34,32 @@ class BaraedaManagerApp extends ConsumerWidget {
       );
     }
 
+    if (bootstrap.hasError) {
+      return MaterialApp(
+        title: '바래다 매니저',
+        debugShowCheckedModeBanner: false,
+        theme: BaraedaTheme.dark(),
+        home: Scaffold(
+          body: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(BaraedaSpacing.gutterMobile),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('네트워크 상태를 확인해 주세요'),
+                  const SizedBox(height: BaraedaSpacing.space4),
+                  BaraedaButton(
+                    label: '다시 시도',
+                    onPressed: () => ref.invalidate(authBootstrapProvider),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
     final router = ref.watch(routerProvider);
     // 로그인 이후 트리 전체를 감싼다 — 오프라인 큐 재생은 어느 화면에 있든
     // 돌아야 한다(M-06 "복구 시 자동 동기화"). 로딩 분기에는 붙이지 않는다:
