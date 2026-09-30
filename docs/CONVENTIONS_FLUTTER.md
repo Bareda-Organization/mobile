@@ -100,6 +100,12 @@ Container(color: const Color(0xFF1F5C4D))
 **상태 색 매핑은 한 곳에서만 정함** — `boarded` 그린 · `moving` 앰버 · `missed` 레드 · `idle` 스톤.
 세 제품이 같은 상태에 같은 색을 쓰는 것이 디자인 시스템의 1번 원칙이라, 화면에서 색을 직접 고르지 않음.
 
+### 경계선·터치 크기·대화상자는 공용판으로 (`Ruling 403~405`)
+
+- **조작 요소(입력칸·스위치·보조 버튼·선택 칩)의 경계선은 `borderControl`**(인접 면과 3:1 이상). 카드 외곽선·타임라인 점 같은 장식 구분선만 `borderDefault`
+- **`BaraedaButton.sm` 은 보이는 크기 36 · 누르는 영역 48×48**. 이웃과 겹치지 않게 영역이 레이아웃 박스 안에 있다(세로 12 커짐). 더 작은 누르는 영역을 앱에서 새로 만들지 않음
+- **확인 대화상자는 `showBaraedaConfirmDialog`, 바닥 시트는 `showBaraedaBottomSheet`.** Material `AlertDialog`·`showModalBottomSheet`·`IconButton` 을 앱에서 직접 쓰지 않음 — 공용판이 본문 스크롤·뒤로가기·낭독 배경 차단·Material 조상을 이미 처리. 앱이 쓰지 않는 공용 위젯은 패키지에 두지 않음(낡으면 결함이 잠복)
+
 ### 다크는 매니저 앱의 기본값
 
 매니저 앱은 `ThemeMode.dark` 고정. 학부모 앱은 라이트 기본이며 `ThemeMode.system` 미사용
