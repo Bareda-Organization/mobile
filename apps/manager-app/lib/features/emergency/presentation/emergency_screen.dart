@@ -1,9 +1,13 @@
+import 'dart:async';
+
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:manager_app/app/di.dart';
+import 'package:manager_app/core/auth/auth_providers.dart';
+import 'package:manager_app/core/launcher/device_launchers.dart';
 import 'package:manager_app/core/network/failure_messages.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/core/ui/limited_text_controller.dart';
@@ -188,6 +192,13 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
             const SizedBox(height: 12),
           ],
           if (_queueNotice != null) ...[
+            // 비상이 서버에 닿지 못했다 — 아무에게도 안 갔으니 사람에게 직접 알려야 한다(R46).
+            AlertBanner(
+              tone: AlertTone.missed,
+              body: '전송 안 됨 — 학원에 전화하세요',
+              action: _buildCallAcademyButton(),
+            ),
+            const SizedBox(height: 12),
             AlertBanner(tone: AlertTone.moving, body: _queueNotice),
             const SizedBox(height: 12),
           ],
@@ -337,6 +348,20 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
       return (byName == null || byName.isEmpty) ? '확인됨' : '$byName 님이 확인함';
     }
     return '확인 대기 중';
+  }
+
+  /// 학원 대표 연락처로 전화를 건다 — 번호를 모르면(학원이 등록하지 않음) 버튼 없이 안내 문구만 남긴다.
+  Widget? _buildCallAcademyButton() {
+    final contact = ref.watch(academyContactProvider);
+    if (contact == null || contact.trim().isEmpty) return null;
+    return BaraedaButton(
+      label: '학원에 전화',
+      size: BaraedaButtonSize.sm,
+      variant: BaraedaButtonVariant.danger,
+      onPressed: () => unawaited(
+        ref.read(uriOpenerProvider)(Uri(scheme: 'tel', path: contact.trim())),
+      ),
+    );
   }
 
   Widget _buildCancelButton(String runId, String emergencyId) {

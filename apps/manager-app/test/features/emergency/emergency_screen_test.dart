@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:manager_app/app/di.dart';
+import 'package:manager_app/core/auth/auth_providers.dart';
+import 'package:manager_app/core/launcher/device_launchers.dart';
 import 'package:manager_app/core/location/position_source.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/features/emergency/data/models/emergency_item.dart';
@@ -494,6 +496,53 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('처리되지 않았습니다 · 대기 중'), findsOneWidget);
+  });
+
+  testWidgets('비상이 큐에 쌓이면 학원에 전화하라고 알리고 [학원에 전화]가 학원 번호를 tel: 로 연다 (R46)', (
+    tester,
+  ) async {
+    final fakeRepo = _FakeEmergencyRepository(
+      raiseOutcome: const Queued<EmergencyRaiseResult>(),
+      list: const EmergencyListResponse(items: []),
+    );
+    final opened = <Uri>[];
+
+    await tester.pumpWidget(
+      _wrap(const EmergencyScreen(), [
+        ...overridesFor(fakeRepo: fakeRepo),
+        academyContactProvider.overrideWith((ref) => '02-555-0101'),
+        uriOpenerProvider.overrideWithValue((uri) async {
+          opened.add(uri);
+          return true;
+        }),
+      ]),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('비상 알림 보내기'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('전송 안 됨 — 학원에 전화하세요'), findsOneWidget);
+    await tester.tap(find.text('학원에 전화'));
+    await tester.pump();
+
+    expect(opened, [Uri(scheme: 'tel', path: '02-555-0101')]);
+  });
+
+  testWidgets('학원 번호를 모르면 전화 안내 문구만 보이고 전화 버튼은 없다 (R46)', (tester) async {
+    final fakeRepo = _FakeEmergencyRepository(
+      raiseOutcome: const Queued<EmergencyRaiseResult>(),
+      list: const EmergencyListResponse(items: []),
+    );
+
+    await tester.pumpWidget(
+      _wrap(const EmergencyScreen(), overridesFor(fakeRepo: fakeRepo)),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('비상 알림 보내기'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('전송 안 됨 — 학원에 전화하세요'), findsOneWidget);
+    expect(find.text('학원에 전화'), findsNothing);
   });
 
   testWidgets('발신이 서버 거절(403 FORBIDDEN)로 실패하면 단일 사유를 보여준다', (tester) async {
