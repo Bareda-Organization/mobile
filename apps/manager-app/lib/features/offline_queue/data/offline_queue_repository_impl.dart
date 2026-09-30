@@ -74,18 +74,43 @@ class OfflineQueueRepositoryImpl implements OfflineQueueRepository {
     required String endpoint,
     required String method,
     required Map<String, dynamic> payload,
-  }) => _database
-      .into(_database.pendingRequests)
-      .insert(
-        PendingRequestsCompanion.insert(
-          endpoint: endpoint,
-          // `method` 컬럼에 기본값(`PATCH`)이 있어 생성된 `.insert()` 는 이
-          // 필드를 `Value<String>` 로 받는다 — 기본값이 없는 다른 컬럼과
-          // 달리 명시적으로 감싸야 한다.
-          method: Value(method),
-          payload: jsonEncode(payload),
-        ),
-      );
+  }) async {
+    if (await _isDuplicate(endpoint, method, payload)) return;
+    await _database
+        .into(_database.pendingRequests)
+        .insert(
+          PendingRequestsCompanion.insert(
+            endpoint: endpoint,
+            // `method` 컬럼에 기본값(`PATCH`)이 있어 생성된 `.insert()` 는 이
+            // 필드를 `Value<String>` 로 받는다 — 기본값이 없는 다른 컬럼과
+            // 달리 명시적으로 감싸야 한다.
+            method: Value(method),
+            payload: jsonEncode(payload),
+          ),
+        );
+  }
+
+  /// 같은 학생(같은 [endpoint])에게 같은 승하차 `status` 가 이미 기다리고 있으면 중복이다(R46) — 두 번 눌러도
+  /// 재생 때 같은 처리가 두 번 나가지 않게 한다. `status` 가 없는 요청(비상 발신은 "상황 변화마다 재발신이
+  /// 정상", §4.14)은 중복으로 보지 않는다.
+  Future<bool> _isDuplicate(
+    String endpoint,
+    String method,
+    Map<String, dynamic> payload,
+  ) async {
+    final status = payload['status'];
+    if (status == null) return false;
+    // `where` 를 두 번 부르면 AND 로 묶인다.
+    final rows =
+        await (_database.select(_database.pendingRequests)
+              ..where((t) => t.endpoint.equals(endpoint))
+              ..where((t) => t.method.equals(method)))
+            .get();
+    return rows.any((row) {
+      final body = jsonDecode(row.payload);
+      return body is Map<String, dynamic> && body['status'] == status;
+    });
+  }
 
   @override
   Future<List<PendingRequestSummary>> fetchPending() async {

@@ -125,6 +125,48 @@ void main() {
     await database.close();
   });
 
+  // R46 — 같은 학생에게 같은 승하차 처리를 두 번 누르면 큐에 두 줄이 쌓여 재생 때 같은 처리가 두 번 나간다.
+  test('같은 학생·같은 승하차 처리는 큐에 한 번만 쌓는다', () async {
+    final database = OfflineQueueDatabase.forTesting(NativeDatabase.memory());
+    final dio = Dio(BaseOptions(baseUrl: 'https://example.invalid'))
+      ..httpClientAdapter = _OfflineAdapter();
+    final repository = OfflineQueueRepositoryImpl(
+      database: database,
+      dio: dio,
+    );
+
+    Future<SendOutcome<void>> press(
+      String riderId,
+      String status,
+      String key,
+    ) => repository.sendOrQueue<void>(
+      endpoint: '/runs/1/riders/$riderId',
+      method: 'PATCH',
+      payload: {'status': status, 'client_key': key},
+      // ignore: only_throw_errors
+      send: () => throw const Failure.network(),
+    );
+
+    expect(await press('7', 'boarded', 'k1'), isA<Queued<void>>());
+    expect(await press('7', 'boarded', 'k2'), isA<Queued<void>>());
+    await press('7', 'no_show', 'k3');
+    await press('8', 'boarded', 'k4');
+
+    final pending = await repository.fetchPending();
+    expect(pending.map((row) => '${row.endpoint} ${row.payload}').toList(), [
+      contains('/runs/1/riders/7'),
+      contains('/runs/1/riders/7'),
+      contains('/runs/1/riders/8'),
+    ]);
+    expect(
+      pending.map((row) => row.description).toList(),
+      ['탑승 처리', '미승차 처리', '탑승 처리'],
+      reason: '같은 학생의 다른 처리·다른 학생의 같은 처리는 각각 쌓인다',
+    );
+
+    await database.close();
+  });
+
   // M-06 "복구 시 자동 동기화" — 통신이 돌아온 것을 알리는 가장 이른 신호는
   // **쓰기 요청 한 건이 성공한 순간**이다. 그때 큐를 먼저 흘려보내지 않으면
   // 같은 학생의 옛 처리가 새 처리보다 **뒤에** 서버에 닿아 상태를 되돌린다

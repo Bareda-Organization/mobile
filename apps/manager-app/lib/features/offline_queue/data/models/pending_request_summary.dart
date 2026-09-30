@@ -24,6 +24,13 @@ class PendingRequestSummary {
   final String payload;
   final DateTime createdAt;
 
+  /// 승하차 처리(`/runs/{runId}/riders/{riderId}`)면 그 학생의 rider id, 아니면 `null` — 명단 행이 "전송 대기"
+  /// 로 바뀌는 근거다(R46).
+  String? get riderId {
+    if (!endpoint.contains('/riders/')) return null;
+    return endpoint.split('/riders/').last.split('/').first;
+  }
+
   /// 사람이 알아볼 수 있는 이름 — `PATCH /runs/…/riders/…` 같은 내부 표기를 화면에 내지 않는다(F06-15).
   String get description {
     final body = _decodeBody();

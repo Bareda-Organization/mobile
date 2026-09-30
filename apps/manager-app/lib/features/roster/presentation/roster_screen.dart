@@ -16,6 +16,7 @@ import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/core/ui/confirm_dialog.dart';
 import 'package:manager_app/features/emergency/presentation/widgets/emergency_button.dart';
 import 'package:manager_app/features/offline_queue/domain/send_outcome.dart';
+import 'package:manager_app/features/offline_queue/presentation/offline_queue_providers.dart';
 import 'package:manager_app/features/roster/data/models/boarding_update_request.dart';
 import 'package:manager_app/features/roster/data/models/no_show_contact_request.dart';
 import 'package:manager_app/features/roster/data/models/roster_response.dart';
@@ -44,18 +45,9 @@ class RosterScreen extends ConsumerStatefulWidget {
 }
 
 class _RosterScreenState extends ConsumerState<RosterScreen> {
-  String? _pendingRiderId;
+  /// 응답을 기다리는 학생들 — 한 명이 아니라 집합이다. 여러 학생을 연달아 눌러도 앞 학생의 잠금이 풀리지 않는다(R46).
+  final Set<String> _pendingRiderIds = {};
   String? _errorMessage;
-
-  /// §1.7 M-06 — 통신 두절로 큐에 쌓인 승하차 처리를 알리는 문구
-  /// ("처리되지 않았습니다 · 대기 중"). §1.9 는 성공을 미리 보여주는 것을
-  /// 금지할 뿐이라, 실패(`_errorMessage`, `AlertTone.missed`)와는 다른
-  /// 어조로 따로 보여준다 — 대기 중은 실패가 아니다. `AlertTone.info` 는
-  /// 쓰지 않는다 — baraeda_ui 의 아이콘 매핑표(icon.dart)에 'info' 글리프가
-  /// 없어 디버그 모드에서 단언 실패로 렌더링이 죽는다(run_end_screen.dart
-  /// 도 같은 이유로 우회함 — baraeda_ui 는 이번 라운드 범위 밖). 이 화면
-  /// 위쪽의 "변경 목록 확인" 안내와 같은 `AlertTone.moving` 을 재사용한다.
-  String? _queueNotice;
 
   /// 그 학생의 미승차 대기가 끝나는 시각 — 명단 응답의 `no_show_case.expires_at` 이다. 서버가
   /// 학원 설정(A-17, 기본 3분)으로 계산해 주므로 앱에 대기 시간 상수를 두지 않는다(R32 M12).
@@ -105,9 +97,8 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
     required RiderStatus status,
   }) async {
     setState(() {
-      _pendingRiderId = riderId;
+      _pendingRiderIds.add(riderId);
       _errorMessage = null;
-      _queueNotice = null;
     });
     try {
       // 즉시 전송과 재생(큐 재시도) 양쪽이 같은 client_key 를 쓰도록 여기서
@@ -128,11 +119,13 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
       if (!mounted) return;
       switch (outcome) {
         case Sent():
-          ref.invalidate(rosterProvider);
+          ref
+            ..invalidate(rosterProvider)
+            ..invalidate(pendingRequestsProvider);
         case Queued():
           // 서버에 아직 반영되지 않았으니 명단을 다시 불러오지 않는다 —
-          // §1.9 낙관적 표시 금지와 같은 이유.
-          setState(() => _queueNotice = '처리되지 않았습니다 · 대기 중');
+          // §1.9 낙관적 표시 금지와 같은 이유. 대기 안내·행 표시는 큐 목록에서 그린다(R46).
+          ref.invalidate(pendingRequestsProvider);
       }
     } on Failure catch (failure) {
       if (!mounted) return;
@@ -143,7 +136,7 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
         ref.invalidate(rosterProvider);
       }
     } finally {
-      if (mounted) setState(() => _pendingRiderId = null);
+      if (mounted) setState(() => _pendingRiderIds.remove(riderId));
     }
   }
 
@@ -154,7 +147,7 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
     // 요청 중에 화면이 닫혀도 명단은 갱신해야 한다 — 닫힌 화면의 `ref` 는 쓸 수 없어 컨테이너를 쥔다(F06-16).
     final container = ProviderScope.containerOf(context);
     setState(() {
-      _pendingRiderId = riderId;
+      _pendingRiderIds.add(riderId);
       _errorMessage = null;
     });
     try {
@@ -166,7 +159,7 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
       if (!mounted) return;
       setState(() => _errorMessage = describeFailure(failure));
     } finally {
-      if (mounted) setState(() => _pendingRiderId = null);
+      if (mounted) setState(() => _pendingRiderIds.remove(riderId));
     }
   }
 
@@ -185,7 +178,7 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
     if (request == null || !mounted) return;
     final container = ProviderScope.containerOf(context);
     setState(() {
-      _pendingRiderId = riderId;
+      _pendingRiderIds.add(riderId);
       _errorMessage = null;
     });
     try {
@@ -205,7 +198,7 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
       if (!mounted) return;
       setState(() => _errorMessage = describeFailure(failure));
     } finally {
-      if (mounted) setState(() => _pendingRiderId = null);
+      if (mounted) setState(() => _pendingRiderIds.remove(riderId));
     }
   }
 
@@ -218,6 +211,7 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
     //  · 노선 지도(M-09)는 기사 전용이라 기사가 들어오는 운행 화면에 있다 — 여기에는 두지 않는다(R32 M14)
     // 2026-09-21 까지 이 두 배선이 부재해 화면이 만들어져 있어도 도달할 수 없었다.
     final caps = ref.watch(roleCapabilitiesProvider);
+    final queuedCount = ref.watch(pendingRequestsProvider).value?.length ?? 0;
     return Scaffold(
       appBar: AppBar(
         title: const Text('승하차 명단'),
@@ -230,6 +224,7 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
       body: Column(
         children: [
           _ActionsBar(
+            queuedCount: queuedCount,
             // 예외 보고(M-14, R32 M3) — 보호자 부재·도로 통제 등. 기사는 운행 화면의 종료 보고서로,
             // 동승자는 여기서 보고한다.
             onExceptionReport: () => context.push(AppRoutes.runEnd),
@@ -302,6 +297,10 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
   ) {
     final photoHeaders = ref.watch(rosterPhotoHeadersProvider).value;
     final refreshError = ref.watch(rosterProvider).error;
+    final queuedRequests = ref.watch(pendingRequestsProvider).value ?? const [];
+    final queuedRiderIds = {
+      for (final request in queuedRequests) ?request.riderId,
+    };
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -359,8 +358,12 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
           AlertBanner(tone: AlertTone.missed, body: _errorMessage),
           const SizedBox(height: 12),
         ],
-        if (_queueNotice != null) ...[
-          AlertBanner(tone: AlertTone.moving, body: _queueNotice),
+        if (queuedRequests.isNotEmpty) ...[
+          // 큐에 쌓인 처리가 있는 동안은 다음 조작이 이 안내를 지우지 않는다 — 큐가 비면 사라진다(R46).
+          AlertBanner(
+            tone: AlertTone.moving,
+            body: '처리되지 않았습니다 · 대기 중 ${queuedRequests.length}건',
+          ),
           const SizedBox(height: 12),
         ],
         // 머리 번호는 서버 seq 가 아니라 이 목록의 순번이다 — 서버 seq 는 경유 지점 자리(§4.3)를 비운 채 와서
@@ -371,7 +374,8 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
             order: index + 1,
             photoHeaders: photoHeaders,
             canDecide: canDecide,
-            pendingRiderId: _pendingRiderId,
+            pendingRiderIds: _pendingRiderIds,
+            queuedRiderIds: queuedRiderIds,
             onBoard: (riderId) => _updateStatus(
               runId: runId,
               riderId: riderId,
@@ -411,7 +415,8 @@ class _StopSection extends StatelessWidget {
     required this.order,
     required this.photoHeaders,
     required this.canDecide,
-    required this.pendingRiderId,
+    required this.pendingRiderIds,
+    required this.queuedRiderIds,
     required this.onBoard,
     required this.onAlight,
     required this.onNoShow,
@@ -427,7 +432,12 @@ class _StopSection extends StatelessWidget {
   /// 사진 요청에 실을 인증 헤더 — 아직 못 읽었으면 `null`(Ruling 377).
   final Map<String, String>? photoHeaders;
   final bool canDecide;
-  final String? pendingRiderId;
+
+  /// 응답을 기다리는 학생들 — 행에 진행 표시를 돌리고 버튼을 잠근다.
+  final Set<String> pendingRiderIds;
+
+  /// 통신 두절로 큐에 쌓여 아직 서버에 안 간 처리가 있는 학생들 — 행을 "전송 대기" 로 바꾼다.
+  final Set<String> queuedRiderIds;
   final void Function(String riderId) onBoard;
   final void Function(String riderId) onAlight;
   final void Function(String riderId) onNoShow;
@@ -498,10 +508,15 @@ class _StopSection extends StatelessWidget {
                       label: '금일 삭제',
                       tone: BaraedaBadgeTone.removed,
                     )
+                  : queuedRiderIds.contains(student.riderId)
+                  ? const BaraedaBadge(
+                      label: '전송 대기',
+                      tone: BaraedaBadgeTone.amber,
+                    )
                   : canDecide
                   ? _StudentActions(
                       student: student,
-                      busy: pendingRiderId == student.riderId,
+                      busy: pendingRiderIds.contains(student.riderId),
                       onBoard: () => onBoard(student.riderId),
                       onAlight: () => onAlight(student.riderId),
                       onNoShow: () => onNoShow(student.riderId),
@@ -534,10 +549,14 @@ class _StopSection extends StatelessWidget {
 /// 명단 화면 본문 위 버튼 줄 — 예외 보고 · 지연 알림 · 대기열. 큰 글자에서는 다음 줄로 넘어간다.
 class _ActionsBar extends StatelessWidget {
   const _ActionsBar({
+    required this.queuedCount,
     required this.onExceptionReport,
     required this.onDelay,
     required this.onOfflineQueue,
   });
+
+  /// 큐에 쌓여 아직 서버에 안 간 처리 건수 — 있으면 [대기열] 버튼에 적는다.
+  final int queuedCount;
 
   final VoidCallback onExceptionReport;
 
@@ -573,7 +592,7 @@ class _ActionsBar extends StatelessWidget {
               ),
             if (onOfflineQueue != null)
               BaraedaButton(
-                label: '대기열',
+                label: queuedCount > 0 ? '대기열 $queuedCount건' : '대기열',
                 size: BaraedaButtonSize.sm,
                 variant: BaraedaButtonVariant.secondary,
                 onPressed: onOfflineQueue,
@@ -608,6 +627,24 @@ class _StudentActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final buttons = _buttons();
+    if (!busy) return buttons;
+    // 응답을 기다리는 동안 흐려지기만 하면 눌렸는지 알 수 없다 — 버튼 옆에 진행 표시를 돌린다(R46).
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const SizedBox(
+          width: 18,
+          height: 18,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+        const SizedBox(width: 8),
+        Flexible(child: buttons),
+      ],
+    );
+  }
+
+  Widget _buttons() {
     // BaraedaIcon 매핑 표(패키지 소유, 이번 라운드에서 건드리지 않음)에
     // "되돌리기"에 맞는 이름이 없어 아이콘 대신 텍스트 버튼을 쓴다.
     final revertButton = BaraedaButton(
