@@ -14,6 +14,7 @@ import 'package:parent_app/core/routes/domain/route_detail.dart';
 import 'package:parent_app/core/routes/presentation/route_providers.dart';
 import 'package:parent_app/core/students/presentation/selected_student.dart';
 import 'package:parent_app/core/students/presentation/student_providers.dart';
+import 'package:parent_app/core/students/presentation/student_switcher.dart';
 import 'package:parent_app/features/live_map/domain/bus_position.dart';
 import 'package:parent_app/features/live_map/domain/live_map_status.dart';
 import 'package:parent_app/features/live_map/presentation/live_map_providers.dart';
@@ -77,29 +78,14 @@ class _ParentLiveMap extends ConsumerWidget {
           );
         }
 
-        final selectedId =
-            ref.watch(selectedStudentIdProvider) ?? students.first.studentId;
+        final selectedId = watchSelectedStudentId(ref, students);
 
         return Padding(
           padding: const EdgeInsets.all(BaraedaSpacing.gutterMobile),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              if (students.length > 1) ...[
-                BaraedaSelect(
-                  label: '자녀 선택',
-                  value: selectedId,
-                  options: students
-                      .map(
-                        (s) => BaraedaSelectOption(s.studentId, label: s.name),
-                      )
-                      .toList(),
-                  onChanged: (value) =>
-                      ref.read(selectedStudentIdProvider.notifier).state =
-                          value,
-                ),
-                const SizedBox(height: BaraedaSpacing.space4),
-              ],
+              StudentSwitcher(students: students, selectedId: selectedId),
               Expanded(child: _LiveMapBody(studentId: selectedId)),
               const SizedBox(height: BaraedaSpacing.space4),
               const _RouteDetailButton(),

@@ -14,6 +14,7 @@ import 'package:parent_app/core/routes/domain/route_detail.dart';
 import 'package:parent_app/core/routes/domain/route_repository.dart';
 import 'package:parent_app/core/students/domain/student.dart';
 import 'package:parent_app/core/students/presentation/selected_student.dart';
+import 'package:parent_app/core/students/presentation/student_switcher.dart';
 import 'package:parent_app/features/home/presentation/home_providers.dart';
 import 'package:parent_app/features/live_map/domain/bus_position.dart';
 import 'package:parent_app/features/live_map/domain/bus_position_repository.dart';
@@ -305,7 +306,8 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('자녀 선택'), findsNothing);
+      expect(find.byType(StudentSwitcher), findsOneWidget);
+      expect(find.byType(BaraedaSegmentedControl), findsNothing);
     });
 
     testWidgets('자녀가 2명 이상이면 선택 UI 가 뜬다', (tester) async {
@@ -318,7 +320,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('자녀 선택'), findsOneWidget);
+      expect(find.byType(BaraedaSegmentedControl), findsOneWidget);
     });
   });
 

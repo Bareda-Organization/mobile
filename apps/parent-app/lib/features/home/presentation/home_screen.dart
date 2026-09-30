@@ -12,6 +12,7 @@ import 'package:parent_app/core/change_requests/domain/change_request.dart';
 import 'package:parent_app/core/change_requests/presentation/change_request_providers.dart';
 import 'package:parent_app/core/refresh/visible_poller.dart';
 import 'package:parent_app/core/students/presentation/selected_student.dart';
+import 'package:parent_app/core/students/presentation/student_switcher.dart';
 import 'package:parent_app/core/time/service_date.dart';
 import 'package:parent_app/core/ui/failure_message.dart';
 import 'package:parent_app/features/home/presentation/home_providers.dart';
@@ -137,27 +138,13 @@ class _ParentSection extends ConsumerWidget {
           );
         }
 
-        final selectedId =
-            ref.watch(selectedStudentIdProvider) ?? students.first.studentId;
+        final selectedId = watchSelectedStudentId(ref, students);
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // §3.1 "자녀 선택 UI 는 2명 이상일 때만 노출."
-            if (students.length > 1) ...[
-              BaraedaSelect(
-                label: '자녀 선택',
-                value: selectedId,
-                options: students
-                    .map(
-                      (s) => BaraedaSelectOption(s.studentId, label: s.name),
-                    )
-                    .toList(),
-                onChanged: (value) =>
-                    ref.read(selectedStudentIdProvider.notifier).state = value,
-              ),
-              const SizedBox(height: BaraedaSpacing.space4),
-            ],
+            StudentSwitcher(students: students, selectedId: selectedId),
             // P2·P3 — 처리 대기 배지는 0건이면 사라져 일정 화면·둘째 연결로 갈 길이 없었다.
             const _ParentShortcuts(),
             PendingChangeBadge(studentId: selectedId),
