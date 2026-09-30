@@ -23,12 +23,17 @@ void main() {
     WidgetTester tester,
     _FakeHttpClient httpClient, {
     String? photoUrl,
+    Map<String, String>? photoHeaders,
   }) async {
     debugNetworkImageHttpClientProvider = () => httpClient;
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
-          body: StudentRow(name: '김서준', photoUrl: photoUrl),
+          body: StudentRow(
+            name: '김서준',
+            photoUrl: photoUrl,
+            photoHeaders: photoHeaders,
+          ),
         ),
       ),
     );
@@ -99,6 +104,29 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(Image), findsOneWidget);
       expect(find.text('서준'), findsNothing);
+    } finally {
+      restore();
+    }
+  });
+
+  // Ruling 377 — 학생 사진은 로그인 토큰이 있어야 받는다. 위젯은 토큰을 모르고
+  // 앱이 넘긴 헤더를 이미지 요청에 그대로 싣기만 한다.
+  testWidgets('photoHeaders 를 이미지 요청 헤더로 싣는다', (tester) async {
+    final httpClient = _FakeHttpClient()
+      ..response.contentLength = _transparentPng.length
+      ..response.content = [_transparentPng];
+    try {
+      await pumpRow(
+        tester,
+        httpClient,
+        photoUrl: 'https://cdn.example/api/v1/files/photos/301.jpg',
+        photoHeaders: const {'Authorization': 'Bearer tok-1'},
+      );
+      await tester.runAsync(() async {
+        await Future<void>.delayed(const Duration(milliseconds: 200));
+      });
+      await tester.pumpAndSettle();
+      expect(httpClient.request.headers.added['Authorization'], 'Bearer tok-1');
     } finally {
       restore();
     }
@@ -179,7 +207,7 @@ class _FakeHttpClientRequest extends Fake implements HttpClientRequest {
   Future<void>? hold;
 
   @override
-  final HttpHeaders headers = _FakeHttpHeaders();
+  final _FakeHttpHeaders headers = _FakeHttpHeaders();
 
   @override
   Future<HttpClientResponse> close() async {
@@ -220,6 +248,10 @@ class _FakeHttpClientResponse extends Fake implements HttpClientResponse {
 }
 
 class _FakeHttpHeaders extends Fake implements HttpHeaders {
+  final Map<String, Object> added = {};
+
   @override
-  void add(String name, Object value, {bool preserveHeaderCase = false}) {}
+  void add(String name, Object value, {bool preserveHeaderCase = false}) {
+    added[name] = value;
+  }
 }

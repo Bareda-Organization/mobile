@@ -35,6 +35,7 @@ class StudentRow extends StatelessWidget {
     super.key,
     this.name,
     this.photoUrl,
+    this.photoHeaders,
     this.meta,
     this.phone,
     this.ride = RideStatus.waiting,
@@ -51,6 +52,10 @@ class StudentRow extends StatelessWidget {
   /// URL 이 있어도 로딩 중이거나 로드에 실패하면 같은 이니셜 자리로
   /// 떨어진다 — 깨진 이미지 아이콘을 보여주지 않는다.
   final String? photoUrl;
+
+  /// 사진 요청에 실을 헤더 — 사진이 로그인 토큰을 요구한다(Ruling 377). 이 패키지는
+  /// 토큰을 모르므로 앱이 `Authorization` 을 만들어 넘긴다. 공개 주소면 `null`.
+  final Map<String, String>? photoHeaders;
 
   /// 정류장 · 반 · 보호자 등 한 줄.
   final String? meta;
@@ -102,6 +107,7 @@ class StudentRow extends StatelessWidget {
                   ),
                   child: _StudentAvatar(
                     photoUrl: photoUrl,
+                    photoHeaders: photoHeaders,
                     initials: initials,
                     textColor: colors.textBrand,
                   ),
@@ -161,11 +167,13 @@ class StudentRow extends StatelessWidget {
 class _StudentAvatar extends StatelessWidget {
   const _StudentAvatar({
     required this.photoUrl,
+    required this.photoHeaders,
     required this.initials,
     required this.textColor,
   });
 
   final String? photoUrl;
+  final Map<String, String>? photoHeaders;
   final String initials;
   final Color textColor;
 
@@ -177,6 +185,7 @@ class _StudentAvatar extends StatelessWidget {
     }
     return Image.network(
       url,
+      headers: photoHeaders,
       width: 38,
       height: 38,
       fit: BoxFit.cover,
