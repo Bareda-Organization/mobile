@@ -41,13 +41,14 @@ class _ChangeAckBannerState extends ConsumerState<ChangeAckBanner> {
   }
 
   Future<void> _ack() async {
+    final container = ProviderScope.containerOf(context);
     setState(() {
       _acking = true;
       _errorMessage = null;
     });
     try {
       await ref.read(rosterRepositoryProvider).ackChanges(runId: widget.runId);
-      ref.invalidate(todayRunsProvider);
+      container.invalidate(todayRunsProvider);
       if (!mounted) return;
       setState(() => _acked = true);
     } on Failure catch (failure) {

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -8,9 +10,14 @@ import 'package:manager_app/features/roster/domain/roster_repository.dart';
 import 'package:manager_app/features/roster/presentation/widgets/change_ack_banner.dart';
 
 class _AckOnlyRosterRepository implements RosterRepository {
+  /// 주면 응답을 이 시점까지 붙잡는다 — 요청 중 화면이 닫히는 상황을 만든다.
+  Completer<void>? gate;
+
   @override
-  Future<AckChangesResult> ackChanges({required String runId}) async =>
-      AckChangesResult(ackedAt: DateTime(2026, 9, 30, 8));
+  Future<AckChangesResult> ackChanges({required String runId}) async {
+    await gate?.future;
+    return AckChangesResult(ackedAt: DateTime(2026, 9, 30, 8));
+  }
 
   @override
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
@@ -53,5 +60,32 @@ void main() {
     await tester.pump();
 
     expect(find.text('변경 목록 확인'), findsOneWidget);
+  });
+
+  // F06-16 — 확인 요청 중 화면이 닫혀도 닫힌 화면의 ref 를 써서 처리되지 않은 예외가 남으면 안 된다.
+  testWidgets('확인 요청 중 화면이 닫혀도 예외 없이 끝난다', (tester) async {
+    final repository = _AckOnlyRosterRepository()..gate = Completer<void>();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          rosterRepositoryProvider.overrideWithValue(repository),
+          todayRunsProvider.overrideWith((ref) async => []),
+        ],
+        child: const MaterialApp(
+          home: Scaffold(
+            body: ChangeAckBanner(runId: 'run-1', ackRequired: true),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('변경 목록 확인'));
+    await tester.pump();
+    await tester.pumpWidget(const SizedBox.shrink());
+    repository.gate!.complete();
+    await tester.pump();
+    await tester.pump();
+
+    expect(tester.takeException(), isNull);
   });
 }

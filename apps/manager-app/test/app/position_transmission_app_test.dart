@@ -86,11 +86,19 @@ class _StubAuthRepository implements AuthRepository {
 
 /// 마지막 승하차지 도착 처리 응답(`is_final`) — 하원 잔류로 서버 회차는 아직 `moving` 인 채다.
 class _FinalArriveRepository implements DriveModeRepository {
+  /// 주면 응답을 이 시점까지 붙잡는다 — 요청 중 화면이 닫히는 상황을 만든다.
+  Completer<void>? gate;
+
   @override
   Future<ArriveStopResult> arriveStop({
     required String runId,
     required String stopId,
-  }) async => ArriveStopResult(
+  }) async {
+    await gate?.future;
+    return _finalResult();
+  }
+
+  ArriveStopResult _finalResult() => ArriveStopResult(
     arrivedAt: DateTime(2026, 9, 30, 8, 30),
     isFinal: true,
     runStatus: RunStatus.moving,
@@ -107,6 +115,7 @@ const Duration _interval = PositionConstants.transmissionInterval;
 void main() {
   late _FakeSource source;
   late _RecordingPositionRepository repository;
+  late _FinalArriveRepository arriveRepository;
 
   Future<ProviderContainer> pumpApp(
     WidgetTester tester, {
@@ -120,6 +129,7 @@ void main() {
       source.availabilityValue = PositionAvailability.permissionDenied;
     }
     repository = _RecordingPositionRepository();
+    arriveRepository = _FinalArriveRepository();
     final overrides = <Override>[
       tokenStorageProvider.overrideWithValue(FakeTokenStorage()),
       currentUserRoleProvider.overrideWith((ref) => role),
@@ -127,7 +137,7 @@ void main() {
         (ref) => AccountStatus.active,
       ),
       authRepositoryProvider.overrideWithValue(_StubAuthRepository()),
-      driveModeRepositoryProvider.overrideWithValue(_FinalArriveRepository()),
+      driveModeRepositoryProvider.overrideWithValue(arriveRepository),
       selectedRunIdProvider.overrideWith((ref) => 'run-1'),
       todayRunsProvider.overrideWith(
         (ref) async =>
@@ -314,6 +324,28 @@ void main() {
     await tester.pump(_interval * 2);
 
     expect(source.startCalls, greaterThan(startsAtBegin));
+  });
+
+  // F06-16 — 마지막 도착 처리 요청 중에 화면이 닫혀도 서버는 이미 운행을 끝냈다. 종료 처리(위치 송신 중단)가
+  // 화면 생존에 기대면 송신이 계속되고, 닫힌 화면의 ref 를 써서 처리되지 않은 예외도 남는다.
+  testWidgets('마지막 도착 처리 응답 전에 화면이 닫혀도 위치 송신은 멈추고 예외가 남지 않는다', (tester) async {
+    final container = await pumpApp(tester);
+    await goTo(tester, container, AppRoutes.driveMode);
+    arriveRepository.gate = Completer<void>();
+
+    await tester.tap(find.text('학원 앞 도착 처리'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('도착했습니다'));
+    await tester.pump();
+    await goTo(tester, container, AppRoutes.home);
+
+    arriveRepository.gate!.complete();
+    await tester.pumpAndSettle();
+    final afterArrive = repository.calls.length;
+    await tester.pump(_interval * 3);
+
+    expect(tester.takeException(), isNull);
+    expect(repository.calls.length, afterArrive, reason: '종점 도착 뒤에는 송신이 멈춘다');
   });
 
   testWidgets('동승자는 운행 중이어도 어느 화면에서든 보내지 않는다', (tester) async {

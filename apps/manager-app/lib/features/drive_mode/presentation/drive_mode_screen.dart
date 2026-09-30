@@ -92,13 +92,15 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
       confirmLabel: '시작하기',
     );
     if (!confirmed || !mounted) return;
+    final container = ProviderScope.containerOf(context);
     setState(() {
       _submitting = true;
       _errorMessage = null;
     });
     try {
       await ref.read(driveModeRepositoryProvider).startRun(runId);
-      ref
+      // 요청 중에 화면이 닫혀도 서버는 이미 시작을 반영했다 — 컨테이너로 갱신한다(F06-16).
+      container
         ..invalidate(todayRunsProvider)
         ..invalidate(driveModeRosterProvider);
     } on Failure catch (failure) {
@@ -107,7 +109,7 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
       // M4(Ruling 340) — 취소된 회차는 §4.1 목록에서 빠져야 하는데, 목록을
       // 다시 불러오지 않으면 이미 취소된 카드가 화면에 그대로 남는다.
       if (failure case ApiFailure(code: 'RUN_CANCELED')) {
-        ref.invalidate(todayRunsProvider);
+        container.invalidate(todayRunsProvider);
       }
     } finally {
       if (mounted) setState(() => _submitting = false);
@@ -130,6 +132,7 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
       );
       if (!confirmed || !mounted) return;
     }
+    final container = ProviderScope.containerOf(context);
     setState(() {
       _submitting = true;
       _errorMessage = null;
@@ -138,15 +141,18 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
       final result = await ref
           .read(driveModeRepositoryProvider)
           .arriveStop(runId: runId, stopId: stopId);
-      ref.invalidate(todayRunsProvider);
-      if (!mounted) return;
+      // 요청 중에 화면이 닫혀도 서버는 이미 도착을 반영했다 — 화면 생존과 무관한 갱신은 컨테이너로 한다
+      // (닫힌 화면의 `ref` 는 쓸 수 없다, F06-16).
+      container.invalidate(todayRunsProvider);
       if (result.isFinal) {
         // 종점에 닿았으니 위치 송신은 여기서 끝난다 — 하원 잔류로 서버 회차가 아직 `moving` 이어도 그렇다.
-        ref.read(transmissionEndedRunIdProvider.notifier).state = runId;
-        ref.read(lastArriveResultProvider.notifier).state = result;
+        container.read(transmissionEndedRunIdProvider.notifier).state = runId;
+        container.read(lastArriveResultProvider.notifier).state = result;
+        if (!mounted) return;
         unawaited(context.push(AppRoutes.runEnd));
       } else {
-        ref.invalidate(driveModeRosterProvider);
+        container.invalidate(driveModeRosterProvider);
+        if (!mounted) return;
       }
     } on Failure catch (failure) {
       if (!mounted) return;

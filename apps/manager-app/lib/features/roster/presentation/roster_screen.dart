@@ -151,6 +151,8 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
     required String runId,
     required String riderId,
   }) async {
+    // 요청 중에 화면이 닫혀도 명단은 갱신해야 한다 — 닫힌 화면의 `ref` 는 쓸 수 없어 컨테이너를 쥔다(F06-16).
+    final container = ProviderScope.containerOf(context);
     setState(() {
       _pendingRiderId = riderId;
       _errorMessage = null;
@@ -159,7 +161,7 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
       await ref
           .read(rosterRepositoryProvider)
           .revertRiderStatus(runId: runId, riderId: riderId);
-      ref.invalidate(rosterProvider);
+      container.invalidate(rosterProvider);
     } on Failure catch (failure) {
       if (!mounted) return;
       setState(() => _errorMessage = describeFailure(failure));
@@ -181,6 +183,7 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
           _NoShowContactSheet(waitEndsAt: waitEndsAt, clock: clock),
     );
     if (request == null || !mounted) return;
+    final container = ProviderScope.containerOf(context);
     setState(() {
       _pendingRiderId = riderId;
       _errorMessage = null;
@@ -193,7 +196,7 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
             riderId: riderId,
             request: request,
           );
-      ref.invalidate(rosterProvider);
+      container.invalidate(rosterProvider);
     } on Failure catch (failure) {
       if (!mounted) return;
       setState(() => _errorMessage = describeFailure(failure));
