@@ -10,6 +10,7 @@ import 'package:parent_app/core/students/presentation/student_providers.dart';
 import 'package:parent_app/features/route/domain/route_detail.dart';
 import 'package:parent_app/features/route/domain/route_repository.dart';
 import 'package:parent_app/features/route/presentation/route_detail_screen.dart';
+import 'package:parent_app/features/route/presentation/route_providers.dart';
 
 /// `routeRepositoryProvider` 대신 넣는 가짜 — **실제 서버 응답이 아니라
 /// 이 시험이 손으로 만든 원본 JSON**을 그대로 돌려준다.
@@ -26,12 +27,18 @@ class _FakeRouteRepository implements RouteRepository {
 
   final RouteDetail response;
 
+  /// `getRoute` 가 불린 횟수 — 화면이 서버 값을 다시 받는지 본다(F05-06).
+  int calls = 0;
+
   @override
   Future<RouteDetail> getRoute(
     String studentId, {
     DateTime? date,
     String? runId,
-  }) async => response;
+  }) async {
+    calls++;
+    return response;
+  }
 }
 
 /// 정차 1개의 원본 JSON — 모든 필드를 채운다(`RouteStop.fromJson` 이
@@ -91,6 +98,7 @@ void main() {
   Future<void> pumpScreen(
     WidgetTester tester, {
     required RouteDetail response,
+    _FakeRouteRepository? repository,
   }) async {
     // stops 목록이 창(3) + 학원 1개로 늘어나 기본 뷰포트를 넘긴다 —
     // ListView 는 화면 밖 항목을 늦게(스크롤 시점에) 그리므로, 뷰포트를
@@ -108,7 +116,7 @@ void main() {
           ),
           myStudentsProvider.overrideWith((ref) async => [student]),
           routeRepositoryProvider.overrideWithValue(
-            _FakeRouteRepository(response),
+            repository ?? _FakeRouteRepository(response),
           ),
         ],
         child: const MaterialApp(home: RouteDetailScreen()),
@@ -256,6 +264,48 @@ void main() {
       expect(find.text('기사 미배치'), findsOneWidget);
       expect(find.text('동승자 미배치'), findsOneWidget);
       expect(find.text('전화하기'), findsNothing);
+    });
+  });
+
+  // F05-06 — 한 번 받은 노선을 앱을 끌 때까지 붙들면 확정 뒤에도 "확정 전" 이 남는다.
+  group('F05-06 다시 받기', () {
+    RouteDetail sample() => RouteDetail.fromJson(
+      _routeJson(
+        stops: [_stopJson(stopId: 's-stop-1', seq: 1, name: '정류장1')],
+        myStopId: 's-stop-1',
+      ),
+    );
+
+    test('화면을 나갔다(듣는 곳이 없어졌다) 다시 들어오면 노선을 새로 받는다', () async {
+      final repository = _FakeRouteRepository(sample());
+      final container = ProviderContainer(
+        overrides: [routeRepositoryProvider.overrideWithValue(repository)],
+      );
+      addTearDown(container.dispose);
+
+      final subscription = container.listen(
+        routeDetailProvider('s-1'),
+        (_, _) {},
+      );
+      await container.read(routeDetailProvider('s-1').future);
+      subscription.close();
+      await Future<void>.delayed(Duration.zero);
+
+      container.listen(routeDetailProvider('s-1'), (_, _) {});
+      await container.read(routeDetailProvider('s-1').future);
+
+      expect(repository.calls, 2);
+    });
+
+    testWidgets('아래로 당기면 노선을 새로 받는다', (tester) async {
+      final repository = _FakeRouteRepository(sample());
+      await pumpScreen(tester, response: sample(), repository: repository);
+
+      // 뷰포트가 2400 이라 당김 기준(높이의 1/4)을 넘기려면 크게 당긴다.
+      await tester.drag(find.byType(ListView), const Offset(0, 2000));
+      await tester.pumpAndSettle();
+
+      expect(repository.calls, 2);
     });
   });
 }
