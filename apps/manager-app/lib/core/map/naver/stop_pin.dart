@@ -8,9 +8,12 @@ import 'package:flutter/material.dart';
 /// 어댑터가 이 위젯을 이미지로 굳혀 마커 아이콘으로 쓴다. SDK 마커의 기준점이 이미지의
 /// **아래 가운데**라 끝점을 위젯 아래 끝에 둔다 — 그래서 크기를 [size] 로 고정한다.
 class StopPin extends StatelessWidget {
-  const StopPin({super.key, this.seq});
+  const StopPin({super.key, this.seq, this.skipped = false});
 
   final int? seq;
+
+  /// 오늘 서지 않는 승하차지(`Ruling 400`) — 색만이 아니라 흐림·번호 취소선으로도 다르게 그린다.
+  final bool skipped;
 
   /// 폭 22 · 높이 29 — 웹 핀과 같다(윤곽 좌표계 26×34 를 폭 22 에 맞춘 값).
   static const size = Size(22, 29);
@@ -18,12 +21,18 @@ class StopPin extends StatelessWidget {
   /// 웹의 정차지 색(`MARKER_COLOR.stop`)과 같은 값.
   static const color = Color(0xFF16A34A);
 
+  /// 미경유 핀의 색 — 웹(`SKIPPED_PIN_COLOR`)과 같은 값.
+  static const skippedColor = Color(0xFF9CA3AF);
+
+  /// 미경유 핀의 불투명도 — 웹과 같은 값.
+  static const skippedOpacity = 0.55;
+
   @override
   Widget build(BuildContext context) {
-    return SizedBox.fromSize(
+    final pin = SizedBox.fromSize(
       size: size,
       child: CustomPaint(
-        painter: const _StopPinPainter(),
+        painter: _StopPinPainter(skipped ? skippedColor : color),
         child: Align(
           // 머리 원의 중심(윤곽 좌표 12.5/34)에 숫자를 둔다.
           alignment: const Alignment(0, -0.26),
@@ -32,23 +41,27 @@ class StopPin extends StatelessWidget {
               : Text(
                   '$seq',
                   textScaler: TextScaler.noScaling,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Colors.white,
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                     height: 1,
+                    decoration: skipped ? TextDecoration.lineThrough : null,
                   ),
                 ),
         ),
       ),
     );
+    return skipped ? Opacity(opacity: skippedOpacity, child: pin) : pin;
   }
 }
 
 /// 윤곽 — 머리는 (12,12) 중심 반지름 12 의 원, 끝점은 (12,32). 흰 테두리 두께만큼(1) 사방을
 /// 넓힌 26×34 좌표계를 위젯 크기에 맞춰 늘린다.
 class _StopPinPainter extends CustomPainter {
-  const _StopPinPainter();
+  const _StopPinPainter(this.color);
+
+  final Color color;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -62,7 +75,7 @@ class _StopPinPainter extends CustomPainter {
       ..cubicTo(24, 20.5, 12, 32, 12, 32)
       ..close();
     canvas
-      ..drawPath(path, Paint()..color = StopPin.color)
+      ..drawPath(path, Paint()..color = color)
       ..drawPath(
         path,
         Paint()
@@ -74,5 +87,5 @@ class _StopPinPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_StopPinPainter oldDelegate) => false;
+  bool shouldRepaint(_StopPinPainter oldDelegate) => oldDelegate.color != color;
 }

@@ -20,4 +20,34 @@ void main() {
     expect(tester.getSize(find.byType(StopPin)), StopPin.size);
     expect(StopPin.size.height, greaterThan(StopPin.size.width));
   });
+
+  // R39 Ruling 400 — 오늘 서지 않는 승하차지는 색만이 아니라 흐림과 번호 취소선으로도 다르다.
+  testWidgets('skipped 핀은 번호에 취소선이 있고 흐리게 그려지며 크기는 그대로다', (tester) async {
+    await tester.pumpWidget(
+      const Directionality(
+        textDirection: TextDirection.ltr,
+        child: Center(child: StopPin(seq: 2, skipped: true)),
+      ),
+    );
+
+    final text = tester.widget<Text>(find.text('2'));
+    expect(text.style?.decoration, TextDecoration.lineThrough);
+    expect(
+      tester.widget<Opacity>(find.byType(Opacity)).opacity,
+      lessThan(1),
+    );
+    expect(tester.getSize(find.byType(StopPin)), StopPin.size);
+  });
+
+  testWidgets('정상 핀은 취소선도 흐림도 없다', (tester) async {
+    await tester.pumpWidget(
+      const Directionality(
+        textDirection: TextDirection.ltr,
+        child: Center(child: StopPin(seq: 2)),
+      ),
+    );
+
+    expect(tester.widget<Text>(find.text('2')).style?.decoration, isNull);
+    expect(find.byType(Opacity), findsNothing);
+  });
 }

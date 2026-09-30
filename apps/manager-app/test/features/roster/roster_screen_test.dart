@@ -257,6 +257,32 @@ void main() {
     expect(row.photoHeaders, {'Authorization': 'Bearer tok-1'});
   });
 
+  // R39 Ruling 400 — 서버 seq 는 경유 지점 자리(2)를 비운 채 1·3 으로 온다. 명단 머리가 그 값을 그대로 쓰면
+  // "1. A · 3. B" 로 번호가 건너뛰고 지도 핀(경유 지점을 뺀 연속 번호 1·2)과 어긋난다.
+  testWidgets('정류장 머리 번호는 서버 seq 가 아니라 경유 지점을 뺀 연속 번호다', (tester) async {
+    const roster = RosterResponse(
+      runId: 'run-1',
+      busNo: '3호차',
+      direction: RunDirection.toAcademy,
+      counts: RosterCounts(boarded: 0, waiting: 0, noShow: 0, absentN: 0),
+      stops: [
+        RosterStop(stopId: 'a', seq: 1, name: 'A정류장', students: []),
+        RosterStop(stopId: 'b', seq: 3, name: 'B정류장', students: []),
+      ],
+    );
+    await tester.pumpWidget(
+      _wrap(
+        const RosterScreen(),
+        overridesFor(roster: roster, ackRequired: false),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('1. A정류장'), findsOneWidget);
+    expect(find.text('2. B정류장'), findsOneWidget);
+    expect(find.text('3. B정류장'), findsNothing);
+  });
+
   testWidgets('ack_required 가 false 면 변경 확인 배너를 보여주지 않는다', (tester) async {
     await tester.pumpWidget(
       _wrap(

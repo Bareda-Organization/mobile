@@ -37,6 +37,7 @@ class RouteStop {
     this.address,
     this.change,
     this.studentCount,
+    this.isWaypoint = false,
   });
 
   factory RouteStop.fromJson(Map<String, dynamic> json) {
@@ -52,6 +53,7 @@ class RouteStop {
         json['change'] as String?,
       ),
       studentCount: json['student_count'] as int?,
+      isWaypoint: json['is_waypoint'] as bool? ?? false,
     );
   }
 
@@ -63,6 +65,10 @@ class RouteStop {
   final String? address;
   final RouteStopChange? change;
   final int? studentCount;
+
+  /// 강제 경유 지점(§5.15) 항목이면 `true`(`Ruling 400`). 승하차지와 다른 모양의 번호 없는 마커로
+  /// 그리고 승하차지 번호에서 뺀다 — 옛 응답에는 없어 없으면 승하차지로 읽는다.
+  final bool isWaypoint;
 }
 
 /// `GET /runs/{runId}/route` 응답 전체 — §4.3.
@@ -85,8 +91,15 @@ class RouteResponse {
     final currentStopJson = json['current_stop'] as Map<String, dynamic>?;
     final nextStopJson = json['next_stop'] as Map<String, dynamic>?;
     return RouteResponse(
+      // 배포 뒤 제거된 경유 지점은 이름·좌표가 null 인 채 stops[] 에 남는다(§1.13) — 그릴 수 없어 뺀다.
       stops: stopsJson
           .cast<Map<String, dynamic>>()
+          .where(
+            (json) =>
+                json['name'] != null &&
+                json['lat'] != null &&
+                json['lng'] != null,
+          )
           .map(RouteStop.fromJson)
           .toList(),
       currentStop: currentStopJson == null

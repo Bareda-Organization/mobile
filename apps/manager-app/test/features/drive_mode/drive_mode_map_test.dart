@@ -192,6 +192,40 @@ void main() {
     );
   });
 
+  // R39 Ruling 400 — 운행 화면 가운데 지도도 노선 지도 화면과 같은 규칙으로 경유 지점을 그린다.
+  testWidgets('경유 지점은 waypoint 마커이고 승하차지 번호를 밀지 않는다', (tester) async {
+    final route = RouteResponse(
+      stops: [
+        _routeStop(1),
+        const RouteStop(
+          stopId: 'w2',
+          seq: 2,
+          name: '주유소',
+          lat: 37.55,
+          lng: 127.05,
+          isWaypoint: true,
+        ),
+        _routeStop(3),
+      ],
+    );
+    await pumpScreen(tester, overrides(route: route));
+
+    final surface = tester.widget<MapSurface>(find.byType(MapSurface));
+    expect(
+      surface.markers.where((m) => m.kind == MapMarkerKind.waypoint),
+      hasLength(1),
+    );
+    expect(
+      {
+        for (final m in surface.markers.where(
+          (m) => m.kind == MapMarkerKind.stop,
+        ))
+          m.id: m.seq,
+      },
+      {'s1': 1, 's3': 2},
+    );
+  });
+
   testWidgets('기사 단말이 잰 좌표가 있으면 그 자리에 버스 마커를 찍는다', (tester) async {
     final sample = PositionSample(lat: 37.51, lng: 127.02, recordedAt: now);
     await pumpScreen(tester, overrides(sample: sample));

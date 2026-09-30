@@ -337,9 +337,12 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
           AlertBanner(tone: AlertTone.moving, body: _queueNotice),
           const SizedBox(height: 12),
         ],
-        for (final stop in roster.stops)
+        // 머리 번호는 서버 seq 가 아니라 이 목록의 순번이다 — 서버 seq 는 경유 지점 자리(§4.3)를 비운 채 와서
+        // 1·3·4 로 건너뛴다. 지도 핀 번호와 같은 규칙(`Ruling 400`).
+        for (final (index, stop) in roster.stops.indexed)
           _StopSection(
             stop: stop,
+            order: index + 1,
             photoHeaders: photoHeaders,
             canDecide: canDecide,
             pendingRiderId: _pendingRiderId,
@@ -379,6 +382,7 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
 class _StopSection extends StatelessWidget {
   const _StopSection({
     required this.stop,
+    required this.order,
     required this.photoHeaders,
     required this.canDecide,
     required this.pendingRiderId,
@@ -390,6 +394,9 @@ class _StopSection extends StatelessWidget {
   });
 
   final RosterStop stop;
+
+  /// 머리에 적는 번호(1부터) — 이 목록에서의 순번.
+  final int order;
 
   /// 사진 요청에 실을 인증 헤더 — 아직 못 읽었으면 `null`(Ruling 377).
   final Map<String, String>? photoHeaders;
@@ -426,7 +433,7 @@ class _StopSection extends StatelessWidget {
           Row(
             children: [
               Text(
-                '${stop.seq}. ${stop.name}',
+                '$order. ${stop.name}',
                 style:
                     Theme.of(
                       context,

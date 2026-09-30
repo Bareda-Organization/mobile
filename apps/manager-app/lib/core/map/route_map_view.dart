@@ -3,6 +3,38 @@ import 'package:flutter/material.dart';
 import 'package:manager_app/core/map/map_surface.dart';
 import 'package:manager_app/features/route_map/data/models/route_response.dart';
 
+/// 노선 항목 → 마커. 강제 경유 지점(`is_waypoint`)은 번호 없는 waypoint
+/// 마커이고, 승하차지 번호는 **경유 지점을 뺀 순번**으로 다시 매긴다
+/// (`Ruling 400`) — 서버 `seq` 는 경유 지점 자리를 비운 채 1·3·4 로 오는데
+/// 명단(§4.2)은 경유 지점을 싣지 않으므로(`Ruling 398`) 서버 값을 그대로 쓰면
+/// 지도와 명단 번호가 어긋난다. 마커는 받은 순서대로 낸다.
+List<MapMarker> _stopMarkersOf(List<RouteStop> stops) {
+  final ordered = [...stops]..sort((a, b) => a.seq.compareTo(b.seq));
+  final orderOf = <String, int>{};
+  for (final stop in ordered) {
+    if (!stop.isWaypoint) orderOf[stop.stopId] = orderOf.length + 1;
+  }
+  return [
+    for (final stop in stops)
+      if (stop.isWaypoint)
+        MapMarker(
+          id: 'waypoint-${stop.stopId}',
+          lat: stop.lat,
+          lng: stop.lng,
+          kind: MapMarkerKind.waypoint,
+        )
+      else
+        MapMarker(
+          id: stop.stopId,
+          lat: stop.lat,
+          lng: stop.lng,
+          kind: MapMarkerKind.stop,
+          seq: orderOf[stop.stopId],
+          skipped: stop.change == RouteStopChange.skipped,
+        ),
+  ];
+}
+
 /// 확정 노선(§4.3)을 그리는 지도 면 — 도로 경로선 · 승하차지 핀 · (있으면) 기사 단말이 잰 버스 위치
 /// · 근사 경로 안내. 운행 화면 가운데 패널(`DriveMapPanel`)과 노선 지도 화면(`RouteMapScreen`)이
 /// **같은 지도를 두 벌 두지 않고** 이 위젯 하나를 쓴다(F06-11).
@@ -36,14 +68,7 @@ class RouteMapView extends StatelessWidget {
             fitToContent: true,
             onAuthFailed: onAuthFailed,
             markers: [
-              for (final stop in route.stops)
-                MapMarker(
-                  id: stop.stopId,
-                  lat: stop.lat,
-                  lng: stop.lng,
-                  kind: MapMarkerKind.stop,
-                  seq: stop.seq,
-                ),
+              ..._stopMarkersOf(route.stops),
               if (bus != null)
                 MapMarker(
                   id: 'bus',

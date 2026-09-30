@@ -13,6 +13,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:manager_app/core/map/map_surface.dart';
 import 'package:manager_app/core/map/naver/stop_pin.dart';
+import 'package:manager_app/core/map/naver/waypoint_chip.dart';
 
 /// 빌드·실행 시점에 `--dart-define=NAVER_MAP_CLIENT_ID=<값>` 으로 주입한다.
 /// 실제 클라이언트 ID 값은 어떤 파일에도 커밋하지 않는다(F4-B 공통 규칙).
@@ -89,6 +90,10 @@ class _NaverMapAdapterState extends State<NaverMapAdapter> {
   /// 지금 지도 위에 올라가 있는 마커(id 별) — 좌표가 바뀐 것만 옮기고 없어진 것은 지우려고 든다.
   final Map<String, NMarker> _markersById = {};
 
+  /// 올라가 있는 마커의 모양 키(id 별) — 번호·미경유가 바뀌면 아이콘을 다시 만든다. 미승차 반영으로 승하차지가
+  /// 운행 중에 미경유가 되거나 경유 지점 배포로 번호가 밀려도 마커 id 는 그대로라, 좌표만 비교하면 옛 아이콘이 남는다.
+  final Map<String, String> _looksById = {};
+
   /// 지금 지도 위에 올라가 있는 선의 점 수(id 별) — 바뀌면 지우고 다시 그린다.
   final Map<String, int> _polylinePointCounts = {};
 
@@ -135,7 +140,9 @@ class _NaverMapAdapterState extends State<NaverMapAdapter> {
   Future<void> _syncOverlays(NaverMapController controller) async {
     final incoming = {for (final m in widget.markers) m.id: m};
     for (final id in _markersById.keys.toList()) {
-      if (incoming.containsKey(id)) continue;
+      final stale = incoming[id]?.lookKey != _looksById[id];
+      if (!stale) continue;
+      _looksById.remove(id);
       await controller.deleteOverlay(_markersById.remove(id)!.info);
     }
     final overlays = <NAddableOverlay>{};
@@ -146,6 +153,7 @@ class _NaverMapAdapterState extends State<NaverMapAdapter> {
       if (existing == null) {
         final created = await _toNMarker(marker);
         _markersById[marker.id] = created;
+        _looksById[marker.id] = marker.lookKey;
         overlays.add(created);
       } else {
         existing.setPosition(NLatLng(marker.lat, marker.lng));
@@ -219,11 +227,25 @@ class _NaverMapAdapterState extends State<NaverMapAdapter> {
     final position = NLatLng(marker.lat, marker.lng);
     if (marker.kind == MapMarkerKind.stop) {
       final icon = await NOverlayImage.fromWidget(
-        widget: StopPin(seq: marker.seq),
+        widget: StopPin(seq: marker.seq, skipped: marker.skipped),
         size: StopPin.size,
         context: context,
       );
       return NMarker(id: marker.id, position: position, icon: icon);
+    }
+    if (marker.kind == MapMarkerKind.waypoint) {
+      // 칩의 가운데가 좌표에 온다 — 핀과 달리 끝점이 없다.
+      final icon = await NOverlayImage.fromWidget(
+        widget: const WaypointChip(),
+        size: WaypointChip.size,
+        context: context,
+      );
+      return NMarker(
+        id: marker.id,
+        position: position,
+        icon: icon,
+        anchor: NPoint.relativeCenter,
+      );
     }
     return NMarker(
       id: marker.id,
@@ -240,6 +262,8 @@ class _NaverMapAdapterState extends State<NaverMapAdapter> {
         return '승하차지';
       case MapMarkerKind.student:
         return '학생';
+      case MapMarkerKind.waypoint:
+        return '경유';
     }
   }
 }

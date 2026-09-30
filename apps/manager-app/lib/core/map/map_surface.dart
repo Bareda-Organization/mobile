@@ -29,6 +29,9 @@ enum MapMarkerKind {
 
   /// 학생의 위치(승하차 지점과 별도로 찍어야 할 때).
   student,
+
+  /// 강제 경유 지점(§5.15, `Ruling 400`) — 번호 없는 "경유" 칩. 태울 학생이 없는 지점이다.
+  waypoint,
 }
 
 /// 지도 위에 놓일 마커 하나.
@@ -39,6 +42,7 @@ class MapMarker {
     required this.lng,
     required this.kind,
     this.seq,
+    this.skipped = false,
   });
 
   final String id;
@@ -48,6 +52,13 @@ class MapMarker {
 
   /// 정차지 순번 — [MapMarkerKind.stop] 핀 안에 그린다(2026-09-23 사용자 지시).
   final int? seq;
+
+  /// 오늘 서지 않는 승하차지(`change=skipped`, C-05) — 흐리게 · 회색 ·
+  /// 번호 취소선으로 그린다(`Ruling 400`).
+  final bool skipped;
+
+  /// 아이콘 모양을 정하는 값의 묶음 — 이 값이 달라지면 어댑터가 마커 아이콘을 다시 만든다(좌표는 제외).
+  String get lookKey => '${kind.name}|$seq|$skipped';
 }
 
 /// 지도 위에 그릴 선 하나(예: 확정 노선의 도로 경로). 점은 순서대로 이어진다.

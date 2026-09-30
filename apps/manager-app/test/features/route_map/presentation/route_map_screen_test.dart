@@ -217,7 +217,10 @@ void main() {
   // 카메라 맞춤이 빠져 있었다. 두 화면이 같은 지도 면을 쓰므로 같은 것을 보여야 한다.
   testWidgets('road_path 가 2점 이상이면 도로 경로 선을 그린다', (tester) async {
     final response = RouteResponse(
-      stops: [_stop(stopId: 's1', seq: 1), _stop(stopId: 's2', seq: 2)],
+      stops: [
+        _stop(stopId: 's1', seq: 1),
+        _stop(stopId: 's2', seq: 2),
+      ],
       roadPath: const [
         (lat: 37.501, lng: 127.001),
         (lat: 37.502, lng: 127.002),
@@ -259,5 +262,76 @@ void main() {
 
     final surface = tester.widget<MapSurface>(find.byType(MapSurface));
     expect(surface.fitToContent, isTrue);
+  });
+
+  // R39 Ruling 400 — 경유 지점은 번호 없는 waypoint 마커이고, 승하차지 번호는 경유 지점을 뺀 연속 번호다.
+  // 서버 seq 는 경유 지점 자리(2)를 비운 채 1·3·4 로 오지만 명단은 경유 지점을 싣지 않는다(Ruling 398).
+  testWidgets('경유 지점은 waypoint 마커로 찍고 승하차지 번호는 경유 지점을 건너뛰어 연속으로 매긴다', (
+    tester,
+  ) async {
+    final response = RouteResponse(
+      stops: [
+        _stop(stopId: 's1', seq: 1),
+        const RouteStop(
+          stopId: 'w2',
+          seq: 2,
+          name: '주유소',
+          lat: 37.55,
+          lng: 127.05,
+          isWaypoint: true,
+        ),
+        _stop(stopId: 's3', seq: 3),
+        _stop(stopId: 's4', seq: 4),
+      ],
+    );
+
+    await tester.pumpWidget(_wrap(overridesFor(response)));
+    await tester.pump();
+    await tester.pump();
+
+    final surface = tester.widget<MapSurface>(find.byType(MapSurface));
+    final waypoints = surface.markers.where(
+      (m) => m.kind == MapMarkerKind.waypoint,
+    );
+    expect(waypoints, hasLength(1));
+    expect(waypoints.single.seq, isNull);
+    expect(
+      {
+        for (final m in surface.markers.where(
+          (m) => m.kind == MapMarkerKind.stop,
+        ))
+          m.id: m.seq,
+      },
+      {'s1': 1, 's3': 2, 's4': 3},
+    );
+  });
+
+  testWidgets('오늘 서지 않는(skipped) 승하차지는 마커가 skipped 를 켠다', (tester) async {
+    final response = RouteResponse(
+      stops: [
+        const RouteStop(
+          stopId: 's1',
+          seq: 1,
+          name: '1번',
+          lat: 37.5,
+          lng: 127,
+          change: RouteStopChange.skipped,
+        ),
+        _stop(stopId: 's2', seq: 2),
+      ],
+    );
+
+    await tester.pumpWidget(_wrap(overridesFor(response)));
+    await tester.pump();
+    await tester.pump();
+
+    final surface = tester.widget<MapSurface>(find.byType(MapSurface));
+    expect(
+      {for (final m in surface.markers) m.id: m.skipped},
+      {
+        's1': true,
+        's2': false,
+      },
+    );
   });
 }
