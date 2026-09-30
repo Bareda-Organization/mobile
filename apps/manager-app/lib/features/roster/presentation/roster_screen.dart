@@ -198,6 +198,10 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
           );
       container.invalidate(rosterProvider);
     } on Failure catch (failure) {
+      // Z-05 — 다른 사람이 미승차를 되돌렸다면 이 화면의 명단이 낡았다. 다시 불러온다.
+      if (failure case ApiFailure(code: 'NO_SHOW_CASE_NOT_FOUND')) {
+        container.invalidate(rosterProvider);
+      }
       if (!mounted) return;
       setState(() => _errorMessage = describeFailure(failure));
     } finally {

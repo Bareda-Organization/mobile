@@ -30,6 +30,10 @@ String describeFailure(Failure failure) => switch (failure) {
   ApiFailure(code: 'EMERGENCY_CANCEL_WINDOW_CLOSED') =>
     '비상 알림 취소 가능 시간(발신 후 1분)이 지났습니다',
   ApiFailure(code: 'EMERGENCY_NOT_FOUND') => '비상 알림을 찾을 수 없습니다',
+  // Z-05(BR-254) — 미승차를 되돌려 대기로 돌아간 탑승자에게 연락 기록을 보낸 경우. 명단 재조회는
+  // roster_screen.dart 의 연락 기록 호출부가 이 코드를 보고 트리거한다.
+  ApiFailure(code: 'NO_SHOW_CASE_NOT_FOUND') =>
+    '미승차가 이미 되돌려져 연락을 기록할 수 없습니다 — 명단을 새로 불러왔습니다',
   ApiFailure(code: 'VALIDATION_FAILED', :final message) => message,
   ApiFailure(:final message) => message,
   NetworkFailure() => '네트워크 상태를 확인해 주세요',
