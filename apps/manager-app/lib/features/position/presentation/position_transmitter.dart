@@ -9,6 +9,7 @@ import 'package:manager_app/core/constants/position_constants.dart';
 import 'package:manager_app/core/location/position_source.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
 import 'package:manager_app/features/position/data/models/position_request.dart';
+import 'package:meta/meta.dart';
 
 /// 마지막 승하차지 도착 처리 응답(`is_final`)을 받은 회차 id — 하원 잔류로 서버 회차가 아직 `moving`
 /// 이어도 버스는 종점에 도착했으므로 위치 송신은 여기서 끝난다(R33 M1).
@@ -31,8 +32,19 @@ final Provider<String?> transmittingRunIdProvider = Provider<String?>((ref) {
 });
 
 /// 송신기가 마지막으로 본 값 — 운행 화면이 버스 마커·위치 안내를 그릴 때 쓴다.
+@immutable
 class PositionTransmission {
   const PositionTransmission({this.availability, this.busPosition});
+
+  // 값이 같으면 같은 상태다 — 2초마다 같은 좌표로 상태를 다시 넣어도 화면을 다시 그리지 않게 한다(F06-17).
+  @override
+  bool operator ==(Object other) =>
+      other is PositionTransmission &&
+      other.availability == availability &&
+      other.busPosition == busPosition;
+
+  @override
+  int get hashCode => Object.hash(availability, busPosition);
 
   /// 마지막 송신 시도에서 본 [PositionSource.availability]. 아직 한 번도 시도하지 않았으면 `null`.
   final PositionAvailability? availability;
@@ -47,11 +59,15 @@ class PositionTransmission {
 /// 돌면서 앞 실행의 타이머·스트림이 먼저 멎는다 — 송신기는 항상 하나다. 앱
 /// 루트(`app.dart`)가 이 provider 를 붙들어 어느 화면에서든 돈다.
 class PositionTransmitter extends Notifier<PositionTransmission> {
+  /// 위치 요청이 진행 중인지 — 끝나기 전에는 다음 주기가 새 요청을 열지 않는다.
+  bool _sending = false;
+
   @override
   PositionTransmission build() {
     final runId = ref.watch(transmittingRunIdProvider);
     if (runId == null) return const PositionTransmission();
     final source = ref.read(positionSourceProvider)..start();
+    _sending = false;
     final timer = Timer.periodic(
       PositionConstants.transmissionInterval,
       (_) => unawaited(_tick(runId, source)),
@@ -66,6 +82,9 @@ class PositionTransmitter extends Notifier<PositionTransmission> {
   /// 주기마다 좌표를 읽어 §4.12 로 올린다. 화면 액션이 아니라 배경 텔레메트리라 실패해도 알리지 않는다 —
   /// 다음 주기 전송이 실패를 대신 만회하고, 매번 배너를 띄우면 운전 중 방해만 된다.
   Future<void> _tick(String runId, PositionSource source) async {
+    // 앞 요청이 아직 끝나지 않았으면(음영 구간) 이번 주기는 건너뛴다 — 요청이 쌓였다가 복구 순간
+    // 오래된 좌표까지 한꺼번에 도착하지 않게 한다(F06-07 (3)).
+    if (_sending) return;
     // 권한·위치 서비스를 나중에 켜도 되살아나게 다시 확인시킨다(F06-03) — 정상이면 아무 일도 없다.
     if (source.availability != PositionAvailability.available) source.start();
     final sample = source.sample();
@@ -76,6 +95,7 @@ class PositionTransmitter extends Notifier<PositionTransmission> {
           : (lat: sample.lat, lng: sample.lng),
     );
     if (sample == null) return;
+    _sending = true;
     try {
       await ref
           .read(positionRepositoryProvider)
@@ -91,6 +111,8 @@ class PositionTransmitter extends Notifier<PositionTransmission> {
           );
     } on Failure {
       // 배경 전송 실패 — 다음 주기가 대신한다(§1.9 는 화면 액션의 낙관적 표시를 금지할 뿐이다).
+    } finally {
+      _sending = false;
     }
   }
 }

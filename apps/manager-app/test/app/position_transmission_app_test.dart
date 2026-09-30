@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -23,6 +25,7 @@ import 'package:manager_app/features/home/data/models/manager_run.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
 import 'package:manager_app/features/position/data/models/position_request.dart';
 import 'package:manager_app/features/position/domain/position_repository.dart';
+import 'package:manager_app/features/position/presentation/position_transmitter.dart';
 import 'package:manager_app/features/roster/data/models/roster_response.dart';
 import 'package:manager_app/features/route_map/data/models/route_response.dart';
 import 'package:manager_app/features/route_map/presentation/route_providers.dart';
@@ -59,6 +62,8 @@ class _FakeSource implements PositionSource {
 }
 
 class _RecordingPositionRepository implements PositionRepository {
+  /// `true` 면 응답이 오지 않는 음영 구간을 흉내 낸다 — 요청이 끝나지 않는다.
+  bool hang = false;
   final List<PositionRequest> calls = [];
 
   @override
@@ -67,6 +72,7 @@ class _RecordingPositionRepository implements PositionRepository {
     required PositionRequest request,
   }) async {
     calls.add(request);
+    if (hang) await Completer<void>().future;
   }
 }
 
@@ -271,6 +277,34 @@ void main() {
 
     expect(repository.calls, hasLength(3), reason: '다른 회차를 골라도 2초마다 이어져야 한다');
     expect(source.stopCalls, 0);
+  });
+
+  // K-02② (F06-07 (3)) — 음영 구간에서 앞 요청이 끝나지 않았는데 2초마다 새 요청을 열면 수십 개가 쌓였다가
+  // 복구 순간 한꺼번에 도착한다. 앞 송신이 진행 중이면 그 주기는 건너뛴다.
+  testWidgets('앞 위치 요청이 끝나지 않았으면 다음 주기는 새 요청을 열지 않는다', (tester) async {
+    await pumpApp(tester);
+    repository.hang = true;
+
+    await tester.pump(_interval);
+    await tester.pump(_interval);
+    await tester.pump(_interval);
+    await tester.pump(_interval);
+
+    expect(repository.calls, hasLength(1));
+  });
+
+  // F06-17 — 좌표가 그대로면 상태가 같은 값이라 화면을 다시 그리게 알리지 않는다.
+  testWidgets('같은 좌표가 이어지면 구독자에게 다시 알리지 않는다', (tester) async {
+    final container = await pumpApp(tester);
+    var notifications = 0;
+    container.listen(positionTransmitterProvider, (_, _) => notifications++);
+
+    await tester.pump(_interval);
+    await tester.pump(_interval);
+    await tester.pump(_interval);
+    await tester.pump(_interval);
+
+    expect(notifications, 1, reason: '처음 값이 채워질 때 한 번뿐이어야 한다');
   });
 
   testWidgets('권한이 없어 못 보내는 동안에는 주기마다 소스에 다시 확인시킨다(F06-03)', (tester) async {
