@@ -10,6 +10,7 @@ import 'package:manager_app/core/run/run_termination_provider.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/core/ui/limited_text_controller.dart';
 import 'package:manager_app/features/drive_mode/data/models/arrive_stop_result.dart';
+import 'package:manager_app/features/position/presentation/position_transmitter.dart';
 import 'package:manager_app/features/roster/presentation/roster_providers.dart';
 import 'package:manager_app/features/run_end/data/models/report_request.dart';
 import 'package:manager_app/features/run_end/data/models/report_result.dart';
@@ -98,7 +99,14 @@ class _RunEndScreenState extends ConsumerState<RunEndScreen> {
   @override
   Widget build(BuildContext context) {
     final runId = ref.watch(selectedRunIdProvider);
-    final termination = ref.watch(lastArriveResultProvider);
+    // 도착 응답 스냅샷은 그 회차의 것일 때만 쓴다 — 마지막 도착 처리가 스냅샷과 함께
+    // [transmissionEndedRunIdProvider] 를 같은 회차로 채운다. 다른 회차의 종료 화면을 열면 앞 회차의
+    // 도착 시각·하차 대기가 그대로 나오던 것을 막는다(F06-14).
+    final snapshot = ref.watch(lastArriveResultProvider);
+    final termination =
+        snapshot != null && ref.watch(transmissionEndedRunIdProvider) == runId
+        ? snapshot
+        : null;
 
     return Scaffold(
       appBar: AppBar(
@@ -129,41 +137,47 @@ class _RunEndScreenState extends ConsumerState<RunEndScreen> {
     );
   }
 
+  /// 종료 안내 — 도착 시각만 스냅샷([termination])에서 가져오고, 하차 대기 인원·종료 여부는 지금의 명단·
+  /// 회차 목록에서 읽는다. 동승자가 하차 처리를 마쳐 회차가 끝나도 "N명 남음" 이 그대로 남던 것을 막는다(F06-14).
   Widget _buildSummary(ArriveStopResult termination) {
     final arrivedLabel = DateFormat(
       'HH:mm',
     ).format(termination.arrivedAt.toLocal());
-    if (termination.finishPending) {
+    final finished =
+        ref.watch(selectedManagerRunProvider)?.runStatus == RunStatus.finished;
+    if (!termination.finishPending || finished) {
       return AlertBanner(
-        tone: AlertTone.moving,
-        body:
-            '$arrivedLabel 최종 지점 도착 — 하차 대기 ${termination.remaining.length}명 '
-            '남음(전원 하차해야 운행이 종료됩니다)',
+        tone: AlertTone.boarded,
+        body: '$arrivedLabel 운행이 종료됐습니다',
       );
     }
+    final waiting = _reportTargets(termination).length;
     return AlertBanner(
-      tone: AlertTone.boarded,
-      body: '$arrivedLabel 운행이 종료됐습니다',
+      tone: AlertTone.moving,
+      body:
+          '$arrivedLabel 최종 지점 도착 — 하차 대기 $waiting명 '
+          '남음(전원 하차해야 운행이 종료됩니다)',
     );
   }
 
-  /// 보호자 부재 보고의 대상 학생. 도착 결과가 있으면 그 하차 대기 명단, 없으면(동승자가 명단에서
-  /// 들어온 경우) 명단에서 탑승 중이면서 혼자 귀가할 수 없는 학생이다(§4.13 · A-10).
+  /// 보호자 부재 보고의 대상 학생 — **지금** 명단에서 탑승 중인 학생이다. 도착 결과가 있으면(하원 종료
+  /// 보류) 탑승 중인 전원, 없으면(동승자가 명단에서 들어온 경우) 그중 혼자 귀가할 수 없는 학생이다
+  /// (§4.13 · A-10). 명단을 아직 못 받았으면 도착 응답의 하차 대기 명단으로 대신한다.
   List<({String riderId, String name})> _reportTargets(
     ArriveStopResult? termination,
   ) {
-    if (termination != null) {
+    final roster = ref.watch(rosterProvider).value;
+    if (roster == null) {
       return [
-        for (final rider in termination.remaining)
+        for (final rider in termination?.remaining ?? const <RemainingRider>[])
           (riderId: rider.riderId, name: rider.name),
       ];
     }
-    final roster = ref.watch(rosterProvider).value;
-    if (roster == null) return const [];
     return [
       for (final stop in roster.stops)
         for (final student in stop.students)
-          if (student.status == RiderStatus.boarded && !student.canGoAlone)
+          if (student.status == RiderStatus.boarded &&
+              (termination != null || !student.canGoAlone))
             (riderId: student.riderId, name: student.name),
     ];
   }
