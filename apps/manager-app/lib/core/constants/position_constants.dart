@@ -11,4 +11,8 @@ abstract final class PositionConstants {
   /// 그 자체였고 80,000건/s 는 붕괴). 재측정 전까지는 **되돌릴 수 있어야
   /// 한다** — 상수 하나만 고치면 되게 한다.
   static const transmissionInterval = Duration(seconds: 2);
+
+  /// 캐시된 좌표를 "지금 위치" 로 인정하는 최대 나이 — 이보다 오래된 측정값은 GPS 가 끊겼거나 앞 운행의
+  /// 잔재라 송신·비상 신고에 쓰지 않는다(F06-04). 송신 주기의 5배.
+  static const sampleMaxAge = Duration(seconds: 10);
 }

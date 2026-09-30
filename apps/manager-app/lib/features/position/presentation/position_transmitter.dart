@@ -66,6 +66,8 @@ class PositionTransmitter extends Notifier<PositionTransmission> {
   /// 주기마다 좌표를 읽어 §4.12 로 올린다. 화면 액션이 아니라 배경 텔레메트리라 실패해도 알리지 않는다 —
   /// 다음 주기 전송이 실패를 대신 만회하고, 매번 배너를 띄우면 운전 중 방해만 된다.
   Future<void> _tick(String runId, PositionSource source) async {
+    // 권한·위치 서비스를 나중에 켜도 되살아나게 다시 확인시킨다(F06-03) — 정상이면 아무 일도 없다.
+    if (source.availability != PositionAvailability.available) source.start();
     final sample = source.sample();
     state = PositionTransmission(
       availability: source.availability,

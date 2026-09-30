@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart' show TargetPlatform;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:manager_app/core/constants/position_constants.dart';
 import 'package:manager_app/core/location/position_source.dart';
 
 /// 실제 플랫폼 채널 없이 권한·위치 서비스·좌표 스트림을 시험이 직접
@@ -19,8 +20,7 @@ class _FakeGeolocatorPlatform extends GeolocatorPlatform {
   Future<LocationPermission> checkPermission() async => checkPermissionResult;
 
   @override
-  Future<LocationPermission> requestPermission() async =>
-      checkPermissionResult;
+  Future<LocationPermission> requestPermission() async => checkPermissionResult;
 
   @override
   Future<bool> isLocationServiceEnabled() async => serviceEnabled;
@@ -49,7 +49,7 @@ Position _position({
 }) => Position(
   latitude: 37.5,
   longitude: 127,
-  timestamp: timestamp ?? DateTime.utc(2026, 9, 26),
+  timestamp: timestamp ?? DateTime.now().toUtc(),
   accuracy: 5,
   altitude: 0,
   altitudeAccuracy: 0,
@@ -118,7 +118,9 @@ void main() {
     final source = GeolocatorPositionSource()..start();
     await source.ready;
 
-    final measuredAt = DateTime.utc(2020);
+    final measuredAt = DateTime.now().toUtc().subtract(
+      const Duration(seconds: 1),
+    );
     platform.emit(_position(timestamp: measuredAt));
     await Future<void>.delayed(Duration.zero);
 
@@ -158,6 +160,79 @@ void main() {
 
     expect(source.sample(), isNull);
     expect(source.availability, PositionAvailability.serviceDisabled);
+  });
+
+  // F06-04 — 캐시된 좌표는 운행이 끝나거나 GPS 가 끊긴 뒤에도 "지금 위치" 로 쓰이면 안 된다.
+  // 비상 신고·다음 운행 첫 송신이 몇 시간 전 좌표를 싣고 나간다.
+  test('stop() 하면 캐시 좌표를 버린다(다음 운행·비상이 옛 좌표를 쓰지 않는다)', () async {
+    final platform = _FakeGeolocatorPlatform();
+    GeolocatorPlatform.instance = platform;
+    final source = GeolocatorPositionSource()..start();
+    await source.ready;
+    platform.emit(_position());
+    await Future<void>.delayed(Duration.zero);
+    expect(source.sample(), isNotNull);
+
+    source.stop();
+
+    expect(source.sample(), isNull);
+  });
+
+  test('측정한 지 오래된 좌표는 sample() 이 내지 않는다(GPS 가 끊긴 뒤 재전송 방지)', () async {
+    final platform = _FakeGeolocatorPlatform();
+    GeolocatorPlatform.instance = platform;
+    final source = GeolocatorPositionSource()..start();
+    await source.ready;
+
+    platform.emit(
+      _position(
+        timestamp: DateTime.now().toUtc().subtract(
+          PositionConstants.sampleMaxAge + const Duration(seconds: 1),
+        ),
+      ),
+    );
+    await Future<void>.delayed(Duration.zero);
+
+    expect(source.sample(), isNull);
+  });
+
+  // F06-03 — 권한·위치 서비스는 생성 때 한 번만 확인했다. 기사가 설정에서 켜도 앱을 다시 켤 때까지
+  // 송신이 살아나지 않았다. 송신기가 주기마다 start() 를 다시 부르면 그때 다시 확인한다.
+  test('위치 서비스를 나중에 켜면 start() 재호출로 송신이 되살아난다', () async {
+    final platform = _FakeGeolocatorPlatform()..serviceEnabled = false;
+    GeolocatorPlatform.instance = platform;
+    final source = GeolocatorPositionSource()..start();
+    await source.ready;
+    expect(source.availability, PositionAvailability.serviceDisabled);
+
+    platform.serviceEnabled = true;
+    source.start();
+    await Future<void>.delayed(Duration.zero);
+    await Future<void>.delayed(Duration.zero);
+    platform.emit(_position());
+    await Future<void>.delayed(Duration.zero);
+
+    expect(source.availability, PositionAvailability.available);
+    expect(source.sample(), isNotNull);
+  });
+
+  test('권한을 나중에 허용해도 start() 재호출로 되살아난다', () async {
+    final platform = _FakeGeolocatorPlatform()
+      ..checkPermissionResult = LocationPermission.denied;
+    GeolocatorPlatform.instance = platform;
+    final source = GeolocatorPositionSource()..start();
+    await source.ready;
+    expect(source.availability, PositionAvailability.permissionDenied);
+
+    platform.checkPermissionResult = LocationPermission.whileInUse;
+    source.start();
+    await Future<void>.delayed(Duration.zero);
+    await Future<void>.delayed(Duration.zero);
+    platform.emit(_position());
+    await Future<void>.delayed(Duration.zero);
+
+    expect(source.availability, PositionAvailability.available);
+    expect(source.sample(), isNotNull);
   });
 
   // BRIEF-BG2 — 스트림 좌표가 없을 때(비상 발신, 동승자 단말·송신 두절

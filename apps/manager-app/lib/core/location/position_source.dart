@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:manager_app/core/constants/position_constants.dart';
 
 /// GPS 등 실제 위치 획득 소스 — LOC-01 이 요구하는 좌표 하나를 제공한다.
 ///
@@ -178,17 +179,22 @@ class GeolocatorPositionSource implements PositionSource {
   PositionAvailability _availability = PositionAvailability.available;
   StreamSubscription<Position>? _subscription;
 
+  /// 권한·서비스 재확인이 진행 중인지 — 송신기가 주기마다 [start] 를 다시 불러도 겹쳐 돌지 않게 한다.
+  bool _rechecking = false;
+
   /// [start] 가 불렸는지 — [stop] 이 먼저 불리면(권한 확인이 아직 안 끝난
   /// 사이) 뒤늦게 끝난 권한 확인이 구독을 다시 열지 않도록 막는다.
   bool _started = false;
 
-  Future<void> _init() async {
+  /// [requestPermission] 이 `false` 면 권한 창을 다시 띄우지 않고 현재 상태만 본다 — 재확인이 2초마다
+  /// 돌 수 있어 사용자에게 창을 반복해 보이지 않으려는 것이다.
+  Future<void> _init({bool requestPermission = true}) async {
     if (!await Geolocator.isLocationServiceEnabled()) {
       _availability = PositionAvailability.serviceDisabled;
       return;
     }
     var permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
+    if (permission == LocationPermission.denied && requestPermission) {
       permission = await Geolocator.requestPermission();
     }
     if (permission == LocationPermission.denied ||
@@ -201,9 +207,27 @@ class GeolocatorPositionSource implements PositionSource {
 
   @override
   void start() {
-    if (_started) return;
+    if (_started) {
+      // 권한·서비스 문제로 스트림을 못 연 채라면 다시 확인한다 — 기사가 설정에서 켠 것을 앱 재시작
+      // 없이 알아채야 한다(F06-03).
+      if (_availability != PositionAvailability.available) {
+        unawaited(_recheck());
+      }
+      return;
+    }
     _started = true;
     unawaited(_startStream());
+  }
+
+  Future<void> _recheck() async {
+    if (_rechecking) return;
+    _rechecking = true;
+    try {
+      await _init(requestPermission: false);
+      await _startStream();
+    } finally {
+      _rechecking = false;
+    }
   }
 
   Future<void> _startStream() async {
@@ -220,6 +244,8 @@ class GeolocatorPositionSource implements PositionSource {
     _started = false;
     unawaited(_subscription?.cancel());
     _subscription = null;
+    // 이 운행의 마지막 좌표를 다음 운행·비상 신고가 "지금 위치" 로 쓰지 않게 버린다(F06-04).
+    _lastSample = null;
   }
 
   void _onPosition(Position position) {
@@ -227,7 +253,13 @@ class GeolocatorPositionSource implements PositionSource {
   }
 
   @override
-  PositionSample? sample() => _lastSample;
+  PositionSample? sample() {
+    final last = _lastSample;
+    if (last == null) return null;
+    // 스트림이 끊긴 뒤(터널·주차장)의 마지막 좌표를 계속 보내지 않는다 — 비면 호출부가 새로 잰다(F06-04).
+    final age = DateTime.now().difference(last.recordedAt);
+    return age > PositionConstants.sampleMaxAge ? null : last;
+  }
 
   @override
   PositionAvailability get availability => _availability;

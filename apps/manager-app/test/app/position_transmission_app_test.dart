@@ -37,7 +37,10 @@ class _FakeSource implements PositionSource {
   int stopCalls = 0;
 
   @override
-  PositionAvailability get availability => PositionAvailability.available;
+  PositionAvailability availabilityValue = PositionAvailability.available;
+
+  @override
+  PositionAvailability get availability => availabilityValue;
 
   @override
   PositionSample? sample() =>
@@ -103,8 +106,12 @@ void main() {
     WidgetTester tester, {
     UserRole role = UserRole.driver,
     RunStatus status = RunStatus.moving,
+    bool unavailable = false,
   }) async {
     source = _FakeSource();
+    if (unavailable) {
+      source.availabilityValue = PositionAvailability.permissionDenied;
+    }
     repository = _RecordingPositionRepository();
     final overrides = <Override>[
       tokenStorageProvider.overrideWithValue(FakeTokenStorage()),
@@ -240,6 +247,15 @@ void main() {
     await tester.pump(_interval * 3);
 
     expect(repository.calls.length, afterArrive);
+  });
+
+  testWidgets('권한이 없어 못 보내는 동안에는 주기마다 소스에 다시 확인시킨다(F06-03)', (tester) async {
+    await pumpApp(tester, unavailable: true);
+    final startsAtBegin = source.startCalls;
+
+    await tester.pump(_interval * 2);
+
+    expect(source.startCalls, greaterThan(startsAtBegin));
   });
 
   testWidgets('동승자는 운행 중이어도 어느 화면에서든 보내지 않는다', (tester) async {
