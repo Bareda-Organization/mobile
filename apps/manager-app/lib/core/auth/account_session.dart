@@ -7,8 +7,14 @@ import 'package:flutter_riverpod/legacy.dart';
 import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/core/auth/user_role.dart';
+import 'package:manager_app/core/run/run_termination_provider.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
+import 'package:manager_app/features/drive_mode/presentation/drive_mode_providers.dart';
+import 'package:manager_app/features/emergency/presentation/emergency_providers.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
+import 'package:manager_app/features/position/presentation/position_transmitter.dart';
+import 'package:manager_app/features/roster/presentation/roster_providers.dart';
+import 'package:manager_app/features/route_map/presentation/route_providers.dart';
 
 /// 계정 **상태**(`pending`·`active`·`rejected`) 를 담는다.
 ///
@@ -124,10 +130,14 @@ void applyRoleAndStatus(
 class RouterRefreshNotifier extends ChangeNotifier {
   /// `ref` 로 provider 변화를 구독하고 게이트 스트림을 함께 문다.
   RouterRefreshNotifier(this._ref) {
-    _roleSub = _ref.listen<UserRole?>(
-      currentUserRoleProvider,
-      (_, _) => notifyListeners(),
-    );
+    _roleSub = _ref.listen<UserRole?>(currentUserRoleProvider, (
+      previous,
+      next,
+    ) {
+      // 로그아웃·세션 만료(어느 경로든)로 역할이 비면 이 계정 소유의 상태를 함께 버린다(F06-02).
+      if (previous != null && next == null) _clearAccountScopedState();
+      notifyListeners();
+    });
     _statusSub = _ref.listen<AccountStatus?>(
       currentAccountStatusProvider,
       (_, _) => notifyListeners(),
@@ -144,6 +154,35 @@ class RouterRefreshNotifier extends ChangeNotifier {
         AccountGateReason.rejected => AccountStatus.rejected,
       };
     });
+    // 재발급이 401 로 거절돼(REST) 로그인이 풀렸다 — WS `sessionExpired` 와 같은 처리(K-02①).
+    // 토큰은 재발급기가 이미 지웠으므로 서버에 알릴 것이 없다.
+    _sessionExpiredSubscription = _ref
+        .read(apiClientProvider)
+        .sessionExpired
+        .listen(
+          (_) => applyRoleAndStatus(
+            _ref.read(unsupportedRoleProvider.notifier),
+            _ref.read(currentUserRoleProvider.notifier),
+            _ref.read(currentAccountStatusProvider.notifier),
+            role: null,
+            status: null,
+          ),
+        );
+  }
+
+  /// 다음 계정이 이전 계정의 회차 목록·선택값을 보거나, 이전 계정의 대기 요청을 자기 토큰으로 재생하지
+  /// 못하게 한다. 큐에는 사용자 열이 없어 비우는 수밖에 없다 — 로그아웃하면 미전송 처리는 버려진다.
+  void _clearAccountScopedState() {
+    _ref
+      ..invalidate(todayRunsProvider)
+      ..invalidate(emergencyListProvider)
+      ..invalidate(rosterProvider)
+      ..invalidate(driveModeRosterProvider)
+      ..invalidate(routeProvider);
+    _ref.read(selectedRunIdProvider.notifier).state = null;
+    _ref.read(transmissionEndedRunIdProvider.notifier).state = null;
+    _ref.read(lastArriveResultProvider.notifier).state = null;
+    unawaited(_ref.read(offlineQueueRepositoryProvider).clear());
   }
 
   final Ref _ref;
@@ -151,6 +190,7 @@ class RouterRefreshNotifier extends ChangeNotifier {
   late final ProviderSubscription<AccountStatus?> _statusSub;
   late final ProviderSubscription<bool> _unsupportedSub;
   late final StreamSubscription<AccountGateReason> _gateSubscription;
+  late final StreamSubscription<void> _sessionExpiredSubscription;
 
   @override
   void dispose() {
@@ -158,6 +198,7 @@ class RouterRefreshNotifier extends ChangeNotifier {
     _statusSub.close();
     _unsupportedSub.close();
     unawaited(_gateSubscription.cancel());
+    unawaited(_sessionExpiredSubscription.cancel());
     super.dispose();
   }
 }

@@ -25,6 +25,9 @@ class _FakeOfflineQueueRepository implements OfflineQueueRepository {
   List<PendingRequestSummary> _pending;
   final ReplayResult? replayResult;
 
+  @override
+  Future<void> clear() async {}
+
   int fetchCallCount = 0;
   int replayCallCount = 0;
 

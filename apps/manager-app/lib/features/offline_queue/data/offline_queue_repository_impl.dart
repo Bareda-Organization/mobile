@@ -137,6 +137,9 @@ class OfflineQueueRepositoryImpl implements OfflineQueueRepository {
     );
   }
 
+  @override
+  Future<void> clear() => _database.delete(_database.pendingRequests).go();
+
   /// 다시 보내도 같은 결과인 4xx 만 확정 거절이다. 401(재발급 실패)·408·429
   /// 와 5xx·비JSON 프록시 오류는 재시도하면 통과할 수 있어 행을 남긴다.
   bool _isPermanentRejection(DioException exception) {
