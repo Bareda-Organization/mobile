@@ -154,8 +154,8 @@ class _ManagerHomeScreenState extends ConsumerState<ManagerHomeScreen>
                     status: _statusOf(run.runStatus),
                     statusLabel: _statusLabelOf(run),
                     eta: DateFormat('HH:mm').format(run.departTime.toLocal()),
-                    currentStop: run.origin,
-                    nextStop: run.destination,
+                    origin: run.origin,
+                    destination: run.destination,
                     onTap: run.confirmed
                         ? () => _openRun(context, run, capabilities)
                         : null,

@@ -213,8 +213,8 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
                     statusLabel: run.runStatus == RunStatus.moving
                         ? '운행 중'
                         : '확정',
-                    currentStop: run.origin,
-                    nextStop: run.destination,
+                    origin: run.origin,
+                    destination: run.destination,
                   ),
                 const SizedBox(height: 16),
                 DriveMapPanel(

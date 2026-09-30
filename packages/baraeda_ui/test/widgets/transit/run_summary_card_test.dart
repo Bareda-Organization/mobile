@@ -26,8 +26,8 @@ void main() {
           status: BaraedaStatus.idle,
           statusLabel: '확정 전',
           eta: '12:00',
-          currentStop: '중앙 집결지',
-          nextStop: '바래다학원 A',
+          origin: '중앙 집결지',
+          destination: '바래다학원 A',
         ),
       ),
     );

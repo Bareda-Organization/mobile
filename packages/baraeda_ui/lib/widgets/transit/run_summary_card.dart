@@ -10,7 +10,7 @@ import 'package:baraeda_ui/widgets/core/icon.dart';
 import 'package:baraeda_ui/widgets/core/status_pill.dart';
 import 'package:flutter/material.dart';
 
-/// 오늘 운행 한 장 요약 카드 — 현재 이동 중 정류장과 다음 정류장을 나란히 둔다.
+/// 오늘 운행 한 장 요약 카드 — 출발지와 도착지를 나란히 둔다.
 class RunSummaryCard extends StatelessWidget {
   const RunSummaryCard({
     super.key,
@@ -19,8 +19,8 @@ class RunSummaryCard extends StatelessWidget {
     this.status = BaraedaStatus.moving,
     this.statusLabel,
     this.eta,
-    this.currentStop,
-    this.nextStop,
+    this.origin,
+    this.destination,
     this.manager,
     this.driver,
     this.onTap,
@@ -37,8 +37,13 @@ class RunSummaryCard extends StatelessWidget {
 
   /// 결론 한 줄. 예: '약 5분 후 도착합니다'.
   final String? eta;
-  final String? currentStop;
-  final String? nextStop;
+
+  /// 출발지(`API_SPEC §4.1` `origin`).
+  final String? origin;
+
+  /// 도착지(`API_SPEC §4.1` `destination`).
+  final String? destination;
+
   final String? manager;
   final String? driver;
   final VoidCallback? onTap;
@@ -108,21 +113,20 @@ class RunSummaryCard extends StatelessWidget {
                       Expanded(
                         child: _RunStopTile(
                           icon: 'navigation',
-                          // 호출부가 넘기는 값은 `/manager/runs` 의 `origin` — **출발지**다
-                          // (`API_SPEC §4.1`). "현재 이동 중" 으로 적으면 출발 전 회차에도
-                          // 버스가 움직이는 것처럼 보인다.
+                          // [origin] — **출발지**다(`API_SPEC §4.1`). "현재 이동 중" 으로 적으면
+                          // 출발 전 회차에도 버스가 움직이는 것처럼 보인다.
                           label: '출발',
-                          value: currentStop,
+                          value: origin,
                         ),
                       ),
                       const SizedBox(width: BaraedaSpacing.space3),
                       Expanded(
                         child: _RunStopTile(
                           icon: 'map-pin',
-                          // `destination` — **도착지**. 그리고 이 서비스에는 공용 정류장
+                          // [destination] — **도착지**. 그리고 이 서비스에는 공용 정류장
                           // 개념이 부재하고 단위는 승하차지다(`FEATURE_SPEC C-12`).
                           label: '도착',
-                          value: nextStop,
+                          value: destination,
                         ),
                       ),
                     ],
