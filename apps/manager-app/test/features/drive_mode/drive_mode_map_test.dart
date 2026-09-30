@@ -16,6 +16,7 @@ import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/features/drive_mode/presentation/drive_mode_providers.dart';
 import 'package:manager_app/features/drive_mode/presentation/drive_mode_screen.dart';
 import 'package:manager_app/features/home/data/models/manager_run.dart';
+import 'package:manager_app/features/home/presentation/home_providers.dart';
 import 'package:manager_app/features/position/data/models/position_request.dart';
 import 'package:manager_app/features/position/domain/position_repository.dart';
 import 'package:manager_app/features/roster/data/models/roster_response.dart';
@@ -108,6 +109,7 @@ ManagerRun _run(DateTime now, RunStatus status) => ManagerRun(
   addedCount: 0,
   removedCount: 0,
   ackRequired: false,
+  roleInRun: UserRole.driver,
 );
 
 void main() {
@@ -124,6 +126,8 @@ void main() {
     currentUserRoleProvider.overrideWith((ref) => UserRole.driver),
     selectedRunIdProvider.overrideWith((ref) => 'run-1'),
     driveModeRunProvider.overrideWithValue(_run(now, status)),
+    // 위치 송신기는 화면이 고른 회차가 아니라 오늘 회차 목록에서 송신 대상을 고른다(F06-12).
+    todayRunsProvider.overrideWith((ref) async => [_run(now, status)]),
     driveModeRosterProvider.overrideWith(
       (ref) async => RosterResponse(
         runId: 'run-1',

@@ -7,9 +7,7 @@ import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/core/constants/position_constants.dart';
 import 'package:manager_app/core/location/position_source.dart';
-import 'package:manager_app/core/run/run_enums.dart';
-import 'package:manager_app/core/run/selected_run_provider.dart';
-import 'package:manager_app/features/drive_mode/presentation/drive_mode_providers.dart';
+import 'package:manager_app/features/home/presentation/home_providers.dart';
 import 'package:manager_app/features/position/data/models/position_request.dart';
 
 /// 마지막 승하차지 도착 처리 응답(`is_final`)을 받은 회차 id — 하원 잔류로 서버 회차가 아직 `moving`
@@ -17,17 +15,19 @@ import 'package:manager_app/features/position/data/models/position_request.dart'
 final StateProvider<String?> transmissionEndedRunIdProvider =
     StateProvider<String?>((ref) => null);
 
-/// 지금 위치를 보내야 하는 회차 id — 없으면 `null`. 운행 중(`moving`)인 **기사** 회차이고 종점 도착
-/// 응답을 받지 않았을 때만 값이 있다. 역할·선택 회차·회차 상태가 바뀌어야 값이 바뀌므로
-/// (같은 값은 알리지 않는다) 회차 목록을 다시 불러와도 송신기가 다시 만들어지지 않는다.
+/// 지금 위치를 보내야 하는 회차 id — 없으면 `null`. 오늘 회차 목록에서 **내가 기사이고 운행 중**
+/// (`moving`)인 회차를 직접 고르고, 종점 도착 응답을 받은 회차는 뺀다. 화면에서 고른 회차
+/// (`selectedRunIdProvider`)와 무관하다 — 홈에서 다른 회차 카드를 눌러도 송신은 멈추지 않는다(F06-12).
+/// 회차 목록을 다시 불러와도 같은 값이면 알리지 않으므로 송신기가 다시 만들어지지 않는다.
 final Provider<String?> transmittingRunIdProvider = Provider<String?>((ref) {
   final canTransmit =
       ref.watch(roleCapabilitiesProvider)?.canTransmitPosition ?? false;
-  final runId = ref.watch(selectedRunIdProvider);
-  final run = ref.watch(driveModeRunProvider);
+  if (!canTransmit) return null;
+  final runs = ref.watch(todayRunsProvider).value;
+  final picked = runs == null ? null : pickResumableRun(runs);
   final endedRunId = ref.watch(transmissionEndedRunIdProvider);
-  if (!canTransmit || runId == null || runId == endedRunId) return null;
-  return run?.runStatus == RunStatus.moving ? runId : null;
+  if (picked == null || picked.runId == endedRunId) return null;
+  return picked.runId;
 });
 
 /// 송신기가 마지막으로 본 값 — 운행 화면이 버스 마커·위치 안내를 그릴 때 쓴다.

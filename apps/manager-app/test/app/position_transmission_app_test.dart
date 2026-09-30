@@ -19,6 +19,7 @@ import 'package:manager_app/features/drive_mode/data/models/arrive_stop_result.d
 import 'package:manager_app/features/drive_mode/data/models/start_run_result.dart';
 import 'package:manager_app/features/drive_mode/domain/drive_mode_repository.dart';
 import 'package:manager_app/features/drive_mode/presentation/drive_mode_providers.dart';
+import 'package:manager_app/features/home/data/models/manager_run.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
 import 'package:manager_app/features/position/data/models/position_request.dart';
 import 'package:manager_app/features/position/domain/position_repository.dart';
@@ -36,7 +37,6 @@ class _FakeSource implements PositionSource {
   int startCalls = 0;
   int stopCalls = 0;
 
-  @override
   PositionAvailability availabilityValue = PositionAvailability.available;
 
   @override
@@ -107,6 +107,7 @@ void main() {
     UserRole role = UserRole.driver,
     RunStatus status = RunStatus.moving,
     bool unavailable = false,
+    List<ManagerRun>? runs,
   }) async {
     source = _FakeSource();
     if (unavailable) {
@@ -123,7 +124,9 @@ void main() {
       driveModeRepositoryProvider.overrideWithValue(_FinalArriveRepository()),
       selectedRunIdProvider.overrideWith((ref) => 'run-1'),
       todayRunsProvider.overrideWith(
-        (ref) async => [managerRunFixture(status: status)],
+        (ref) async =>
+            runs ??
+            [managerRunFixture(status: status, roleInRun: UserRole.driver)],
       ),
       routeProvider.overrideWith(
         (ref) async => const RouteResponse(stops: []),
@@ -247,6 +250,27 @@ void main() {
     await tester.pump(_interval * 3);
 
     expect(repository.calls.length, afterArrive);
+  });
+
+  // F06-12 — 송신 대상은 "내가 기사이고 운행 중인 회차" 이지 화면에서 고른 회차가 아니다. 운행 중 홈에서
+  // 다른 회차 카드를 눌러도 학부모 지도의 버스가 멈추면 안 된다.
+  testWidgets('운행 중 홈에서 다른 회차를 골라도 송신은 운행 중인 회차로 이어진다', (tester) async {
+    final container = await pumpApp(
+      tester,
+      runs: [
+        managerRunFixture(status: RunStatus.moving, roleInRun: UserRole.driver),
+        managerRunFixture(runId: 'run-2'),
+      ],
+    );
+    await tester.pump(_interval);
+    expect(repository.calls, hasLength(1));
+
+    container.read(selectedRunIdProvider.notifier).state = 'run-2';
+    await tester.pump(_interval);
+    await tester.pump(_interval);
+
+    expect(repository.calls, hasLength(3), reason: '다른 회차를 골라도 2초마다 이어져야 한다');
+    expect(source.stopCalls, 0);
   });
 
   testWidgets('권한이 없어 못 보내는 동안에는 주기마다 소스에 다시 확인시킨다(F06-03)', (tester) async {
