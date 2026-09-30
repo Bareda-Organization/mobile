@@ -1,4 +1,5 @@
-// `BaraedaButton.sm` — 보이는 크기는 36 으로 두고 누르는 영역만 48 이상으로 넓힌다(F07-10 · Ruling 404).
+// `BaraedaButton.sm` — 보이는 크기는 36 으로 두고
+// 누르는 영역만 48 이상으로 넓힌다(F07-10 · Ruling 404).
 // 이웃 버튼과 누르는 영역이 겹치면 오조작이므로 그것도 함께 고정한다.
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
