@@ -9,6 +9,7 @@ import 'package:manager_app/core/constants/position_constants.dart';
 import 'package:manager_app/core/location/position_source.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
 import 'package:manager_app/features/position/data/models/position_request.dart';
+import 'package:manager_app/features/position/presentation/position_link.dart';
 import 'package:meta/meta.dart';
 
 /// 마지막 승하차지 도착 처리 응답(`is_final`)을 받은 회차 id — 하원 잔류로 서버 회차가 아직 `moving`
@@ -67,6 +68,8 @@ class PositionTransmitter extends Notifier<PositionTransmission> {
     final runId = ref.watch(transmittingRunIdProvider);
     if (runId == null) return const PositionTransmission();
     final source = ref.read(positionSourceProvider)..start();
+    // 전송 상태(`positionLinkProvider`)의 시작 시각을 송신이 시작되는 이 순간에 맞춘다 — 칩이 늦게 열려도 같다.
+    ref.read(positionLinkProvider);
     _sending = false;
     final timer = Timer.periodic(
       PositionConstants.transmissionInterval,
@@ -109,8 +112,13 @@ class PositionTransmitter extends Notifier<PositionTransmission> {
               heading: sample.heading,
             ),
           );
+      // 서버가 받았다 — 운행 화면의 전송 상태 칩이 이 시각부터 센다. 그사이 송신 대상 회차가 바뀌었으면 옛 회차의 성공이다.
+      if (ref.read(transmittingRunIdProvider) == runId) {
+        ref.read(positionLinkProvider.notifier).markSent();
+      }
     } on Failure {
-      // 배경 전송 실패 — 다음 주기가 대신한다(§1.9 는 화면 액션의 낙관적 표시를 금지할 뿐이다).
+      // 배경 전송 실패 — 다음 주기가 대신한다(§1.9 는 화면 액션의 낙관적 표시를 금지할 뿐이다). 실패는 조용히
+      // 넘기되 마지막 성공 시각은 그대로 둬서, 운행 화면의 상태 칩이 "N초 전 마지막 전송" 으로 드러낸다(R46).
     } finally {
       _sending = false;
     }

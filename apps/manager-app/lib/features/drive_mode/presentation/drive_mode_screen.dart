@@ -23,6 +23,7 @@ import 'package:manager_app/features/drive_mode/presentation/widgets/remaining_s
 import 'package:manager_app/features/emergency/presentation/widgets/emergency_button.dart';
 import 'package:manager_app/features/home/data/models/manager_run.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
+import 'package:manager_app/features/position/presentation/position_link.dart';
 import 'package:manager_app/features/position/presentation/position_transmitter.dart';
 import 'package:manager_app/features/roster/data/models/roster_response.dart';
 import 'package:manager_app/features/roster/presentation/widgets/change_ack_banner.dart';
@@ -241,6 +242,8 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
                     origin: run.origin,
                     destination: run.destination,
                   ),
+                // 위치가 서버에 닿고 있는지 — 음영 구간에서 기사가 먼저 알게 한다(R46). 송신 중일 때만 그린다.
+                const PositionLinkChip(),
                 const SizedBox(height: 16),
                 DriveMapPanel(
                   height: mapHeight,
