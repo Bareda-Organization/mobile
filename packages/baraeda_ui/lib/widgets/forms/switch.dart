@@ -9,7 +9,7 @@ import 'package:baraeda_ui/theme/baraeda_colors.dart';
 import 'package:baraeda_ui/tokens/typography.dart';
 import 'package:flutter/material.dart';
 
-/// 온/오프 스위치 + 라벨 한 줄. `BaraedaCheckbox`와 같은 prop 구성이다.
+/// 온/오프 스위치 + 라벨 한 줄.
 class BaraedaSwitch extends StatelessWidget {
   const BaraedaSwitch({
     required this.checked,

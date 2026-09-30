@@ -2,4 +2,3 @@
 library;
 
 export 'app_header.dart';
-export 'baraeda_tab_bar.dart';
