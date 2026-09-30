@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:parent_app/app/di.dart';
 import 'package:parent_app/core/auth/account_session.dart';
 import 'package:parent_app/core/auth/auth_providers.dart';
+import 'package:parent_app/core/auth/credential_limits.dart';
 
 /// AUTH-07 · API_SPEC §2.8 — 비밀번호 변경.
 ///
@@ -41,6 +42,7 @@ class _PasswordChangeScreenState extends ConsumerState<PasswordChangeScreen> {
     final currentPassword = _currentPasswordController.text;
     final newPassword = _newPasswordController.text;
     if (currentPassword.isEmpty || newPassword.isEmpty || _submitting) return;
+    if (passwordLengthError(newPassword) != null) return;
 
     setState(() {
       _submitting = true;
@@ -112,7 +114,9 @@ class _PasswordChangeScreenState extends ConsumerState<PasswordChangeScreen> {
                 label: '새 비밀번호',
                 required: true,
                 obscureText: true,
+                error: passwordLengthError(_newPasswordController.text),
                 controller: _newPasswordController,
+                onChanged: (_) => setState(() {}),
               ),
               if (_formError != null) ...[
                 const SizedBox(height: BaraedaSpacing.space4),

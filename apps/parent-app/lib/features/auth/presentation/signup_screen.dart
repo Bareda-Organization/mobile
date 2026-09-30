@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:parent_app/app/app_routes.dart';
 import 'package:parent_app/app/di.dart';
+import 'package:parent_app/core/auth/credential_limits.dart';
 import 'package:parent_app/features/auth/presentation/widgets/academy_picker.dart';
 
 /// UF-X-01 — 회원가입: 아이디·비밀번호·이름·연락처 → 역할 선택(학부모·학생) →
@@ -42,6 +43,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
   bool get _canSubmit =>
       !_submitting &&
+      loginIdLengthError(_loginIdController.text) == null &&
+      passwordLengthError(_passwordController.text) == null &&
       _academy != null &&
       _loginIdController.text.trim().isNotEmpty &&
       _passwordController.text.isNotEmpty &&
@@ -128,7 +131,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 label: '아이디',
                 required: true,
                 controller: _loginIdController,
-                error: _loginIdError,
+                error:
+                    _loginIdError ??
+                    loginIdLengthError(_loginIdController.text),
                 onChanged: (_) {
                   if (_loginIdError != null) {
                     setState(() => _loginIdError = null);
@@ -141,6 +146,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 label: '비밀번호',
                 required: true,
                 obscureText: true,
+                error: passwordLengthError(_passwordController.text),
                 controller: _passwordController,
                 onChanged: (_) => setState(() {}),
               ),
