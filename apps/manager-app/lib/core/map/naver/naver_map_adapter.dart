@@ -121,7 +121,10 @@ class _NaverMapAdapterState extends State<NaverMapAdapter> {
         child: Center(child: CircularProgressIndicator()),
       );
     }
+    // 스크롤 뷰 안에서도 끌기·확대가 지도에 먼저 닿게 한다 — 기본값 false 면 페이지 스크롤이 제스처를 가져간다
+    // (R41-CHK, test/core/map/map_gesture_test.dart).
     return NaverMap(
+      forceGesture: true,
       options: NaverMapViewOptions(
         initialCameraPosition: NCameraPosition(
           target: NLatLng(widget.camera.lat, widget.camera.lng),
