@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:parent_app/app/di.dart';
 import 'package:parent_app/core/auth/auth_providers.dart';
 import 'package:parent_app/features/home/domain/notification_item.dart';
@@ -23,9 +24,22 @@ final myStudentIdProvider = FutureProvider<String?>((ref) async {
   return me.studentId;
 });
 
-/// §3.12 — 알림 목록 1페이지(§1.8, 무한 스크롤 아님).
+/// 알림 목록에서 한 번에 받는 건수 — [더 보기] 가 [notificationPageStep] 씩 늘린다(F05-08).
+/// 서버 한도가 100건(§1.8)이라 [notificationPageMax] 를 넘기지 않는다.
+const int notificationPageStep = 20;
+const int notificationPageMax = 100;
+
+final StateProvider<int> notificationPageSizeProvider = StateProvider<int>((
+  ref,
+) {
+  ref.watch(currentUserRoleProvider); // 계정이 바뀌면 처음 크기로
+  return notificationPageStep;
+});
+
+/// §3.12 — 알림 목록. 첫 페이지(`page=0`)를 [notificationPageSizeProvider] 건수만큼 받는다.
 final notificationsProvider = FutureProvider<NotificationPage>((ref) {
   // F05-01 — 계정이 바뀌면(로그아웃 = 역할 null) 앞 계정의 캐시를 버린다.
   ref.watch(currentUserRoleProvider);
-  return ref.watch(notificationRepositoryProvider).getNotifications();
+  final size = ref.watch(notificationPageSizeProvider);
+  return ref.watch(notificationRepositoryProvider).getNotifications(size: size);
 });

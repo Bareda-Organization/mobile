@@ -1,11 +1,13 @@
 import 'dart:async';
 
+import 'package:baraeda_core/baraeda_core.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:parent_app/app/app_routes.dart';
 import 'package:parent_app/app/di.dart';
+import 'package:parent_app/core/ui/failure_message.dart';
 import 'package:parent_app/features/home/domain/notification_item.dart';
 import 'package:parent_app/features/home/presentation/home_providers.dart';
 
@@ -28,10 +30,21 @@ class NotificationList extends ConsumerWidget {
       return const EmptyState(icon: 'bell', title: '새 알림이 없습니다');
     }
 
+    final size = ref.watch(notificationPageSizeProvider);
     return Column(
-      children: page.items
-          .map((item) => _buildTile(context, ref, item))
-          .toList(),
+      children: [
+        ...page.items.map((item) => _buildTile(context, ref, item)),
+        // F05-08 — 첫 20건 뒤의 알림(특히 확인 못 한 미승차)을 볼 길. 서버 한도(100건)까지 늘린다.
+        if (page.hasNext && size < notificationPageMax)
+          BaraedaButton(
+            label: '더 보기',
+            size: BaraedaButtonSize.sm,
+            variant: BaraedaButtonVariant.ghost,
+            onPressed: () =>
+                ref.read(notificationPageSizeProvider.notifier).state =
+                    size + notificationPageStep,
+          ),
+      ],
     );
   }
 
@@ -63,7 +76,20 @@ class NotificationList extends ConsumerWidget {
   ) async {
     final route = _routeOf(item.type);
     if (route != null) unawaited(context.push<void>(route));
-    if (item.isUnread) await _markRead(ref, item.notificationId);
+    if (!item.isUnread) return;
+    try {
+      await _markRead(ref, item.notificationId);
+    } on Failure catch (failure) {
+      // F05-13 — 읽음 처리가 실패해도 이동은 이미 끝났다. 알림은 안 읽음으로 남으니 알린다.
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            failureMessage(failure, fallback: '읽음 처리하지 못했습니다'),
+          ),
+        ),
+      );
+    }
   }
 
   Future<void> _markRead(WidgetRef ref, String notificationId) async {

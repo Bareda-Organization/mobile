@@ -98,7 +98,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('알림', style: BaraedaTypography.h3),
+                  const _NotificationTitle(),
                   // UF-P-08 — "홈 → [알림] → … → [알림 설정]". 이 배선이 없어서
                   // SettingsScreen 에 도달할 길이 부재했다(2026-09-21).
                   BaraedaButton(
@@ -372,6 +372,29 @@ class _NotificationSection extends ConsumerWidget {
       ),
       data: (page) =>
           NotificationList(page: page, now: ref.watch(clockProvider).now()),
+    );
+  }
+}
+
+/// "알림" 머리말 — 안 읽은 알림이 있으면 건수 배지를 곁들인다(F05-08, UF-P-08 "미읽음 배지").
+class _NotificationTitle extends ConsumerWidget {
+  const _NotificationTitle();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final unread = ref.watch(notificationsProvider).value?.unreadCount ?? 0;
+    return Row(
+      children: [
+        const Text('알림', style: BaraedaTypography.h3),
+        if (unread > 0) ...[
+          const SizedBox(width: BaraedaSpacing.space2),
+          BaraedaBadge(
+            label: '안 읽음',
+            tone: BaraedaBadgeTone.amber,
+            count: unread,
+          ),
+        ],
+      ],
     );
   }
 }
