@@ -103,6 +103,56 @@ void main() {
     expect(find.text('보호자 · 직원에게 알림을 보냈습니다'), findsOneWidget);
   });
 
+  group('보내기 전 문구 미리보기 (R46, B2 #26)', () {
+    Future<void> pumpEscort(WidgetTester tester) => tester.pumpWidget(
+      _wrap(const DelayScreen(), [
+        selectedRunIdProvider.overrideWith((ref) => runId),
+        roleCapabilitiesProvider.overrideWithValue(
+          RoleCapabilities.of(UserRole.escort),
+        ),
+        delayRepositoryProvider.overrideWithValue(
+          _FakeDelayRepository(
+            result: const DelayResult(
+              notifiedGuardians: true,
+              notifiedStudents: true,
+              notifiedStaff: true,
+            ),
+          ),
+        ),
+      ]),
+    );
+
+    testWidgets('안내 문구를 비우면 자동 문구가 나간다고 알리고 사유·분을 따라간다', (tester) async {
+      await pumpEscort(tester);
+
+      expect(
+        find.text(
+          '안내 문구를 비우면 자동 문구가 나갑니다 — '
+          '"교통 체증" 사유와 "현재 예상 지연 5분" 이 들어갑니다',
+        ),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.text('기상 악화'));
+      await tester.pump();
+
+      expect(find.textContaining('"기상 악화" 사유'), findsOneWidget);
+    });
+
+    testWidgets('문구를 입력하면 학부모·학생에게 나갈 문장을 그대로 보여준다', (tester) async {
+      await pumpEscort(tester);
+
+      await tester.enterText(find.byType(TextField), '10분 정도 늦습니다');
+      await tester.pump();
+
+      expect(
+        find.text('학부모·학생에게 이렇게 나갑니다 — "○○ 학생이 탄 버스 — 10분 정도 늦습니다"'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('자동 문구가 나갑니다'), findsNothing);
+    });
+  });
+
   testWidgets('전송 실패 시 서버 실패 사유를 보여준다', (tester) async {
     final fakeRepo = _FakeDelayRepository(
       failure: const ApiFailure(
