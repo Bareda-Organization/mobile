@@ -6,7 +6,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:parent_app/app/app_routes.dart';
 import 'package:parent_app/app/di.dart';
-import 'package:parent_app/features/notifications/domain/notification_item.dart';
 import 'package:parent_app/features/notifications/presentation/notification_providers.dart';
 import 'package:parent_app/features/notifications/presentation/notifications_screen.dart';
 

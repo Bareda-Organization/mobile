@@ -17,7 +17,6 @@ import 'package:parent_app/core/students/presentation/student_providers.dart';
 import 'package:parent_app/features/auth/presentation/login_screen.dart';
 import 'package:parent_app/features/auth/presentation/pending_approval_screen.dart';
 import 'package:parent_app/features/home/presentation/home_screen.dart';
-import 'package:parent_app/features/notifications/domain/notification_item.dart';
 import 'package:parent_app/features/notifications/presentation/notifications_screen.dart';
 import 'package:parent_app/features/settings/domain/notification_settings.dart';
 import 'package:parent_app/features/settings/presentation/settings_providers.dart';

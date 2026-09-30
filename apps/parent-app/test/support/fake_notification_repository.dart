@@ -1,6 +1,4 @@
 import 'package:baraeda_core/baraeda_core.dart';
-import 'package:parent_app/features/notifications/domain/notification_item.dart';
-import 'package:parent_app/features/notifications/domain/notification_repository.dart';
 
 /// 서버처럼 걸러 보기·쪽 나누기·읽음 처리를 흉내 내고, 받은 요청을 기록하는 가짜.
 ///

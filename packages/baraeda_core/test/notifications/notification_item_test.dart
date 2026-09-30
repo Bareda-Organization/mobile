@@ -1,5 +1,5 @@
+import 'package:baraeda_core/baraeda_core.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:parent_app/features/notifications/domain/notification_item.dart';
 
 /// §3.12 파싱 시험 — `isUnread` 는 화면 뱃지가 직접 참조하는 파생값이라
 /// `read_at` null 처리가 어긋나면 읽은 알림이 안 읽은 것으로 보인다.

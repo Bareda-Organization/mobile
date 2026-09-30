@@ -1,5 +1,5 @@
+import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:parent_app/features/notifications/presentation/notification_time.dart';
 
 /// 한국 시간(UTC+9) 기준으로 그린다 — 기기 시간대가 달라도 서버의 날짜와 같아야 한다(R26).
 void main() {

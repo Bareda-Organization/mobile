@@ -1,3 +1,4 @@
+import 'package:baraeda_core/baraeda_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:parent_app/app/di.dart';
@@ -7,8 +8,6 @@ import 'package:parent_app/core/students/domain/student.dart';
 import 'package:parent_app/core/students/domain/student_repository.dart';
 import 'package:parent_app/core/students/presentation/selected_student.dart';
 import 'package:parent_app/features/home/presentation/home_providers.dart';
-import 'package:parent_app/features/notifications/domain/notification_item.dart';
-import 'package:parent_app/features/notifications/domain/notification_repository.dart';
 import 'package:parent_app/features/notifications/presentation/notification_providers.dart';
 
 class _CountingStudents implements StudentRepository {
