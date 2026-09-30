@@ -120,6 +120,25 @@ void main() {
       expect(find.text('로그아웃'), findsOneWidget);
     });
 
+    testWidgets('취소·확인 버튼은 한 줄에 나란히 놓이고 내용 너비만 차지한다', (tester) async {
+      await pumpHost(
+        tester,
+        (context) => showBaraedaConfirmDialog(
+          context: context,
+          title: '안내',
+          body: '본문',
+          confirmLabel: '확인',
+        ),
+      );
+      await tester.tap(find.text('열기'));
+      await tester.pumpAndSettle();
+      final cancel = tester.getRect(find.widgetWithText(BaraedaButton, '취소'));
+      final confirm = tester.getRect(find.widgetWithText(BaraedaButton, '확인'));
+      expect(cancel.center.dy, confirm.center.dy);
+      expect(cancel.right, lessThanOrEqualTo(confirm.left));
+      expect(confirm.width, lessThan(200));
+    });
+
     testWidgets('content 위젯을 본문으로 그린다', (tester) async {
       await pumpHost(
         tester,

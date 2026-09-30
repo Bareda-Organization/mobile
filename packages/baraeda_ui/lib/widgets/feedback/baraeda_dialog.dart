@@ -181,16 +181,16 @@ Future<bool> showBaraedaConfirmDialog({
           onClose: dismissible
               ? () => Navigator.of(dialogContext).pop(false)
               : null,
-          footer: Wrap(
-            spacing: BaraedaSpacing.space2,
-            runSpacing: BaraedaSpacing.space2,
-            alignment: WrapAlignment.end,
+          // Wrap 은 버튼을 가로 전체로 늘리므로 Row 로 둔다(버튼은 내용 너비).
+          footer: Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
               BaraedaButton(
                 label: cancelLabel,
                 variant: BaraedaButtonVariant.ghost,
                 onPressed: () => Navigator.of(dialogContext).pop(false),
               ),
+              const SizedBox(width: BaraedaSpacing.space2),
               BaraedaButton(
                 label: confirmLabel,
                 onPressed: () => Navigator.of(dialogContext).pop(true),
