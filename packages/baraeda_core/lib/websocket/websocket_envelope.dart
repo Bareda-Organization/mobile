@@ -26,7 +26,8 @@ class WebSocketEnvelope {
       eventWireValue: wireValue,
       runId: asIdString(json['run_id']),
       occurredAt: DateTime.parse(json['occurred_at'] as String),
-      payload: (json['payload'] as Map).cast<String, dynamic>(),
+      // 페이로드가 필요 없는 이벤트(예: `route_changed`)는 `payload` 가 없거나 null 이다.
+      payload: (json['payload'] as Map?)?.cast<String, dynamic>() ?? const {},
     );
   }
 
