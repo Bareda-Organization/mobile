@@ -36,6 +36,10 @@ void main() {
         WsEventType.fromWireValueOrNull('approval_requested'),
         WsEventType.approvalRequested,
       );
+      expect(
+        WsEventType.fromWireValueOrNull('route_changed'),
+        WsEventType.routeChanged,
+      );
     });
 
     test('모르는 값·null 은 null — 서버가 이벤트를 추가해도 죽지 않는다', () {

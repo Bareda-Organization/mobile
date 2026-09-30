@@ -60,7 +60,7 @@ ManagerChannelStatus mapConnectionState(WsConnectionState state) =>
     };
 
 /// `WsEventType` → 화면 무효화 대상 매핑. [WebSocketEnvelope] 전체가 아니라
-/// [WsEventType] 만 받는다 — 이 채널이 다루는 5종 전부 "받으면 해당 목록을
+/// [WsEventType] 만 받는다 — 이 채널이 다루는 6종 전부 "받으면 해당 목록을
 /// 다시 조회한다"만 하고 payload 필드를 직접 쓰지 않기 때문이다(로스터·명단
 /// 재조회가 서버 정본을 그대로 반영하므로 payload 를 화면 상태에 수동으로
 /// 병합할 이유가 없다 — 병합 로직은 곧 또 하나의 정합성 버그 원인이 된다).
@@ -73,6 +73,7 @@ void dispatchManagerChannelEvent(
   required void Function() onRunStarted,
   required void Function() onRunEnded,
   required void Function() onEmergencyAcked,
+  required void Function() onRouteChanged,
 }) {
   switch (event) {
     case WsEventType.riderChanged:
@@ -85,6 +86,8 @@ void dispatchManagerChannelEvent(
       onRunEnded();
     case WsEventType.emergencyAcked:
       onEmergencyAcked();
+    case WsEventType.routeChanged:
+      onRouteChanged();
     case WsEventType.position:
     case WsEventType.emergencyRaised:
     case WsEventType.approvalRequested:
@@ -120,8 +123,10 @@ class ManagerRunChannelController extends StateNotifier<ManagerChannelStatus> {
              tokenStorage: _ref.read(tokenStorageProvider),
              // REST 401 재발급과 같은 창구를 쓴다 — 동시 재발급 경합을 막는
              // 이유는 `token_refresher.dart` 문서를 본다.
-             refreshAccessToken:
-                 _ref.read(apiClientProvider).tokenRefresher.refresh,
+             refreshAccessToken: _ref
+                 .read(apiClientProvider)
+                 .tokenRefresher
+                 .refresh,
            ),
        super(ManagerChannelStatus.connecting) {
     _connectionSub = _client.connectionState.listen(_onConnectionState);
@@ -193,44 +198,41 @@ class ManagerRunChannelController extends StateNotifier<ManagerChannelStatus> {
   }
 
   void _onEnvelope(WebSocketEnvelope envelope) {
+    // 이 소켓은 한 회차의 채널만 구독하지만, 다른 회차 봉투가 섞여 와도 이 화면의
+    // 노선·명단을 다시 불러오지 않는다.
+    if (envelope.runId != _runId) return;
     dispatchManagerChannelEvent(
       envelope.event,
-      onRiderChanged: () {
-        // 미승차 반영이 §4.3 실시간 노선의 정의 자체다("확정 노선 + 미승차
-        // 반영") — RouteMapScreen 도 함께 무효화한다.
-        _ref
-          ..invalidate(rosterProvider)
-          ..invalidate(driveModeRosterProvider)
-          ..invalidate(routeProvider);
-      },
-      onStopArrived: () {
-        // `current_stop`·`next_stop` 이 바뀌는 자리라 지도도 다시 그린다.
-        _ref
-          ..invalidate(rosterProvider)
-          ..invalidate(driveModeRosterProvider)
-          ..invalidate(routeProvider);
-      },
+      // 미승차 반영이 §4.3 실시간 노선의 정의 자체다("확정 노선 + 미승차
+      // 반영") — RouteMapScreen 도 함께 무효화한다.
+      onRiderChanged: _invalidateRunViews,
+      // `current_stop`·`next_stop` 이 바뀌는 자리라 지도도 다시 그린다.
+      onStopArrived: _invalidateRunViews,
       onRunStarted: () {
         // 회차 상태(idle/confirmed → moving)가 바뀌어 두 화면의 액션
         // 버튼·헤더가 함께 갱신돼야 한다 — `todayRunsProvider` 가 그 값의
         // 원본이다(`driveModeRunProvider`·`selectedManagerRunProvider` 참고).
-        _ref
-          ..invalidate(todayRunsProvider)
-          ..invalidate(rosterProvider)
-          ..invalidate(driveModeRosterProvider)
-          ..invalidate(routeProvider);
+        _ref.invalidate(todayRunsProvider);
+        _invalidateRunViews();
       },
       onRunEnded: () {
-        _ref
-          ..invalidate(todayRunsProvider)
-          ..invalidate(rosterProvider)
-          ..invalidate(driveModeRosterProvider)
-          ..invalidate(routeProvider);
+        _ref.invalidate(todayRunsProvider);
+        _invalidateRunViews();
       },
       onEmergencyAcked: () {
         _ref.invalidate(emergencyListProvider);
       },
+      // 확정 뒤 노선(승하차지·도로 경로)이 바뀐 자리 — 지도·남은 승하차지를 새로 받는다.
+      onRouteChanged: _invalidateRunViews,
     );
+  }
+
+  /// 운행 화면이 그리는 명단(§4.2·두 화면)과 노선(§4.3)을 버려 다시 조회하게 한다.
+  void _invalidateRunViews() {
+    _ref
+      ..invalidate(rosterProvider)
+      ..invalidate(driveModeRosterProvider)
+      ..invalidate(routeProvider);
   }
 
   @override

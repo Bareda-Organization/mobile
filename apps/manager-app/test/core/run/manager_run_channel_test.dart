@@ -62,6 +62,7 @@ void main() {
         onRunStarted: counter('runStarted'),
         onRunEnded: counter('runEnded'),
         onEmergencyAcked: counter('emergencyAcked'),
+        onRouteChanged: counter('routeChanged'),
       );
     }
 
@@ -92,6 +93,11 @@ void main() {
     test('emergencyAcked → onEmergencyAcked 만 호출 (Ruling 277)', () {
       dispatch(WsEventType.emergencyAcked);
       expect(calls, {'emergencyAcked': 1});
+    });
+
+    test('routeChanged → onRouteChanged 만 호출 (R36-FE FE6)', () {
+      dispatch(WsEventType.routeChanged);
+      expect(calls, {'routeChanged': 1});
     });
 
     test('매니저 채널이 방송하지 않는 이벤트(position)는 전부 무시', () {
