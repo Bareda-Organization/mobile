@@ -97,4 +97,23 @@ void main() {
       expect(controller.currentPositionAt(t0), pointB);
     });
   });
+
+  // R46 D #11 — 좌표가 그대로인 마커(정차지)는 동기화가 다시 돌 때마다 "같은 자리에서 같은 자리로" 보간 중이 되어
+  // 프레임마다 setPosition 을 부르게 했다.
+  test('같은 좌표를 다시 받으면 보간 중이 아니다', () {
+    final t0 = DateTime(2026, 10, 1, 8);
+    final controller = MarkerMotionController()
+      ..onCoordinateReceived((lat: 37.5, lng: 127.0), t0)
+      ..onCoordinateReceived(
+        (lat: 37.5, lng: 127.0),
+        t0.add(const Duration(seconds: 1)),
+      );
+
+    expect(
+      controller.isAnimating(
+        t0.add(const Duration(seconds: 1, milliseconds: 100)),
+      ),
+      isFalse,
+    );
+  });
 }

@@ -54,6 +54,16 @@ class MarkerMotionController {
       return;
     }
 
+    // 좌표가 그대로면 움직일 것이 없다 — 같은 자리에서 같은 자리로 "보간 중" 이 되면 정차지 마커까지 프레임마다
+    // 옮기게 된다(R46 D #11).
+    if (currentPosition == target) {
+      _start = target;
+      _end = target;
+      _startedAt = now;
+      _durationMs = 0;
+      return;
+    }
+
     final intervalMs = previousReceivedAt == null
         ? defaultIntervalMs
         : now.difference(previousReceivedAt).inMilliseconds;

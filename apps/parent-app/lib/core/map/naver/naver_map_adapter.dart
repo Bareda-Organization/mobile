@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
+import 'package:parent_app/core/map/frame_move_selector.dart';
 import 'package:parent_app/core/map/frame_ticker.dart';
 import 'package:parent_app/core/map/map_surface.dart';
 import 'package:parent_app/core/map/marker_motion_controller.dart';
@@ -56,6 +57,9 @@ class _NaverMapAdapterState extends State<NaverMapAdapter> {
   /// 보간 중인 마커가 하나라도 있을 때만 돈다 — 프레임마다 `setPosition`
   /// 을 부르는 비용은 실제로 움직이는 마커가 있을 때만 낸다.
   final FrameTicker _frameTicker = FrameTicker();
+
+  /// 프레임마다 `setPosition` 을 부를 마커를 고른다.
+  final FrameMoveSelector _moveSelector = FrameMoveSelector();
 
   @override
   void initState() {
@@ -228,9 +232,10 @@ class _NaverMapAdapterState extends State<NaverMapAdapter> {
 
   void _onFrameTick() {
     final now = DateTime.now();
-    for (final entry in _motionById.entries) {
-      final marker = _markersById[entry.key];
-      final position = entry.value.currentPositionAt(now);
+    // 보간 중인(움직이는) 마커만 옮긴다 — 정차지 마커는 네이티브 호출 0(R46 D #11).
+    for (final id in _moveSelector.select(_motionById, now)) {
+      final marker = _markersById[id];
+      final position = _motionById[id]?.currentPositionAt(now);
       if (marker != null && position != null) {
         marker.setPosition(NLatLng(position.lat, position.lng));
       }
