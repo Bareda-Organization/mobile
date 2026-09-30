@@ -9,6 +9,7 @@ import 'package:parent_app/core/change_requests/presentation/change_request_prov
 import 'package:parent_app/core/runs/domain/run_intent_result.dart';
 import 'package:parent_app/core/runs/domain/student_run.dart';
 import 'package:parent_app/core/ui/confirm_dialog.dart';
+import 'package:parent_app/core/ui/failure_message.dart';
 import 'package:parent_app/core/ui/format_date_time.dart';
 import 'package:parent_app/features/home/presentation/home_providers.dart';
 
@@ -120,8 +121,8 @@ class _RunCardState extends ConsumerState<RunCard> {
             value
                 ? '출발 30분 전부터는 탑승으로 되돌릴 수 없습니다'
                 : '이미 탑승 처리가 진행돼 앱에서는 바꿀 수 없습니다. 학원에 문의해 주세요',
-          ApiFailure(:final message) => message,
-          _ => '변경을 처리하지 못했습니다',
+          ApiFailure(code: 'RUN_CANCELED') => runCanceledMessage,
+          _ => failureMessage(failure, fallback: '변경을 처리하지 못했습니다'),
         };
       });
     }

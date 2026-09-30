@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:parent_app/app/di.dart';
+import 'package:parent_app/core/ui/failure_message.dart';
 import 'package:uuid/uuid.dart';
 
 /// NTF-12 · API_SPEC §2.11 — 이 기기의 푸시 알림 수신 등록. (이전 판은
@@ -100,8 +101,7 @@ class _DeviceRegistrationPanelState
         _submitting = false;
         _bannerTone = AlertTone.missed;
         _banner = switch (failure) {
-          ApiFailure(:final message) => message,
-          _ => '기기 등록 상태를 바꾸지 못했습니다',
+          _ => failureMessage(failure, fallback: '기기 등록 상태를 바꾸지 못했습니다'),
         };
       });
     }

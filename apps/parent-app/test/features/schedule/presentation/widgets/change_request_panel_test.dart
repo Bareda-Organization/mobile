@@ -61,7 +61,6 @@ StudentRun _fixtureRun() => StudentRun(
   changeQuotaLeft: 1,
 );
 
-
 /// 요청받은 날짜를 기록하고 날짜별로 다른 회차 목록을 돌려주는 가짜 — R33 P1.
 class _DatedRunRepository implements RunRepository {
   _DatedRunRepository(this.byDate);
@@ -430,6 +429,25 @@ void main() {
 
       expect(find.text('대상 회차를 골라 주세요'), findsOneWidget);
     });
+  });
+
+  testWidgets('F05-14 신청이 네트워크 오류로 실패하면 네트워크 확인 문구를 보여준다', (tester) async {
+    await _pumpAndSubmit(tester, const Failure.network());
+
+    expect(find.text('네트워크 상태를 확인해 주세요'), findsOneWidget);
+  });
+
+  testWidgets('N-02 신청이 RUN_CANCELED 로 실패하면 임시 취소 문구를 보여준다', (tester) async {
+    await _pumpAndSubmit(
+      tester,
+      const Failure.api(
+        statusCode: 409,
+        code: 'RUN_CANCELED',
+        message: '취소된 회차입니다',
+      ),
+    );
+
+    expect(find.text('학원에서 임시로 취소한 회차입니다. 학원에 문의해 주세요'), findsOneWidget);
   });
 
   testWidgets('신청이 CHANGE_WINDOW_CLOSED 로 실패하면 운행 중 문구를 보여준다', (tester) async {
