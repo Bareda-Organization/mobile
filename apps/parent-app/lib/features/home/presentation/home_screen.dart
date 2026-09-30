@@ -6,6 +6,7 @@ import 'package:parent_app/app/app_routes.dart';
 import 'package:parent_app/app/di.dart';
 import 'package:parent_app/core/auth/account_session.dart';
 import 'package:parent_app/core/auth/auth_providers.dart';
+import 'package:parent_app/core/change_requests/presentation/change_request_providers.dart';
 import 'package:parent_app/core/students/presentation/selected_student.dart';
 import 'package:parent_app/core/time/service_date.dart';
 import 'package:parent_app/features/home/presentation/home_providers.dart';
@@ -81,6 +82,7 @@ class HomeScreen extends ConsumerWidget {
     ref
       ..invalidate(runsForStudentProvider)
       ..invalidate(runsForStudentOnProvider)
+      ..invalidate(changeRequestsProvider)
       ..invalidate(notificationsProvider);
     final base = isParent
         ? ref.refresh(myStudentsProvider.future)

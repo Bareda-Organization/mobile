@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:parent_app/app/app_routes.dart';
 import 'package:parent_app/app/di.dart';
+import 'package:parent_app/core/change_requests/presentation/change_request_providers.dart';
 import 'package:parent_app/core/runs/domain/run_intent_result.dart';
 import 'package:parent_app/core/runs/domain/student_run.dart';
 import 'package:parent_app/core/ui/confirm_dialog.dart';
@@ -102,6 +103,8 @@ class _RunCardState extends ConsumerState<RunCard> {
             ? runsForStudentProvider(widget.studentId)
             : runsForStudentOnProvider((widget.studentId, date)),
       );
+      // F05-02 — ② 구간 접수는 신청 이력·처리 대기 배지에 나타난다.
+      ref.invalidate(changeRequestsProvider(widget.studentId));
     } on Failure catch (failure) {
       if (!mounted) return;
       setState(() {
