@@ -252,4 +252,33 @@ void main() {
       await database.close();
     });
   }
+
+  test('cancel 은 그 행만 큐에서 지운다', () async {
+    final database = OfflineQueueDatabase.forTesting(NativeDatabase.memory());
+    final repository = OfflineQueueRepositoryImpl(
+      database: database,
+      dio: Dio(BaseOptions(baseUrl: 'https://example.invalid'))
+        ..httpClientAdapter = _OfflineAdapter(),
+    );
+    for (final riderId in [7, 8]) {
+      await repository.sendOrQueue<void>(
+        endpoint: '/runs/1/riders/$riderId',
+        method: 'PATCH',
+        payload: {'client_key': 'K$riderId', 'status': 'boarded'},
+        // Failure 는 Exception/Error 를 상속하지 않는다 — 위 시험과 같은 이유.
+        // ignore: only_throw_errors
+        send: () => throw const Failure.network(),
+      );
+    }
+    final pending = await repository.fetchPending();
+    expect(pending, hasLength(2));
+
+    await repository.cancel(pending.first.id);
+
+    final rest = await repository.fetchPending();
+    expect(rest.map((item) => item.id), [pending.last.id]);
+    expect(rest.single.payload, contains('K8'));
+
+    await database.close();
+  });
 }

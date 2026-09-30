@@ -1,3 +1,4 @@
+import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
@@ -15,6 +16,7 @@ class _FakeOfflineQueueRepository implements OfflineQueueRepository {
   _FakeOfflineQueueRepository({
     required List<PendingRequestSummary> pending,
     this.replayResult,
+    this.replayError,
   })
     // 필드를 private 으로 유지하려고 initializing formal 대신 명시 대입을
     // 쓴다(OfflineQueueRepositoryImpl 과 같은 이유 — replayPending 이 재대입
@@ -24,9 +26,21 @@ class _FakeOfflineQueueRepository implements OfflineQueueRepository {
 
   List<PendingRequestSummary> _pending;
   final ReplayResult? replayResult;
+  final Exception? replayError;
 
   @override
   Future<void> clear() async {}
+
+  final canceledIds = <int>[];
+
+  @override
+  Future<void> cancel(int id) async {
+    canceledIds.add(id);
+    _pending = [
+      for (final item in _pending)
+        if (item.id != id) item,
+    ];
+  }
 
   int fetchCallCount = 0;
   int replayCallCount = 0;
@@ -53,6 +67,7 @@ class _FakeOfflineQueueRepository implements OfflineQueueRepository {
     // 재시도 후 대기 목록이 비어야 "목록이 갱신됐다" 를 화면에서 검증할 수
     // 있다 — 실제 구현(OfflineQueueRepositoryImpl.replayPending)도 처리된
     // 행을 drift 테이블에서 지운다.
+    if (replayError != null) throw replayError!;
     _pending = const [];
     return replayResult!;
   }
@@ -83,8 +98,9 @@ void main() {
       pending: [
         PendingRequestSummary(
           id: 1,
-          endpoint: '/staff/runs/run-1/riders/rider-1/status',
+          endpoint: '/runs/run-1/riders/rider-1',
           method: 'PATCH',
+          payload: '{"status":"no_show","client_key":"K"}',
           createdAt: DateTime(2026, 9, 12, 10),
         ),
       ],
@@ -96,10 +112,9 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(
-      find.text('PATCH /staff/runs/run-1/riders/rider-1/status'),
-      findsOneWidget,
-    );
+    // F06-15 — 개발용 문자열(PATCH /runs/…)이 아니라 무슨 처리인지 알아볼 수 있어야 한다.
+    expect(find.text('미승차 처리'), findsOneWidget);
+    expect(find.textContaining('PATCH'), findsNothing);
     expect(find.text('처리되지 않았습니다 · 대기 중'), findsOneWidget);
   });
 
@@ -108,8 +123,9 @@ void main() {
       pending: [
         PendingRequestSummary(
           id: 1,
-          endpoint: '/staff/emergencies',
+          endpoint: '/runs/run-1/emergency',
           method: 'POST',
+          payload: '{"type":"accident","client_key":"K"}',
           createdAt: DateTime(2026, 9, 12, 10),
         ),
       ],
@@ -138,8 +154,9 @@ void main() {
       pending: [
         PendingRequestSummary(
           id: 1,
-          endpoint: '/staff/emergencies',
+          endpoint: '/runs/run-1/emergency',
           method: 'POST',
+          payload: '{"type":"accident","client_key":"K"}',
           createdAt: DateTime(2026, 9, 12, 10),
         ),
       ],
@@ -155,12 +172,12 @@ void main() {
       ]),
     );
     await tester.pumpAndSettle();
-    expect(find.text('POST /staff/emergencies'), findsOneWidget);
+    expect(find.text('비상 신고 · 사고'), findsOneWidget);
 
     await tester.tap(find.text('재시도'));
     await tester.pumpAndSettle();
 
-    expect(find.text('POST /staff/emergencies'), findsNothing);
+    expect(find.text('비상 신고 · 사고'), findsNothing);
     expect(find.text('대기 중인 요청이 없습니다'), findsOneWidget);
     expect(fakeRepo.fetchCallCount, greaterThanOrEqualTo(2));
   });
@@ -187,5 +204,73 @@ void main() {
     // 빈 상태(EmptyState) 제목과 배너 문구가 같은 문자열을 쓰므로 두 곳에서
     // 발견돼야 한다 — 배너가 새로 나타났다는 뜻이다.
     expect(find.text('대기 중인 요청이 없습니다'), findsNWidgets(2));
+  });
+
+  // F06-15 — 잘못 눌러 쌓인 건을 지울 수단이 없었다.
+  testWidgets('대기 항목의 [삭제] 를 확인하면 그 건만 큐에서 지운다', (tester) async {
+    final fakeRepo = _FakeOfflineQueueRepository(
+      pending: [
+        PendingRequestSummary(
+          id: 1,
+          endpoint: '/runs/run-1/riders/rider-1',
+          method: 'PATCH',
+          payload: '{"status":"boarded"}',
+          createdAt: DateTime(2026, 9, 12, 10),
+        ),
+        PendingRequestSummary(
+          id: 2,
+          endpoint: '/runs/run-1/riders/rider-2',
+          method: 'PATCH',
+          payload: '{"status":"alighted"}',
+          createdAt: DateTime(2026, 9, 12, 10, 1),
+        ),
+      ],
+    );
+    await tester.pumpWidget(
+      _wrap(const OfflineQueueScreen(), [
+        offlineQueueRepositoryProvider.overrideWithValue(fakeRepo),
+      ]),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('탑승 처리'), findsOneWidget);
+    expect(find.text('하차 처리'), findsOneWidget);
+
+    await tester.tap(find.text('삭제').first);
+    await tester.pumpAndSettle();
+    // 서버에 아직 반영되지 않은 처리를 버리는 일이라 한 번 묻는다.
+    await tester.tap(
+      find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.text('삭제'),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(fakeRepo.canceledIds, [1]);
+    expect(find.text('탑승 처리'), findsNothing);
+    expect(find.text('하차 처리'), findsOneWidget);
+  });
+
+  // F06-15 — 재시도가 예외로 끝나면 버튼이 영구히 잠겼다.
+  testWidgets('재시도가 예외로 끝나도 버튼이 다시 눌린다', (tester) async {
+    final fakeRepo = _FakeOfflineQueueRepository(
+      pending: const [],
+      replayError: Exception('저장소 오류'),
+    );
+    await tester.pumpWidget(
+      _wrap(const OfflineQueueScreen(), [
+        offlineQueueRepositoryProvider.overrideWithValue(fakeRepo),
+      ]),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('재시도'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('재시도를 완료하지 못했습니다'), findsOneWidget);
+    final button = tester.widget<BaraedaButton>(
+      find.widgetWithText(BaraedaButton, '재시도'),
+    );
+    expect(button.onPressed, isNotNull);
   });
 }

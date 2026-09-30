@@ -96,6 +96,7 @@ class OfflineQueueRepositoryImpl implements OfflineQueueRepository {
             id: row.id,
             endpoint: row.endpoint,
             method: row.method,
+            payload: row.payload,
             createdAt: row.createdAt,
           ),
         )
@@ -136,6 +137,9 @@ class OfflineQueueRepositoryImpl implements OfflineQueueRepository {
       droppedPermanently: droppedPermanently,
     );
   }
+
+  @override
+  Future<void> cancel(int id) => _deleteRow(id);
 
   @override
   Future<void> clear() => _database.delete(_database.pendingRequests).go();

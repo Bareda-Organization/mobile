@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/network/failure_messages.dart';
+import 'package:manager_app/core/ui/confirm_dialog.dart';
 import 'package:manager_app/features/offline_queue/data/models/pending_request_summary.dart';
 import 'package:manager_app/features/offline_queue/presentation/offline_queue_providers.dart';
 
@@ -34,15 +37,36 @@ class _OfflineQueueScreenState extends ConsumerState<OfflineQueueScreen> {
       _replaying = true;
       _resultMessage = null;
     });
-    final result = await ref
-        .read(offlineQueueRepositoryProvider)
-        .replayPending();
+    // 예외로 끝나도 버튼이 영구히 잠기지 않게 한다(F06-15).
+    String message;
+    try {
+      final result = await ref
+          .read(offlineQueueRepositoryProvider)
+          .replayPending();
+      message = _describeResult(result);
+    } on Object {
+      message = '재시도를 완료하지 못했습니다';
+    }
     if (!mounted) return;
     setState(() {
       _replaying = false;
-      _resultMessage = _describeResult(result);
+      _resultMessage = message;
     });
     ref.invalidate(pendingRequestsProvider);
+  }
+
+  /// 잘못 눌러 쌓인 건을 큐에서 지운다 — 서버에 아직 반영되지 않은 처리를 버리는 일이라 한 번 묻는다.
+  Future<void> _cancel(PendingRequestSummary item) async {
+    final confirmed = await confirmAction(
+      context,
+      title: '${item.description}을(를) 삭제할까요?',
+      body: '서버에 아직 반영되지 않았습니다. 삭제하면 이 처리는 보내지지 않습니다',
+      confirmLabel: '삭제',
+    );
+    if (!confirmed || !mounted) return;
+    final container = ProviderScope.containerOf(context);
+    await ref.read(offlineQueueRepositoryProvider).cancel(item.id);
+    container.invalidate(pendingRequestsProvider);
   }
 
   String _describeResult(ReplayResult result) {
@@ -116,14 +140,18 @@ class _OfflineQueueScreenState extends ConsumerState<OfflineQueueScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            '${item.method} ${item.endpoint}',
-            style: Theme.of(context).textTheme.titleSmall,
-          ),
+          Text(item.description, style: Theme.of(context).textTheme.titleSmall),
           const SizedBox(height: 4),
           Text(DateFormat('MM/dd HH:mm:ss').format(item.createdAt.toLocal())),
           const SizedBox(height: 4),
           const Text('처리되지 않았습니다 · 대기 중'),
+          const SizedBox(height: 8),
+          BaraedaButton(
+            label: '삭제',
+            size: BaraedaButtonSize.sm,
+            variant: BaraedaButtonVariant.ghost,
+            onPressed: () => unawaited(_cancel(item)),
+          ),
         ],
       ),
     );
