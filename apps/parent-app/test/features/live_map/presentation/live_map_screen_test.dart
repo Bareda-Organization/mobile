@@ -8,6 +8,7 @@ import 'package:parent_app/app/di.dart';
 import 'package:parent_app/core/auth/auth_providers.dart';
 import 'package:parent_app/core/auth/role_policy.dart';
 import 'package:parent_app/core/auth/user_role.dart';
+import 'package:parent_app/core/map/map_surface.dart';
 import 'package:parent_app/core/students/domain/student.dart';
 import 'package:parent_app/core/students/presentation/selected_student.dart';
 import 'package:parent_app/features/home/presentation/home_providers.dart';
@@ -851,6 +852,32 @@ void main() {
       expect(find.textContaining('운행 시작'), findsOneWidget);
       expect(find.textContaining('운행 종료'), findsNothing);
       expect(find.textContaining('정문 도착'), findsNothing);
+    });
+
+    // F05-09 — 버스 좌표가 2초마다 와도 카메라를 되돌리지 않는다(학부모가 지도를 옮기거나 줄일 수 있어야 한다).
+    testWidgets('F05-09 새 좌표가 와도 지도 카메라는 처음 자리에 머물고 [버스 위치로] 로만 따라간다', (
+      tester,
+    ) async {
+      await pumpConnected(tester);
+      Map<String, Object> pos(double lat) => {
+        'lat': lat,
+        'lng': 127.0,
+        'received_at': '2026-09-13T08:00:00Z',
+      };
+      MapCamera camera() =>
+          tester.widget<MapSurface>(find.byType(MapSurface)).camera;
+
+      client.deliver(_envelope(WsEventType.position, pos(37.5)));
+      await tester.pump();
+      expect(camera().lat, 37.5);
+
+      client.deliver(_envelope(WsEventType.position, pos(37.6)));
+      await tester.pump();
+      expect(camera().lat, 37.5, reason: '카메라는 사용자가 옮긴 자리를 덮어쓰지 않는다');
+
+      await tester.tap(find.text('버스 위치로'));
+      await tester.pump();
+      expect(camera().lat, 37.6);
     });
   });
 }
