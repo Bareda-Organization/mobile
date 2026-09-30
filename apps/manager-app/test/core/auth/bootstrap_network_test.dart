@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:manager_app/app/app.dart';
 import 'package:manager_app/app/di.dart';
-import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/features/auth/domain/auth_repository.dart';
 import 'package:manager_app/features/auth/presentation/login_screen.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';

@@ -212,4 +212,52 @@ void main() {
 
     expect(find.text('2곳이 미경유로 표시됩니다'), findsOneWidget);
   });
+
+  // F06-11 — 운행 화면 지도 패널과 같은 지도를 두 벌 관리하면서 노선 지도 쪽에 도로 경로·근사 안내·
+  // 카메라 맞춤이 빠져 있었다. 두 화면이 같은 지도 면을 쓰므로 같은 것을 보여야 한다.
+  testWidgets('road_path 가 2점 이상이면 도로 경로 선을 그린다', (tester) async {
+    final response = RouteResponse(
+      stops: [_stop(stopId: 's1', seq: 1), _stop(stopId: 's2', seq: 2)],
+      roadPath: const [
+        (lat: 37.501, lng: 127.001),
+        (lat: 37.502, lng: 127.002),
+      ],
+    );
+
+    await tester.pumpWidget(_wrap(overridesFor(response)));
+    await tester.pump();
+    await tester.pump();
+
+    final surface = tester.widget<MapSurface>(find.byType(MapSurface));
+    expect(surface.polylines, hasLength(1));
+    expect(surface.polylines.single.points, response.roadPath);
+  });
+
+  testWidgets('fallback_used 면 근사 경로라고 알린다', (tester) async {
+    final response = RouteResponse(
+      stops: [_stop(stopId: 's1', seq: 1)],
+      roadPath: const [
+        (lat: 37.501, lng: 127.001),
+        (lat: 37.502, lng: 127.002),
+      ],
+      fallbackUsed: true,
+    );
+
+    await tester.pumpWidget(_wrap(overridesFor(response)));
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('근사 경로 — 실제 도로와 다를 수 있습니다'), findsOneWidget);
+  });
+
+  testWidgets('카메라를 노선이 보이게 맞추도록 지시한다', (tester) async {
+    await tester.pumpWidget(
+      _wrap(overridesFor(RouteResponse(stops: [_stop(stopId: 's1', seq: 1)]))),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    final surface = tester.widget<MapSurface>(find.byType(MapSurface));
+    expect(surface.fitToContent, isTrue);
+  });
 }
