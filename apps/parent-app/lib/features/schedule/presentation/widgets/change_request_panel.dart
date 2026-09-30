@@ -9,6 +9,7 @@ import 'package:parent_app/core/change_requests/domain/change_request.dart';
 import 'package:parent_app/core/runs/domain/student_run.dart';
 import 'package:parent_app/core/runs/presentation/run_providers.dart';
 import 'package:parent_app/core/time/service_date.dart';
+import 'package:parent_app/core/ui/failure_message.dart';
 import 'package:parent_app/core/ui/format_date_time.dart';
 import 'package:parent_app/features/schedule/presentation/schedule_providers.dart';
 import 'package:parent_app/features/schedule/presentation/unsaved_edits.dart';
@@ -132,7 +133,11 @@ class _ChangeRequestPanelState extends ConsumerState<ChangeRequestPanel> {
       _addressController.clear();
       _reasonController.clear();
       _reportDirty();
-      ref.invalidate(changeRequestsProvider(widget.studentId));
+      ref
+        ..invalidate(changeRequestsProvider(widget.studentId))
+        // F05-03 — ① 구간 신청은 즉시 반영되므로 홈 카드(탑승 스위치·승하차지)도 다시 받는다.
+        ..invalidate(runsForStudentProvider(widget.studentId))
+        ..invalidate(runsForStudentOnProvider);
     } on Failure catch (failure) {
       if (!mounted) return;
       setState(() {
@@ -144,8 +149,8 @@ class _ChangeRequestPanelState extends ConsumerState<ChangeRequestPanel> {
             '이 회차는 변경 가능 횟수를 모두 사용했습니다',
           ApiFailure(code: 'ADDRESS_VERIFICATION_FAILED') =>
             '주소를 확인할 수 없습니다. 다시 입력해 주세요',
-          ApiFailure(:final message) => message,
-          _ => '신청을 처리하지 못했습니다',
+          ApiFailure(code: 'RUN_CANCELED') => runCanceledMessage,
+          _ => failureMessage(failure, fallback: '신청을 처리하지 못했습니다'),
         };
       });
     }

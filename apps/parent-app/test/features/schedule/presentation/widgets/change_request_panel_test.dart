@@ -61,7 +61,6 @@ StudentRun _fixtureRun() => StudentRun(
   changeQuotaLeft: 1,
 );
 
-
 /// 요청받은 날짜를 기록하고 날짜별로 다른 회차 목록을 돌려주는 가짜 — R33 P1.
 class _DatedRunRepository implements RunRepository {
   _DatedRunRepository(this.byDate);
@@ -146,12 +145,13 @@ class _AcceptingChangeRequestRepository implements ChangeRequestRepository {
 
 Future<void> _pumpAndSubmitWith(
   WidgetTester tester,
-  ChangeRequestRepository repository,
-) async {
+  ChangeRequestRepository repository, {
+  RunRepository? runs,
+}) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
-        runRepositoryProvider.overrideWithValue(_FixedRunRepository()),
+        runRepositoryProvider.overrideWithValue(runs ?? _FixedRunRepository()),
         changeRequestRepositoryProvider.overrideWithValue(repository),
       ],
       // 실제 화면(schedule_screen.dart)도 `ListView` 안에 이 패널을 두므로
@@ -178,7 +178,36 @@ Future<void> _pumpAndSubmitWith(
   await tester.pumpAndSettle();
 }
 
+/// 회차 조회 횟수를 세는 가짜 — F05-03.
+class _CountingRunRepository extends _FixedRunRepository {
+  int getCalls = 0;
+
+  @override
+  Future<List<StudentRun>> getRuns(String studentId, {DateTime? date}) {
+    getCalls++;
+    return super.getRuns(studentId, date: date);
+  }
+}
+
 void main() {
+  // F05-03 — ① 구간 신청은 즉시 반영된다. 홈 카드(탑승 스위치·승하차지)가 옛 값으로 남으면 안 된다.
+  testWidgets('F05-03 신청이 반영되면 회차 목록을 다시 받는다', (tester) async {
+    final runs = _CountingRunRepository();
+    await _pumpAndSubmitWith(
+      tester,
+      _AcceptingChangeRequestRepository(
+        const ChangeRequestCreateResult(
+          changeRequestId: 'c-1',
+          status: ChangeRequestStatus.approved,
+          result: 'applied',
+        ),
+      ),
+      runs: runs,
+    );
+
+    expect(runs.getCalls, 2, reason: '패널을 열 때 1번 + 신청 뒤 다시 받기 1번');
+  });
+
   // ⚠ 아래 흐름 시험들은 라벨을 `runOptionLabel` 로 만들어 찾는다 — 편하지만 **그 함수가 틀려도
   // 양쪽이 같이 틀려서 통과한다**(`API_SPEC §8` 에러 사전 대조가 상수를 안 쓰는 것과 같은 이유).
   // 그래서 문구 자체는 여기서 **손으로 적은 리터럴**로 한 번 고정한다.
@@ -400,6 +429,25 @@ void main() {
 
       expect(find.text('대상 회차를 골라 주세요'), findsOneWidget);
     });
+  });
+
+  testWidgets('F05-14 신청이 네트워크 오류로 실패하면 네트워크 확인 문구를 보여준다', (tester) async {
+    await _pumpAndSubmit(tester, const Failure.network());
+
+    expect(find.text('네트워크 상태를 확인해 주세요'), findsOneWidget);
+  });
+
+  testWidgets('N-02 신청이 RUN_CANCELED 로 실패하면 임시 취소 문구를 보여준다', (tester) async {
+    await _pumpAndSubmit(
+      tester,
+      const Failure.api(
+        statusCode: 409,
+        code: 'RUN_CANCELED',
+        message: '취소된 회차입니다',
+      ),
+    );
+
+    expect(find.text('학원에서 임시로 취소한 회차입니다. 학원에 문의해 주세요'), findsOneWidget);
   });
 
   testWidgets('신청이 CHANGE_WINDOW_CLOSED 로 실패하면 운행 중 문구를 보여준다', (tester) async {

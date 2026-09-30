@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:parent_app/app/di.dart';
 import 'package:parent_app/core/common/run_direction.dart';
+import 'package:parent_app/core/ui/failure_message.dart';
 import 'package:parent_app/features/schedule/domain/weekly_address_entry.dart';
 import 'package:parent_app/features/schedule/presentation/schedule_providers.dart';
 import 'package:parent_app/features/schedule/presentation/unsaved_edits.dart';
@@ -103,6 +104,15 @@ class _WeeklyAddressEditorState extends ConsumerState<WeeklyAddressEditor> {
       _banner = null;
     });
 
+    // F05-11 — 한 칸만 비어도 서버가 전체(최대 14건)를 거절해 다른 요일 수정분까지 잃는다. 보내기 전에 막는다.
+    if (widget.entries.any((e) => _controllerFor(e).text.trim().isEmpty)) {
+      setState(() {
+        _bannerTone = AlertTone.missed;
+        _banner = '비어 있는 주소가 있습니다. 주소를 입력해 주세요';
+      });
+      return;
+    }
+
     final updated = widget.entries.isEmpty
         ? [
             WeeklyAddressEntry(
@@ -113,7 +123,8 @@ class _WeeklyAddressEditorState extends ConsumerState<WeeklyAddressEditor> {
           ]
         : widget.entries
               .map(
-                (entry) => entry.copyWith(address: _controllerFor(entry).text),
+                (entry) =>
+                    entry.copyWith(address: _controllerFor(entry).text.trim()),
               )
               .toList();
 
@@ -142,8 +153,7 @@ class _WeeklyAddressEditorState extends ConsumerState<WeeklyAddressEditor> {
         _banner = switch (failure) {
           ApiFailure(code: 'ADDRESS_VERIFICATION_FAILED') =>
             '주소를 확인할 수 없습니다. 다시 입력해 주세요',
-          ApiFailure(:final message) => message,
-          _ => '저장하지 못했습니다',
+          _ => failureMessage(failure, fallback: '저장하지 못했습니다'),
         };
       });
     }

@@ -15,9 +15,17 @@ import 'package:parent_app/features/settings/presentation/widgets/notification_s
 /// 돌아온다" 를 봐야 되돌리기 로직 자체를 잡는다.
 class _RejectingNotificationSettingsRepository
     implements NotificationSettingsRepository {
-  _RejectingNotificationSettingsRepository(this._initial);
+  _RejectingNotificationSettingsRepository(
+    this._initial, {
+    this.failure = const Failure.api(
+      statusCode: 422,
+      code: 'INVALID_SETTINGS',
+      message: '설정을 바꾸지 못했습니다',
+    ),
+  });
 
   final NotificationSettings _initial;
+  final Failure failure;
 
   @override
   Future<NotificationSettings> getNotificationSettings() async => _initial;
@@ -25,13 +33,7 @@ class _RejectingNotificationSettingsRepository
   @override
   Future<NotificationSettings> updateNotificationSettings(
     NotificationSettings settings,
-  ) => Future.error(
-    const Failure.api(
-      statusCode: 422,
-      code: 'INVALID_SETTINGS',
-      message: '설정을 바꾸지 못했습니다',
-    ),
-  );
+  ) => Future.error(failure);
 }
 
 void main() {
@@ -75,5 +77,34 @@ void main() {
       reason: '서버가 거부했으면 화면은 거부되기 전 값(false)으로 돌아가야 한다',
     );
     expect(find.text('설정을 바꾸지 못했습니다'), findsOneWidget);
+  });
+
+  testWidgets('F05-14 네트워크 오류로 실패하면 네트워크 확인 문구를 보여준다', (tester) async {
+    const initial = NotificationSettings(
+      arrive: false,
+      boarding: true,
+      noShow: true,
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          notificationSettingsRepositoryProvider.overrideWithValue(
+            _RejectingNotificationSettingsRepository(
+              initial,
+              failure: const Failure.network(),
+            ),
+          ),
+        ],
+        child: const MaterialApp(
+          home: Scaffold(body: NotificationSettingsPanel()),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byType(BaraedaSwitch).first);
+    await tester.pumpAndSettle();
+
+    expect(find.text('네트워크 상태를 확인해 주세요'), findsOneWidget);
   });
 }

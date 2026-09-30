@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:parent_app/app/di.dart';
+import 'package:parent_app/core/auth/auth_providers.dart';
 import 'package:parent_app/core/runs/domain/student_run.dart';
 
 /// §3.5 — 학생별 당일 회차. `home`(오늘 운행 표시) · `schedule`(변경 신청
@@ -16,6 +17,8 @@ final runsForStudentProvider = FutureProvider.family<List<StudentRun>, String>((
   ref,
   studentId,
 ) {
+  // F05-01 — 계정이 바뀌면(로그아웃 = 역할 null) 앞 계정의 캐시를 버린다.
+  ref.watch(currentUserRoleProvider);
   return ref.watch(runRepositoryProvider).getRuns(studentId);
 });
 
@@ -27,5 +30,7 @@ final runsForStudentOnProvider =
       ref,
       key,
     ) {
+      // F05-01 — 계정이 바뀌면(로그아웃 = 역할 null) 앞 계정의 캐시를 버린다.
+      ref.watch(currentUserRoleProvider);
       return ref.watch(runRepositoryProvider).getRuns(key.$1, date: key.$2);
     });

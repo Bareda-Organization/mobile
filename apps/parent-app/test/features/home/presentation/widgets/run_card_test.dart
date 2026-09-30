@@ -168,6 +168,30 @@ void main() {
     );
   });
 
+  // F05-14 — 연결이 끊긴 것과 서버가 거절한 것은 학부모가 다르게 대응한다(다시 눌러 보기 vs 학원 문의).
+  testWidgets('F05-14 토글이 네트워크 오류로 실패하면 네트워크 확인 문구를 보여준다', (tester) async {
+    await _pumpWith(tester, _ThrowingRunRepository(const Failure.network()));
+
+    expect(find.text('네트워크 상태를 확인해 주세요'), findsOneWidget);
+    expect(find.text('변경을 처리하지 못했습니다'), findsNothing);
+  });
+
+  // N-02 · Ruling 376 — 임시 취소된 회차의 탑승 토글은 409 RUN_CANCELED.
+  testWidgets('N-02 토글이 RUN_CANCELED 로 실패하면 임시 취소 문구를 보여준다', (tester) async {
+    await _pumpWith(
+      tester,
+      _ThrowingRunRepository(
+        const Failure.api(
+          statusCode: 409,
+          code: 'RUN_CANCELED',
+          message: '취소된 회차입니다',
+        ),
+      ),
+    );
+
+    expect(find.text('학원에서 임시로 취소한 회차입니다. 학원에 문의해 주세요'), findsOneWidget);
+  });
+
   testWidgets('토글이 CHANGE_LIMIT_REACHED 로 실패하면 한도 소진 문구를 보여준다', (
     tester,
   ) async {

@@ -157,6 +157,44 @@ void main() {
     );
   });
 
+  // F05-11 — API_SPEC §2.8 새 비밀번호는 UTF-8 72바이트 이하(한글 24자).
+  // 넘으면 서버 422 를 기다리지 않는다.
+  testWidgets('F05-11 새 비밀번호가 72바이트를 넘으면 이유를 보이고 요청을 보내지 않는다', (tester) async {
+    final repository = _CountingAuthRepository();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [authRepositoryProvider.overrideWithValue(repository)],
+        child: const MaterialApp(home: PasswordChangeScreen()),
+      ),
+    );
+
+    await tester.enterText(find.byType(TextField).at(0), 'current-pw');
+    await tester.enterText(find.byType(TextField).at(1), '가' * 25); // 75바이트
+    await tester.pump();
+    expect(find.textContaining('72바이트'), findsOneWidget);
+
+    await tester.tap(find.text('변경하기'));
+    await tester.pumpAndSettle();
+
+    expect(repository.changePasswordCallCount, 0);
+  });
+
+  testWidgets('F05-11 한글 24자(72바이트)는 통과한다', (tester) async {
+    final repository = _CountingAuthRepository();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [authRepositoryProvider.overrideWithValue(repository)],
+        child: const MaterialApp(home: PasswordChangeScreen()),
+      ),
+    );
+
+    await tester.enterText(find.byType(TextField).at(0), 'current-pw');
+    await tester.enterText(find.byType(TextField).at(1), '가' * 24);
+    await tester.pump();
+
+    expect(find.textContaining('72바이트'), findsNothing);
+  });
+
   // FE-R2 목표 10 — 버튼 비활성화뿐 아니라 로딩 표시기도 함께 뜨는지 본다.
   // `changePassword` 응답이 오기 전 프레임을 `pump()` 로 붙잡아 확인한다.
   testWidgets('제출 중에는 진행 표시기가 뜨고, 끝나면 사라진다', (tester) async {

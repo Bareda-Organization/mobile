@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:parent_app/app/di.dart';
+import 'package:parent_app/core/auth/auth_providers.dart';
 import 'package:parent_app/features/schedule/domain/weekly_address_entry.dart';
 import 'package:parent_app/features/schedule/presentation/unsaved_edits.dart';
 
@@ -18,6 +19,8 @@ export 'package:parent_app/core/change_requests/presentation/change_request_prov
 // ignore: specify_nonobvious_property_types
 final weeklyAddressProvider =
     FutureProvider.family<List<WeeklyAddressEntry>, String>((ref, studentId) {
+      // F05-01 — 계정이 바뀌면(로그아웃 = 역할 null) 앞 계정의 캐시를 버린다.
+      ref.watch(currentUserRoleProvider);
       final repository = ref.watch(weeklyAddressRepositoryProvider);
       return repository.getWeeklyAddress(studentId);
     });
