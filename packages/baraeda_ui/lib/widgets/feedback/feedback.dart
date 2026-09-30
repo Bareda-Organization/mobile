@@ -5,4 +5,4 @@ export 'alert_banner.dart';
 export 'baraeda_bottom_sheet.dart';
 export 'baraeda_dialog.dart';
 export 'empty_state.dart';
-export 'notification_card.dart';
+export 'notification_tile.dart';

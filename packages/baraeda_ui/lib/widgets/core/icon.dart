@@ -56,6 +56,10 @@ const Map<String, IconData> _kBaraedaIconGlyphs = {
   // 발견, 역할 분기와는 무관한 별도 결함 — 위 `link`·`user-plus` 와 같은
   // 형태).
   'info': Icons.info,
+  // 알림 목록 행(`NotificationTile`)이 종류마다 다른 모양으로 쓰는 아이콘 — 색만으로 종류를 가르지 않는다(R44).
+  'log-in': Icons.login,
+  'user-x': Icons.person_off,
+  'calendar-check': Icons.event_available,
 };
 
 /// Lucide 아이콘 래퍼 — 바래다의 모든 아이콘은 이걸 통해 쓴다.
