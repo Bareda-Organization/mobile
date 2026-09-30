@@ -7,9 +7,9 @@ import 'package:parent_app/app/di.dart';
 import 'package:parent_app/core/auth/domain/auth_repository.dart';
 import 'package:parent_app/core/runs/domain/student_run.dart';
 import 'package:parent_app/features/auth/presentation/login_screen.dart';
-import 'package:parent_app/features/home/domain/notification_item.dart';
 import 'package:parent_app/features/home/presentation/home_providers.dart';
 
+import '../../support/fake_notification_repository.dart';
 import '../../support/fake_token_storage.dart';
 
 /// `/me` 만 쓰는 가짜 — 첫 호출은 [failure] 로 실패하고 그 뒤로는 학생 계정을 돌려준다.
@@ -50,19 +50,12 @@ void main() {
           ),
           authRepositoryProvider.overrideWithValue(repository),
           // 다시 시도가 성공하면 홈이 열린다 — 홈이 부르는 요청은 가짜로 막는다.
+          notificationRepositoryProvider.overrideWithValue(
+            FakeNotificationRepository(const []),
+          ),
           myStudentIdProvider.overrideWith((ref) async => 's-1'),
           runsForStudentProvider.overrideWith(
             (ref, studentId) async => const <StudentRun>[],
-          ),
-          notificationsProvider.overrideWith(
-            (ref) async => const NotificationPage(
-              items: [],
-              page: 0,
-              size: 20,
-              totalCount: 0,
-              hasNext: false,
-              unreadCount: 0,
-            ),
           ),
         ],
         child: const BaraedaParentApp(),

@@ -41,10 +41,18 @@ void main() {
         EmptyState,
         ['알림 없음', '새 알림'],
       ),
-      'NotificationCard': (
-        const NotificationCard(title: '지연 안내', meta: '서준', sub: '8:58'),
-        NotificationCard,
-        ['지연 안내', '서준', '8:58', '승차 완료'],
+      'NotificationTile': (
+        const NotificationTile(
+          icon: 'clock',
+          status: BaraedaStatus.moving,
+          kindLabel: '지연',
+          title: '늦어짐 안내',
+          body: '서준',
+          time: '8:58',
+          timeSpoken: '오전 8시 58분',
+        ),
+        NotificationTile,
+        ['늦어짐 안내', '서준', '지연', '오전 8시 58분'],
       ),
       'StatCard': (
         const StatCard(label: '탑승', value: '12', unit: '명', sub: '전체'),
@@ -120,9 +128,20 @@ void main() {
       handle.dispose();
     });
 
-    testWidgets('NotificationCard 는 안 읽음을 낭독 문구에 싣는다', (tester) async {
+    testWidgets('NotificationTile 은 안 읽음을 낭독 문구에 싣는다', (tester) async {
       final handle = tester.ensureSemantics();
-      await _pump(tester, const NotificationCard(title: '승차', unread: true));
+      await _pump(
+        tester,
+        const NotificationTile(
+          icon: 'log-in',
+          status: BaraedaStatus.boarded,
+          kindLabel: '승차',
+          title: '승차',
+          time: '8:37',
+          timeSpoken: '오전 8시 37분',
+          unread: true,
+        ),
+      );
 
       expect(find.bySemanticsLabel(RegExp('안 읽음')), findsWidgets);
       handle.dispose();

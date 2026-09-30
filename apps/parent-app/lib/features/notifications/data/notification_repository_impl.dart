@@ -1,8 +1,8 @@
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:dio/dio.dart';
-import 'package:parent_app/features/home/data/notification_api.dart';
-import 'package:parent_app/features/home/domain/notification_item.dart';
-import 'package:parent_app/features/home/domain/notification_repository.dart';
+import 'package:parent_app/features/notifications/data/notification_api.dart';
+import 'package:parent_app/features/notifications/domain/notification_item.dart';
+import 'package:parent_app/features/notifications/domain/notification_repository.dart';
 
 class NotificationRepositoryImpl implements NotificationRepository {
   const NotificationRepositoryImpl({required this._notificationApi});
@@ -10,8 +10,17 @@ class NotificationRepositoryImpl implements NotificationRepository {
   final NotificationApi _notificationApi;
 
   @override
-  Future<NotificationPage> getNotifications({int page = 0, int size = 20}) =>
-      _guard(() => _notificationApi.getNotifications(page: page, size: size));
+  Future<NotificationPage> getNotifications({
+    int page = 0,
+    int size = 20,
+    bool unreadOnly = false,
+  }) => _guard(
+    () => _notificationApi.getNotifications(
+      page: page,
+      size: size,
+      unreadOnly: unreadOnly,
+    ),
+  );
 
   @override
   Future<void> markRead(String notificationId) =>

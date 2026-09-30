@@ -2,10 +2,9 @@ import 'package:parent_app/core/common/json_id.dart';
 
 /// `GET /notifications` 응답 항목 (API_SPEC §3.12).
 ///
-/// [type] 은 §9.7 알림 종류를 문자열 그대로 보관한다 — 이 화면 범위에서는
-/// 종류별 분기가 없고(뱃지 표시에 [popup]·읽음 여부(`readAt`)만 쓴다) 전체
-/// 목록을 enum 으로 옮기면 §9.7 이 늘 때마다 이 파일도 고쳐야 하는 결합이
-/// 생긴다.
+/// [type] 은 §9.7 알림 종류를 문자열 그대로 보관한다 — 종류별 모양·이동 화면은
+/// `presentation/notification_kind.dart` 가 한 곳에서 정하고, 전체 목록을 enum 으로 옮기면
+/// §9.7 이 늘 때마다 이 파일도 고쳐야 하는 결합이 생긴다.
 class NotificationItem {
   const NotificationItem({
     required this.notificationId,
@@ -53,6 +52,19 @@ class NotificationItem {
   final bool popup;
 
   bool get isUnread => readAt == null;
+
+  /// 읽음 처리한 사본 — 목록을 다시 받지 않고 그 행만 읽음으로 바꾼다.
+  NotificationItem markedRead(DateTime at) => NotificationItem(
+    notificationId: notificationId,
+    type: type,
+    title: title,
+    body: body,
+    sentAt: sentAt,
+    popup: popup,
+    studentId: studentId,
+    studentName: studentName,
+    readAt: at,
+  );
 }
 
 /// §3.12 페이징 봉투(§1.8) + 봉투 레벨 `unread_count`.

@@ -13,18 +13,16 @@ import 'package:parent_app/core/students/presentation/selected_student.dart';
 import 'package:parent_app/core/time/service_date.dart';
 import 'package:parent_app/core/ui/failure_message.dart';
 import 'package:parent_app/features/home/presentation/home_providers.dart';
-import 'package:parent_app/features/home/presentation/widgets/notification_list.dart';
 import 'package:parent_app/features/home/presentation/widgets/pending_change_badge.dart';
 import 'package:parent_app/features/home/presentation/widgets/run_card.dart';
 
-/// P-03·P-04·P-09 홈 화면 — 오늘 회차(§3.5) · 등원 여부 토글(§3.6) ·
-/// 알림 목록(§3.12·§3.13). (`P-02` 가 아니다 — 그것은 자녀 연결 화면의
-/// ID 이고, 이 화면이 보여주는 것은 P-09 알림 목록이다. FEATURE_SPEC ·
-/// USER_FLOWS 직접 대조로 정정, 2026-09-12.)
+/// P-03·P-04 홈 화면 — 오늘 회차(§3.5) · 등원 여부 토글(§3.6). 운행 정보만 둔다.
+/// 알림 목록(P-09)은 2026-09-30 부터 아래 탭 막대의 `[알림]` 탭이다(`NotificationsScreen`, R44) —
+/// 홈 맨 아래에 이어 붙이면 끝까지 내려야 보였다.
 ///
 /// 역할 분기는 문자열이 아니라 `roleCapabilitiesProvider.canToggleAttendance`
 /// 하나로만 한다(§1.1) — 학부모는 연결 자녀 중 선택(UF-P-02), 자녀별 탑승
-/// 토글(UF-P-04, ②구간 승인 대기는 UF-P-05), 알림 목록(UF-P-08). 학생은
+/// 토글(UF-P-04, ②구간 승인 대기는 UF-P-05). 학생은
 /// 본인 `student_id` 하나만 쓴다(UF-S-01 조회 전용).
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -34,7 +32,7 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 /// 푸시 SDK 가 아직 없어 앱 안 갱신이 유일한 통지 수단이다(F05-06) — 당기지 않아도 앱에 돌아오거나
-/// [_autoRefreshInterval] 이 지나면 회차·알림을 다시 받는다.
+/// [_autoRefreshInterval] 이 지나면 회차를 다시 받는다(알림은 `AppShell` 이 받는다).
 class _HomeScreenState extends ConsumerState<HomeScreen>
     with WidgetsBindingObserver {
   static const _autoRefreshInterval = Duration(seconds: 30);
@@ -65,8 +63,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     ref
       ..invalidate(runsForStudentProvider)
       ..invalidate(runsForStudentOnProvider)
-      ..invalidate(changeRequestsProvider)
-      ..invalidate(notificationsProvider);
+      ..invalidate(changeRequestsProvider);
   }
 
   @override
@@ -95,23 +92,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             padding: const EdgeInsets.all(BaraedaSpacing.gutterMobile),
             children: [
               if (isParent) const _ParentSection() else const _StudentSection(),
-              const SizedBox(height: BaraedaSpacing.sectionGap),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const _NotificationTitle(),
-                  // UF-P-08 — "홈 → [알림] → … → [알림 설정]". 이 배선이 없어서
-                  // SettingsScreen 에 도달할 길이 부재했다(2026-09-21).
-                  BaraedaButton(
-                    label: '설정',
-                    size: BaraedaButtonSize.sm,
-                    variant: BaraedaButtonVariant.ghost,
-                    onPressed: () => context.push(AppRoutes.settings),
-                  ),
-                ],
-              ),
-              const SizedBox(height: BaraedaSpacing.space4),
-              const _NotificationSection(),
             ],
           ),
         ),
@@ -119,23 +99,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     );
   }
 
-  /// 화면을 아래로 당기면 자녀·회차·알림을 서버에서 다시 받는다. 실패해도 각 영역의 오류 띠가
+  /// 화면을 아래로 당기면 자녀·회차를 서버에서 다시 받는다. 실패해도 각 영역의 오류 띠가
   /// 이유를 보여주므로 여기서는 끝나기만 기다린다.
   Future<void> _refresh({required bool isParent}) async {
     ref
       ..invalidate(runsForStudentProvider)
       ..invalidate(runsForStudentOnProvider)
-      ..invalidate(changeRequestsProvider)
-      ..invalidate(notificationsProvider);
+      ..invalidate(changeRequestsProvider);
     final base = isParent
         ? ref.refresh(myStudentsProvider.future)
         : ref.refresh(myStudentIdProvider.future);
-    await Future.wait([
-      base.then<void>((_) {}, onError: (_) {}),
-      ref
-          .read(notificationsProvider.future)
-          .then<void>((_) {}, onError: (_) {}),
-    ]);
+    await base.then<void>((_) {}, onError: (_) {});
   }
 }
 
@@ -359,48 +333,6 @@ class _RunsSectionState extends ConsumerState<_RunsSection> {
                       .toList(),
                 ),
         ),
-      ],
-    );
-  }
-}
-
-class _NotificationSection extends ConsumerWidget {
-  const _NotificationSection();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final pageAsync = ref.watch(notificationsProvider);
-
-    return pageAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stack) => _ErrorBanner(
-        message: '알림을 불러오지 못했습니다',
-        onRetry: () => ref.invalidate(notificationsProvider),
-      ),
-      data: (page) =>
-          NotificationList(page: page, now: ref.watch(clockProvider).now()),
-    );
-  }
-}
-
-/// "알림" 머리말 — 안 읽은 알림이 있으면 건수 배지를 곁들인다(F05-08, UF-P-08 "미읽음 배지").
-class _NotificationTitle extends ConsumerWidget {
-  const _NotificationTitle();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final unread = ref.watch(notificationsProvider).value?.unreadCount ?? 0;
-    return Row(
-      children: [
-        const Text('알림', style: BaraedaTypography.h3),
-        if (unread > 0) ...[
-          const SizedBox(width: BaraedaSpacing.space2),
-          BaraedaBadge(
-            label: '안 읽음',
-            tone: BaraedaBadgeTone.amber,
-            count: unread,
-          ),
-        ],
       ],
     );
   }

@@ -13,7 +13,6 @@ import 'package:parent_app/core/runs/domain/run_intent_result.dart';
 import 'package:parent_app/core/runs/domain/run_repository.dart';
 import 'package:parent_app/core/runs/domain/student_run.dart';
 import 'package:parent_app/core/students/domain/student.dart';
-import 'package:parent_app/features/home/domain/notification_item.dart';
 import 'package:parent_app/features/home/presentation/home_providers.dart';
 import 'package:parent_app/features/home/presentation/home_screen.dart';
 
@@ -92,16 +91,6 @@ void main() {
                 linkedAt: DateTime(2026, 9),
               ),
             ],
-          ),
-          notificationsProvider.overrideWith(
-            (ref) async => const NotificationPage(
-              items: [],
-              page: 0,
-              size: 20,
-              totalCount: 0,
-              hasNext: false,
-              unreadCount: 0,
-            ),
           ),
           runRepositoryProvider.overrideWithValue(runs),
           changeRequestRepositoryProvider.overrideWithValue(changes),

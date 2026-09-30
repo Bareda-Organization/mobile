@@ -19,6 +19,9 @@ abstract final class AppRoutes {
   static const pendingApproval = '/pending-approval';
   static const blockedAccount = '/blocked-account';
   static const home = '/home';
+
+  /// 알림 탭(P-09 · S-03) — 앱 아래 탭 막대의 두 번째 칸. 푸시로 들어오는 경로도 이 주소다.
+  static const notifications = '/notifications';
   static const liveMap = '/live-map';
   static const routeDetail = '/route-detail';
   static const schedule = '/schedule';
