@@ -11,7 +11,7 @@ import 'package:parent_app/app/di.dart';
 import 'package:parent_app/core/auth/auth_providers.dart';
 import 'package:parent_app/core/map/map_surface.dart';
 import 'package:parent_app/core/students/presentation/selected_student.dart';
-import 'package:parent_app/features/home/presentation/home_providers.dart';
+import 'package:parent_app/core/students/presentation/student_providers.dart';
 import 'package:parent_app/features/live_map/domain/bus_position.dart';
 import 'package:parent_app/features/live_map/domain/live_map_status.dart';
 import 'package:parent_app/features/live_map/presentation/live_map_providers.dart';

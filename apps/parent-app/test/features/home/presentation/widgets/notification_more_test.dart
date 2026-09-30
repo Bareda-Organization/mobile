@@ -47,9 +47,8 @@ class _PagedRepository implements NotificationRepository {
   }
 
   @override
-  Future<void> markRead(String notificationId) async {
-    if (failMarkRead) throw const Failure.network();
-  }
+  Future<void> markRead(String notificationId) =>
+      failMarkRead ? Future.error(const Failure.network()) : Future.value();
 }
 
 /// F05-08 · F05-13 — 알림은 첫 20건에서 끝나지 않고, 미읽음 건수가 보이며, 읽음 처리 실패가 예외로 새지 않는다.

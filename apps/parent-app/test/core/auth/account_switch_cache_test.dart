@@ -6,7 +6,6 @@ import 'package:parent_app/core/auth/user_role.dart';
 import 'package:parent_app/core/students/domain/student.dart';
 import 'package:parent_app/core/students/domain/student_repository.dart';
 import 'package:parent_app/core/students/presentation/selected_student.dart';
-import 'package:parent_app/core/students/presentation/student_providers.dart';
 import 'package:parent_app/features/home/domain/notification_item.dart';
 import 'package:parent_app/features/home/domain/notification_repository.dart';
 import 'package:parent_app/features/home/presentation/home_providers.dart';

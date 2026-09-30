@@ -6,7 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:parent_app/app/app_routes.dart';
 import 'package:parent_app/core/auth/auth_providers.dart';
 import 'package:parent_app/core/students/presentation/selected_student.dart';
-import 'package:parent_app/features/home/presentation/home_providers.dart';
+import 'package:parent_app/core/students/presentation/student_providers.dart';
 import 'package:parent_app/features/route/domain/route_detail.dart';
 import 'package:parent_app/features/route/presentation/route_providers.dart';
 import 'package:url_launcher/url_launcher.dart';

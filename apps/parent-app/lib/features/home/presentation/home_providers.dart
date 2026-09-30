@@ -14,16 +14,6 @@ import 'package:parent_app/features/home/domain/notification_item.dart';
 export 'package:parent_app/core/runs/presentation/run_providers.dart';
 export 'package:parent_app/core/students/presentation/student_providers.dart';
 
-/// 학생 계정 본인의 `student_id` — `GET /me` 의 `student_id` 필드(§2.10)를
-/// 그대로 쓴다. 학생용 `/me/students` 대응 엔드포인트가 부재하므로 이 값이
-/// 유일한 경로다.
-final myStudentIdProvider = FutureProvider<String?>((ref) async {
-  // F05-01 — 계정이 바뀌면(로그아웃 = 역할 null) 앞 계정의 캐시를 버린다.
-  ref.watch(currentUserRoleProvider);
-  final me = await ref.watch(authRepositoryProvider).me();
-  return me.studentId;
-});
-
 /// 알림 목록에서 한 번에 받는 건수 — [더 보기] 가 [notificationPageStep] 씩 늘린다(F05-08).
 /// 서버 한도가 100건(§1.8)이라 [notificationPageMax] 를 넘기지 않는다.
 const int notificationPageStep = 20;

@@ -782,7 +782,7 @@ void main() {
       await tester.pump();
     }
 
-    // 새 소켓은 이전 구독을 이어받지 않는다(baraeda_websocket_client `_doConnect`) — 재구독 책임은 화면에 있다.
+    // 새 소켓은 이전 구독을 이어받지 않는다(`_doConnect`) — 재구독 책임은 화면에 있다.
     testWidgets('F05-04 연결이 끊겼다 되돌아오면 같은 목적지를 다시 구독한다', (tester) async {
       await pumpConnected(tester);
       final destination = WsChannel.studentRun('s-1');
