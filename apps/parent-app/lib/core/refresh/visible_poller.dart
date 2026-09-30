@@ -62,7 +62,8 @@ class VisiblePoller with WidgetsBindingObserver {
 bool isCoveredFrom(BuildContext context, Set<String> visiblePaths) {
   final router = GoRouter.maybeOf(context);
   if (router == null) return false;
+  // `uri` 는 `push` 한 화면을 반영하지 않는다 — 맨 위에 쌓인 화면은 마지막 match 의 경로다.
   return !visiblePaths.contains(
-    router.routerDelegate.currentConfiguration.uri.path,
+    router.routerDelegate.currentConfiguration.last.matchedLocation,
   );
 }

@@ -136,7 +136,8 @@ void main() {
 
     unawaited(router.push('/live-map'));
     await tester.pumpAndSettle();
-    await tester.pump(const Duration(seconds: 300));
+    await tester.pump(const Duration(seconds: 91));
+    await tester.pumpAndSettle();
     expect(runs.calls, 1);
 
     await tester.pumpWidget(const SizedBox.shrink());
