@@ -285,12 +285,28 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
                   AlertBanner(tone: AlertTone.missed, body: _errorMessage),
                   const SizedBox(height: 12),
                 ],
+                // 갱신이 실패해도 마지막으로 받은 명단을 지우지 않는다 — 음영 구간을 지난 직후에
+                // [도착 처리] 가 사라지면 다음 실시간 이벤트가 올 때까지 기사가 조작할 수 없다(R46).
                 rosterAsync.when(
+                  skipLoadingOnReload: true,
+                  skipError: true,
                   loading: () =>
                       const Center(child: CircularProgressIndicator()),
-                  error: (error, _) =>
-                      Text('명단을 불러오지 못했습니다: ${describeError(error)}'),
-                  data: (roster) => _buildActionArea(runId, run, roster),
+                  error: (error, _) => _rosterFailure(error),
+                  data: (roster) => Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (rosterAsync.hasError) ...[
+                        _rosterFailure(
+                          rosterAsync.error!,
+                          stale: true,
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                      _buildActionArea(runId, run, roster),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -299,6 +315,20 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
       ],
     );
   }
+
+  /// 명단 조회 실패 안내 + [다시 시도]. [stale] 이면 화면의 명단이 마지막 성공분이라는 뜻이다.
+  Widget _rosterFailure(Object error, {bool stale = false}) => AlertBanner(
+    tone: AlertTone.missed,
+    body: stale
+        ? '최신 명단을 불러오지 못했습니다 · 이전 명단을 보고 있습니다: ${describeError(error)}'
+        : '명단을 불러오지 못했습니다: ${describeError(error)}',
+    action: BaraedaButton(
+      label: '다시 시도',
+      size: BaraedaButtonSize.sm,
+      variant: BaraedaButtonVariant.secondary,
+      onPressed: () => ref.invalidate(driveModeRosterProvider),
+    ),
+  );
 
   Widget _buildActionArea(
     String runId,
@@ -339,16 +369,30 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
       if (nextStop == null) {
         return const Text('모든 승하차지 도착 처리가 끝났습니다');
       }
-      return BaraedaButton(
-        label: '${nextStop.name} 도착 처리',
-        size: BaraedaButtonSize.lg,
-        onPressed: _submitting
-            ? null
-            : () => _arriveStop(
-                runId,
-                nextStop.stopId,
-                isLast: isLastRemainingStop(roster, nextStop),
-              ),
+      // 이름이 길어도 버튼 동사가 잘리지 않게 이름은 버튼 위 줄로 뺀다(R46) — 두 줄을 넘는 이름만 줄인다.
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            '다음 승하차지: ${nextStop.name}',
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: BaraedaTypography.bodySm,
+          ),
+          const SizedBox(height: 8),
+          BaraedaButton(
+            label: '도착 처리',
+            size: BaraedaButtonSize.lg,
+            onPressed: _submitting
+                ? null
+                : () => _arriveStop(
+                    runId,
+                    nextStop.stopId,
+                    isLast: isLastRemainingStop(roster, nextStop),
+                  ),
+          ),
+        ],
       );
     }
 

@@ -99,12 +99,8 @@ class _WeeklyAddressEditorState extends ConsumerState<WeeklyAddressEditor> {
       });
       return;
     }
-    setState(() {
-      _submitting = true;
-      _banner = null;
-    });
-
     // F05-11 — 한 칸만 비어도 서버가 전체(최대 14건)를 거절해 다른 요일 수정분까지 잃는다. 보내기 전에 막는다.
+    // 잠금(`_submitting`)은 이 검사 뒤에 건다 — 앞에서 걸면 경고 뒤 저장 버튼이 영구히 잠긴다(R46).
     if (widget.entries.any((e) => _controllerFor(e).text.trim().isEmpty)) {
       setState(() {
         _bannerTone = AlertTone.missed;
@@ -112,6 +108,10 @@ class _WeeklyAddressEditorState extends ConsumerState<WeeklyAddressEditor> {
       });
       return;
     }
+    setState(() {
+      _submitting = true;
+      _banner = null;
+    });
 
     final updated = widget.entries.isEmpty
         ? [

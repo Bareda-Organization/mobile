@@ -260,7 +260,7 @@ void main() {
     await tester.pump(_interval);
     expect(repository.calls, hasLength(1));
 
-    await tester.tap(find.text('학원 앞 도착 처리'));
+    await tester.tap(find.text('도착 처리'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('도착했습니다'));
     await tester.pumpAndSettle();
@@ -336,7 +336,7 @@ void main() {
     await goTo(tester, container, AppRoutes.driveMode);
     arriveRepository.gate = Completer<void>();
 
-    await tester.tap(find.text('학원 앞 도착 처리'));
+    await tester.tap(find.text('도착 처리'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('도착했습니다'));
     await tester.pump();

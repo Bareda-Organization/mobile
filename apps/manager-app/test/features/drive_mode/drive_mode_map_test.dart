@@ -257,7 +257,7 @@ void main() {
 
     await pumpScreen(tester, overrides());
 
-    final button = find.text('1번 승하차지 도착 처리');
+    final button = find.text('도착 처리');
     expect(button, findsOneWidget);
     final rect = tester.getRect(button);
     expect(rect.top, greaterThanOrEqualTo(0));

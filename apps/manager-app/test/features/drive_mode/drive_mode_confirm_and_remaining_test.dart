@@ -189,14 +189,14 @@ void main() {
         stops: [_stop(1, arrived: true), _stop(2)],
       );
 
-      await tester.tap(find.text('2번 승하차지 도착 처리'));
+      await tester.tap(find.text('도착 처리'));
       await tester.pumpAndSettle();
       expect(find.text('마지막 승하차지입니다'), findsOneWidget);
       await tester.tap(find.text('취소'));
       await tester.pumpAndSettle();
       expect(repository.arrivedStopIds, isEmpty);
 
-      await tester.tap(find.text('2번 승하차지 도착 처리'));
+      await tester.tap(find.text('도착 처리'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('도착했습니다'));
       await tester.pumpAndSettle();
@@ -210,7 +210,7 @@ void main() {
         stops: [_stop(1), _stop(2)],
       );
 
-      await tester.tap(find.text('1번 승하차지 도착 처리'));
+      await tester.tap(find.text('도착 처리'));
       await tester.pumpAndSettle();
 
       expect(find.text('마지막 승하차지입니다'), findsNothing);
@@ -227,7 +227,7 @@ void main() {
         ],
       );
 
-      await tester.tap(find.text('1번 승하차지 도착 처리'));
+      await tester.tap(find.text('도착 처리'));
       await tester.pumpAndSettle();
 
       expect(find.text('마지막 승하차지입니다'), findsOneWidget);

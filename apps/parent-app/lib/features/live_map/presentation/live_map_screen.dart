@@ -498,7 +498,7 @@ class _PositionTile extends StatelessWidget {
           Text('현재 위치 · $timeText 기준', style: BaraedaTypography.bodySm),
           if (position.currentStopName != null)
             Text(
-              '가장 가까운 승하차지: ${position.currentStopName}',
+              '마지막으로 지난 승하차지: ${position.currentStopName}',
               style: BaraedaTypography.body,
             ),
         ],

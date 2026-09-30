@@ -397,7 +397,7 @@ void main() {
       await tester.pump();
 
       expect(find.text('아직 위치 정보가 없습니다'), findsNothing);
-      expect(find.textContaining('가장 가까운 승하차지: 정문 앞'), findsOneWidget);
+      expect(find.textContaining('마지막으로 지난 승하차지: 정문 앞'), findsOneWidget);
 
       // ⚠ 2026-09-21 실측 — 이 줄이 UTC 를 그대로 벽시계로 보여줬다(한국시간
       // 20:03 에 "11:03:23 기준"). 서버가 주는 `received_at` 은 UTC 순간이고

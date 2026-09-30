@@ -109,6 +109,32 @@ void main() {
     expect(find.textContaining('주소를 입력해 주세요'), findsOneWidget);
   });
 
+  // R46 A — 검사 경고 뒤에 저장 버튼이 영구히 잠겨 화면을 나갔다 들어와야 했다.
+  testWidgets('R46 칸을 비워 경고가 뜬 뒤 다시 채우면 저장할 수 있다', (tester) async {
+    final repository = _RecordingWeeklyAddressRepository();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          weeklyAddressRepositoryProvider.overrideWithValue(repository),
+        ],
+        child: const MaterialApp(
+          home: Scaffold(
+            body: WeeklyAddressEditor(studentId: 's-1', entries: [_entry]),
+          ),
+        ),
+      ),
+    );
+
+    await tester.enterText(find.byType(TextField).first, '   ');
+    await tester.tap(find.text('저장하기'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).first, '서울시 강남구 9');
+    await tester.tap(find.text('저장하기'));
+    await tester.pumpAndSettle();
+
+    expect(repository.saved.single.address, '서울시 강남구 9');
+  });
+
   // R32 P11 — 등록된 주소가 하나도 없으면 편집할 칸이 없어 주소를 넣을 방법이 없었다.
   group('P11 빈 목록에서 추가', () {
     Future<_RecordingWeeklyAddressRepository> pumpEmpty(
