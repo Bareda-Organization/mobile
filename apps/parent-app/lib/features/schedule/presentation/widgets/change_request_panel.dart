@@ -133,6 +133,10 @@ class _ChangeRequestPanelState extends ConsumerState<ChangeRequestPanel> {
       _reasonController.clear();
       _reportDirty();
       ref.invalidate(changeRequestsProvider(widget.studentId));
+      // F05-03 — ① 구간 신청은 즉시 반영되므로 홈 카드(탑승 스위치·승하차지)도 다시 받는다.
+      ref
+        ..invalidate(runsForStudentProvider(widget.studentId))
+        ..invalidate(runsForStudentOnProvider);
     } on Failure catch (failure) {
       if (!mounted) return;
       setState(() {

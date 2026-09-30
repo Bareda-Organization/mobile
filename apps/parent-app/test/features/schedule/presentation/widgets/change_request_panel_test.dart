@@ -146,12 +146,13 @@ class _AcceptingChangeRequestRepository implements ChangeRequestRepository {
 
 Future<void> _pumpAndSubmitWith(
   WidgetTester tester,
-  ChangeRequestRepository repository,
-) async {
+  ChangeRequestRepository repository, {
+  RunRepository? runs,
+}) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
-        runRepositoryProvider.overrideWithValue(_FixedRunRepository()),
+        runRepositoryProvider.overrideWithValue(runs ?? _FixedRunRepository()),
         changeRequestRepositoryProvider.overrideWithValue(repository),
       ],
       // 실제 화면(schedule_screen.dart)도 `ListView` 안에 이 패널을 두므로
@@ -178,7 +179,36 @@ Future<void> _pumpAndSubmitWith(
   await tester.pumpAndSettle();
 }
 
+/// 회차 조회 횟수를 세는 가짜 — F05-03.
+class _CountingRunRepository extends _FixedRunRepository {
+  int getCalls = 0;
+
+  @override
+  Future<List<StudentRun>> getRuns(String studentId, {DateTime? date}) {
+    getCalls++;
+    return super.getRuns(studentId, date: date);
+  }
+}
+
 void main() {
+  // F05-03 — ① 구간 신청은 즉시 반영된다. 홈 카드(탑승 스위치·승하차지)가 옛 값으로 남으면 안 된다.
+  testWidgets('F05-03 신청이 반영되면 회차 목록을 다시 받는다', (tester) async {
+    final runs = _CountingRunRepository();
+    await _pumpAndSubmitWith(
+      tester,
+      _AcceptingChangeRequestRepository(
+        const ChangeRequestCreateResult(
+          changeRequestId: 'c-1',
+          status: ChangeRequestStatus.approved,
+          result: 'applied',
+        ),
+      ),
+      runs: runs,
+    );
+
+    expect(runs.getCalls, 2, reason: '패널을 열 때 1번 + 신청 뒤 다시 받기 1번');
+  });
+
   // ⚠ 아래 흐름 시험들은 라벨을 `runOptionLabel` 로 만들어 찾는다 — 편하지만 **그 함수가 틀려도
   // 양쪽이 같이 틀려서 통과한다**(`API_SPEC §8` 에러 사전 대조가 상수를 안 쓰는 것과 같은 이유).
   // 그래서 문구 자체는 여기서 **손으로 적은 리터럴**로 한 번 고정한다.
