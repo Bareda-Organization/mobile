@@ -12,7 +12,7 @@ import 'package:manager_app/features/home/presentation/home_screen.dart';
 
 import '../support/fake_token_storage.dart';
 
-/// `router.dart` 의 계정 상태 게이트(§5.0 목표 7항 · `API_SPEC §1.4`)를
+/// `router.dart` 의 계정 상태 게이트(docs/archive/rounds/fe-phases-f2-f5.md §5.0 목표 7항 · `API_SPEC §1.4`)를
 /// 직접 무는 시험 — parent-app 의 같은 이름 파일과 동일한 목적이다.
 /// 이 앱의 `router.dart` redirect 콜백은 parent-app 과 파일 대조로
 /// 바이트 단위까지 동일함을 확인했으나(임포트·`routes` 목록만 다름),

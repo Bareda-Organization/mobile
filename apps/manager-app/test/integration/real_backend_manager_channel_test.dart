@@ -64,7 +64,7 @@ class _FakeSecureStoragePlatform
   );
 }
 
-/// `/topic/manager/runs/{runId}`(§5.4.1 목표 6) 구독 인가를 실제 서버로
+/// `/topic/manager/runs/{runId}`(docs/archive/rounds/fe-phases-f2-f5.md §5.4.1 목표 6) 구독 인가를 실제 서버로
 /// 확인하는 계약 시험 — `real_backend_p3_test.dart`(parent-app, 학생 채널)
 /// 와 같은 구조를 이 앱이 실제로 구독하는 채널 하나에 맞춰 좁힌 것.
 /// `manager_run_channel_test.dart`(단위 시험, 있다면)는 가짜 클라이언트로

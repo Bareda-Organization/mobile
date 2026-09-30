@@ -49,7 +49,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (location == AppRoutes.blockedAccount) return null;
 
       // pending·rejected 는 토큰은 있으나(로그인 자체는 성공) 허용 4개
-      // 밖의 화면에 못 들어간다(IMPLEMENTATION_PLAN.md §5.0 계정 상태
+      // 밖의 화면에 못 들어간다(docs/archive/rounds/fe-phases-f2-f5.md §5.0 계정 상태
       // 게이트 표) — 대기 화면에 고정한다(UF-X-02).
       if (loggedIn &&
           (status == AccountStatus.pending ||

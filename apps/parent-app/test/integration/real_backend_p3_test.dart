@@ -60,7 +60,7 @@ class _FakeSecureStoragePlatform
   }) async => SecureStorageUpgradeStatus.unsupported;
 }
 
-/// `/topic/students/{studentId}/run`(§5.4.1 5번) 구독 인가를 실제 서버로
+/// `/topic/students/{studentId}/run`(docs/archive/rounds/fe-phases-f2-f5.md §5.4.1 5번) 구독 인가를 실제 서버로
 /// 확인하는 계약 시험 — `baraeda_websocket_client_connect_test.dart` 와
 /// 같은 구조(완료 조건 1·2 형태)를 이 화면이 실제로 구독하는 채널 하나에
 /// 맞춰 좁힌 것. `live_map_screen_test.dart` 는 가짜 클라이언트로 화면

@@ -15,7 +15,7 @@ import 'package:parent_app/core/ui/confirm_dialog.dart';
 /// 역할은 "이 계정이 무엇을 할 수 있는가"(정적, `UserRole` 만으로 결정)이고
 /// 상태는 "지금 이 앱을 아예 쓸 수 있는가"(동적, 서버가 로그인·`/me`·게이트
 /// 이벤트로 실시간으로 알려주는 선행조건)다 — 서로 다른 것을 가른다는 것이
-/// `IMPLEMENTATION_PLAN.md §5.0` 계정 상태 게이트 표의 전제이고, 여기서도
+/// `docs/archive/rounds/fe-phases-f2-f5.md §5.0` 계정 상태 게이트 표의 전제이고, 여기서도
 /// 그대로 지킨다(보고서 § 아키텍처 결정 2). `RoleCapabilities.of` 는 이
 /// provider 를 참조하지 않는다.
 final StateProvider<AccountStatus?> currentAccountStatusProvider =

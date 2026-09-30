@@ -12,7 +12,7 @@ import 'package:parent_app/features/home/presentation/home_screen.dart';
 
 import '../support/fake_token_storage.dart';
 
-/// `router.dart` 의 계정 상태 게이트(§5.0 목표 7항 · `API_SPEC §1.4`)를
+/// `router.dart` 의 계정 상태 게이트(docs/archive/rounds/fe-phases-f2-f5.md §5.0 목표 7항 · `API_SPEC §1.4`)를
 /// 직접 무는 시험 — 게이트 리뷰(`.claude/f3/gate-f2-flutter.md`)가 이
 /// 조건을 지워도 기존 시험 10/10 이 그대로 통과하는 것을 확인한 자리다.
 ///
