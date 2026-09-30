@@ -28,11 +28,11 @@ void main() {
       '탑승 글자 on 탑승 알약 배경': (c.statusBoarded, c.statusBoardedSoft),
       '2차 글자 on 카드': (c.textSecondary, c.surfaceCard),
     };
-    pairs.forEach((name, pair) {
+    for (final MapEntry(key: name, value: pair) in pairs.entries) {
       test('$name 은 4.5:1 이상', () {
         expect(_contrast(pair.$1, pair.$2), greaterThanOrEqualTo(minText));
       });
-    });
+    }
   });
 
   group('다크 테마 글자 명도 대비(회귀 방지)', () {
@@ -42,10 +42,10 @@ void main() {
       '이동 중 글자 on 카드': (c.statusMoving, c.surfaceCard),
       '미승차 글자 on 카드': (c.statusMissed, c.surfaceCard),
     };
-    pairs.forEach((name, pair) {
+    for (final MapEntry(key: name, value: pair) in pairs.entries) {
       test('$name 은 4.5:1 이상', () {
         expect(_contrast(pair.$1, pair.$2), greaterThanOrEqualTo(minText));
       });
-    });
+    }
   });
 }

@@ -155,8 +155,8 @@ class BaraedaColors extends ThemeExtension<BaraedaColors> {
     statusMovingSoft: BaraedaPalette.amber100,
     statusMissed: BaraedaPalette.redInk,
     statusMissedSoft: BaraedaPalette.red100,
-    statusIdle:
-        BaraedaPalette.stone600, // stone500 은 stone100 알약 위 4.04 — F07-09
+    // stone500 은 stone100 알약 위에서 4.04 였다(F07-09).
+    statusIdle: BaraedaPalette.stone600,
     statusIdleSoft: BaraedaPalette.stone100,
     focusRing: BaraedaPalette.green500,
     overlayScrim: Color(0x7A12211C), // rgba(18,33,28,.48)

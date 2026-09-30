@@ -34,9 +34,8 @@ abstract final class BaraedaPalette {
   static const Color red500 = Color(0xFFE05C4B);
   static const Color red300 = Color(0xFFF08A7A);
   static const Color red100 = Color(0xFFFBE3DF);
-  static const Color redInk = Color(
-    0xFFB93826,
-  ); // [red100] 위 글자 4.5:1 이상(F07-09)
+  // [red100] 위 글자 4.5:1 이상(F07-09).
+  static const Color redInk = Color(0xFFB93826);
 
   // 스톤 — 보조 텍스트·구분선.
   static const Color stone800 = Color(0xFF2A312E);
