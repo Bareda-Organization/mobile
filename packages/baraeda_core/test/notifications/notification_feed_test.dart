@@ -6,7 +6,7 @@ NotificationItem _item(String id, {DateTime? readAt}) => NotificationItem(
   type: 'route_changed',
   title: '노선 변경',
   body: '본문',
-  sentAt: DateTime.utc(2026, 10, 1),
+  sentAt: DateTime.utc(2026, 10),
   popup: false,
   readAt: readAt,
 );
