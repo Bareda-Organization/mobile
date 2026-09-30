@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/core/auth/user_role.dart';
+import 'package:manager_app/core/constants/api_constants.dart';
 import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/features/home/data/models/manager_run.dart';
@@ -142,6 +143,7 @@ Widget _wrap(Widget child, List<Override> overrides) {
 /// 표시(UF-D-02)에만 쓰인다. 배너 노출 근거는 더 이상 이 값이 아니라
 /// [_managerRun] 의 `ackRequired`(§4.1) 다.
 RosterResponse _roster({
+  String? photoUrl = 'https://example/1.jpg',
   RiderChange? studentChange,
   StopChange? stopChange,
   RiderStatus studentStatus = RiderStatus.waiting,
@@ -162,7 +164,7 @@ RosterResponse _roster({
             riderId: 'r1',
             studentId: 's1',
             name: '김바래',
-            photoUrl: 'https://example/1.jpg',
+            photoUrl: photoUrl,
             guardianPhone: '010-2XXX-8814',
             canGoAlone: false,
             status: studentStatus,
@@ -218,6 +220,31 @@ void main() {
       ),
     ];
   }
+
+  // Ruling 377 — 사진이 상대 경로면 호스트에 붙이고 저장된 토큰을 헤더로 넘긴다.
+  testWidgets('상대 경로 photo_url 은 호스트에 붙여 토큰 헤더와 함께 StudentRow 에 넘긴다', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _wrap(const RosterScreen(), [
+        ...overridesFor(
+          roster: _roster(photoUrl: '/api/v1/files/photos/a.jpg'),
+          ackRequired: false,
+        ),
+        rosterPhotoHeadersProvider.overrideWith(
+          (ref) async => {'Authorization': 'Bearer tok-1'},
+        ),
+      ]),
+    );
+    await tester.pumpAndSettle();
+
+    final row = tester.widget<StudentRow>(find.byType(StudentRow));
+    expect(
+      row.photoUrl,
+      '${Uri.parse(ApiConstants.baseUrl).origin}/api/v1/files/photos/a.jpg',
+    );
+    expect(row.photoHeaders, {'Authorization': 'Bearer tok-1'});
+  });
 
   testWidgets('ack_required 가 false 면 변경 확인 배너를 보여주지 않는다', (tester) async {
     await tester.pumpWidget(

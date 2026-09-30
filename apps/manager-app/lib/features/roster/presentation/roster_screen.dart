@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 import 'package:manager_app/app/app_routes.dart';
 import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/auth/auth_providers.dart';
+import 'package:manager_app/core/constants/api_constants.dart';
 import 'package:manager_app/core/network/failure_messages.dart';
 import 'package:manager_app/core/run/manager_channel_banner.dart';
 import 'package:manager_app/core/run/run_enums.dart';
@@ -18,6 +19,7 @@ import 'package:manager_app/features/offline_queue/domain/send_outcome.dart';
 import 'package:manager_app/features/roster/data/models/boarding_update_request.dart';
 import 'package:manager_app/features/roster/data/models/no_show_contact_request.dart';
 import 'package:manager_app/features/roster/data/models/roster_response.dart';
+import 'package:manager_app/features/roster/presentation/roster_photo.dart';
 import 'package:manager_app/features/roster/presentation/roster_providers.dart';
 import 'package:manager_app/features/roster/presentation/widgets/change_ack_banner.dart';
 
@@ -279,6 +281,7 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
     bool ackRequired,
     RosterResponse roster,
   ) {
+    final photoHeaders = ref.watch(rosterPhotoHeadersProvider).value;
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -328,6 +331,7 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
         for (final stop in roster.stops)
           _StopSection(
             stop: stop,
+            photoHeaders: photoHeaders,
             canDecide: canDecide,
             pendingRiderId: _pendingRiderId,
             onBoard: (riderId) => _updateStatus(
@@ -366,6 +370,7 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
 class _StopSection extends StatelessWidget {
   const _StopSection({
     required this.stop,
+    required this.photoHeaders,
     required this.canDecide,
     required this.pendingRiderId,
     required this.onBoard,
@@ -376,6 +381,9 @@ class _StopSection extends StatelessWidget {
   });
 
   final RosterStop stop;
+
+  /// 사진 요청에 실을 인증 헤더 — 아직 못 읽었으면 `null`(Ruling 377).
+  final Map<String, String>? photoHeaders;
   final bool canDecide;
   final String? pendingRiderId;
   final void Function(String riderId) onBoard;
@@ -383,6 +391,12 @@ class _StopSection extends StatelessWidget {
   final void Function(String riderId) onNoShow;
   final void Function(String riderId) onRevert;
   final void Function(String riderId) onRecordContact;
+
+  RosterPhoto? _photoOf(RosterStudent student) => resolveRosterPhoto(
+    student.photoUrl,
+    baseUrl: ApiConstants.baseUrl,
+    authHeaders: photoHeaders,
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -422,7 +436,8 @@ class _StopSection extends StatelessWidget {
           for (final student in stop.students)
             StudentRow(
               name: student.name,
-              photoUrl: student.photoUrl,
+              photoUrl: _photoOf(student)?.url,
+              photoHeaders: _photoOf(student)?.headers,
               meta: [
                 if (student.change == RiderChange.added) '신규',
                 student.className,

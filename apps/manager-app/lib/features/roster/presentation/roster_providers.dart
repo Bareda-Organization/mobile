@@ -38,3 +38,15 @@ final selectedManagerRunProvider = Provider<ManagerRun?>((ref) {
   }
   return null;
 });
+
+/// 명단 사진 요청에 실을 인증 헤더(Ruling 377) — 사진이 로그인 토큰을 요구한다.
+/// `Image.network` 는 헤더를 동기로 받아야 해서 저장소에서 미리 읽어 둔다. 명단을 다시
+/// 불러올 때마다 다시 읽는다 — 그 호출이 401 재발급을 일으켰다면 새 토큰이 저장돼 있다.
+/// 읽기 전·실패 땐 값이 없어 화면이 이니셜로 그린다.
+final rosterPhotoHeadersProvider = FutureProvider<Map<String, String>>((
+  ref,
+) async {
+  ref.watch(rosterProvider);
+  final token = await ref.watch(tokenStorageProvider).readAccessToken();
+  return {if (token != null) 'Authorization': 'Bearer $token'};
+});
