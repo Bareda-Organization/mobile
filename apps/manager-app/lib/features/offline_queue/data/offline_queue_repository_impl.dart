@@ -117,15 +117,15 @@ class OfflineQueueRepositoryImpl implements OfflineQueueRepository {
         await _deleteRow(row.id);
         succeeded++;
       } on DioException catch (exception) {
-        if (mapDioExceptionToFailure(exception) is! NetworkFailure) {
-          // 서버가 이미 응답했다 — 다시 보내도 같은 결과라 큐에서 뺀다.
+        if (_isPermanentRejection(exception)) {
+          // 서버가 확정 거절했다 — 다시 보내도 같은 결과라 큐에서 뺀다.
           await _deleteRow(row.id);
           droppedPermanently++;
           continue;
         }
-        // 아직 두절이다. 남은 행도 같은 타임아웃을 되풀이할 뿐이고, 중간
-        // 건만 성공하면 큐 안의 순서가 뒤집히므로 여기서 멈춘다 — 남은
-        // 행은 다음 재생이 이어 보낸다.
+        // 아직 두절이거나 서버가 일시적으로 못 받는 상태(5xx·429·401)다. 남은
+        // 행도 같은 타임아웃을 되풀이할 뿐이고, 중간 건만 성공하면 큐 안의
+        // 순서가 뒤집히므로 여기서 멈춘다 — 남은 행은 다음 재생이 이어 보낸다.
         break;
       }
     }
@@ -135,6 +135,18 @@ class OfflineQueueRepositoryImpl implements OfflineQueueRepository {
       stillPending: stillPending,
       droppedPermanently: droppedPermanently,
     );
+  }
+
+  /// 다시 보내도 같은 결과인 4xx 만 확정 거절이다. 401(재발급 실패)·408·429
+  /// 와 5xx·비JSON 프록시 오류는 재시도하면 통과할 수 있어 행을 남긴다.
+  bool _isPermanentRejection(DioException exception) {
+    if (exception.type != DioExceptionType.badResponse) return false;
+    final status = exception.response?.statusCode ?? 0;
+    return status >= 400 &&
+        status < 500 &&
+        status != 401 &&
+        status != 408 &&
+        status != 429;
   }
 
   Future<void> _deleteRow(int id) => (_database.delete(
