@@ -73,6 +73,9 @@ class LiveMapNotifier extends StateNotifier<LiveMapState> {
   /// 않는다(새 인스턴스만 재시도한다).
   bool _forbidden = false;
 
+  /// 마지막으로 이벤트를 받은 회차 — 다른 회차의 이벤트가 오면 앞 회차 표시를 비운다(F05-05).
+  String? _runId;
+
   BaraedaWebSocketClient get _client => _ref.read(webSocketClientProvider);
 
   void _init() {
@@ -138,8 +141,14 @@ class LiveMapNotifier extends StateNotifier<LiveMapState> {
     if (_forbidden) return;
 
     _applyConnectionState(wsState);
-    if (wsState == WsConnectionState.connected && _unsubscribe == null) {
+    if (wsState != WsConnectionState.connected) {
+      // F05-04 — 소켓이 내려가면 그 위의 구독도 사라진다(새 소켓은 이어받지 않는다).
+      // 해지 콜백을 비워 두어야 `connected` 로 돌아왔을 때 다시 구독한다.
+      _unsubscribe = null;
+    } else if (_unsubscribe == null) {
       _subscribe(_client);
+      // 끊긴 사이 놓친 위치를 REST 스냅샷으로 메운다.
+      unawaited(_loadRestSnapshot());
     }
   }
 
@@ -172,6 +181,11 @@ class LiveMapNotifier extends StateNotifier<LiveMapState> {
   }
 
   void _onEnvelope(WebSocketEnvelope envelope) {
+    if (_runId != null && envelope.runId != _runId) {
+      // F05-05 — 같은 자녀 채널로 다음 회차(등원→하원)가 이어져도 앞 회차의 도착·종료 줄이 남지 않게 한다.
+      state = LiveMapState(connection: state.connection);
+    }
+    _runId = envelope.runId;
     switch (envelope.event) {
       case WsEventType.position:
         state = state.copyWith(
