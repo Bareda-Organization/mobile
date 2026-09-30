@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:baraeda_core/storage/token_storage.dart';
 import 'package:baraeda_core/websocket/websocket_envelope.dart';
@@ -64,6 +65,7 @@ class BaraedaWebSocketClient {
   /// 검증할 수 있게 `final` 이 아니라 생성자 파라미터로 남겨 둔다.
   final WsBackoffPolicy backoffPolicy;
 
+  final _random = Random();
   StompClient? _stompClient;
   Timer? _reconnectTimer;
   int _reconnectAttempt = 0;
@@ -254,7 +256,7 @@ class BaraedaWebSocketClient {
     }
 
     _setState(WsConnectionState.reconnecting);
-    final delay = backoffPolicy.delayFor(_reconnectAttempt);
+    final delay = backoffPolicy.jitteredDelayFor(_reconnectAttempt, _random);
     _reconnectTimer?.cancel();
     _reconnectTimer = Timer(delay, () => unawaited(_doConnect()));
   }
