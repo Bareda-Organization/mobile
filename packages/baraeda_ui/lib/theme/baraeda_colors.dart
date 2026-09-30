@@ -132,7 +132,8 @@ class BaraedaColors extends ThemeExtension<BaraedaColors> {
     navActiveText: BaraedaPalette.green600,
     textPrimary: BaraedaPalette.ink,
     textSecondary: Color(0xFF5C665F),
-    textTertiary: BaraedaPalette.stone400,
+    // 옅은 면(`bgSubtle`) 위에서도 4.5:1 이상 — 예전 stone400 은 흰 카드 위에서 2.93 이었다(F07-09).
+    textTertiary: Color(0xFF626D69),
     textInverse: BaraedaPalette.white,
     textOnInverseMuted: BaraedaPalette.green200,
     textBrand: BaraedaPalette.green600,
@@ -154,7 +155,8 @@ class BaraedaColors extends ThemeExtension<BaraedaColors> {
     statusMovingSoft: BaraedaPalette.amber100,
     statusMissed: BaraedaPalette.redInk,
     statusMissedSoft: BaraedaPalette.red100,
-    statusIdle: BaraedaPalette.stone500,
+    statusIdle:
+        BaraedaPalette.stone600, // stone500 은 stone100 알약 위 4.04 — F07-09
     statusIdleSoft: BaraedaPalette.stone100,
     focusRing: BaraedaPalette.green500,
     overlayScrim: Color(0x7A12211C), // rgba(18,33,28,.48)

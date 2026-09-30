@@ -26,14 +26,17 @@ abstract final class BaraedaPalette {
   static const Color amber400 = Color(0xFFF8BC58);
   static const Color amber300 = Color(0xFFFBD08A);
   static const Color amber100 = Color(0xFFFDF0D8);
-  static const Color amberInk = Color(0xFFC77E12);
+  // 글자 잉크 — 자기 옅은 면([amber100]) 위에서도 4.5:1 이상이 되게 어둡게 잡았다(F07-09).
+  static const Color amberInk = Color(0xFF96600F);
 
   // 레드 — 미탑승·긴급. 라이트는 [red500], 다크는 [red300].
   static const Color red600 = Color(0xFFC24634);
   static const Color red500 = Color(0xFFE05C4B);
   static const Color red300 = Color(0xFFF08A7A);
   static const Color red100 = Color(0xFFFBE3DF);
-  static const Color redInk = Color(0xFFC93F2C);
+  static const Color redInk = Color(
+    0xFFB93826,
+  ); // [red100] 위 글자 4.5:1 이상(F07-09)
 
   // 스톤 — 보조 텍스트·구분선.
   static const Color stone800 = Color(0xFF2A312E);
