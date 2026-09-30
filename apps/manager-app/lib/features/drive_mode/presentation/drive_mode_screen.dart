@@ -256,13 +256,6 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
                 // "연결 끊김"(비정상)을 구별해야 한다(목표 9, ManagerChannelBanner
                 // 문서 참고).
                 ManagerChannelBanner(runId: runId),
-                if (_positionGuidance(
-                      transmission.availability ?? _preStartAvailability,
-                    )
-                    case final guidance?) ...[
-                  AlertBanner(tone: AlertTone.missed, body: guidance),
-                  const SizedBox(height: 12),
-                ],
                 // 남은 승하차지(M-08, R32 M5) — 조회 전용. 끝난 운행에는 남은 곳이 없다.
                 if (rosterAsync.value case final roster?
                     when run?.runStatus != RunStatus.finished)
@@ -279,6 +272,15 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // 위치 권한·서비스 안내는 스크롤 본문이 아니라 버튼 바로 위 고정 영역에 둔다 —
+                // 지도·변경 배너 아래 접힌 곳에 두면 작은 화면에서 버튼 경계에 잘려 문구 끝이 안 보였다.
+                if (_positionGuidance(
+                      transmission.availability ?? _preStartAvailability,
+                    )
+                    case final guidance?) ...[
+                  AlertBanner(tone: AlertTone.missed, body: guidance),
+                  const SizedBox(height: 12),
+                ],
                 if (_errorMessage != null) ...[
                   AlertBanner(tone: AlertTone.missed, body: _errorMessage),
                   const SizedBox(height: 12),
