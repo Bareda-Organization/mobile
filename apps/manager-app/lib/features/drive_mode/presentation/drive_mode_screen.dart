@@ -9,6 +9,7 @@ import 'package:manager_app/app/app_routes.dart';
 import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/core/constants/position_constants.dart';
+import 'package:manager_app/core/launcher/device_launchers.dart';
 import 'package:manager_app/core/location/position_source.dart';
 import 'package:manager_app/core/network/failure_messages.dart';
 import 'package:manager_app/core/run/manager_channel_banner.dart';
@@ -44,6 +45,16 @@ class DriveModeScreen extends ConsumerStatefulWidget {
 class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
   bool _submitting = false;
   String? _errorMessage;
+
+  /// 도착 처리에 성공한 직후 버튼을 잠그는 시간 — 신호 대기 중 더블탭이 다음 승하차지까지 처리하는 것을 막는다.
+  /// 되돌리는 API 가 없어 한 번 나간 도착은 취소할 수 없다(R46).
+  static const _arriveLockDuration = Duration(seconds: 2);
+  bool _arriveLocked = false;
+  Timer? _arriveLockTimer;
+
+  /// 직전 도착 처리 결과 안내 — 버튼 바로 위 고정 영역에 둔다. 스낵바는 아래 고정된 [도착 처리] 버튼을 덮어
+  /// 다음 누름을 가로챈다(R46).
+  String? _arrivedNotice;
 
   /// [initState] 에서 받아 둔 포트 — `ConsumerState.dispose()` 안에서는
   /// `ref.read` 가 안전하지 않다(위젯이 이미 unmount 되는 중이라 Riverpod
@@ -99,6 +110,7 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
   @override
   void dispose() {
     _availabilityTimer?.cancel();
+    _arriveLockTimer?.cancel();
     unawaited(_wakelockPort.disable());
     super.dispose();
   }
@@ -139,6 +151,8 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
   Future<void> _arriveStop(
     String runId,
     String stopId, {
+    required int order,
+    required String name,
     bool isLast = false,
   }) async {
     // 마지막 승하차지의 도착 처리는 곧 운행 종료다(C-15) — 되돌릴 수 없어 한 번 묻는다(R32 M6).
@@ -156,6 +170,7 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
     setState(() {
       _submitting = true;
       _errorMessage = null;
+      _arrivedNotice = null;
     });
     try {
       final result = await ref
@@ -173,6 +188,8 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
       } else {
         container.invalidate(driveModeRosterProvider);
         if (!mounted) return;
+        // 같은 자리 버튼의 라벨만 다음 승하차지로 바뀌면 처리된 줄 모른다 — 처리 사실을 알린다(R46).
+        _lockArriveButton('$order번 $name 도착 처리됨');
       }
     } on Failure catch (failure) {
       if (!mounted) return;
@@ -180,6 +197,17 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
+  }
+
+  void _lockArriveButton(String notice) {
+    setState(() {
+      _arriveLocked = true;
+      _arrivedNotice = notice;
+    });
+    _arriveLockTimer?.cancel();
+    _arriveLockTimer = Timer(_arriveLockDuration, () {
+      if (mounted) setState(() => _arriveLocked = false);
+    });
   }
 
   @override
@@ -277,11 +305,30 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
               children: [
                 // 위치 권한·서비스 안내는 스크롤 본문이 아니라 버튼 바로 위 고정 영역에 둔다 —
                 // 지도·변경 배너 아래 접힌 곳에 두면 작은 화면에서 버튼 경계에 잘려 문구 끝이 안 보였다.
-                if (_positionGuidance(
-                      transmission.availability ?? _preStartAvailability,
-                    )
-                    case final guidance?) ...[
-                  AlertBanner(tone: AlertTone.missed, body: guidance),
+                if (transmission.availability ?? _preStartAvailability
+                    case final availability?)
+                  if (_positionGuidance(availability) case final guidance?) ...[
+                    AlertBanner(
+                      tone: AlertTone.missed,
+                      body: guidance,
+                      action: BaraedaButton(
+                        label: '설정 열기',
+                        size: BaraedaButtonSize.sm,
+                        variant: BaraedaButtonVariant.secondary,
+                        onPressed: () => unawaited(
+                          ref.read(settingsOpenerProvider)(
+                            availability ==
+                                    PositionAvailability.permissionDenied
+                                ? DeviceSettingsPage.app
+                                : DeviceSettingsPage.location,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                if (_arrivedNotice != null) ...[
+                  AlertBanner(tone: AlertTone.boarded, body: _arrivedNotice),
                   const SizedBox(height: 12),
                 ],
                 if (_errorMessage != null) ...[
@@ -387,11 +434,17 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
           BaraedaButton(
             label: '도착 처리',
             size: BaraedaButtonSize.lg,
-            onPressed: _submitting
+            onPressed: _submitting || _arriveLocked
                 ? null
                 : () => _arriveStop(
                     runId,
                     nextStop.stopId,
+                    order:
+                        roster.stops.indexWhere(
+                          (stop) => stop.stopId == nextStop.stopId,
+                        ) +
+                        1,
+                    name: nextStop.name,
                     isLast: isLastRemainingStop(roster, nextStop),
                   ),
           ),
