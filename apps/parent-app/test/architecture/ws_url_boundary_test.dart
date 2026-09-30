@@ -25,7 +25,8 @@ void main() {
     expect(
       violations,
       isEmpty,
-      reason: '다음 파일이 ws 주소를 직접 조립한다 — wsUrlFromApiBaseUrl 을 쓸 것: '
+      reason:
+          '다음 파일이 ws 주소를 직접 조립한다 — wsUrlFromApiBaseUrl 을 쓸 것: '
           '${violations.join(', ')}',
     );
   });
@@ -33,8 +34,10 @@ void main() {
 
 /// `//` 한 줄 주석(문서 주석 포함)을 걷어낸 본문. 주석에 적힌 예시가
 /// 검사에 걸리지 않게 한다.
-String _stripLineComments(String source) =>
-    source.split('\n').map((line) {
+String _stripLineComments(String source) => source
+    .split('\n')
+    .map((line) {
       final i = line.indexOf('//');
       return i < 0 ? line : line.substring(0, i);
-    }).join('\n');
+    })
+    .join('\n');

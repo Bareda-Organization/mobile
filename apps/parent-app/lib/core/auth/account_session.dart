@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/legacy.dart';
 import 'package:parent_app/app/di.dart';
 import 'package:parent_app/core/auth/auth_providers.dart';
 import 'package:parent_app/core/auth/user_role.dart';
+import 'package:parent_app/core/ui/confirm_dialog.dart';
 
 /// 계정 **상태**(`pending`·`active`·`rejected`) 를 담는다.
 ///
@@ -96,24 +97,13 @@ Future<void> signOut(WidgetRef ref) async {
 /// 갈려 있었다), `features/` 어느 쪽도 소유하지 않는 `core/auth` 에 둔다
 /// (`CONVENTIONS_FLUTTER.md §2` "기능끼리 서로 import 하지 않음").
 Future<void> confirmLogout(BuildContext context, WidgetRef ref) async {
-  final confirmed = await showDialog<bool>(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: const Text('로그아웃'),
-      content: const Text('로그아웃 하시겠습니까?'),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(false),
-          child: const Text('취소'),
-        ),
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(true),
-          child: const Text('로그아웃하기'),
-        ),
-      ],
-    ),
+  final confirmed = await showConfirmDialog(
+    context,
+    title: '로그아웃',
+    body: '로그아웃 하시겠습니까?',
+    confirmLabel: '로그아웃하기',
   );
-  if (confirmed ?? false) {
+  if (confirmed) {
     try {
       await signOut(ref);
     } on Failure {

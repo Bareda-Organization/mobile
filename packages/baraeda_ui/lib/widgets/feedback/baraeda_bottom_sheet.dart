@@ -38,89 +38,94 @@ class BaraedaBottomSheet extends StatelessWidget {
           onPopInvokedWithResult: (didPop, _) {
             if (!didPop) onClose?.call();
           },
-          child: Stack(
-            children: [
-              Positioned.fill(
-                child: GestureDetector(
-                  onTap: onClose,
-                  child: Container(color: colors.overlayScrim),
+          // 라우트로 띄우면 Material 조상이 없다 — 글자 기본 서식·잉크·칩이 쓰도록 투명 Material 을 둔다.
+          child: Material(
+            type: MaterialType.transparency,
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: GestureDetector(
+                    onTap: onClose,
+                    child: Container(color: colors.overlayScrim),
+                  ),
                 ),
-              ),
-              // 키보드가 올라오면 그만큼 시트를 올리고, 남은 높이 안에서 내용만 스크롤한다.
-              Align(
-                alignment: Alignment.bottomCenter,
-                child: Padding(
-                  padding: EdgeInsets.only(bottom: keyboard),
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      maxHeight: (mediaQuery.size.height - keyboard) * 0.92,
-                    ),
-                    child: Semantics(
-                      namesRoute: true,
-                      label: title,
-                      child: Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.fromLTRB(
-                          BaraedaSpacing.space5,
-                          BaraedaSpacing.space3,
-                          BaraedaSpacing.space5,
-                          BaraedaSpacing.space6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: colors.surfaceCard,
-                          borderRadius: const BorderRadius.only(
-                            topLeft: Radius.circular(BaraedaRadius.sheet),
-                            topRight: Radius.circular(BaraedaRadius.sheet),
+                // 키보드가 올라오면 그만큼 시트를 올리고, 남은 높이 안에서 내용만 스크롤한다.
+                Align(
+                  alignment: Alignment.bottomCenter,
+                  child: Padding(
+                    padding: EdgeInsets.only(bottom: keyboard),
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxHeight: (mediaQuery.size.height - keyboard) * 0.92,
+                      ),
+                      child: Semantics(
+                        namesRoute: true,
+                        label: title,
+                        child: Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.fromLTRB(
+                            BaraedaSpacing.space5,
+                            BaraedaSpacing.space3,
+                            BaraedaSpacing.space5,
+                            // 홈 인디케이터 영역만큼 더 띄운다(키보드가 올라오면 0).
+                            BaraedaSpacing.space6 + mediaQuery.padding.bottom,
                           ),
-                          boxShadow: BaraedaShadows.sheet,
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Center(
-                              child: Container(
-                                width: 40,
-                                height: 4,
-                                margin: const EdgeInsets.only(
-                                  bottom: BaraedaSpacing.space3,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: colors.borderDefault,
-                                  borderRadius: BorderRadius.circular(
-                                    BaraedaRadius.pill,
-                                  ),
-                                ),
-                              ),
+                          decoration: BoxDecoration(
+                            color: colors.surfaceCard,
+                            borderRadius: const BorderRadius.only(
+                              topLeft: Radius.circular(BaraedaRadius.sheet),
+                              topRight: Radius.circular(BaraedaRadius.sheet),
                             ),
-                            if (title != null)
-                              Padding(
-                                padding: const EdgeInsets.only(
-                                  bottom: BaraedaSpacing.space3,
-                                ),
-                                // 제목은 위 Semantics(namesRoute) 라벨이 이미 읽는다.
-                                child: ExcludeSemantics(
-                                  child: Text(
-                                    title!,
-                                    style: BaraedaTypography.h3.copyWith(
-                                      fontSize: 20,
-                                      height: 1.35,
+                            boxShadow: BaraedaShadows.sheet,
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Center(
+                                child: Container(
+                                  width: 40,
+                                  height: 4,
+                                  margin: const EdgeInsets.only(
+                                    bottom: BaraedaSpacing.space3,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: colors.borderDefault,
+                                    borderRadius: BorderRadius.circular(
+                                      BaraedaRadius.pill,
                                     ),
                                   ),
                                 ),
                               ),
-                            if (child != null)
-                              Flexible(
-                                child: SingleChildScrollView(child: child),
-                              ),
-                          ],
+                              if (title != null)
+                                Padding(
+                                  padding: const EdgeInsets.only(
+                                    bottom: BaraedaSpacing.space3,
+                                  ),
+                                  // 제목은 위 Semantics(namesRoute) 라벨이 이미 읽는다.
+                                  child: ExcludeSemantics(
+                                    child: Text(
+                                      title!,
+                                      style: BaraedaTypography.h3.copyWith(
+                                        fontSize: 20,
+                                        height: 1.35,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              if (child != null)
+                                Flexible(
+                                  child: SingleChildScrollView(child: child),
+                                ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

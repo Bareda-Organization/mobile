@@ -210,15 +210,15 @@ class _ChangeRequestPanelState extends ConsumerState<ChangeRequestPanel> {
 
   /// 신청할 날짜 — 오늘·내일 두 가지. 날짜를 바꾸면 앞서 고른 회차는 다른 날 것이라 비운다.
   Widget _buildDayPicker() {
-    return SegmentedButton<int>(
-      segments: const [
-        ButtonSegment(value: 0, label: Text('오늘')),
-        ButtonSegment(value: 1, label: Text('내일')),
+    return BaraedaSegmentedControl(
+      block: true,
+      options: const [
+        BaraedaSegmentedOption('0', label: '오늘'),
+        BaraedaSegmentedOption('1', label: '내일'),
       ],
-      selected: {_dayOffset},
-      showSelectedIcon: false,
-      onSelectionChanged: (selection) => setState(() {
-        _dayOffset = selection.first;
+      value: '$_dayOffset',
+      onChanged: (value) => setState(() {
+        _dayOffset = int.parse(value);
         _selectedRunId = null;
       }),
     );

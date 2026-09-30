@@ -189,7 +189,7 @@ void main() {
   // F2 — `settings_screen.dart` 의 확인 대화를 그대로 재사용하는지 검사한다.
   // 지금 코드는 확인 대화 없이 바로 logout() 을 부른다 — 버튼 라벨
   // '로그아웃하기' 가 대화의 확정 버튼 라벨과 같아 `find.widgetWithText`
-  // 로 `TextButton`(대화 쪽)만 짚어 원래 화면 버튼과 가른다.
+  // 로 `BaraedaButton`(대화 쪽)만 짚어 원래 화면 버튼과 가른다.
   group('F2 — 로그아웃 확인 대화(P 의 확인 대화 재사용)', () {
     // 로그아웃 버튼은 스크롤 목록 맨 아래라 기본 시험 화면(800x600) 밖에
     // 있다 — `ensureVisible` 로 먼저 스크롤한다.
@@ -209,7 +209,7 @@ void main() {
       await tapLogoutButton(tester);
       await tester.pumpAndSettle();
 
-      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(find.byType(BaraedaDialog), findsOneWidget);
       expect(authRepository.logoutCallCount, 0);
     });
 
@@ -222,7 +222,7 @@ void main() {
       await tester.tap(find.text('취소'));
       await tester.pumpAndSettle();
 
-      expect(find.byType(AlertDialog), findsNothing);
+      expect(find.byType(BaraedaDialog), findsNothing);
       expect(authRepository.logoutCallCount, 0);
     });
 
@@ -232,7 +232,7 @@ void main() {
 
       await tapLogoutButton(tester);
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(TextButton, '로그아웃하기'));
+      await tester.tap(find.widgetWithText(BaraedaButton, '로그아웃하기'));
       await tester.pumpAndSettle();
 
       expect(authRepository.logoutCallCount, 1);

@@ -136,6 +136,34 @@ void main() {
     });
   });
 
+  testWidgets('라우트로 띄운 본문은 Material 조상을 갖는다(칩·잉크·글자 서식)', (tester) async {
+    await pumpHost(
+      tester,
+      (context) => showBaraedaBottomSheet<void>(
+        context: context,
+        builder: (_) => const Text('시트 내용'),
+      ),
+    );
+    await tester.tap(find.text('열기'));
+    await tester.pumpAndSettle();
+    expect(Material.maybeOf(tester.element(find.text('시트 내용'))), isNotNull);
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    await pumpHost(
+      tester,
+      (context) => showBaraedaConfirmDialog(
+        context: context,
+        title: '안내',
+        content: const Text('대화 내용'),
+        confirmLabel: '확인',
+      ),
+    );
+    await tester.tap(find.text('열기'));
+    await tester.pumpAndSettle();
+    expect(Material.maybeOf(tester.element(find.text('대화 내용'))), isNotNull);
+  });
+
   group('showBaraedaBottomSheet', () {
     testWidgets('builder 안에서 pop 한 값을 돌려준다', (tester) async {
       String? result;

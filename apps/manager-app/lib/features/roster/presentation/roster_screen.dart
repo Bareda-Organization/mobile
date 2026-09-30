@@ -176,9 +176,9 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
     DateTime? waitEndsAt,
   }) async {
     final clock = ref.read(clockProvider);
-    final request = await showModalBottomSheet<NoShowContactRequest>(
+    final request = await showBaraedaBottomSheet<NoShowContactRequest>(
       context: context,
-      isScrollControlled: true,
+      title: '미탑승 연락 기록',
       builder: (context) =>
           _NoShowContactSheet(waitEndsAt: waitEndsAt, clock: clock),
     );
@@ -638,91 +638,85 @@ class _NoShowContactSheetState extends State<_NoShowContactSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
+    // 제목·여백·안전 영역·키보드 회피는 BaraedaBottomSheet 가 맡는다.
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('연락 수단'),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
           children: [
-            Text('미탑승 연락 기록', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 16),
-            const Text('연락 수단'),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              children: [
-                for (final type in NoShowAttemptType.values)
-                  ChoiceChip(
-                    label: Text(type == NoShowAttemptType.call ? '전화' : '문자'),
-                    selected: _attemptType == type,
-                    onSelected: (_) => setState(() => _attemptType = type),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            const Text('결과'),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              children: [
-                for (final result in NoShowContactResult.values)
-                  ChoiceChip(
-                    label: Text(
-                      result == NoShowContactResult.answered ? '응답함' : '무응답',
-                    ),
-                    selected: _result == result,
-                    onSelected: (_) => setState(() => _result = result),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            const Text('최종 판단 (대기 시간이 끝난 뒤에만 선택)'),
-            if (_remaining > Duration.zero)
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Text(
-                  '대기 시간이 끝나기까지 남은 시간 '
-                  '${_remaining.inMinutes}분 '
-                  '${(_remaining.inSeconds % 60).toString().padLeft(2, '0')}초',
-                ),
+            for (final type in NoShowAttemptType.values)
+              ChoiceChip(
+                label: Text(type == NoShowAttemptType.call ? '전화' : '문자'),
+                selected: _attemptType == type,
+                onSelected: (_) => setState(() => _attemptType = type),
               ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              children: [
-                ChoiceChip(
-                  label: const Text('미정'),
-                  selected: _decision == null,
-                  onSelected: (_) => setState(() => _decision = null),
-                ),
-                for (final decision in NoShowDecision.values)
-                  ChoiceChip(
-                    label: Text(
-                      decision == NoShowDecision.depart ? '출발 확정' : '재시도',
-                    ),
-                    selected: _decision == decision,
-                    onSelected: _remaining > Duration.zero
-                        ? null
-                        : (_) => setState(() => _decision = decision),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            BaraedaButton(
-              label: '기록 저장',
-              block: true,
-              onPressed: () => Navigator.of(context).pop(
-                NoShowContactRequest(
-                  attemptType: _attemptType,
-                  result: _result,
-                  decision: _decision,
-                ),
-              ),
-            ),
           ],
         ),
-      ),
+        const SizedBox(height: 16),
+        const Text('결과'),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          children: [
+            for (final result in NoShowContactResult.values)
+              ChoiceChip(
+                label: Text(
+                  result == NoShowContactResult.answered ? '응답함' : '무응답',
+                ),
+                selected: _result == result,
+                onSelected: (_) => setState(() => _result = result),
+              ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        const Text('최종 판단 (대기 시간이 끝난 뒤에만 선택)'),
+        if (_remaining > Duration.zero)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              '대기 시간이 끝나기까지 남은 시간 '
+              '${_remaining.inMinutes}분 '
+              '${(_remaining.inSeconds % 60).toString().padLeft(2, '0')}초',
+            ),
+          ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          children: [
+            ChoiceChip(
+              label: const Text('미정'),
+              selected: _decision == null,
+              onSelected: (_) => setState(() => _decision = null),
+            ),
+            for (final decision in NoShowDecision.values)
+              ChoiceChip(
+                label: Text(
+                  decision == NoShowDecision.depart ? '출발 확정' : '재시도',
+                ),
+                selected: _decision == decision,
+                onSelected: _remaining > Duration.zero
+                    ? null
+                    : (_) => setState(() => _decision = decision),
+              ),
+          ],
+        ),
+        const SizedBox(height: 20),
+        BaraedaButton(
+          label: '기록 저장',
+          block: true,
+          onPressed: () => Navigator.of(context).pop(
+            NoShowContactRequest(
+              attemptType: _attemptType,
+              result: _result,
+              decision: _decision,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

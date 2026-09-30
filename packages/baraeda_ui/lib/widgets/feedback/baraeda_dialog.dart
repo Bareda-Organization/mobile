@@ -69,69 +69,73 @@ class BaraedaDialog extends StatelessWidget {
           onPopInvokedWithResult: (didPop, _) {
             if (!didPop) onClose?.call();
           },
-          child: GestureDetector(
-            onTap: onClose,
-            child: Container(
-              color: colors.overlayScrim,
-              padding: const EdgeInsets.all(BaraedaSpacing.space5),
-              alignment: Alignment.center,
-              child: GestureDetector(
-                // 안쪽 카드 탭은 스크림 탭(닫기)으로 전파하지 않는다.
-                onTap: () {},
-                child: Semantics(
-                  namesRoute: true,
-                  label: title,
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(maxWidth: width),
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(BaraedaSpacing.space6),
-                      decoration: BoxDecoration(
-                        color: colors.surfaceCard,
-                        borderRadius: BorderRadius.circular(BaraedaRadius.xl),
-                        boxShadow: shadow,
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Flexible(
-                            child: SingleChildScrollView(
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  // 제목은 위 Semantics(namesRoute) 라벨이 이미 읽는다.
-                                  if (title != null)
-                                    ExcludeSemantics(
-                                      child: Text(
-                                        title!,
-                                        style: BaraedaTypography.h3.copyWith(
-                                          fontSize: 22,
-                                          height: 1.35,
+          // 라우트로 띄우면 Material 조상이 없다 — 글자 기본 서식·잉크·칩이 쓰도록 투명 Material 을 둔다.
+          child: Material(
+            type: MaterialType.transparency,
+            child: GestureDetector(
+              onTap: onClose,
+              child: Container(
+                color: colors.overlayScrim,
+                padding: const EdgeInsets.all(BaraedaSpacing.space5),
+                alignment: Alignment.center,
+                child: GestureDetector(
+                  // 안쪽 카드 탭은 스크림 탭(닫기)으로 전파하지 않는다.
+                  onTap: () {},
+                  child: Semantics(
+                    namesRoute: true,
+                    label: title,
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(maxWidth: width),
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(BaraedaSpacing.space6),
+                        decoration: BoxDecoration(
+                          color: colors.surfaceCard,
+                          borderRadius: BorderRadius.circular(BaraedaRadius.xl),
+                          boxShadow: shadow,
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Flexible(
+                              child: SingleChildScrollView(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    // 제목은 위 Semantics(namesRoute) 라벨이 이미 읽는다.
+                                    if (title != null)
+                                      ExcludeSemantics(
+                                        child: Text(
+                                          title!,
+                                          style: BaraedaTypography.h3.copyWith(
+                                            fontSize: 22,
+                                            height: 1.35,
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                  if (bodyWidget != null)
-                                    Padding(
-                                      padding: EdgeInsets.only(
-                                        top: title != null ? 10 : 0,
+                                    if (bodyWidget != null)
+                                      Padding(
+                                        padding: EdgeInsets.only(
+                                          top: title != null ? 10 : 0,
+                                        ),
+                                        child: bodyWidget,
                                       ),
-                                      child: bodyWidget,
-                                    ),
-                                ],
+                                  ],
+                                ),
                               ),
                             ),
-                          ),
-                          if (footer != null)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 22),
-                              child: Align(
-                                alignment: Alignment.centerRight,
-                                child: footer,
+                            if (footer != null)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 22),
+                                child: Align(
+                                  alignment: Alignment.centerRight,
+                                  child: footer,
+                                ),
                               ),
-                            ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),

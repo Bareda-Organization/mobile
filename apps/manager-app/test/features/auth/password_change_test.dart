@@ -144,7 +144,9 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('비밀번호 변경'));
+    await tester.tap(
+      find.widgetWithIcon(BaraedaIconButton, Icons.lock_outline),
+    );
     await tester.pumpAndSettle();
 
     expect(find.text('PASSWORD_CHANGE_MARKER'), findsOneWidget);

@@ -24,16 +24,14 @@ class _FakeWebSocketClient extends BaraedaWebSocketClient {
         ),
       );
 
-  final _connectionController =
-      StreamController<WsConnectionState>.broadcast();
+  final _connectionController = StreamController<WsConnectionState>.broadcast();
   final _forbiddenController = StreamController<String>.broadcast();
   final _sessionExpiredController = StreamController<void>.broadcast();
 
   bool disconnectCalled = false;
 
   @override
-  Stream<WsConnectionState> get connectionState =>
-      _connectionController.stream;
+  Stream<WsConnectionState> get connectionState => _connectionController.stream;
 
   @override
   Stream<String> get forbiddenSubscriptions => _forbiddenController.stream;
