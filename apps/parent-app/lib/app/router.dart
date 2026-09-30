@@ -2,6 +2,7 @@ import 'package:baraeda_core/baraeda_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:parent_app/app/app_routes.dart';
+import 'package:parent_app/app/app_shell.dart';
 import 'package:parent_app/core/auth/account_session.dart';
 import 'package:parent_app/core/auth/auth_providers.dart';
 import 'package:parent_app/core/auth/user_role.dart';
@@ -13,6 +14,7 @@ import 'package:parent_app/features/auth/presentation/signup_screen.dart';
 import 'package:parent_app/features/child_link/presentation/child_link_screen.dart';
 import 'package:parent_app/features/home/presentation/home_screen.dart';
 import 'package:parent_app/features/live_map/presentation/live_map_screen.dart';
+import 'package:parent_app/features/notifications/presentation/notifications_screen.dart';
 import 'package:parent_app/features/route/presentation/route_detail_screen.dart';
 import 'package:parent_app/features/schedule/presentation/schedule_screen.dart';
 import 'package:parent_app/features/settings/presentation/password_change_screen.dart';
@@ -86,9 +88,37 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.blockedAccount,
         builder: (context, state) => const BlockedScreen(),
       ),
-      GoRoute(
-        path: AppRoutes.home,
-        builder: (context, state) => const HomeScreen(),
+      // 로그인 뒤 탭 3칸 — 홈 · 알림 · 설정. 탭마다 화면 상태를 따로 붙든다(R44).
+      // 아래 나머지 화면(지도·일정·비밀번호 변경 …)은 탭 밖 경로라 그 위에 얹히고 탭 막대를 가린다.
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navigationShell) =>
+            AppShell(navigationShell: navigationShell),
+        branches: [
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.home,
+                builder: (context, state) => const HomeScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.notifications,
+                builder: (context, state) => const NotificationsScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.settings,
+                builder: (context, state) => const SettingsScreen(),
+              ),
+            ],
+          ),
+        ],
       ),
       GoRoute(
         path: AppRoutes.liveMap,
@@ -101,10 +131,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.schedule,
         builder: (context, state) => const ScheduleScreen(),
-      ),
-      GoRoute(
-        path: AppRoutes.settings,
-        builder: (context, state) => const SettingsScreen(),
       ),
       GoRoute(
         path: AppRoutes.passwordChange,

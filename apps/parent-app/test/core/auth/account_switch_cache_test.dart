@@ -6,9 +6,10 @@ import 'package:parent_app/core/auth/user_role.dart';
 import 'package:parent_app/core/students/domain/student.dart';
 import 'package:parent_app/core/students/domain/student_repository.dart';
 import 'package:parent_app/core/students/presentation/selected_student.dart';
-import 'package:parent_app/features/home/domain/notification_item.dart';
-import 'package:parent_app/features/home/domain/notification_repository.dart';
 import 'package:parent_app/features/home/presentation/home_providers.dart';
+import 'package:parent_app/features/notifications/domain/notification_item.dart';
+import 'package:parent_app/features/notifications/domain/notification_repository.dart';
+import 'package:parent_app/features/notifications/presentation/notification_providers.dart';
 
 class _CountingStudents implements StudentRepository {
   int calls = 0;
@@ -33,6 +34,7 @@ class _CountingNotifications implements NotificationRepository {
   Future<NotificationPage> getNotifications({
     int page = 0,
     int size = 20,
+    bool unreadOnly = false,
   }) async {
     calls++;
     return NotificationPage(
@@ -66,7 +68,7 @@ void main() {
     container.read(currentUserRoleProvider.notifier).state =
         UserRole.values.first;
     await container.read(myStudentsProvider.future);
-    await container.read(notificationsProvider.future);
+    await container.read(notificationFeedProvider.future);
     container.read(selectedStudentIdProvider.notifier).state = 's-A';
 
     // 로그아웃 → 다른 계정 로그인
@@ -75,7 +77,7 @@ void main() {
         UserRole.values.first;
 
     final second = await container.read(myStudentsProvider.future);
-    await container.read(notificationsProvider.future);
+    await container.read(notificationFeedProvider.future);
 
     expect(students.calls, 2, reason: '자녀 목록은 계정마다 새로 받아야 한다');
     expect(second.single.name, '자녀2');

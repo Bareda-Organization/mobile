@@ -7,7 +7,6 @@ import 'package:parent_app/core/auth/role_policy.dart';
 import 'package:parent_app/core/auth/user_role.dart';
 import 'package:parent_app/core/change_requests/domain/change_request.dart';
 import 'package:parent_app/core/change_requests/presentation/change_request_providers.dart';
-import 'package:parent_app/features/home/domain/notification_item.dart';
 import 'package:parent_app/features/home/presentation/home_providers.dart';
 import 'package:parent_app/features/home/presentation/home_screen.dart';
 import 'package:parent_app/features/route/presentation/route_detail_screen.dart';
@@ -19,15 +18,6 @@ const _withdrawn = Failure.api(
   statusCode: 404,
   code: 'STUDENT_NOT_FOUND',
   message: '학생을 찾을 수 없습니다',
-);
-
-const _emptyPage = NotificationPage(
-  items: [],
-  page: 1,
-  size: 20,
-  totalCount: 0,
-  hasNext: false,
-  unreadCount: 0,
 );
 
 Future<void> _pumpStudent(WidgetTester tester, Widget home) async {
@@ -49,7 +39,6 @@ Future<void> _pumpStudent(WidgetTester tester, Widget home) async {
           // ignore: only_throw_errors
           (ref, id) async => throw _withdrawn,
         ),
-        notificationsProvider.overrideWith((ref) async => _emptyPage),
         changeRequestsProvider.overrideWith(
           (ref, id) async =>
               const ChangeRequestPage(items: [], pendingCount: 0),
