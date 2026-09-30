@@ -271,10 +271,10 @@ void main() {
       } finally {
         rawDio.close();
       }
-      expect(refreshFailure, isA<ApiFailure>());
-      final refreshApiFailure = refreshFailure! as ApiFailure;
-      expect(refreshApiFailure.statusCode, 401);
-      expect(refreshApiFailure.code, 'TOKEN_EXPIRED');
+      // 서버는 `401 TOKEN_EXPIRED` 를 준다 — 매퍼는 이 조합을 "재로그인 필요"
+      // (`Failure.unauthenticated`)로 옮긴다(프론트 Ruling 386 · 검사 F07-07).
+      // 그전에는 `ApiFailure(401, TOKEN_EXPIRED)` 로 옮겨 이 단언도 그 형태였다.
+      expect(refreshFailure, isA<UnauthenticatedFailure>());
 
       // 다음 회차에서도 같은 계정으로 로그인할 수 있어야 한다 — 로그아웃이
       // 계정을 잠그지 않는다는 것을 실측으로 확인(연속 4회 실행 안전성의
