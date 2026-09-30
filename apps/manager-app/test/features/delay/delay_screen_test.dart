@@ -133,7 +133,8 @@ void main() {
         findsOneWidget,
       );
 
-      await tester.tap(find.text('기상 악화'));
+      // 세그먼트 라벨은 낱말 단위로 그려진다(wrapByWord) — 낱말 하나를 눌러도 그 칸이 선택된다.
+      await tester.tap(find.text('기상'));
       await tester.pump();
 
       expect(find.textContaining('"기상 악화" 사유'), findsOneWidget);

@@ -28,6 +28,7 @@ class BaraedaSegmentedControl extends StatelessWidget {
     super.key,
     this.onChanged,
     this.block = false,
+    this.wrapByWord = false,
   });
 
   final List<BaraedaSegmentedOption> options;
@@ -36,6 +37,10 @@ class BaraedaSegmentedControl extends StatelessWidget {
 
   /// 가로 100%로 균등 분할.
   final bool block;
+
+  /// `true` 면 라벨을 낱말 단위로 줄바꿈한다 — 칸이 좁을 때 "차량 고/장" 처럼 낱말 중간에서 끊기지 않고
+  /// "차량 / 고장" 두 줄이 된다. 칸이 4개 이상인 좁은 화면에서 켠다(R46). 기본값은 예전 그대로다.
+  final bool wrapByWord;
 
   @override
   Widget build(BuildContext context) {
@@ -57,6 +62,7 @@ class BaraedaSegmentedControl extends StatelessWidget {
                 option: option,
                 selected: option.value == value,
                 expand: block,
+                wrapByWord: wrapByWord,
                 colors: colors,
                 onSelected: onChanged == null
                     ? null
@@ -74,6 +80,7 @@ class _SegmentedButton extends StatelessWidget {
     required this.option,
     required this.selected,
     required this.expand,
+    required this.wrapByWord,
     required this.colors,
     required this.onSelected,
   });
@@ -81,11 +88,26 @@ class _SegmentedButton extends StatelessWidget {
   final BaraedaSegmentedOption option;
   final bool selected;
   final bool expand;
+  final bool wrapByWord;
   final BaraedaColors colors;
   final VoidCallback? onSelected;
 
+  /// 낱말마다 따로 그려 `Wrap` 이 낱말 경계에서만 줄을 바꾸게 한다.
+  Widget _wordWrapped(TextStyle style) => Wrap(
+    alignment: WrapAlignment.center,
+    runAlignment: WrapAlignment.center,
+    spacing: 4,
+    children: [
+      for (final word in option.label.split(' '))
+        Text(word, textAlign: TextAlign.center, style: style),
+    ],
+  );
+
   @override
   Widget build(BuildContext context) {
+    final labelStyle = BaraedaTypography.labelSm.copyWith(
+      color: selected ? colors.textPrimary : colors.textTertiary,
+    );
     final button = Semantics(
       selected: selected,
       button: true,
@@ -99,19 +121,23 @@ class _SegmentedButton extends StatelessWidget {
         focusColor: colors.focusRing.withValues(alpha: 0.32),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 160),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          // 낱말 단위 줄바꿈일 때는 좌우 여백을 줄여 낱말이 들어갈 폭을 늘린다.
+          padding: EdgeInsets.symmetric(
+            horizontal: wrapByWord ? 6 : 14,
+            vertical: 8,
+          ),
           decoration: BoxDecoration(
             color: selected ? colors.surfaceCard : Colors.transparent,
             borderRadius: BorderRadius.circular(BaraedaRadius.pill),
             boxShadow: selected ? BaraedaShadows.smLight : const [],
           ),
-          child: Text(
-            option.label,
-            textAlign: TextAlign.center,
-            style: BaraedaTypography.labelSm.copyWith(
-              color: selected ? colors.textPrimary : colors.textTertiary,
-            ),
-          ),
+          child: wrapByWord
+              ? _wordWrapped(labelStyle)
+              : Text(
+                  option.label,
+                  textAlign: TextAlign.center,
+                  style: labelStyle,
+                ),
         ),
       ),
     );

@@ -122,6 +122,8 @@ class _DelayScreenState extends ConsumerState<DelayScreen> {
             options: _reasonOptions,
             value: _reason.wireValue,
             block: true,
+            // 칸이 4개라 좁은 폭·큰 글자에서 낱말 중간에서 끊긴다 — 낱말 단위로 줄을 바꾼다(R46).
+            wrapByWord: true,
             onChanged: _submitting
                 ? null
                 : (value) => setState(
