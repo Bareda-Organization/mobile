@@ -17,6 +17,8 @@ import 'package:manager_app/features/drive_mode/domain/drive_mode_repository.dar
 import 'package:manager_app/features/drive_mode/presentation/drive_mode_providers.dart';
 import 'package:manager_app/features/drive_mode/presentation/drive_mode_screen.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
+import 'package:manager_app/features/navigation/data/models/navigation_route.dart';
+import 'package:manager_app/features/navigation/domain/navigation_repository.dart';
 import 'package:manager_app/features/roster/data/models/roster_response.dart';
 import 'package:manager_app/features/route_map/data/models/route_response.dart';
 import 'package:manager_app/features/route_map/presentation/route_providers.dart';
@@ -44,6 +46,33 @@ class _ArriveRecorder implements DriveModeRepository {
 
   @override
   Future<StartRunResult> startRun(String runId) => throw UnimplementedError();
+}
+
+/// 외부 내비 좌표열 — 호출을 세고 [truncated] 여부를 시험이 정한다.
+class _FakeNavigationRepository implements NavigationRepository {
+  _FakeNavigationRepository({this.truncated = false});
+
+  final bool truncated;
+  int calls = 0;
+
+  @override
+  Future<NavigationRoute> fetchRemaining(String runId) async {
+    calls++;
+    return NavigationRoute(
+      provider: 'kakao',
+      waypoints: const [
+        NavigationPoint(lat: 37.51, lng: 127.01, name: '1번 승하차지'),
+      ],
+      destination: const NavigationPoint(
+        lat: 37.53,
+        lng: 127.03,
+        name: '바른학원',
+      ),
+      truncated: truncated,
+      truncatedReason: truncated ? '남은 승하차지가 많아 앞 2곳만 넘겼습니다' : null,
+      totalRemainingStops: truncated ? 6 : 2,
+    );
+  }
 }
 
 /// 위치 권한·서비스 상태를 시험이 정하는 가짜 소스 — 좌표는 없다.
@@ -89,13 +118,26 @@ RosterStop _stop(int seq, {bool arrived = false}) => RosterStop(
 );
 
 void main() {
-  Future<({_ArriveRecorder repository, List<String> settingsOpened})> pumpDrive(
+  Future<
+    ({
+      _ArriveRecorder repository,
+      List<String> settingsOpened,
+      List<Uri> opened,
+      _FakeNavigationRepository navigation,
+    })
+  >
+  pumpDrive(
     WidgetTester tester, {
     List<RosterStop>? stops,
     PositionAvailability availability = PositionAvailability.available,
+    String naviAppKey = '',
+    bool openSucceeds = true,
+    bool truncated = false,
   }) async {
     final repository = _ArriveRecorder();
+    final navigation = _FakeNavigationRepository(truncated: truncated);
     final settingsOpened = <String>[];
+    final opened = <Uri>[];
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -103,6 +145,12 @@ void main() {
           positionSourceProvider.overrideWithValue(
             _FixedAvailabilitySource(availability),
           ),
+          kakaoNaviAppKeyProvider.overrideWithValue(naviAppKey),
+          navigationRepositoryProvider.overrideWithValue(navigation),
+          uriOpenerProvider.overrideWithValue((uri) async {
+            opened.add(uri);
+            return openSucceeds;
+          }),
           settingsOpenerProvider.overrideWithValue((page) async {
             settingsOpened.add(page.name);
             return true;
@@ -136,7 +184,12 @@ void main() {
     );
     await tester.pump();
     await tester.pump();
-    return (repository: repository, settingsOpened: settingsOpened);
+    return (
+      repository: repository,
+      settingsOpened: settingsOpened,
+      opened: opened,
+      navigation: navigation,
+    );
   }
 
   group('B2 #15 중간 승하차지 도착 처리 피드백', () {
@@ -174,6 +227,49 @@ void main() {
 
     // managerRunFixture 의 출발 시각은 2026-09-30 08:00.
     expect(find.text('출발 08:00'), findsOneWidget);
+  });
+
+  group('A #5 외부 내비(RUN-08)', () {
+    testWidgets('카카오 앱 키가 없으면 [외부 내비] 버튼을 그리지 않는다 (R46)', (tester) async {
+      await pumpDrive(tester);
+
+      expect(find.text('외부 내비'), findsNothing);
+    });
+
+    testWidgets('키가 있으면 서버 좌표열로 카카오내비 주소를 만들어 연다 (R46)', (tester) async {
+      final harness = await pumpDrive(tester, naviAppKey: 'KEY-1');
+
+      await tester.tap(find.text('외부 내비'));
+      await tester.pump();
+      await tester.pump();
+
+      expect(harness.navigation.calls, 1);
+      expect(harness.opened, hasLength(1));
+      final uri = harness.opened.single;
+      expect(uri.scheme, 'kakaonavi-sdk');
+      expect(uri.queryParameters['appkey'], 'KEY-1');
+      expect(uri.queryParameters['param'], contains('바른학원'));
+    });
+
+    testWidgets('내비 앱이 열리지 않으면 이유를 알린다 (R46)', (tester) async {
+      await pumpDrive(tester, naviAppKey: 'KEY-1', openSucceeds: false);
+
+      await tester.tap(find.text('외부 내비'));
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.textContaining('카카오내비를 열 수 없습니다'), findsOneWidget);
+    });
+
+    testWidgets('상한 때문에 잘렸으면 서버가 준 안내 문구를 보인다 (R46)', (tester) async {
+      await pumpDrive(tester, naviAppKey: 'KEY-1', truncated: true);
+
+      await tester.tap(find.text('외부 내비'));
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('남은 승하차지가 많아 앞 2곳만 넘겼습니다'), findsOneWidget);
+    });
   });
 
   group('B2 #19 위치 권한 배너 [설정 열기]', () {

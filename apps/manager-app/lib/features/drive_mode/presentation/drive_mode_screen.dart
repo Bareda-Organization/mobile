@@ -24,6 +24,7 @@ import 'package:manager_app/features/drive_mode/presentation/widgets/remaining_s
 import 'package:manager_app/features/emergency/presentation/widgets/emergency_button.dart';
 import 'package:manager_app/features/home/data/models/manager_run.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
+import 'package:manager_app/features/navigation/data/models/navigation_route.dart';
 import 'package:manager_app/features/position/presentation/position_link.dart';
 import 'package:manager_app/features/position/presentation/position_transmitter.dart';
 import 'package:manager_app/features/roster/data/models/roster_response.dart';
@@ -55,6 +56,10 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
   /// 직전 도착 처리 결과 안내 — 버튼 바로 위 고정 영역에 둔다. 스낵바는 아래 고정된 [도착 처리] 버튼을 덮어
   /// 다음 누름을 가로챈다(R46).
   String? _arrivedNotice;
+
+  /// 외부 내비를 여는 중 — 겹쳐 누르지 않게 한다. 열고 나서 서버가 잘랐다고 알리면 그 안내를 [_navNotice] 에 둔다.
+  bool _navigating = false;
+  String? _navNotice;
 
   /// [initState] 에서 받아 둔 포트 — `ConsumerState.dispose()` 안에서는
   /// `ref.read` 가 안전하지 않다(위젯이 이미 unmount 되는 중이라 Riverpod
@@ -199,6 +204,40 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
     }
   }
 
+  /// 서버가 정한 남은 경로(§4.16)를 카카오내비로 넘긴다(RUN-08). 주소는 앱이 만든다 — 서버는 딥링크를 만들지 않는다.
+  Future<void> _openNavigation(String runId) async {
+    setState(() {
+      _navigating = true;
+      _errorMessage = null;
+      _navNotice = null;
+    });
+    try {
+      final route = await ref
+          .read(navigationRepositoryProvider)
+          .fetchRemaining(runId);
+      // 서버가 정한 공급자가 카카오가 아니면(티맵 등) 이 앱은 열 수 없다.
+      final opened =
+          route.provider == 'kakao' &&
+          await ref.read(uriOpenerProvider)(
+            kakaoNaviUri(route, appKey: ref.read(kakaoNaviAppKeyProvider)),
+          );
+      if (!mounted) return;
+      setState(() {
+        if (!opened) {
+          _errorMessage = '카카오내비를 열 수 없습니다 — 앱이 설치돼 있는지 확인해 주세요';
+        } else if (route.truncated) {
+          // 상한 때문에 앞 몇 곳만 넘겼다 — 그 사실을 기사에게 알린다.
+          _navNotice = route.truncatedReason ?? '남은 승하차지가 많아 앞쪽만 내비에 넘겼습니다';
+        }
+      });
+    } on Failure catch (failure) {
+      if (!mounted) return;
+      setState(() => _errorMessage = describeFailure(failure));
+    } finally {
+      if (mounted) setState(() => _navigating = false);
+    }
+  }
+
   void _lockArriveButton(String notice) {
     setState(() {
       _arriveLocked = true;
@@ -273,6 +312,22 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
                   ),
                 // 위치가 서버에 닿고 있는지 — 음영 구간에서 기사가 먼저 알게 한다(R46). 송신 중일 때만 그린다.
                 const PositionLinkChip(),
+                // 외부 내비(RUN-08) — 카카오 앱 키(사용자 자원)가 없으면 그리지 않는다.
+                // 확정 뒤부터 운행 중까지 기사만.
+                if (_canUseExternalNavigation(run)) ...[
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: BaraedaButton(
+                      label: '외부 내비',
+                      size: BaraedaButtonSize.sm,
+                      variant: BaraedaButtonVariant.secondary,
+                      onPressed: _navigating
+                          ? null
+                          : () => _openNavigation(runId),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 16),
                 DriveMapPanel(
                   height: mapHeight,
@@ -328,6 +383,10 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
                     ),
                     const SizedBox(height: 12),
                   ],
+                if (_navNotice != null) ...[
+                  AlertBanner(tone: AlertTone.moving, body: _navNotice),
+                  const SizedBox(height: 12),
+                ],
                 if (_arrivedNotice != null) ...[
                   AlertBanner(tone: AlertTone.boarded, body: _arrivedNotice),
                   const SizedBox(height: 12),
@@ -366,6 +425,12 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
       ],
     );
   }
+
+  bool _canUseExternalNavigation(ManagerRun? run) =>
+      ref.watch(kakaoNaviAppKeyProvider).isNotEmpty &&
+      (ref.watch(roleCapabilitiesProvider)?.canOperateRun ?? false) &&
+      (run?.runStatus == RunStatus.confirmed ||
+          run?.runStatus == RunStatus.moving);
 
   /// 카드에 적는 출발 시각 — 시각만 크게 있으면 출발인지 도착인지 모른다(R46).
   String _departLabel(ManagerRun run) =>
