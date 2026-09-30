@@ -63,6 +63,7 @@ final authBootstrapProvider = FutureProvider<void>(retry: (_, _) => null, (
       role: me.role,
       status: me.status,
     );
+    ref.read(academyContactProvider.notifier).state = me.academy?.contact;
     if (me.status == AccountStatus.active && me.role == AccountRole.driver) {
       await _resumeMovingRun(ref);
     }
@@ -191,6 +192,7 @@ class RouterRefreshNotifier extends ChangeNotifier {
       ..invalidate(driveModeRosterProvider)
       ..invalidate(routeProvider);
     _ref.read(selectedRunIdProvider.notifier).state = null;
+    _ref.read(academyContactProvider.notifier).state = null;
     _ref.read(transmissionEndedRunIdProvider.notifier).state = null;
     _ref.read(lastArriveResultProvider.notifier).state = null;
     unawaited(_ref.read(offlineQueueRepositoryProvider).clear());

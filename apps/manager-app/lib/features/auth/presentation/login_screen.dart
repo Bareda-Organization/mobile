@@ -71,6 +71,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         role: response.role,
         status: response.status,
       );
+      ref.read(academyContactProvider.notifier).state =
+          response.academy?.contact;
 
       if (ref.read(unsupportedRoleProvider)) {
         // 로그인 자체는 서버 기준 성공이라 토큰이 이미 저장돼 있다 —

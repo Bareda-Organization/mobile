@@ -8,6 +8,12 @@ import 'package:manager_app/core/auth/user_role.dart';
 final StateProvider<UserRole?> currentUserRoleProvider =
     StateProvider<UserRole?>((ref) => null);
 
+/// 로그인·`/me` 응답의 학원 대표 연락처 — 통신 두절로 비상 신고가 못 나갔을 때 학원에 전화를 거는 번호다
+/// (R46-MGR). 학원이 등록하지 않았으면 `null`. 로그아웃하면 비운다.
+final StateProvider<String?> academyContactProvider = StateProvider<String?>(
+  (ref) => null,
+);
+
 /// 화면이 실제로 읽는 것 — 역할이 아니라 **권한**.
 /// 화면은 `ref.watch(roleCapabilitiesProvider)?.canDecideBoardingStatus` 처럼
 /// 쓰고 `currentUserRoleProvider` 를 직접 보지 않는다(§1.1 "판정은 한 곳에서").
