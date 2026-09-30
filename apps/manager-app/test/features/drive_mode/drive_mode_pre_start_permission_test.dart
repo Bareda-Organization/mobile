@@ -1,4 +1,5 @@
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -133,6 +134,24 @@ void main() {
     await tester.pump(PositionConstants.transmissionInterval);
 
     expect(find.textContaining(permissionMessage), findsNothing);
+  });
+
+  testWidgets('작은 화면에서도 권한 배너가 아래 고정 [운행 시작] 버튼보다 위에 온다', (tester) async {
+    // 본문이 스크롤돼야 하는 높이 — 지도(화면의 30%)·요약 카드 아래 배너가 접힌 곳에 놓이면 버튼에 잘린다.
+    tester.view
+      ..physicalSize = const Size(360, 640)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await pump(tester, PositionAvailability.permissionDenied);
+
+    final bannerBottom = tester
+        .getRect(find.textContaining(permissionMessage))
+        .bottom;
+    final buttonTop = tester
+        .getRect(find.widgetWithText(BaraedaButton, '운행 시작'))
+        .top;
+
+    expect(bannerBottom, lessThanOrEqualTo(buttonTop));
   });
 
   testWidgets('권한이 정상이면 배너가 없다', (tester) async {
