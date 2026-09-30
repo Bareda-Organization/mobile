@@ -37,7 +37,11 @@ final StateProvider<bool> unsupportedRoleProvider = StateProvider<bool>(
 /// `/me` 응답이 만료된 access 토큰을 만나면 `ApiClient` 의 `_AuthInterceptor`
 /// 가 저장된 refresh 로 자동 재발급 후 재시도한다 — 이 provider 는 그 재발급
 /// 로직을 다시 구현하지 않는다.
-final authBootstrapProvider = FutureProvider<void>((ref) async {
+// 자동 재시도를 끈다 — Riverpod 3 은 실패한 provider 를 늘어나는 간격으로 조용히 다시 불러 그동안 스피너만
+// 보이는데, 여기서는 곧바로 [다시 시도] 안내를 보이는 것이 낫다(F05-10).
+final authBootstrapProvider = FutureProvider<void>(retry: (_, _) => null, (
+  ref,
+) async {
   final tokenStorage = ref.watch(tokenStorageProvider);
   final refreshToken = await tokenStorage.readRefreshToken();
   if (refreshToken == null) return;
@@ -52,6 +56,13 @@ final authBootstrapProvider = FutureProvider<void>((ref) async {
       role: me.role,
       status: me.status,
     );
+  } on Failure catch (failure) {
+    // F05-10 — 연결이 끊겼거나 서버가 잠깐 죽은 것은 로그인이 풀린 것이 아니다. 토큰은 그대로 두고
+    // 앱이 [다시 시도] 를 보이게 오류로 남긴다. 그 밖(401 등 인증 거절)은 로그인 화면으로 남긴다.
+    if (failure is NetworkFailure ||
+        (failure is ApiFailure && failure.statusCode >= 500)) {
+      rethrow;
+    }
   } on Object {
     // 재발급까지 실패하면 인터셉터가 이미 토큰을 지웠다(§ api_client.dart
     // onError) — 여기서는 로그인 화면으로 남기는 것으로 충분하다.

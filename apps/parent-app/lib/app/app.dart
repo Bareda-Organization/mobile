@@ -28,6 +28,32 @@ class BaraedaParentApp extends ConsumerWidget {
       );
     }
 
+    if (bootstrap.hasError) {
+      return MaterialApp(
+        title: '바래다',
+        debugShowCheckedModeBanner: false,
+        theme: BaraedaTheme.light(),
+        home: Scaffold(
+          body: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(BaraedaSpacing.gutterMobile),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('네트워크 상태를 확인해 주세요'),
+                  const SizedBox(height: BaraedaSpacing.space4),
+                  BaraedaButton(
+                    label: '다시 시도',
+                    onPressed: () => ref.invalidate(authBootstrapProvider),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
     final router = ref.watch(routerProvider);
     return MaterialApp.router(
       title: '바래다',
