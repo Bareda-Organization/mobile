@@ -41,23 +41,33 @@ void main() {
     await tester.pumpWidget(wrap(AppHeader(title: '노선', onBack: () {})));
 
     final top = tester.getTopLeft(find.byTooltip('뒤로')).dy;
-    expect(top, greaterThanOrEqualTo(59),
-        reason: '제목만 내리고 버튼을 두면 같은 줄이 어긋난다');
+    expect(top, greaterThanOrEqualTo(59), reason: '제목만 내리고 버튼을 두면 같은 줄이 어긋난다');
   });
 
   // 2026-09-29 사용자 지적 "앱 화면에서 뒤로가기 버튼" — 학부모 앱의 설정·일정·노선 상세·
   // 자녀 연결·실시간 위치 5개 화면이 `onBack` 을 안 넘겨 뒤로 버튼이 없었다. 화면마다 넘기게
   // 하면 다음 화면이 또 빠뜨린다 → 뒤에 화면이 있으면 머리말이 스스로 그린다.
   testWidgets('뒤에 화면이 있으면 onBack 없이도 뒤로 버튼이 생기고, 누르면 돌아간다', (tester) async {
-    await tester.pumpWidget(MaterialApp(
-      theme: BaraedaTheme.light(),
-      home: const Scaffold(appBar: AppHeader(title: '오늘 운행'), body: SizedBox()),
-    ));
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: BaraedaTheme.light(),
+        home: const Scaffold(
+          appBar: AppHeader(title: '오늘 운행'),
+          body: SizedBox(),
+        ),
+      ),
+    );
     final homeContext = tester.element(find.text('오늘 운행'));
-    unawaited(Navigator.of(homeContext).push(MaterialPageRoute<void>(
-      builder: (_) =>
-          const Scaffold(appBar: AppHeader(title: '설정'), body: SizedBox()),
-    )));
+    unawaited(
+      Navigator.of(homeContext).push(
+        MaterialPageRoute<void>(
+          builder: (_) => const Scaffold(
+            appBar: AppHeader(title: '설정'),
+            body: SizedBox(),
+          ),
+        ),
+      ),
+    );
     await tester.pumpAndSettle();
 
     await tester.tap(find.byTooltip('뒤로'));
@@ -70,8 +80,11 @@ void main() {
   testWidgets('첫 화면에는 뒤로 버튼이 없다', (tester) async {
     await tester.pumpWidget(wrap(const AppHeader(title: '오늘 운행')));
 
-    expect(find.byTooltip('뒤로'), findsNothing,
-        reason: '돌아갈 화면이 없는데 버튼을 그리면 눌러도 아무 일이 없다');
+    expect(
+      find.byTooltip('뒤로'),
+      findsNothing,
+      reason: '돌아갈 화면이 없는데 버튼을 그리면 눌러도 아무 일이 없다',
+    );
   });
 
   testWidgets('상태 표시줄이 없는 기기에서는 여백을 더하지 않는다', (tester) async {
@@ -79,7 +92,10 @@ void main() {
       wrap(const AppHeader(title: '오늘 운행'), statusBar: 0),
     );
 
-    expect(tester.getTopLeft(find.text('오늘 운행')).dy, lessThan(56),
-        reason: '고정값을 더하면 여백이 없는 기기에서 머리말이 쓸데없이 두꺼워진다');
+    expect(
+      tester.getTopLeft(find.text('오늘 운행')).dy,
+      lessThan(56),
+      reason: '고정값을 더하면 여백이 없는 기기에서 머리말이 쓸데없이 두꺼워진다',
+    );
   });
 }

@@ -37,6 +37,7 @@ class BaraedaColors extends ThemeExtension<BaraedaColors> {
     required this.textLinkHover,
     required this.borderSubtle,
     required this.borderDefault,
+    required this.borderControl,
     required this.borderStrong,
     required this.borderInverse,
     required this.accentPrimary,
@@ -89,6 +90,10 @@ class BaraedaColors extends ThemeExtension<BaraedaColors> {
   // 테두리
   final Color borderSubtle;
   final Color borderDefault;
+
+  /// 조작 요소(입력칸·스위치 꺼짐 트랙·보조 버튼·선택 칩)의 경계 — 인접 면과 3:1 이상(WCAG 1.4.11).
+  /// [borderDefault] 는 카드 외곽선·타임라인 점 같은 장식 구분선이라 그대로 둔다(F07-09).
+  final Color borderControl;
   final Color borderStrong;
   final Color borderInverse;
 
@@ -141,6 +146,8 @@ class BaraedaColors extends ThemeExtension<BaraedaColors> {
     textLinkHover: BaraedaPalette.green700,
     borderSubtle: BaraedaPalette.stone200,
     borderDefault: BaraedaPalette.stone300,
+    // 흰 카드 3.47 · 페이지 바탕 3.17 (상대 휘도 계산, 테스트가 고정)
+    borderControl: Color(0xFF828C88),
     borderStrong: BaraedaPalette.green600,
     borderInverse: Color(0x2EFFFFFF), // rgba(255,255,255,.18)
     accentPrimary: BaraedaPalette.green600,
@@ -189,6 +196,8 @@ class BaraedaColors extends ThemeExtension<BaraedaColors> {
     textLinkHover: BaraedaPalette.amber300,
     borderSubtle: Color(0x21EDF2EF), // rgba(237,242,239,.13)
     borderDefault: Color(0x3DEDF2EF), // rgba(237,242,239,.24)
+    // 카드 3.77 · 페이지 바탕 4.18 · 떠 있는 면 3.35. 불투명 — 알파가 있으면 면마다 대비가 달라진다.
+    borderControl: Color(0xFF6F7A76),
     borderStrong: BaraedaPalette.amber500,
     borderInverse: Color(0x21EDF2EF), // rgba(237,242,239,.13)
     accentPrimary: BaraedaPalette.amber500,
@@ -236,6 +245,7 @@ class BaraedaColors extends ThemeExtension<BaraedaColors> {
     Color? textLinkHover,
     Color? borderSubtle,
     Color? borderDefault,
+    Color? borderControl,
     Color? borderStrong,
     Color? borderInverse,
     Color? accentPrimary,
@@ -281,6 +291,7 @@ class BaraedaColors extends ThemeExtension<BaraedaColors> {
       textLinkHover: textLinkHover ?? this.textLinkHover,
       borderSubtle: borderSubtle ?? this.borderSubtle,
       borderDefault: borderDefault ?? this.borderDefault,
+      borderControl: borderControl ?? this.borderControl,
       borderStrong: borderStrong ?? this.borderStrong,
       borderInverse: borderInverse ?? this.borderInverse,
       accentPrimary: accentPrimary ?? this.accentPrimary,
@@ -339,6 +350,7 @@ class BaraedaColors extends ThemeExtension<BaraedaColors> {
       textLinkHover: Color.lerp(textLinkHover, other.textLinkHover, t)!,
       borderSubtle: Color.lerp(borderSubtle, other.borderSubtle, t)!,
       borderDefault: Color.lerp(borderDefault, other.borderDefault, t)!,
+      borderControl: Color.lerp(borderControl, other.borderControl, t)!,
       borderStrong: Color.lerp(borderStrong, other.borderStrong, t)!,
       borderInverse: Color.lerp(borderInverse, other.borderInverse, t)!,
       accentPrimary: Color.lerp(accentPrimary, other.accentPrimary, t)!,

@@ -92,7 +92,7 @@ class _SwitchTrack extends StatelessWidget {
       height: 24,
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
-        color: checked ? colors.accentPrimary : colors.borderDefault,
+        color: checked ? colors.accentPrimary : colors.borderControl,
         borderRadius: BorderRadius.circular(999),
       ),
       alignment: checked ? Alignment.centerRight : Alignment.centerLeft,

@@ -61,9 +61,9 @@ class BaraedaTextarea extends StatelessWidget {
               filled: true,
               fillColor: enabled ? colors.surfaceCard : colors.bgSubtle,
               contentPadding: const EdgeInsets.all(14),
-              border: _borderFor(colors.borderDefault),
+              border: _borderFor(colors.borderControl),
               enabledBorder: _borderFor(
-                hasError ? colors.statusMissed : colors.borderDefault,
+                hasError ? colors.statusMissed : colors.borderControl,
               ),
               focusedBorder: _borderFor(
                 hasError ? colors.statusMissed : colors.accentPrimary,

@@ -91,7 +91,7 @@ class _DelayOption extends StatelessWidget {
     final colors = context.colors;
     final tint = selected ? colors.statusMoving : colors.textPrimary;
     final background = selected ? colors.statusMovingSoft : colors.surfaceCard;
-    final border = selected ? colors.statusMoving : colors.borderDefault;
+    final border = selected ? colors.statusMoving : colors.borderControl;
 
     return Semantics(
       button: true,

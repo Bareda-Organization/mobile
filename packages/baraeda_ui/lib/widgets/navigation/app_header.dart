@@ -48,7 +48,8 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
     final background = inverse ? colors.surfaceChrome : colors.bgBase;
     final foreground = inverse ? colors.textOnChrome : colors.textPrimary;
     final borderColor = inverse ? colors.borderChrome : colors.borderSubtle;
-    final back = onBack ??
+    final back =
+        onBack ??
         (Navigator.canPop(context) ? () => Navigator.maybePop(context) : null);
 
     return Semantics(

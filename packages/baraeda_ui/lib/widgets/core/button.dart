@@ -140,7 +140,7 @@ _ButtonPalette _paletteFor(BaraedaButtonVariant variant, BaraedaColors c) {
       return _ButtonPalette(
         background: c.surfaceCard,
         foreground: c.textPrimary,
-        border: Border.all(color: c.borderDefault),
+        border: Border.all(color: c.borderControl),
       );
     case BaraedaButtonVariant.soft:
       return _ButtonPalette(
