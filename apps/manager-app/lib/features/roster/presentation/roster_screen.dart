@@ -121,6 +121,8 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
             request: BoardingUpdateRequest(
               status: status,
               clientKey: IdempotencyKeys.generate(),
+              // 누른 시각 — 오프라인 재생분이 서버에 도착한 시각으로 기록되지 않게 한다(F06-05).
+              occurredAt: ref.read(clockProvider).now(),
             ),
           );
       if (!mounted) return;

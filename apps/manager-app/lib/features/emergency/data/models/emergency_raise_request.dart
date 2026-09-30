@@ -1,3 +1,4 @@
+import 'package:manager_app/core/time/wire_time.dart';
 import 'package:manager_app/features/emergency/data/models/emergency_type.dart';
 
 /// `POST /runs/{runId}/emergency` 요청 본문 — §4.14.
@@ -30,6 +31,6 @@ class EmergencyRaiseRequest {
     if (memo != null) 'memo': memo,
     if (lat != null) 'lat': lat,
     if (lng != null) 'lng': lng,
-    if (occurredAt != null) 'occurred_at': occurredAt!.toIso8601String(),
+    if (occurredAt != null) 'occurred_at': toWireTime(occurredAt!),
   };
 }
