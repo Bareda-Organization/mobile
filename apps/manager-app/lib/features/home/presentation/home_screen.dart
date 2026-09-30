@@ -22,11 +22,44 @@ import 'package:manager_app/features/home/presentation/home_providers.dart';
 /// 담고 역할에 따라 DriveMode(기사) 또는 StopRoster(동승자)로 이동한다 —
 /// 두 화면 다 "지금 선택된 회차 하나" 만 다루므로 라우터 path parameter
 /// 대신 provider 로 넘긴다(보고서 § 판단 근거 참고).
-class ManagerHomeScreen extends ConsumerWidget {
+///
+/// 열려 있는 동안 [todayRunsRefreshInterval] 마다, 앱이 백그라운드에서 돌아올 때 목록을 다시
+/// 받는다 — 확정은 서버 배치가 시각에 맞춰 바꾸므로(F06-13) 한 번 받은 목록은 곧 낡는다.
+class ManagerHomeScreen extends ConsumerStatefulWidget {
   const ManagerHomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ManagerHomeScreen> createState() => _ManagerHomeScreenState();
+}
+
+class _ManagerHomeScreenState extends ConsumerState<ManagerHomeScreen>
+    with WidgetsBindingObserver {
+  Timer? _refreshTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _refreshTimer = Timer.periodic(
+      todayRunsRefreshInterval,
+      (_) => ref.invalidate(todayRunsProvider),
+    );
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) ref.invalidate(todayRunsProvider);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final runsAsync = ref.watch(todayRunsProvider);
     final capabilities = ref.watch(roleCapabilitiesProvider);
     final hasMovingRun =
@@ -49,8 +82,7 @@ class ManagerHomeScreen extends ConsumerWidget {
           // 역할이 비면 라우터가 로그인 화면으로 보낸다. 기사·동승자 둘 다
           // 이 화면을 거쳐 운행 화면으로 들어가므로(§4.1) 둘 다 닿는 자리다.
           TextButton(
-            onPressed: () =>
-                unawaited(_confirmSignOut(context, ref, hasMovingRun)),
+            onPressed: () => unawaited(_confirmSignOut(context, hasMovingRun)),
             child: const Text('로그아웃'),
           ),
         ],
@@ -58,6 +90,8 @@ class ManagerHomeScreen extends ConsumerWidget {
       body: RefreshIndicator(
         onRefresh: () => ref.refresh(todayRunsProvider.future),
         child: runsAsync.when(
+          // 주기 갱신 중에는 받아 둔 목록을 그대로 두고 바꿔 그린다 — 30초마다 스피너가 뜨지 않게.
+          skipLoadingOnReload: true,
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (error, _) => ListView(
             children: [
@@ -123,7 +157,7 @@ class ManagerHomeScreen extends ConsumerWidget {
                     currentStop: run.origin,
                     nextStop: run.destination,
                     onTap: run.confirmed
-                        ? () => _openRun(context, ref, run, capabilities)
+                        ? () => _openRun(context, run, capabilities)
                         : null,
                   ),
                   // 확정 전 카드는 눌러도 반응이 없다 — 이유와 열리는 시각을 알린다(M-02, R32 M9).
@@ -168,7 +202,6 @@ class ManagerHomeScreen extends ConsumerWidget {
 
   void _openRun(
     BuildContext context,
-    WidgetRef ref,
     ManagerRun run,
     RoleCapabilities? capabilities,
   ) {
@@ -185,7 +218,6 @@ class ManagerHomeScreen extends ConsumerWidget {
   /// 라우터가 그 변화를 보고 로그인 화면으로 보낸다(판정은 라우터 한 곳).
   Future<void> _confirmSignOut(
     BuildContext context,
-    WidgetRef ref,
     bool hasMovingRun,
   ) async {
     final confirmed = await showDialog<bool>(
