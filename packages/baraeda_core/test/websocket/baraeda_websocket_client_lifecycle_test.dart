@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:dio/dio.dart';
@@ -118,6 +119,24 @@ class _StompServer {
       await socket.close();
     }
     await _server?.close(force: true);
+  }
+}
+
+/// 재연결 대기를 지터 메서드로 계산하는지 세는 감시용 정책.
+class _SpyPolicy extends WsBackoffPolicy {
+  _SpyPolicy()
+    : super(
+        initialDelay: const Duration(milliseconds: 10),
+        maxDelay: const Duration(milliseconds: 20),
+        maxAttempts: 2,
+      );
+
+  int jitteredCalls = 0;
+
+  @override
+  Duration jitteredDelayFor(int attempt, Random random) {
+    jitteredCalls += 1;
+    return super.jitteredDelayFor(attempt, random);
   }
 }
 
@@ -267,6 +286,23 @@ void main() {
 
       expect(server.connectCount, 0);
       expect(client.state, WsConnectionState.disconnected);
+    });
+
+    test('연결이 끊겨 재연결을 예약할 때 지터를 더한 대기를 쓴다', () async {
+      // F07-13(c) 의 배선 — 정책에 지터가 있어도 클라이언트가 안 쓰면 몰림은 그대로다.
+      server = _StompServer();
+      final policy = _SpyPolicy();
+      final client = BaraedaWebSocketClient(
+        url: 'ws://127.0.0.1:1/ws/location', // 아무도 듣지 않는 포트 — 연결 거부
+        tokenStorage: _buildTokenStorage(),
+        backoffPolicy: policy,
+      );
+      addTearDown(client.dispose);
+
+      client.connect();
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+
+      expect(policy.jitteredCalls, greaterThanOrEqualTo(1));
     });
   });
 }
