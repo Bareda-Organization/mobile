@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 import 'package:manager_app/app/app_routes.dart';
 import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/auth/auth_providers.dart';
+import 'package:manager_app/core/constants/position_constants.dart';
 import 'package:manager_app/core/location/position_source.dart';
 import 'package:manager_app/core/network/failure_messages.dart';
 import 'package:manager_app/core/run/manager_channel_banner.dart';
@@ -49,6 +50,11 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
   /// 쓰면 되고 `ref` 를 다시 묻지 않는다.
   late final WakelockPort _wakelockPort;
 
+  /// 운행 시작 전(송신기가 아직 안 도는 동안) 화면이 직접 재확인해 둔 위치 권한·서비스 상태(M2-02).
+  /// 운행 중에는 송신기의 상태(`PositionTransmission.availability`)가 우선한다.
+  PositionAvailability? _preStartAvailability;
+  Timer? _availabilityTimer;
+
   /// 위치 송신 상태의 [PositionAvailability] 를 화면 문구로 옮긴다 — 정상(`available`)이거나
   /// 아직 모르면(`null`) 아무것도 보여주지 않는다.
   String? _positionGuidance(PositionAvailability? availability) =>
@@ -73,12 +79,25 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
     // 기사 회차에 맞춰 돈다(R33 M1). 여기서는 기사에게 위치 권한 확인만 미리 띄우려고 소스를 만들어 둔다
     // (운행을 시작하는 순간 권한 창이 뜨지 않게).
     if (ref.read(roleCapabilitiesProvider)?.canTransmitPosition ?? false) {
-      ref.read(positionSourceProvider);
+      final source = ref.read(positionSourceProvider);
+      // M2-02 — 출발 뒤에야 송신 실패를 알지 않게, 시작 전에도 권한·서비스를 주기마다 다시 본다.
+      // 스트림은 켜지 않는다(포그라운드 서비스 알림은 운행 중에만).
+      _availabilityTimer = Timer.periodic(
+        PositionConstants.transmissionInterval,
+        (_) => unawaited(_recheckAvailability(source)),
+      );
     }
+  }
+
+  Future<void> _recheckAvailability(PositionSource source) async {
+    await source.recheck();
+    if (!mounted || source.availability == _preStartAvailability) return;
+    setState(() => _preStartAvailability = source.availability);
   }
 
   @override
   void dispose() {
+    _availabilityTimer?.cancel();
     unawaited(_wakelockPort.disable());
     super.dispose();
   }
@@ -92,13 +111,15 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
       confirmLabel: '시작하기',
     );
     if (!confirmed || !mounted) return;
+    final container = ProviderScope.containerOf(context);
     setState(() {
       _submitting = true;
       _errorMessage = null;
     });
     try {
       await ref.read(driveModeRepositoryProvider).startRun(runId);
-      ref
+      // 요청 중에 화면이 닫혀도 서버는 이미 시작을 반영했다 — 컨테이너로 갱신한다(F06-16).
+      container
         ..invalidate(todayRunsProvider)
         ..invalidate(driveModeRosterProvider);
     } on Failure catch (failure) {
@@ -107,7 +128,7 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
       // M4(Ruling 340) — 취소된 회차는 §4.1 목록에서 빠져야 하는데, 목록을
       // 다시 불러오지 않으면 이미 취소된 카드가 화면에 그대로 남는다.
       if (failure case ApiFailure(code: 'RUN_CANCELED')) {
-        ref.invalidate(todayRunsProvider);
+        container.invalidate(todayRunsProvider);
       }
     } finally {
       if (mounted) setState(() => _submitting = false);
@@ -130,6 +151,7 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
       );
       if (!confirmed || !mounted) return;
     }
+    final container = ProviderScope.containerOf(context);
     setState(() {
       _submitting = true;
       _errorMessage = null;
@@ -138,15 +160,18 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
       final result = await ref
           .read(driveModeRepositoryProvider)
           .arriveStop(runId: runId, stopId: stopId);
-      ref.invalidate(todayRunsProvider);
-      if (!mounted) return;
+      // 요청 중에 화면이 닫혀도 서버는 이미 도착을 반영했다 — 화면 생존과 무관한 갱신은 컨테이너로 한다
+      // (닫힌 화면의 `ref` 는 쓸 수 없다, F06-16).
+      container.invalidate(todayRunsProvider);
       if (result.isFinal) {
         // 종점에 닿았으니 위치 송신은 여기서 끝난다 — 하원 잔류로 서버 회차가 아직 `moving` 이어도 그렇다.
-        ref.read(transmissionEndedRunIdProvider.notifier).state = runId;
-        ref.read(lastArriveResultProvider.notifier).state = result;
+        container.read(transmissionEndedRunIdProvider.notifier).state = runId;
+        container.read(lastArriveResultProvider.notifier).state = result;
+        if (!mounted) return;
         unawaited(context.push(AppRoutes.runEnd));
       } else {
-        ref.invalidate(driveModeRosterProvider);
+        container.invalidate(driveModeRosterProvider);
+        if (!mounted) return;
       }
     } on Failure catch (failure) {
       if (!mounted) return;
@@ -213,8 +238,8 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
                     statusLabel: run.runStatus == RunStatus.moving
                         ? '운행 중'
                         : '확정',
-                    currentStop: run.origin,
-                    nextStop: run.destination,
+                    origin: run.origin,
+                    destination: run.destination,
                   ),
                 const SizedBox(height: 16),
                 DriveMapPanel(
@@ -231,7 +256,9 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
                 // "연결 끊김"(비정상)을 구별해야 한다(목표 9, ManagerChannelBanner
                 // 문서 참고).
                 ManagerChannelBanner(runId: runId),
-                if (_positionGuidance(transmission.availability)
+                if (_positionGuidance(
+                      transmission.availability ?? _preStartAvailability,
+                    )
                     case final guidance?) ...[
                   AlertBanner(tone: AlertTone.missed, body: guidance),
                   const SizedBox(height: 12),

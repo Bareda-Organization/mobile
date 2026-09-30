@@ -64,7 +64,8 @@ ManagerChannelStatus mapConnectionState(WsConnectionState state) =>
 /// 다시 조회한다"만 하고 payload 필드를 직접 쓰지 않기 때문이다(로스터·명단
 /// 재조회가 서버 정본을 그대로 반영하므로 payload 를 화면 상태에 수동으로
 /// 병합할 이유가 없다 — 병합 로직은 곧 또 하나의 정합성 버그 원인이 된다).
-/// `position`·`emergency_raised`·`approval_requested` 는 매니저 채널이
+/// `position`·`emergency_raised`·`emergency_canceled`·
+/// `approval_requested` 는 매니저 채널이
 /// 방송하지 않는 이벤트라(`WsChannel.managerRun` 문서 참고) 무시한다.
 void dispatchManagerChannelEvent(
   WsEventType? event, {
@@ -90,6 +91,7 @@ void dispatchManagerChannelEvent(
       onRouteChanged();
     case WsEventType.position:
     case WsEventType.emergencyRaised:
+    case WsEventType.emergencyCanceled:
     case WsEventType.approvalRequested:
     case null:
       break;
@@ -123,8 +125,10 @@ class ManagerRunChannelController extends StateNotifier<ManagerChannelStatus> {
              tokenStorage: _ref.read(tokenStorageProvider),
              // REST 401 재발급과 같은 창구를 쓴다 — 동시 재발급 경합을 막는
              // 이유는 `token_refresher.dart` 문서를 본다.
-             refreshAccessToken:
-                 _ref.read(apiClientProvider).tokenRefresher.refresh,
+             refreshAccessToken: _ref
+                 .read(apiClientProvider)
+                 .tokenRefresher
+                 .refresh,
            ),
        super(ManagerChannelStatus.connecting) {
     _connectionSub = _client.connectionState.listen(_onConnectionState);
@@ -154,10 +158,19 @@ class ManagerRunChannelController extends StateNotifier<ManagerChannelStatus> {
   /// 무시한다 — 이미 [ManagerChannelStatus.forbidden] 으로 확정됐다.
   bool _forbidden = false;
 
+  /// 한 번이라도 연결된 적이 있는지 — 두 번째 이후 `connected` 는 끊겼다 돌아온 것이라, 그동안 놓친
+  /// 방송을 되찾으려고 화면 값을 다시 받는다(F06-09).
+  bool _wasConnected = false;
+
   void _onConnectionState(WsConnectionState wsState) {
     if (_forbidden) return;
     state = mapConnectionState(wsState);
     if (wsState == WsConnectionState.connected) {
+      if (_wasConnected) {
+        _ref.invalidate(todayRunsProvider);
+        _invalidateRunViews();
+      }
+      _wasConnected = true;
       // 새 소켓은 이전 세션의 구독을 이어받지 않는다
       // (`BaraedaWebSocketClient` 클래스 문서) — connected 를 받을 때마다,
       // 즉 최초 연결이든 자동 재연결이든 매번 다시 구독한다.
@@ -221,7 +234,11 @@ class ManagerRunChannelController extends StateNotifier<ManagerChannelStatus> {
         _ref.invalidate(emergencyListProvider);
       },
       // 확정 뒤 노선(승하차지·도로 경로)이 바뀐 자리 — 지도·남은 승하차지를 새로 받는다.
-      onRouteChanged: _invalidateRunViews,
+      // `ack_required`(변경 확인 띠)는 회차 목록에서 오므로 그것도 다시 받는다(F06-08).
+      onRouteChanged: () {
+        _ref.invalidate(todayRunsProvider);
+        _invalidateRunViews();
+      },
     );
   }
 

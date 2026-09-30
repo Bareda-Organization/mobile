@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:manager_app/app/app_routes.dart';
+import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/auth/account_session.dart';
 import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/core/auth/role_policy.dart';
@@ -22,11 +23,44 @@ import 'package:manager_app/features/home/presentation/home_providers.dart';
 /// 담고 역할에 따라 DriveMode(기사) 또는 StopRoster(동승자)로 이동한다 —
 /// 두 화면 다 "지금 선택된 회차 하나" 만 다루므로 라우터 path parameter
 /// 대신 provider 로 넘긴다(보고서 § 판단 근거 참고).
-class ManagerHomeScreen extends ConsumerWidget {
+///
+/// 열려 있는 동안 [todayRunsRefreshInterval] 마다, 앱이 백그라운드에서 돌아올 때 목록을 다시
+/// 받는다 — 확정은 서버 배치가 시각에 맞춰 바꾸므로(F06-13) 한 번 받은 목록은 곧 낡는다.
+class ManagerHomeScreen extends ConsumerStatefulWidget {
   const ManagerHomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ManagerHomeScreen> createState() => _ManagerHomeScreenState();
+}
+
+class _ManagerHomeScreenState extends ConsumerState<ManagerHomeScreen>
+    with WidgetsBindingObserver {
+  Timer? _refreshTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _refreshTimer = Timer.periodic(
+      todayRunsRefreshInterval,
+      (_) => ref.invalidate(todayRunsProvider),
+    );
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) ref.invalidate(todayRunsProvider);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final runsAsync = ref.watch(todayRunsProvider);
     final capabilities = ref.watch(roleCapabilitiesProvider);
     final hasMovingRun =
@@ -49,8 +83,7 @@ class ManagerHomeScreen extends ConsumerWidget {
           // 역할이 비면 라우터가 로그인 화면으로 보낸다. 기사·동승자 둘 다
           // 이 화면을 거쳐 운행 화면으로 들어가므로(§4.1) 둘 다 닿는 자리다.
           TextButton(
-            onPressed: () =>
-                unawaited(_confirmSignOut(context, ref, hasMovingRun)),
+            onPressed: () => unawaited(_confirmSignOut(context, hasMovingRun)),
             child: const Text('로그아웃'),
           ),
         ],
@@ -58,6 +91,8 @@ class ManagerHomeScreen extends ConsumerWidget {
       body: RefreshIndicator(
         onRefresh: () => ref.refresh(todayRunsProvider.future),
         child: runsAsync.when(
+          // 주기 갱신 중에는 받아 둔 목록을 그대로 두고 바꿔 그린다 — 30초마다 스피너가 뜨지 않게.
+          skipLoadingOnReload: true,
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (error, _) => ListView(
             children: [
@@ -120,10 +155,10 @@ class ManagerHomeScreen extends ConsumerWidget {
                     status: _statusOf(run.runStatus),
                     statusLabel: _statusLabelOf(run),
                     eta: DateFormat('HH:mm').format(run.departTime.toLocal()),
-                    currentStop: run.origin,
-                    nextStop: run.destination,
+                    origin: run.origin,
+                    destination: run.destination,
                     onTap: run.confirmed
-                        ? () => _openRun(context, ref, run, capabilities)
+                        ? () => _openRun(context, run, capabilities)
                         : null,
                   ),
                   // 확정 전 카드는 눌러도 반응이 없다 — 이유와 열리는 시각을 알린다(M-02, R32 M9).
@@ -168,7 +203,6 @@ class ManagerHomeScreen extends ConsumerWidget {
 
   void _openRun(
     BuildContext context,
-    WidgetRef ref,
     ManagerRun run,
     RoleCapabilities? capabilities,
   ) {
@@ -178,6 +212,16 @@ class ManagerHomeScreen extends ConsumerWidget {
     unawaited(context.push(destination));
   }
 
+  /// 아직 서버에 보내지 못한 오프라인 대기 요청 수. 읽지 못하면 0 으로 보고 로그아웃을 막지 않는다.
+  Future<int> _pendingCount() async {
+    try {
+      return (await ref.read(offlineQueueRepositoryProvider).fetchPending())
+          .length;
+    } on Object {
+      return 0;
+    }
+  }
+
   /// 로그아웃 확인 대화상자(AUTH-09) — [hasMovingRun] 이면 명단·위치 송신이
   /// 멈춘다는 경고를 덧붙인다(`USER_FLOWS` UF-O-04 와 같은 이유 — 로그인
   /// 유지 중 로그아웃하면 명단 조회가 끊겨 하차 처리가 중단된다). 확인해야만
@@ -185,17 +229,28 @@ class ManagerHomeScreen extends ConsumerWidget {
   /// 라우터가 그 변화를 보고 로그인 화면으로 보낸다(판정은 라우터 한 곳).
   Future<void> _confirmSignOut(
     BuildContext context,
-    WidgetRef ref,
     bool hasMovingRun,
   ) async {
+    // 창은 바로 띄우고 건수는 읽히는 대로 채운다 — 대기열 읽기가 로그아웃 확인을 막지 않게.
+    final pendingCount = _pendingCount();
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('로그아웃하시겠습니까?'),
-        content: Text(
-          hasMovingRun
-              ? '운행 중에 로그아웃하면 명단·위치 송신이 멈춥니다'
-              : '다시 로그인해야 이 앱을 계속 쓸 수 있습니다',
+        content: FutureBuilder<int>(
+          future: pendingCount,
+          initialData: 0,
+          builder: (context, snapshot) => Text(
+            [
+              if (hasMovingRun)
+                '운행 중에 로그아웃하면 명단·위치 송신이 멈춥니다'
+              else
+                '다시 로그인해야 이 앱을 계속 쓸 수 있습니다',
+              // M2-01 — 큐에는 계정 열이 없어 로그아웃하면 비운다(F06-02). 있을 때만 알린다.
+              if ((snapshot.data ?? 0) > 0)
+                '아직 보내지 못한 처리 ${snapshot.data}건은 버려집니다',
+            ].join('\n'),
+          ),
         ),
         actions: [
           TextButton(

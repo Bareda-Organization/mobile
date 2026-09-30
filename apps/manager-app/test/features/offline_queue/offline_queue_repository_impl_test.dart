@@ -63,6 +63,30 @@ class _OfflineAdapter implements HttpClientAdapter {
   }
 }
 
+/// 서버가 응답은 했지만 [status] 로 거절·실패한 상태 — 본문은 [body] 그대로.
+class _StatusAdapter implements HttpClientAdapter {
+  _StatusAdapter(this.status, this.body);
+
+  final int status;
+  final String body;
+
+  @override
+  void close({bool force = false}) {}
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async => ResponseBody.fromString(
+    body,
+    status,
+    headers: {
+      Headers.contentTypeHeader: [Headers.jsonContentType],
+    },
+  );
+}
+
 void main() {
   // API_SPEC §1.7 의 핵심 계약 — "즉시 전송이 실패해 큐에 쌓인 요청을 나중에
   // 재생할 때, 서버로 나가는 client_key 가 최초 시도 때와 같은 값이어야
@@ -183,6 +207,77 @@ void main() {
       reason: '큐가 2건이어도 재생은 첫 실패에서 멈춘다',
     );
     expect(await repository.fetchPending(), hasLength(3));
+
+    await database.close();
+  });
+
+  // F06-01 — 서버가 응답했다고 전부 "확정 거부" 가 아니다. 재시도하면 통과할
+  // 수 있는 응답(5xx·429·401·비JSON 프록시 오류)은 행을 남겨야 하고, 재시도해도
+  // 같은 결과인 4xx 검증·권한 거절만 뺀다.
+  const errorEnvelope = '{"error":{"code":"X","message":"m"}}';
+  const cases = <(String, int, String, bool)>[
+    ('502 비JSON(프록시 재시작)', 502, '<html>Bad Gateway</html>', true),
+    ('503 비JSON', 503, 'upstream down', true),
+    ('500 JSON 봉투', 500, errorEnvelope, true),
+    ('429 요청 과다', 429, errorEnvelope, true),
+    ('401 인증 만료', 401, errorEnvelope, true),
+    ('422 검증 실패', 422, errorEnvelope, false),
+    ('409 상태 충돌', 409, errorEnvelope, false),
+    ('403 권한 없음', 403, errorEnvelope, false),
+  ];
+  for (final (name, status, body, keep) in cases) {
+    test('재생 중 $name 응답이면 행을 ${keep ? '남기고 재시도 대기로 센다' : '제외한다'}', () async {
+      final database = OfflineQueueDatabase.forTesting(NativeDatabase.memory());
+      final dio = Dio(BaseOptions(baseUrl: 'https://example.invalid'))
+        ..httpClientAdapter = _StatusAdapter(status, body);
+      final repository = OfflineQueueRepositoryImpl(
+        database: database,
+        dio: dio,
+      );
+      await repository.sendOrQueue<void>(
+        endpoint: '/runs/1/riders/7',
+        method: 'PATCH',
+        payload: const {'client_key': 'K', 'status': 'boarded'},
+        // Failure 는 Exception/Error 를 상속하지 않는다 — 위 시험과 같은 이유.
+        // ignore: only_throw_errors
+        send: () => throw const Failure.network(),
+      );
+
+      final result = await repository.replayPending();
+
+      expect(await repository.fetchPending(), hasLength(keep ? 1 : 0));
+      expect(result.stillPending, keep ? 1 : 0);
+      expect(result.droppedPermanently, keep ? 0 : 1);
+
+      await database.close();
+    });
+  }
+
+  test('cancel 은 그 행만 큐에서 지운다', () async {
+    final database = OfflineQueueDatabase.forTesting(NativeDatabase.memory());
+    final repository = OfflineQueueRepositoryImpl(
+      database: database,
+      dio: Dio(BaseOptions(baseUrl: 'https://example.invalid'))
+        ..httpClientAdapter = _OfflineAdapter(),
+    );
+    for (final riderId in [7, 8]) {
+      await repository.sendOrQueue<void>(
+        endpoint: '/runs/1/riders/$riderId',
+        method: 'PATCH',
+        payload: {'client_key': 'K$riderId', 'status': 'boarded'},
+        // Failure 는 Exception/Error 를 상속하지 않는다 — 위 시험과 같은 이유.
+        // ignore: only_throw_errors
+        send: () => throw const Failure.network(),
+      );
+    }
+    final pending = await repository.fetchPending();
+    expect(pending, hasLength(2));
+
+    await repository.cancel(pending.first.id);
+
+    final rest = await repository.fetchPending();
+    expect(rest.map((item) => item.id), [pending.last.id]);
+    expect(rest.single.payload, contains('K8'));
 
     await database.close();
   });

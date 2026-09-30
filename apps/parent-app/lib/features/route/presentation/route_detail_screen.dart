@@ -6,7 +6,8 @@ import 'package:intl/intl.dart';
 import 'package:parent_app/app/app_routes.dart';
 import 'package:parent_app/core/auth/auth_providers.dart';
 import 'package:parent_app/core/students/presentation/selected_student.dart';
-import 'package:parent_app/features/home/presentation/home_providers.dart';
+import 'package:parent_app/core/students/presentation/student_providers.dart';
+import 'package:parent_app/core/ui/failure_message.dart';
 import 'package:parent_app/features/route/domain/route_detail.dart';
 import 'package:parent_app/features/route/presentation/route_providers.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -135,17 +136,30 @@ class _RouteDetailBody extends ConsumerWidget {
 
     return routeAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stack) =>
-          const AlertBanner(tone: AlertTone.missed, body: '노선 정보를 불러오지 못했습니다'),
-      data: (route) => _RouteDetailView(route: route),
+      error: (error, stack) => AlertBanner(
+        tone: AlertTone.missed,
+        body: isWithdrawnStudent(error)
+            ? withdrawnStudentMessage
+            : '노선 정보를 불러오지 못했습니다',
+      ),
+      data: (route) => _RouteDetailView(
+        route: route,
+        onRefresh: () async {
+          ref.invalidate(routeDetailProvider(studentId));
+          await ref
+              .read(routeDetailProvider(studentId).future)
+              .then<void>((_) {}, onError: (_) {});
+        },
+      ),
     );
   }
 }
 
 class _RouteDetailView extends StatelessWidget {
-  const _RouteDetailView({required this.route});
+  const _RouteDetailView({required this.route, required this.onRefresh});
 
   final RouteDetail route;
+  final Future<void> Function() onRefresh;
 
   @override
   Widget build(BuildContext context) {
@@ -153,46 +167,54 @@ class _RouteDetailView extends StatelessWidget {
       'HH:mm',
     ).format(route.departTime.toLocal());
 
-    return ListView(
-      children: [
-        BaraedaCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      '${route.busNo} · $departTimeText 출발',
-                      style: BaraedaTypography.h3,
+    // F05-06 — 당겨서 새로고침. 내용이 짧아도 당겨지도록 항상 스크롤 가능하게 둔다.
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [
+          BaraedaCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        '${route.busNo} · $departTimeText 출발',
+                        style: BaraedaTypography.h3,
+                      ),
                     ),
-                  ),
-                  // 배차가 아직 안 됐어도(P-08) 에러가 아니라 이 배지만
-                  // 얹고 고정 노선을 그대로 보여준다(위 클래스 문서 참고).
-                  if (!route.confirmed)
-                    const BaraedaBadge(
-                      label: '확정 전',
-                      tone: BaraedaBadgeTone.amber,
-                    ),
-                ],
-              ),
-              const SizedBox(height: BaraedaSpacing.space4),
-              _DriverEscortSection(driver: route.driver, escort: route.escort),
-            ],
+                    // 배차가 아직 안 됐어도(P-08) 에러가 아니라 이 배지만
+                    // 얹고 고정 노선을 그대로 보여준다(위 클래스 문서 참고).
+                    if (!route.confirmed)
+                      const BaraedaBadge(
+                        label: '확정 전',
+                        tone: BaraedaBadgeTone.amber,
+                      ),
+                  ],
+                ),
+                const SizedBox(height: BaraedaSpacing.space4),
+                _DriverEscortSection(
+                  driver: route.driver,
+                  escort: route.escort,
+                ),
+              ],
+            ),
           ),
-        ),
-        const SizedBox(height: BaraedaSpacing.sectionGap),
-        const Text('경유 승하차지', style: BaraedaTypography.h3),
-        const SizedBox(height: BaraedaSpacing.space2),
-        // 서버가 이미 §3.10 범위로 좁혀 보낸 stops 를 그대로 그린다
-        // (route_detail.dart 의 `RouteDetail.stops` 문서 참고, 목표 2).
-        ...route.stops.map(
-          (stop) => _RouteStopTile(
-            stop: stop,
-            isMyStop: stop.stopId == route.myStopId,
+          const SizedBox(height: BaraedaSpacing.sectionGap),
+          const Text('경유 승하차지', style: BaraedaTypography.h3),
+          const SizedBox(height: BaraedaSpacing.space2),
+          // 서버가 이미 §3.10 범위로 좁혀 보낸 stops 를 그대로 그린다
+          // (route_detail.dart 의 `RouteDetail.stops` 문서 참고, 목표 2).
+          ...route.stops.map(
+            (stop) => _RouteStopTile(
+              stop: stop,
+              isMyStop: stop.stopId == route.myStopId,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

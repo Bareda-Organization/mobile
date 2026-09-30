@@ -11,7 +11,7 @@ import 'package:parent_app/app/di.dart';
 import 'package:parent_app/core/auth/auth_providers.dart';
 import 'package:parent_app/core/map/map_surface.dart';
 import 'package:parent_app/core/students/presentation/selected_student.dart';
-import 'package:parent_app/features/home/presentation/home_providers.dart';
+import 'package:parent_app/core/students/presentation/student_providers.dart';
 import 'package:parent_app/features/live_map/domain/bus_position.dart';
 import 'package:parent_app/features/live_map/domain/live_map_status.dart';
 import 'package:parent_app/features/live_map/presentation/live_map_providers.dart';
@@ -415,6 +415,13 @@ class _BusMapSection extends StatefulWidget {
 class _BusMapSectionState extends State<_BusMapSection> {
   bool _authFailed = false;
 
+  /// F05-09 — 카메라는 처음 좌표에 두고 새 좌표마다 옮기지 않는다(옮기면 2초마다 사용자가 조작한 확대·이동이
+  /// 되돌아간다). 마커만 새 좌표를 따라가고, 버스를 다시 보려면 [버스 위치로] 를 누른다.
+  late MapCamera _camera = MapCamera(
+    lat: widget.position.lat,
+    lng: widget.position.lng,
+  );
+
   @override
   Widget build(BuildContext context) {
     if (_authFailed) {
@@ -426,23 +433,42 @@ class _BusMapSectionState extends State<_BusMapSection> {
 
     return Padding(
       padding: const EdgeInsets.only(bottom: BaraedaSpacing.space4),
-      child: SizedBox(
-        height: 240,
-        child: MapSurface(
-          camera: MapCamera(lat: widget.position.lat, lng: widget.position.lng),
-          markers: [
-            MapMarker(
-              id: 'bus-${widget.studentId}',
-              lat: widget.position.lat,
-              lng: widget.position.lng,
-              kind: MapMarkerKind.bus,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(
+            height: 240,
+            child: MapSurface(
+              camera: _camera,
+              markers: [
+                MapMarker(
+                  id: 'bus-${widget.studentId}',
+                  lat: widget.position.lat,
+                  lng: widget.position.lng,
+                  kind: MapMarkerKind.bus,
+                ),
+              ],
+              onAuthFailed: (exception) {
+                debugPrint('네이버 지도 인증 실패: $exception');
+                if (mounted) setState(() => _authFailed = true);
+              },
             ),
-          ],
-          onAuthFailed: (exception) {
-            debugPrint('네이버 지도 인증 실패: $exception');
-            if (mounted) setState(() => _authFailed = true);
-          },
-        ),
+          ),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: BaraedaButton(
+              label: '버스 위치로',
+              size: BaraedaButtonSize.sm,
+              variant: BaraedaButtonVariant.ghost,
+              onPressed: () => setState(
+                () => _camera = MapCamera(
+                  lat: widget.position.lat,
+                  lng: widget.position.lng,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

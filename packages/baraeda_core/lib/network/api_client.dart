@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:baraeda_core/network/token_refresher.dart';
 import 'package:baraeda_core/storage/token_storage.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 
 /// API_SPEC §1 공통 규약의 헤더 이름 — 두 앱이 같은 값을 쓰므로 이 패키지에
@@ -21,6 +22,22 @@ enum AccountGateReason {
   /// 거절됨 — 대기 화면이 거절 사유를 추가로 보여준다.
   rejected,
 }
+
+/// 음영 구간에서 요청이 무기한 매달리지 않게 하는 제한 시간. dio 5 의 기본은 제한 없음이라
+/// 재발급 하나가 멈추면 그 결과에 합류한 모든 요청과 WS 재연결이 같이 멈춘다.
+const _connectTimeout = Duration(seconds: 10);
+const _sendTimeout = Duration(seconds: 15);
+const _receiveTimeout = Duration(seconds: 30);
+
+Dio _newDio(String baseUrl) => Dio(
+  BaseOptions(
+    baseUrl: baseUrl,
+    contentType: 'application/json',
+    connectTimeout: _connectTimeout,
+    sendTimeout: _sendTimeout,
+    receiveTimeout: _receiveTimeout,
+  ),
+);
 
 /// API_SPEC §1 공통 규약을 한곳에서 처리하는 dio 설정.
 ///
@@ -41,19 +58,13 @@ class ApiClient {
     String clientType = 'app',
     Dio? dio,
     Dio? refreshDio,
-  }) : _dio =
-           dio ??
-           Dio(
-             BaseOptions(baseUrl: baseUrl, contentType: 'application/json'),
-           ) {
+  }) : _dio = dio ?? _newDio(baseUrl) {
     // ⚠ refresh 는 **인터셉터가 붙지 않은 별도 인스턴스**로 보낸다.
     // 같은 dio 로 보내면 refresh 응답이 401 일 때 이 인터셉터가 refresh 요청
     // 자신에게 다시 걸려 무한 재귀가 된다 — access·refresh 가 둘 다 만료된
     // 실제 상황이 정확히 그 경우다. 웹(`shared/lib/http/refreshClient.ts`)도
     // 같은 이유로 클라이언트를 분리해 둔다.
-    final refresh =
-        refreshDio ??
-        Dio(BaseOptions(baseUrl: baseUrl, contentType: 'application/json'));
+    final refresh = _refreshDio = refreshDio ?? _newDio(baseUrl);
     // 봉투 해제는 `_dio` · `refresh` 양쪽에 붙인다 — 한 곳(이 생성자)에서만
     // 등록해 두면 이후 이 클래스를 거쳐 나가는 요청이 하나 더 생겨도 저절로
     // 적용된다(API_SPEC §1.1: 성공 응답은 전부 `{success, data, message}`로
@@ -81,8 +92,8 @@ class ApiClient {
 
   final TokenStorage _tokenStorage;
   final Dio _dio;
-  final _gateEventsController =
-      StreamController<AccountGateReason>.broadcast();
+  late final Dio _refreshDio;
+  final _gateEventsController = StreamController<AccountGateReason>.broadcast();
 
   /// 인터셉터가 붙은 dio 인스턴스. repository 는 이것으로 요청한다.
   Dio get dio => _dio;
@@ -97,8 +108,20 @@ class ApiClient {
   /// 구독하면 화면마다 게이트 분기를 따로 심을 필요가 없다(목표 7항).
   Stream<AccountGateReason> get gateEvents => _gateEventsController.stream;
 
+  /// refresh 토큰이 거절돼(401) 재로그인이 필요해졌을 때 한 번 흘러가는 신호 — REST 경로의
+  /// 세션 만료 신호다(WS 는 `BaraedaWebSocketClient.sessionExpired`). 앱의 세션 관리자가
+  /// 이것을 구독해 로그인 화면으로 보낸다. 네트워크 오류·5xx 는 이 신호를 내지 않는다.
+  Stream<void> get sessionExpired => tokenRefresher.sessionInvalidated;
+
+  /// 재발급 전용 dio(인터셉터 없음) — 기본 제한 시간 시험이 읽는다.
+  @visibleForTesting
+  Dio get refreshDio => _refreshDio;
+
   /// 앱 종료 시 호출 — 테스트에서도 `StreamController` 누수를 막기 위해 부른다.
-  void dispose() => _gateEventsController.close();
+  void dispose() {
+    unawaited(_gateEventsController.close());
+    tokenRefresher.dispose();
+  }
 }
 
 /// 성공 응답 봉투를 벗기는 인터셉터.
@@ -124,8 +147,10 @@ class _EnvelopeInterceptor extends Interceptor {
 }
 
 /// 요청마다 access 토큰 · 공통 헤더를 붙이고, `401` 을 받으면 refresh 후
-/// 원 요청을 **한 번만** 재시도한다. 재시도까지 실패하면 그대로 던져
-/// `dio_error_mapper.dart` 가 `Failure.unauthenticated()` 로 옮기게 둔다.
+/// 원 요청을 **한 번만** 재시도한다. 재발급을 서버가 거절하면(세션 종료) 원 401 을 그대로
+/// 던져 `dio_error_mapper.dart` 가 `Failure.unauthenticated()` 로 옮기게 두고 재로그인
+/// 신호는 [ApiClient.sessionExpired] 가 낸다. 재발급·재시도가 일시 장애로 실패하면 그 오류를
+/// 그대로 던지고 토큰은 지우지 않는다.
 class _AuthInterceptor extends Interceptor {
   _AuthInterceptor(
     this._tokenStorage,
@@ -177,7 +202,23 @@ class _AuthInterceptor extends Interceptor {
     // 실제 HTTP 호출·저장·실패 시 토큰 삭제는 `TokenRefresher` 가 한다 —
     // WS 클라이언트와 같은 창구를 공유해야 동시 재발급 경합이 없다
     // (`token_refresher.dart` 문서).
-    final newAccessToken = await _tokenRefresher.refresh();
+    final String? newAccessToken;
+    try {
+      newAccessToken = await _tokenRefresher.refresh();
+    } on DioException catch (refreshError) {
+      // 재발급 요청 자체가 실패했다(연결 실패·타임아웃·5xx) — 세션은 살아 있을 수 있어
+      // 토큰은 그대로 두고, 화면에는 옛 401 이 아니라 실제 실패 원인을 돌려준다.
+      handler.next(
+        DioException(
+          requestOptions: err.requestOptions,
+          type: refreshError.type,
+          response: refreshError.response,
+          error: refreshError.error,
+          message: refreshError.message,
+        ),
+      );
+      return;
+    }
     if (newAccessToken == null) {
       handler.next(err);
       return;
@@ -189,9 +230,10 @@ class _AuthInterceptor extends Interceptor {
         ..extra[_retriedKey] = true;
       final retryResponse = await _dio.fetch<dynamic>(retryOptions);
       handler.resolve(retryResponse);
-    } on DioException {
-      await _tokenStorage.clear();
-      handler.next(err);
+    } on DioException catch (retryError) {
+      // 재발급에 성공했으니 세션은 유효하다 — 토큰을 지우지 않고 재시도의 실제 오류
+      // (409 업무 오류·5xx·연결 끊김 등)를 그대로 넘긴다.
+      handler.next(retryError);
     }
   }
 

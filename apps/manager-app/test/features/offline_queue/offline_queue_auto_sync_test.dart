@@ -11,6 +11,12 @@ import 'package:manager_app/features/offline_queue/presentation/offline_queue_au
 
 /// 재생 횟수만 세는 대역 — 한 번 재생하면 큐가 빈다.
 class _FakeQueue implements OfflineQueueRepository {
+  @override
+  Future<void> clear() async {}
+
+  @override
+  Future<void> cancel(int id) async {}
+
   int pendingCount = 2;
   int replays = 0;
 
@@ -21,6 +27,7 @@ class _FakeQueue implements OfflineQueueRepository {
       id: index,
       endpoint: '/runs/1/riders/$index',
       method: 'PATCH',
+      payload: '{}',
       createdAt: DateTime(2026, 9, 21),
     ),
   );

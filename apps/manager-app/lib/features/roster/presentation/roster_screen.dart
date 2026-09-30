@@ -121,6 +121,8 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
             request: BoardingUpdateRequest(
               status: status,
               clientKey: IdempotencyKeys.generate(),
+              // 누른 시각 — 오프라인 재생분이 서버에 도착한 시각으로 기록되지 않게 한다(F06-05).
+              occurredAt: ref.read(clockProvider).now(),
             ),
           );
       if (!mounted) return;
@@ -149,6 +151,8 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
     required String runId,
     required String riderId,
   }) async {
+    // 요청 중에 화면이 닫혀도 명단은 갱신해야 한다 — 닫힌 화면의 `ref` 는 쓸 수 없어 컨테이너를 쥔다(F06-16).
+    final container = ProviderScope.containerOf(context);
     setState(() {
       _pendingRiderId = riderId;
       _errorMessage = null;
@@ -157,7 +161,7 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
       await ref
           .read(rosterRepositoryProvider)
           .revertRiderStatus(runId: runId, riderId: riderId);
-      ref.invalidate(rosterProvider);
+      container.invalidate(rosterProvider);
     } on Failure catch (failure) {
       if (!mounted) return;
       setState(() => _errorMessage = describeFailure(failure));
@@ -179,6 +183,7 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
           _NoShowContactSheet(waitEndsAt: waitEndsAt, clock: clock),
     );
     if (request == null || !mounted) return;
+    final container = ProviderScope.containerOf(context);
     setState(() {
       _pendingRiderId = riderId;
       _errorMessage = null;
@@ -191,8 +196,12 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
             riderId: riderId,
             request: request,
           );
-      ref.invalidate(rosterProvider);
+      container.invalidate(rosterProvider);
     } on Failure catch (failure) {
+      // Z-05 — 다른 사람이 미승차를 되돌렸다면 이 화면의 명단이 낡았다. 다시 불러온다.
+      if (failure case ApiFailure(code: 'NO_SHOW_CASE_NOT_FOUND')) {
+        container.invalidate(rosterProvider);
+      }
       if (!mounted) return;
       setState(() => _errorMessage = describeFailure(failure));
     } finally {

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,9 +21,11 @@ import 'package:manager_app/features/drive_mode/data/models/arrive_stop_result.d
 import 'package:manager_app/features/drive_mode/data/models/start_run_result.dart';
 import 'package:manager_app/features/drive_mode/domain/drive_mode_repository.dart';
 import 'package:manager_app/features/drive_mode/presentation/drive_mode_providers.dart';
+import 'package:manager_app/features/home/data/models/manager_run.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
 import 'package:manager_app/features/position/data/models/position_request.dart';
 import 'package:manager_app/features/position/domain/position_repository.dart';
+import 'package:manager_app/features/position/presentation/position_transmitter.dart';
 import 'package:manager_app/features/roster/data/models/roster_response.dart';
 import 'package:manager_app/features/route_map/data/models/route_response.dart';
 import 'package:manager_app/features/route_map/presentation/route_providers.dart';
@@ -36,12 +40,17 @@ class _FakeSource implements PositionSource {
   int startCalls = 0;
   int stopCalls = 0;
 
+  PositionAvailability availabilityValue = PositionAvailability.available;
+
   @override
-  PositionAvailability get availability => PositionAvailability.available;
+  PositionAvailability get availability => availabilityValue;
 
   @override
   PositionSample? sample() =>
       PositionSample(lat: 37.5, lng: 127, recordedAt: DateTime(2020));
+
+  @override
+  Future<void> recheck() async {}
 
   @override
   void start() => startCalls++;
@@ -56,6 +65,8 @@ class _FakeSource implements PositionSource {
 }
 
 class _RecordingPositionRepository implements PositionRepository {
+  /// `true` 면 응답이 오지 않는 음영 구간을 흉내 낸다 — 요청이 끝나지 않는다.
+  bool hang = false;
   final List<PositionRequest> calls = [];
 
   @override
@@ -64,6 +75,7 @@ class _RecordingPositionRepository implements PositionRepository {
     required PositionRequest request,
   }) async {
     calls.add(request);
+    if (hang) await Completer<void>().future;
   }
 }
 
@@ -77,11 +89,19 @@ class _StubAuthRepository implements AuthRepository {
 
 /// 마지막 승하차지 도착 처리 응답(`is_final`) — 하원 잔류로 서버 회차는 아직 `moving` 인 채다.
 class _FinalArriveRepository implements DriveModeRepository {
+  /// 주면 응답을 이 시점까지 붙잡는다 — 요청 중 화면이 닫히는 상황을 만든다.
+  Completer<void>? gate;
+
   @override
   Future<ArriveStopResult> arriveStop({
     required String runId,
     required String stopId,
-  }) async => ArriveStopResult(
+  }) async {
+    await gate?.future;
+    return _finalResult();
+  }
+
+  ArriveStopResult _finalResult() => ArriveStopResult(
     arrivedAt: DateTime(2026, 9, 30, 8, 30),
     isFinal: true,
     runStatus: RunStatus.moving,
@@ -98,14 +118,21 @@ const Duration _interval = PositionConstants.transmissionInterval;
 void main() {
   late _FakeSource source;
   late _RecordingPositionRepository repository;
+  late _FinalArriveRepository arriveRepository;
 
   Future<ProviderContainer> pumpApp(
     WidgetTester tester, {
     UserRole role = UserRole.driver,
     RunStatus status = RunStatus.moving,
+    bool unavailable = false,
+    List<ManagerRun>? runs,
   }) async {
     source = _FakeSource();
+    if (unavailable) {
+      source.availabilityValue = PositionAvailability.permissionDenied;
+    }
     repository = _RecordingPositionRepository();
+    arriveRepository = _FinalArriveRepository();
     final overrides = <Override>[
       tokenStorageProvider.overrideWithValue(FakeTokenStorage()),
       currentUserRoleProvider.overrideWith((ref) => role),
@@ -113,10 +140,12 @@ void main() {
         (ref) => AccountStatus.active,
       ),
       authRepositoryProvider.overrideWithValue(_StubAuthRepository()),
-      driveModeRepositoryProvider.overrideWithValue(_FinalArriveRepository()),
+      driveModeRepositoryProvider.overrideWithValue(arriveRepository),
       selectedRunIdProvider.overrideWith((ref) => 'run-1'),
       todayRunsProvider.overrideWith(
-        (ref) async => [managerRunFixture(status: status)],
+        (ref) async =>
+            runs ??
+            [managerRunFixture(status: status, roleInRun: UserRole.driver)],
       ),
       routeProvider.overrideWith(
         (ref) async => const RouteResponse(stops: []),
@@ -240,6 +269,86 @@ void main() {
     await tester.pump(_interval * 3);
 
     expect(repository.calls.length, afterArrive);
+  });
+
+  // F06-12 — 송신 대상은 "내가 기사이고 운행 중인 회차" 이지 화면에서 고른 회차가 아니다. 운행 중 홈에서
+  // 다른 회차 카드를 눌러도 학부모 지도의 버스가 멈추면 안 된다.
+  testWidgets('운행 중 홈에서 다른 회차를 골라도 송신은 운행 중인 회차로 이어진다', (tester) async {
+    final container = await pumpApp(
+      tester,
+      runs: [
+        managerRunFixture(status: RunStatus.moving, roleInRun: UserRole.driver),
+        managerRunFixture(runId: 'run-2'),
+      ],
+    );
+    await tester.pump(_interval);
+    expect(repository.calls, hasLength(1));
+
+    container.read(selectedRunIdProvider.notifier).state = 'run-2';
+    await tester.pump(_interval);
+    await tester.pump(_interval);
+
+    expect(repository.calls, hasLength(3), reason: '다른 회차를 골라도 2초마다 이어져야 한다');
+    expect(source.stopCalls, 0);
+  });
+
+  // K-02② (F06-07 (3)) — 음영 구간에서 앞 요청이 끝나지 않았는데 2초마다 새 요청을 열면 수십 개가 쌓였다가
+  // 복구 순간 한꺼번에 도착한다. 앞 송신이 진행 중이면 그 주기는 건너뛴다.
+  testWidgets('앞 위치 요청이 끝나지 않았으면 다음 주기는 새 요청을 열지 않는다', (tester) async {
+    await pumpApp(tester);
+    repository.hang = true;
+
+    await tester.pump(_interval);
+    await tester.pump(_interval);
+    await tester.pump(_interval);
+    await tester.pump(_interval);
+
+    expect(repository.calls, hasLength(1));
+  });
+
+  // F06-17 — 좌표가 그대로면 상태가 같은 값이라 화면을 다시 그리게 알리지 않는다.
+  testWidgets('같은 좌표가 이어지면 구독자에게 다시 알리지 않는다', (tester) async {
+    final container = await pumpApp(tester);
+    var notifications = 0;
+    container.listen(positionTransmitterProvider, (_, _) => notifications++);
+
+    await tester.pump(_interval);
+    await tester.pump(_interval);
+    await tester.pump(_interval);
+    await tester.pump(_interval);
+
+    expect(notifications, 1, reason: '처음 값이 채워질 때 한 번뿐이어야 한다');
+  });
+
+  testWidgets('권한이 없어 못 보내는 동안에는 주기마다 소스에 다시 확인시킨다(F06-03)', (tester) async {
+    await pumpApp(tester, unavailable: true);
+    final startsAtBegin = source.startCalls;
+
+    await tester.pump(_interval * 2);
+
+    expect(source.startCalls, greaterThan(startsAtBegin));
+  });
+
+  // F06-16 — 마지막 도착 처리 요청 중에 화면이 닫혀도 서버는 이미 운행을 끝냈다. 종료 처리(위치 송신 중단)가
+  // 화면 생존에 기대면 송신이 계속되고, 닫힌 화면의 ref 를 써서 처리되지 않은 예외도 남는다.
+  testWidgets('마지막 도착 처리 응답 전에 화면이 닫혀도 위치 송신은 멈추고 예외가 남지 않는다', (tester) async {
+    final container = await pumpApp(tester);
+    await goTo(tester, container, AppRoutes.driveMode);
+    arriveRepository.gate = Completer<void>();
+
+    await tester.tap(find.text('학원 앞 도착 처리'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('도착했습니다'));
+    await tester.pump();
+    await goTo(tester, container, AppRoutes.home);
+
+    arriveRepository.gate!.complete();
+    await tester.pumpAndSettle();
+    final afterArrive = repository.calls.length;
+    await tester.pump(_interval * 3);
+
+    expect(tester.takeException(), isNull);
+    expect(repository.calls.length, afterArrive, reason: '종점 도착 뒤에는 송신이 멈춘다');
   });
 
   testWidgets('동승자는 운행 중이어도 어느 화면에서든 보내지 않는다', (tester) async {

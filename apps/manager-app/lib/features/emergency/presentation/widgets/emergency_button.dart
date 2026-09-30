@@ -8,6 +8,7 @@ import 'package:manager_app/app/app_routes.dart';
 import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/features/home/data/models/manager_run.dart';
+import 'package:manager_app/features/home/presentation/home_providers.dart';
 
 /// 머리말 비상 버튼(M-15 · UF-X-08, R32 M2) — 기사·동승자 모두, 홈·운행·명단 세 화면 머리말에
 /// 둔다. 눌러서 비상 신고 화면(`AppRoutes.emergency`)으로 간다.
@@ -39,11 +40,20 @@ class EmergencyButton extends ConsumerWidget {
   }
 
   Future<void> _open(BuildContext context, WidgetRef ref) async {
-    final runs = homeRuns;
-    if (runs == null) {
+    final shown = homeRuns;
+    if (shown == null) {
       await context.push(AppRoutes.emergency);
       return;
     }
+    // 홈 목록은 한 번 받은 뒤 낡을 수 있다(확정 시각이 지났는데 "확정된 운행이 없다" 로 막힌다, F06-13) —
+    // 판정 직전에 다시 받는다. 못 받으면 가진 목록으로 판정한다(통신 두절에서도 신고 길이 막히지 않게).
+    List<ManagerRun> runs;
+    try {
+      runs = await ref.refresh(todayRunsProvider.future);
+    } on Object {
+      runs = shown;
+    }
+    if (!context.mounted) return;
     final candidates = runs.where(canRaiseEmergency).toList();
     if (candidates.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(

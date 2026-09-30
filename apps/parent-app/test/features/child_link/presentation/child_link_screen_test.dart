@@ -69,6 +69,13 @@ void main() {
     expect(find.text('123456'), findsOneWidget);
   });
 
+  // N-10(BR-215) — 다시 만들면 이전 코드는 그 자리에서 만료된다. 이미 알려 준 코드를 다시 쓰지 않게 안내한다.
+  testWidgets('학생 갈래는 코드를 다시 만들면 이전 코드를 쓸 수 없다고 안내한다', (tester) async {
+    await _pumpAsStudent(tester, _StubLinkRepository());
+
+    expect(find.textContaining('이전 코드는 더 이상 쓸 수 없'), findsOneWidget);
+  });
+
   // R32 P8 — 만료 시각이 `2026-09-12 00:00:00.000` 그대로 화면에 나왔다.
   testWidgets('만료 시각을 읽기 쉬운 한국어 날짜로 보여준다', (tester) async {
     await _pumpAsStudent(tester, _StubLinkRepository());

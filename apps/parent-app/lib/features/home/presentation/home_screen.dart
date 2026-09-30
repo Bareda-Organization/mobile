@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,8 +8,10 @@ import 'package:parent_app/app/app_routes.dart';
 import 'package:parent_app/app/di.dart';
 import 'package:parent_app/core/auth/account_session.dart';
 import 'package:parent_app/core/auth/auth_providers.dart';
+import 'package:parent_app/core/change_requests/presentation/change_request_providers.dart';
 import 'package:parent_app/core/students/presentation/selected_student.dart';
 import 'package:parent_app/core/time/service_date.dart';
+import 'package:parent_app/core/ui/failure_message.dart';
 import 'package:parent_app/features/home/presentation/home_providers.dart';
 import 'package:parent_app/features/home/presentation/widgets/notification_list.dart';
 import 'package:parent_app/features/home/presentation/widgets/pending_change_badge.dart';
@@ -22,11 +26,51 @@ import 'package:parent_app/features/home/presentation/widgets/run_card.dart';
 /// 하나로만 한다(§1.1) — 학부모는 연결 자녀 중 선택(UF-P-02), 자녀별 탑승
 /// 토글(UF-P-04, ②구간 승인 대기는 UF-P-05), 알림 목록(UF-P-08). 학생은
 /// 본인 `student_id` 하나만 쓴다(UF-S-01 조회 전용).
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+/// 푸시 SDK 가 아직 없어 앱 안 갱신이 유일한 통지 수단이다(F05-06) — 당기지 않아도 앱에 돌아오거나
+/// [_autoRefreshInterval] 이 지나면 회차·알림을 다시 받는다.
+class _HomeScreenState extends ConsumerState<HomeScreen>
+    with WidgetsBindingObserver {
+  static const _autoRefreshInterval = Duration(seconds: 30);
+
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _timer = Timer.periodic(_autoRefreshInterval, (_) => _reloadQuietly());
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _reloadQuietly();
+  }
+
+  /// 화면을 스피너로 바꾸지 않고(무효화는 옛 값을 유지한 채 다시 받는다) 서버 값으로 갈아 끼운다.
+  void _reloadQuietly() {
+    ref
+      ..invalidate(runsForStudentProvider)
+      ..invalidate(runsForStudentOnProvider)
+      ..invalidate(changeRequestsProvider)
+      ..invalidate(notificationsProvider);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final capabilities = ref.watch(roleCapabilitiesProvider);
     final isParent = capabilities?.canToggleAttendance ?? false;
 
@@ -45,7 +89,7 @@ class HomeScreen extends ConsumerWidget {
       body: SafeArea(
         // 당겨서 새로고침 — 내용이 화면보다 짧아도 당겨지도록 항상 스크롤 가능하게 둔다.
         child: RefreshIndicator(
-          onRefresh: () => _refresh(ref, isParent: isParent),
+          onRefresh: () => _refresh(isParent: isParent),
           child: ListView(
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.all(BaraedaSpacing.gutterMobile),
@@ -55,7 +99,7 @@ class HomeScreen extends ConsumerWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('알림', style: BaraedaTypography.h3),
+                  const _NotificationTitle(),
                   // UF-P-08 — "홈 → [알림] → … → [알림 설정]". 이 배선이 없어서
                   // SettingsScreen 에 도달할 길이 부재했다(2026-09-21).
                   BaraedaButton(
@@ -77,10 +121,11 @@ class HomeScreen extends ConsumerWidget {
 
   /// 화면을 아래로 당기면 자녀·회차·알림을 서버에서 다시 받는다. 실패해도 각 영역의 오류 띠가
   /// 이유를 보여주므로 여기서는 끝나기만 기다린다.
-  Future<void> _refresh(WidgetRef ref, {required bool isParent}) async {
+  Future<void> _refresh({required bool isParent}) async {
     ref
       ..invalidate(runsForStudentProvider)
       ..invalidate(runsForStudentOnProvider)
+      ..invalidate(changeRequestsProvider)
       ..invalidate(notificationsProvider);
     final base = isParent
         ? ref.refresh(myStudentsProvider.future)
@@ -287,12 +332,19 @@ class _RunsSectionState extends ConsumerState<_RunsSection> {
         const SizedBox(height: BaraedaSpacing.space4),
         runsAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, stack) => _ErrorBanner(
-            message: '$dayWord 회차를 불러오지 못했습니다',
-            onRetry: () => date == null
-                ? ref.invalidate(runsForStudentProvider(studentId))
-                : ref.invalidate(runsForStudentOnProvider((studentId, date))),
-          ),
+          error: (error, stack) => isWithdrawnStudent(error)
+              ? const AlertBanner(
+                  tone: AlertTone.missed,
+                  body: withdrawnStudentMessage,
+                )
+              : _ErrorBanner(
+                  message: '$dayWord 회차를 불러오지 못했습니다',
+                  onRetry: () => date == null
+                      ? ref.invalidate(runsForStudentProvider(studentId))
+                      : ref.invalidate(
+                          runsForStudentOnProvider((studentId, date)),
+                        ),
+                ),
           data: (runs) => runs.isEmpty
               ? EmptyState(title: '$dayWord 예정된 회차가 없습니다')
               : Column(
@@ -328,6 +380,29 @@ class _NotificationSection extends ConsumerWidget {
       ),
       data: (page) =>
           NotificationList(page: page, now: ref.watch(clockProvider).now()),
+    );
+  }
+}
+
+/// "알림" 머리말 — 안 읽은 알림이 있으면 건수 배지를 곁들인다(F05-08, UF-P-08 "미읽음 배지").
+class _NotificationTitle extends ConsumerWidget {
+  const _NotificationTitle();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final unread = ref.watch(notificationsProvider).value?.unreadCount ?? 0;
+    return Row(
+      children: [
+        const Text('알림', style: BaraedaTypography.h3),
+        if (unread > 0) ...[
+          const SizedBox(width: BaraedaSpacing.space2),
+          BaraedaBadge(
+            label: '안 읽음',
+            tone: BaraedaBadgeTone.amber,
+            count: unread,
+          ),
+        ],
+      ],
     );
   }
 }

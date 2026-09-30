@@ -3,11 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('WsEventType.fromWireValueOrNull', () {
-    test('9개 이벤트 전부 원문 값으로 매칭된다', () {
-      expect(
-        WsEventType.fromWireValueOrNull('position'),
-        WsEventType.position,
-      );
+    test('10개 이벤트 전부 원문 값으로 매칭된다', () {
+      expect(WsEventType.fromWireValueOrNull('position'), WsEventType.position);
       expect(
         WsEventType.fromWireValueOrNull('stop_arrived'),
         WsEventType.stopArrived,
@@ -31,6 +28,10 @@ void main() {
       expect(
         WsEventType.fromWireValueOrNull('emergency_acked'),
         WsEventType.emergencyAcked,
+      );
+      expect(
+        WsEventType.fromWireValueOrNull('emergency_canceled'),
+        WsEventType.emergencyCanceled,
       );
       expect(
         WsEventType.fromWireValueOrNull('approval_requested'),

@@ -2,6 +2,7 @@
 
 import 'package:baraeda_ui/theme/baraeda_colors.dart';
 import 'package:baraeda_ui/tokens/shape.dart';
+import 'package:baraeda_ui/tokens/spacing.dart';
 import 'package:baraeda_ui/tokens/typography.dart';
 import 'package:baraeda_ui/widgets/core/icon.dart';
 import 'package:flutter/material.dart';
@@ -10,7 +11,9 @@ import 'package:flutter/material.dart';
 /// ghost=텍스트만 · danger=미탑승 처리·삭제 확정.
 enum BaraedaButtonVariant { primary, secondary, soft, ghost, danger }
 
-/// 버튼 높이. sm 36 · md 44 · lg 52(앱 주요 버튼은 lg).
+/// 버튼 높이. sm 36 · md 48 · lg 52(앱 주요 버튼은 lg).
+/// md 는 터치 최소 `BaraedaSpacing.tapMin` 까지 키웠다(디자인 킷은 44, F07-10).
+/// sm 은 조밀 배치용이라 그보다 작다.
 enum BaraedaButtonSize { sm, md, lg }
 
 /// 바래다 기본 버튼.
@@ -77,31 +80,36 @@ class BaraedaButton extends StatelessWidget {
       ],
     );
 
-    return Opacity(
-      opacity: _disabled ? 0.42 : 1,
-      child: Material(
-        type: MaterialType.transparency,
-        child: InkWell(
-          onTap: _disabled ? null : onPressed,
-          borderRadius: BorderRadius.circular(BaraedaRadius.control),
-          splashFactory: NoSplash.splashFactory,
-          splashColor: Colors.transparent,
-          hoverColor: Colors.black.withValues(alpha: 0.06),
-          highlightColor: Colors.black.withValues(alpha: 0.1),
-          focusColor: colors.focusRing.withValues(alpha: 0.32),
-          mouseCursor: _disabled
-              ? SystemMouseCursors.forbidden
-              : SystemMouseCursors.click,
-          child: Ink(
-            height: metrics.height,
-            width: block ? double.infinity : null,
-            padding: metrics.padding,
-            decoration: BoxDecoration(
-              color: palette.background,
-              border: palette.border,
-              borderRadius: BorderRadius.circular(BaraedaRadius.control),
+    // 버튼 역할과 활성 여부를 낭독기에 싣는다. 라벨은 자식 Text 가 읽는다(F07-10).
+    return Semantics(
+      button: true,
+      enabled: !_disabled,
+      child: Opacity(
+        opacity: _disabled ? 0.42 : 1,
+        child: Material(
+          type: MaterialType.transparency,
+          child: InkWell(
+            onTap: _disabled ? null : onPressed,
+            borderRadius: BorderRadius.circular(BaraedaRadius.control),
+            splashFactory: NoSplash.splashFactory,
+            splashColor: Colors.transparent,
+            hoverColor: Colors.black.withValues(alpha: 0.06),
+            highlightColor: Colors.black.withValues(alpha: 0.1),
+            focusColor: colors.focusRing.withValues(alpha: 0.32),
+            mouseCursor: _disabled
+                ? SystemMouseCursors.forbidden
+                : SystemMouseCursors.click,
+            child: Ink(
+              height: metrics.height,
+              width: block ? double.infinity : null,
+              padding: metrics.padding,
+              decoration: BoxDecoration(
+                color: palette.background,
+                border: palette.border,
+                borderRadius: BorderRadius.circular(BaraedaRadius.control),
+              ),
+              child: Center(child: content),
             ),
-            child: Center(child: content),
           ),
         ),
       ),
@@ -178,7 +186,7 @@ _ButtonMetrics _metricsFor(BaraedaButtonSize size) {
       );
     case BaraedaButtonSize.md:
       return _ButtonMetrics(
-        height: 44,
+        height: BaraedaSpacing.tapMin,
         padding: const EdgeInsets.symmetric(horizontal: 18),
         gap: 8,
         textStyle: BaraedaTypography.label.copyWith(fontWeight: weight),

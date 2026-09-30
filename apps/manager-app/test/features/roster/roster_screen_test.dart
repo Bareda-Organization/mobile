@@ -51,6 +51,7 @@ class _FakeRosterRepository implements RosterRepository {
 
   /// 즉시 전송·재생이 같은 client_key 를 쓰는지 검증하는 시험이 읽는다.
   String? lastUpdateClientKey;
+  DateTime? lastUpdateOccurredAt;
 
   /// M3 — 실패 시 명단이 **다시 조회됐는지**(재조회 1회) 확인하는 시험이 읽는다.
   int fetchRosterCallCount = 0;
@@ -79,6 +80,7 @@ class _FakeRosterRepository implements RosterRepository {
     required BoardingUpdateRequest request,
   }) async {
     lastUpdateClientKey = request.clientKey;
+    lastUpdateOccurredAt = request.occurredAt;
     // Failure 는 의도적으로 Exception/Error 를 상속하지 않는다(위 ackChanges
     // 주석과 같은 이유).
     // ignore: only_throw_errors
@@ -130,6 +132,15 @@ class _NeverResolvingTokenStorage extends TokenStorage {
 
   @override
   Future<String?> readAccessToken() => Completer<String?>().future;
+}
+
+class _FixedClock implements Clock {
+  const _FixedClock(this._now);
+
+  final DateTime _now;
+
+  @override
+  DateTime now() => _now;
 }
 
 Widget _wrap(Widget child, List<Override> overrides) {
@@ -429,6 +440,43 @@ void main() {
 
     expect(find.text('처리되지 않았습니다 · 대기 중'), findsNothing);
     expect(fakeRepo.lastUpdateClientKey, isNotNull);
+  });
+
+  // F06-05 — 오프라인으로 쌓였다 나중에 재생되는 승하차 처리도 누른 시각을 서버가 알아야 한다
+  // (미승차 3분 대기 · 학부모 알림 시각의 기준). 비상 발신은 이미 보내고 있었다.
+  testWidgets('승하차 처리 요청에 누른 시각(occurred_at)이 clockProvider 값으로 실린다', (
+    tester,
+  ) async {
+    final pressedAt = DateTime(2026, 9, 30, 8, 42, 3);
+    final fakeRepo = _FakeRosterRepository(
+      roster: _roster(),
+      updateOutcome: Sent(
+        RiderUpdateResult(
+          riderId: 'r1',
+          status: RiderStatus.boarded,
+          changedAt: DateTime(2026, 9, 12, 9),
+          stopSkipped: false,
+        ),
+      ),
+    );
+
+    await tester.pumpWidget(
+      _wrap(const RosterScreen(), [
+        selectedRunIdProvider.overrideWith((ref) => runId),
+        rosterRepositoryProvider.overrideWithValue(fakeRepo),
+        currentUserRoleProvider.overrideWith((ref) => UserRole.escort),
+        clockProvider.overrideWithValue(_FixedClock(pressedAt)),
+        todayRunsProvider.overrideWith(
+          (ref) async => [_managerRun(ackRequired: false)],
+        ),
+      ]),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.widgetWithText(BaraedaButton, '탑승'));
+    await tester.pumpAndSettle();
+
+    expect(fakeRepo.lastUpdateOccurredAt, pressedAt);
   });
 
   testWidgets('승하차 상태 갱신이 서버 거절(4xx)로 실패하면 실패 사유를 보여준다', (tester) async {

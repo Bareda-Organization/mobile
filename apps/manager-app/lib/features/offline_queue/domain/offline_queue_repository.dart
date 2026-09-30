@@ -27,4 +27,11 @@ abstract interface class OfflineQueueRepository {
   /// 통신이 아직 두절이면 **첫 실패에서 멈춘다** — 남은 행마다 타임아웃을
   /// 되풀이할 이유가 없고, 중간 건만 성공하면 큐 안의 순서가 뒤집힌다.
   Future<ReplayResult> replayPending();
+
+  /// 대기 중인 요청을 전부 버린다 — 로그아웃·세션 만료 때만 부른다. 큐에는 사용자 열이
+  /// 없어 남겨 두면 다음 계정의 토큰으로 이전 계정의 처리가 재생된다(F06-02).
+  Future<void> clear();
+
+  /// 대기 요청 한 건을 큐에서 지운다 — 잘못 눌러 쌓인 처리를 사용자가 버릴 때 쓴다(F06-15).
+  Future<void> cancel(int id);
 }

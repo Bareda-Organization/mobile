@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:baraeda_core/storage/token_storage.dart';
 import 'package:baraeda_core/websocket/websocket_envelope.dart';
@@ -64,10 +65,16 @@ class BaraedaWebSocketClient {
   /// 검증할 수 있게 `final` 이 아니라 생성자 파라미터로 남겨 둔다.
   final WsBackoffPolicy backoffPolicy;
 
+  final _random = Random();
   StompClient? _stompClient;
   Timer? _reconnectTimer;
   int _reconnectAttempt = 0;
   bool _manuallyDisconnected = true;
+
+  /// [connect]·[disconnect] 가 불릴 때마다 오르는 세대 표식 — `await` 를 건너는 진행 중 작업
+  /// (`_doConnect`·`_handleTokenExpired`)이 시작 때 읽어 둔 값과 다르면, 기다리는 사이 화면이
+  /// 종료·로그아웃했거나 새로 연결한 것이므로 자기 몫의 소켓을 만들지 않고 물러난다.
+  int _epoch = 0;
 
   /// 이번 연결 시도 한 번에 대해 재연결 스케줄을 이미 처리했는지 — 아래
   /// `_handleDisconnected` 의 이중 호출을 막는 가드. `stomp_dart_client` 는
@@ -130,8 +137,16 @@ class BaraedaWebSocketClient {
   /// 연결을 시작한다. [WsConnectionState.gaveUp] 상태에서 다시 호출하면
   /// 시도 횟수가 0 으로 리셋되어 재시도가 재개된다 — 화면의 "다시 시도"
   /// 버튼이 이 메서드 하나만 부르면 된다.
+  ///
+  /// 이미 연결 중·연결됨이면 아무것도 하지 않는다(멱등) — 앱 전역 클라이언트 하나를 여러
+  /// 화면이 저마다 불러도 소켓이 겹쳐 열리지 않는다.
   void connect() {
     _manuallyDisconnected = false;
+    if (_state == WsConnectionState.connecting ||
+        _state == WsConnectionState.connected) {
+      return;
+    }
+    _epoch += 1;
     _reconnectAttempt = 0;
     _reconnectTimer?.cancel();
     unawaited(_doConnect());
@@ -143,6 +158,7 @@ class BaraedaWebSocketClient {
   /// 여부에 기대지 않아도 된다(저장은 재발급 콜백의 책임이지 이 클래스가
   /// 강제할 계약이 아니다).
   Future<void> _doConnect({String? overrideToken}) async {
+    final epoch = _epoch;
     _reconnectHandled = false;
     // 새 소켓은 이전 세션의 구독을 이어받지 않는다 — 화면이 `connected`
     // 를 다시 받으면 알아서 재구독하므로, 옛 목적지가 여기 남아 있으면
@@ -151,6 +167,8 @@ class BaraedaWebSocketClient {
     _setState(WsConnectionState.connecting);
     // 매 (재)연결마다 새로 읽는다 — 토큰 만료 처리 판단 근거 참고.
     final token = overrideToken ?? await _tokenStorage.readAccessToken();
+    // 토큰을 읽는 사이 disconnect()·새 connect() 가 있었으면 이 소켓은 만들지 않는다.
+    if (epoch != _epoch) return;
 
     final config = StompConfig(
       url: _url,
@@ -226,6 +244,11 @@ class BaraedaWebSocketClient {
       return;
     }
 
+    _scheduleReconnect();
+  }
+
+  /// 백오프 정책대로 다음 재연결을 예약한다 — 한도를 넘기면 [WsConnectionState.gaveUp].
+  void _scheduleReconnect() {
     _reconnectAttempt += 1;
     if (backoffPolicy.shouldGiveUp(_reconnectAttempt)) {
       _setState(WsConnectionState.gaveUp);
@@ -233,7 +256,7 @@ class BaraedaWebSocketClient {
     }
 
     _setState(WsConnectionState.reconnecting);
-    final delay = backoffPolicy.delayFor(_reconnectAttempt);
+    final delay = backoffPolicy.jitteredDelayFor(_reconnectAttempt, _random);
     _reconnectTimer?.cancel();
     _reconnectTimer = Timer(delay, () => unawaited(_doConnect()));
   }
@@ -244,9 +267,21 @@ class BaraedaWebSocketClient {
   /// `null` 을 돌려주면) [sessionExpired] 로 넘기고 더 이상 재시도하지
   /// 않는다.
   Future<void> _handleTokenExpired() async {
+    final epoch = _epoch;
     _setState(WsConnectionState.reconnecting);
     final refresh = _refreshAccessToken;
-    final newToken = refresh == null ? null : await refresh();
+    final String? newToken;
+    try {
+      newToken = refresh == null ? null : await refresh();
+    } on Object catch (error) {
+      // 재발급 요청이 일시 장애로 실패했다(연결 실패·타임아웃·5xx) — 세션은 살아 있을 수
+      // 있으므로 sessionExpired 로 넘기지 않고 일반 끊김처럼 백오프로 다시 시도한다.
+      _onDebugMessage('[BaraedaWebSocketClient] 토큰 재발급 실패(일시): $error');
+      if (epoch == _epoch) _scheduleReconnect();
+      return;
+    }
+    // 재발급을 기다리는 사이 disconnect()(로그아웃)·새 connect() 가 있었다.
+    if (epoch != _epoch) return;
     if (newToken == null) {
       if (!_sessionExpiredController.isClosed) {
         _sessionExpiredController.add(null);
@@ -261,6 +296,7 @@ class BaraedaWebSocketClient {
   /// 재연결을 멈추고 연결을 닫는다. 화면 종료·로그아웃 시 호출한다.
   void disconnect() {
     _manuallyDisconnected = true;
+    _epoch += 1;
     _reconnectTimer?.cancel();
     try {
       _stompClient?.deactivate();
@@ -298,9 +334,17 @@ class BaraedaWebSocketClient {
       callback: (frame) {
         final body = frame.body;
         if (body == null) return;
-        final envelope = WebSocketEnvelope.fromJson(
-          jsonDecode(body) as Map<String, dynamic>,
-        );
+        final WebSocketEnvelope envelope;
+        try {
+          envelope = WebSocketEnvelope.fromJson(
+            jsonDecode(body) as Map<String, dynamic>,
+          );
+        } on Object catch (error) {
+          // 서버 프레임 하나가 깨졌다고 STOMP 콜백 밖으로 예외를 흘리지 않는다 — 그 프레임만
+          // 버리고 원인을 남겨 "이벤트가 안 온다" 로만 보이지 않게 한다.
+          _onDebugMessage('[BaraedaWebSocketClient] 프레임 파싱 실패: $error');
+          return;
+        }
         onEnvelope(envelope);
       },
     );

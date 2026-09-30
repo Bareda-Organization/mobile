@@ -8,6 +8,7 @@ import 'package:parent_app/app/di.dart';
 import 'package:parent_app/core/auth/auth_providers.dart';
 import 'package:parent_app/core/auth/role_policy.dart';
 import 'package:parent_app/core/auth/user_role.dart';
+import 'package:parent_app/core/map/map_surface.dart';
 import 'package:parent_app/core/students/domain/student.dart';
 import 'package:parent_app/core/students/presentation/selected_student.dart';
 import 'package:parent_app/features/home/presentation/home_providers.dart';
@@ -759,5 +760,124 @@ void main() {
         await tester.pumpWidget(const SizedBox.shrink());
       },
     );
+  });
+
+  group('F05-04·05 재연결 재구독 · 다음 회차 이벤트 초기화', () {
+    Future<void> pumpConnected(WidgetTester tester) async {
+      await pumpScreen(
+        tester,
+        extraOverrides: [
+          roleCapabilitiesProvider.overrideWithValue(
+            RoleCapabilities.of(UserRole.student),
+          ),
+          myStudentIdProvider.overrideWith((ref) async => 's-1'),
+          clockProvider.overrideWithValue(
+            _MutableClock(DateTime.utc(2026, 9, 13, 8)),
+          ),
+        ],
+      );
+      await tester.pump();
+      await tester.pump();
+      client.emit(WsConnectionState.connected);
+      await tester.pump();
+    }
+
+    // 새 소켓은 이전 구독을 이어받지 않는다(`_doConnect`) — 재구독 책임은 화면에 있다.
+    testWidgets('F05-04 연결이 끊겼다 되돌아오면 같은 목적지를 다시 구독한다', (tester) async {
+      await pumpConnected(tester);
+      final destination = WsChannel.studentRun('s-1');
+      expect(
+        client.callLog.where((e) => e == 'subscribe:$destination'),
+        hasLength(1),
+      );
+
+      client.emit(WsConnectionState.reconnecting);
+      await tester.pump();
+      client.emit(WsConnectionState.connected);
+      await tester.pump();
+
+      expect(
+        client.callLog.where((e) => e == 'subscribe:$destination'),
+        hasLength(2),
+      );
+    });
+
+    testWidgets('F05-05 다음 회차 운행 시작이 오면 앞 회차의 도착·종료 줄을 지운다', (tester) async {
+      await pumpConnected(tester);
+      WebSocketEnvelope forRun(
+        String runId,
+        WsEventType e,
+        Map<String, dynamic> p,
+      ) => WebSocketEnvelope(
+        event: e,
+        eventWireValue: e.wireValue,
+        runId: runId,
+        occurredAt: DateTime(2026, 9, 13, 8),
+        payload: p,
+      );
+
+      client
+        ..deliver(
+          forRun('r-1', WsEventType.runStarted, {
+            'run_status': 'moving',
+            'started_at': '2026-09-13T07:00:00Z',
+          }),
+        )
+        ..deliver(
+          forRun('r-1', WsEventType.stopArrived, {
+            'stop_id': 'st-1',
+            'seq': 1,
+            'name': '정문',
+            'arrived_at': '2026-09-13T07:10:00Z',
+          }),
+        )
+        ..deliver(
+          forRun('r-1', WsEventType.runEnded, {
+            'run_status': 'finished',
+            'finished_at': '2026-09-13T07:40:00Z',
+          }),
+        );
+      await tester.pump();
+      expect(find.textContaining('운행 종료'), findsOneWidget);
+      expect(find.textContaining('정문 도착'), findsOneWidget);
+
+      client.deliver(
+        forRun('r-2', WsEventType.runStarted, {
+          'run_status': 'moving',
+          'started_at': '2026-09-13T15:00:00Z',
+        }),
+      );
+      await tester.pump();
+
+      expect(find.textContaining('운행 시작'), findsOneWidget);
+      expect(find.textContaining('운행 종료'), findsNothing);
+      expect(find.textContaining('정문 도착'), findsNothing);
+    });
+
+    // F05-09 — 버스 좌표가 2초마다 와도 카메라를 되돌리지 않는다(학부모가 지도를 옮기거나 줄일 수 있어야 한다).
+    testWidgets('F05-09 새 좌표가 와도 지도 카메라는 처음 자리에 머물고 [버스 위치로] 로만 따라간다', (
+      tester,
+    ) async {
+      await pumpConnected(tester);
+      Map<String, Object> pos(double lat) => {
+        'lat': lat,
+        'lng': 127.0,
+        'received_at': '2026-09-13T08:00:00Z',
+      };
+      MapCamera camera() =>
+          tester.widget<MapSurface>(find.byType(MapSurface)).camera;
+
+      client.deliver(_envelope(WsEventType.position, pos(37.5)));
+      await tester.pump();
+      expect(camera().lat, 37.5);
+
+      client.deliver(_envelope(WsEventType.position, pos(37.6)));
+      await tester.pump();
+      expect(camera().lat, 37.5, reason: '카메라는 사용자가 옮긴 자리를 덮어쓰지 않는다');
+
+      await tester.tap(find.text('버스 위치로'));
+      await tester.pump();
+      expect(camera().lat, 37.6);
+    });
   });
 }

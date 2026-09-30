@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/network/failure_messages.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
+import 'package:manager_app/core/ui/limited_text_controller.dart';
 import 'package:manager_app/features/emergency/data/models/emergency_item.dart';
 import 'package:manager_app/features/emergency/data/models/emergency_raise_request.dart';
 import 'package:manager_app/features/emergency/data/models/emergency_raise_result.dart';
@@ -39,7 +40,7 @@ class EmergencyScreen extends ConsumerStatefulWidget {
 
 class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
   EmergencyType _type = EmergencyType.accident;
-  final _memoController = TextEditingController();
+  final _memoController = LimitedTextController();
 
   bool _submitting = false;
   String? _errorMessage;
@@ -229,7 +230,8 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
               padding: EdgeInsets.symmetric(vertical: 24),
               child: Center(child: CircularProgressIndicator()),
             ),
-            error: (error, _) => Text('이력을 불러오지 못했습니다: $error'),
+            error: (error, _) =>
+                Text('이력을 불러오지 못했습니다: ${describeError(error)}'),
             data: (list) => _buildList(runId, list.items, now),
           ),
         ],

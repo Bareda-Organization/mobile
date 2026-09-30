@@ -8,12 +8,16 @@ import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/core/run/run_termination_provider.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/features/drive_mode/data/models/arrive_stop_result.dart';
+import 'package:manager_app/features/home/presentation/home_providers.dart';
+import 'package:manager_app/features/position/presentation/position_transmitter.dart';
 import 'package:manager_app/features/roster/data/models/roster_response.dart';
 import 'package:manager_app/features/roster/presentation/roster_providers.dart';
 import 'package:manager_app/features/run_end/data/models/report_request.dart';
 import 'package:manager_app/features/run_end/data/models/report_result.dart';
 import 'package:manager_app/features/run_end/domain/reports_repository.dart';
 import 'package:manager_app/features/run_end/presentation/run_end_screen.dart';
+
+import '../../support/manager_run_fixture.dart';
 
 /// 테스트 전용 대역 — 실제 네트워크 대신 호출 여부·인자만 기록한다.
 class _FakeReportsRepository implements ReportsRepository {
@@ -36,24 +40,77 @@ class _FakeReportsRepository implements ReportsRepository {
   }
 }
 
-Widget _wrap(Widget child, List<Override> overrides) {
+Widget _wrap(
+  Widget child,
+  List<Override> overrides, {
+  Override? roster,
+  Override? runs,
+  Override? endedRun,
+}) {
   return ProviderScope(
     overrides: [
       // R32 M3 — 도착 결과가 없으면 화면이 명단으로 대상 학생을 만든다. 실제 서버로 나가지 않게 막는다.
-      rosterProvider.overrideWith(
-        (ref) async => const RosterResponse(
-          runId: 'run-1',
-          busNo: '3호차',
-          direction: RunDirection.toAcademy,
-          counts: RosterCounts(boarded: 0, waiting: 0, noShow: 0, absentN: 0),
-          stops: [],
-        ),
-      ),
+      roster ??
+          rosterProvider.overrideWith(
+            (ref) async => const RosterResponse(
+              runId: 'run-1',
+              busNo: '3호차',
+              direction: RunDirection.toAcademy,
+              counts: RosterCounts(
+                boarded: 0,
+                waiting: 0,
+                noShow: 0,
+                absentN: 0,
+              ),
+              stops: [],
+            ),
+          ),
+      // 종료 안내는 마지막 도착 처리와 함께 채워지는 회차 표식·회차 목록을 읽는다.
+      endedRun ?? transmissionEndedRunIdProvider.overrideWith((ref) => 'run-1'),
+      runs ??
+          todayRunsProvider.overrideWith(
+            (ref) async => [managerRunFixture(status: RunStatus.moving)],
+          ),
       ...overrides,
     ],
     child: MaterialApp(home: child),
   );
 }
+
+/// 지금 탑승 중인 학생만 담은 명단 — 하차 대기 인원·보고 대상은 이 명단에서 읽는다(F06-14).
+Override _boardedRoster(List<({String id, String name})> riders) =>
+    rosterProvider.overrideWith(
+      (ref) async => RosterResponse(
+        runId: 'run-1',
+        busNo: '3호차',
+        direction: RunDirection.toAcademy,
+        counts: const RosterCounts(
+          boarded: 0,
+          waiting: 0,
+          noShow: 0,
+          absentN: 0,
+        ),
+        stops: [
+          RosterStop(
+            stopId: 's1',
+            seq: 1,
+            name: 'A정류장',
+            students: [
+              for (final rider in riders)
+                RosterStudent(
+                  riderId: rider.id,
+                  studentId: 'st-${rider.id}',
+                  name: rider.name,
+                  photoUrl: null,
+                  guardianPhone: null,
+                  canGoAlone: false,
+                  status: RiderStatus.boarded,
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
 
 ArriveStopResult _terminationWith({
   required bool finishPending,
@@ -87,19 +144,27 @@ void main() {
 
   testWidgets('하차 대기 인원이 있으면 남은 인원 수를 보여준다', (tester) async {
     await tester.pumpWidget(
-      _wrap(const RunEndScreen(), [
-        selectedRunIdProvider.overrideWith((ref) => runId),
-        lastArriveResultProvider.overrideWith(
-          (ref) => _terminationWith(
-            finishPending: true,
-            remaining: const [
-              RemainingRider(riderId: 'r1', name: '김바래', stopName: 'A정류장'),
-              RemainingRider(riderId: 'r2', name: '이다솜', stopName: 'B정류장'),
-            ],
+      _wrap(
+        const RunEndScreen(),
+        [
+          selectedRunIdProvider.overrideWith((ref) => runId),
+          lastArriveResultProvider.overrideWith(
+            (ref) => _terminationWith(
+              finishPending: true,
+              remaining: const [
+                RemainingRider(riderId: 'r1', name: '김바래', stopName: 'A정류장'),
+                RemainingRider(riderId: 'r2', name: '이다솜', stopName: 'B정류장'),
+              ],
+            ),
           ),
-        ),
-      ]),
+        ],
+        roster: _boardedRoster([
+          (id: 'r1', name: '김바래'),
+          (id: 'r2', name: '이다솜'),
+        ]),
+      ),
     );
+    await tester.pumpAndSettle();
 
     expect(
       find.textContaining('하차 대기 2명 남음(전원 하차해야 운행이 종료됩니다)'),
@@ -153,18 +218,23 @@ void main() {
 
   testWidgets('대상 학생 선택은 하차 대기 명단([remaining])만 옵션으로 보여준다', (tester) async {
     await tester.pumpWidget(
-      _wrap(const RunEndScreen(), [
-        selectedRunIdProvider.overrideWith((ref) => runId),
-        lastArriveResultProvider.overrideWith(
-          (ref) => _terminationWith(
-            finishPending: true,
-            remaining: const [
-              RemainingRider(riderId: 'r1', name: '김바래', stopName: 'A정류장'),
-            ],
+      _wrap(
+        const RunEndScreen(),
+        [
+          selectedRunIdProvider.overrideWith((ref) => runId),
+          lastArriveResultProvider.overrideWith(
+            (ref) => _terminationWith(
+              finishPending: true,
+              remaining: const [
+                RemainingRider(riderId: 'r1', name: '김바래', stopName: 'A정류장'),
+              ],
+            ),
           ),
-        ),
-      ]),
+        ],
+        roster: _boardedRoster([(id: 'r1', name: '김바래')]),
+      ),
     );
+    await tester.pumpAndSettle();
 
     final select = tester.widget<BaraedaSelect>(find.byType(BaraedaSelect));
     expect(select.enabled, isTrue);
@@ -215,18 +285,23 @@ void main() {
 
   testWidgets('대상 학생이 있으면 빈 목록 안내는 없다', (tester) async {
     await tester.pumpWidget(
-      _wrap(const RunEndScreen(), [
-        selectedRunIdProvider.overrideWith((ref) => runId),
-        lastArriveResultProvider.overrideWith(
-          (ref) => _terminationWith(
-            finishPending: true,
-            remaining: const [
-              RemainingRider(riderId: 'r1', name: '김바래', stopName: 'A정류장'),
-            ],
+      _wrap(
+        const RunEndScreen(),
+        [
+          selectedRunIdProvider.overrideWith((ref) => runId),
+          lastArriveResultProvider.overrideWith(
+            (ref) => _terminationWith(
+              finishPending: true,
+              remaining: const [
+                RemainingRider(riderId: 'r1', name: '김바래', stopName: 'A정류장'),
+              ],
+            ),
           ),
-        ),
-      ]),
+        ],
+        roster: _boardedRoster([(id: 'r1', name: '김바래')]),
+      ),
     );
+    await tester.pumpAndSettle();
     await tester.pumpAndSettle();
 
     expect(find.textContaining('보고할 학생이 없습니다'), findsNothing);
@@ -259,5 +334,105 @@ void main() {
     await tester.tap(find.text('보고 제출'), warnIfMissed: false);
     await tester.pumpAndSettle();
     expect(fakeRepo.callCount, 1);
+  });
+
+  // N-08 — 현장 예외 보고 memo 는 200자까지다(API_SPEC 자유 입력 메모 상한, 넘으면 422).
+  testWidgets('메모 입력칸은 200자에서 멈춘다', (tester) async {
+    await tester.pumpWidget(
+      _wrap(const RunEndScreen(), [
+        selectedRunIdProvider.overrideWith((ref) => runId),
+        lastArriveResultProvider.overrideWith((ref) => null),
+        reportsRepositoryProvider.overrideWithValue(
+          _FakeReportsRepository(
+            result: ReportResult(
+              reportId: 'rep-1',
+              reportedAt: DateTime(2026, 9, 12, 8, 31, 5),
+            ),
+          ),
+        ),
+      ]),
+    );
+
+    await tester.enterText(find.byType(TextField), '가' * 250);
+
+    expect(
+      tester.widget<TextField>(find.byType(TextField)).controller!.text.length,
+      200,
+    );
+  });
+
+  // F06-14 — 도착 응답(§4.5) 스냅샷은 도착 순간의 값이다. 종료 화면은 도착 시각만 거기서 읽고, 하차 대기
+  // 인원·종료 여부·다른 회차 구분은 지금의 명단·회차 목록·회차 표식으로 정한다.
+  testWidgets('동승자가 하차를 처리해 명단이 줄면 하차 대기 인원도 따라 준다', (tester) async {
+    await tester.pumpWidget(
+      _wrap(
+        const RunEndScreen(),
+        [
+          selectedRunIdProvider.overrideWith((ref) => runId),
+          lastArriveResultProvider.overrideWith(
+            (ref) => _terminationWith(
+              finishPending: true,
+              remaining: const [
+                RemainingRider(riderId: 'r1', name: '김바래', stopName: 'A정류장'),
+                RemainingRider(riderId: 'r2', name: '이다솜', stopName: 'B정류장'),
+              ],
+            ),
+          ),
+          // 도착 응답 뒤 r2 가 하차해 지금 탑승 중인 학생은 r1 하나다.
+        ],
+        roster: _boardedRoster([(id: 'r1', name: '김바래')]),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('하차 대기 1명 남음'), findsOneWidget);
+    expect(find.textContaining('하차 대기 2명'), findsNothing);
+  });
+
+  testWidgets('회차가 종료됐으면 하차 대기 문구 대신 종료 안내를 보여준다', (tester) async {
+    await tester.pumpWidget(
+      _wrap(
+        const RunEndScreen(),
+        [
+          selectedRunIdProvider.overrideWith((ref) => runId),
+          lastArriveResultProvider.overrideWith(
+            (ref) => _terminationWith(
+              finishPending: true,
+              remaining: const [
+                RemainingRider(riderId: 'r1', name: '김바래', stopName: 'A정류장'),
+              ],
+            ),
+          ),
+        ],
+        roster: _boardedRoster(const []),
+        runs: todayRunsProvider.overrideWith(
+          (ref) async => [managerRunFixture(status: RunStatus.finished)],
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('운행이 종료됐습니다'), findsOneWidget);
+    expect(find.textContaining('남음'), findsNothing);
+  });
+
+  testWidgets('다른 회차의 도착 스냅샷은 이 회차의 종료 화면에 쓰지 않는다', (tester) async {
+    await tester.pumpWidget(
+      _wrap(
+        const RunEndScreen(),
+        [
+          selectedRunIdProvider.overrideWith((ref) => runId),
+          lastArriveResultProvider.overrideWith(
+            (ref) => _terminationWith(finishPending: true),
+          ),
+        ],
+        // 스냅샷은 run-0 의 마지막 도착 처리에서 채워졌다.
+        endedRun: transmissionEndedRunIdProvider.overrideWith((ref) => 'run-0'),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('최종 지점 도착'), findsNothing);
+    expect(find.text('예외 보고'), findsOneWidget);
   });
 }

@@ -13,6 +13,7 @@ import 'package:manager_app/core/wakelock/wakelock_port.dart';
 import 'package:manager_app/features/drive_mode/presentation/drive_mode_providers.dart';
 import 'package:manager_app/features/drive_mode/presentation/drive_mode_screen.dart';
 import 'package:manager_app/features/home/data/models/manager_run.dart';
+import 'package:manager_app/features/home/presentation/home_providers.dart';
 import 'package:manager_app/features/position/data/models/position_request.dart';
 import 'package:manager_app/features/position/domain/position_repository.dart';
 import 'package:manager_app/features/roster/data/models/roster_response.dart';
@@ -49,6 +50,9 @@ class _FixedClock implements Clock {
 /// wakelock 켜기·끄기 호출만 본다.
 class _NoopPositionSource implements PositionSource {
   const _NoopPositionSource();
+
+  @override
+  Future<void> recheck() async {}
 
   @override
   void start() {}
@@ -117,6 +121,8 @@ void main() {
     currentUserRoleProvider.overrideWith((ref) => UserRole.driver),
     selectedRunIdProvider.overrideWith((ref) => runId),
     driveModeRunProvider.overrideWithValue(run()),
+    // 위치 송신기가 회차 목록에서 송신 대상을 고른다(F06-12) — 실제 서버로 나가지 않게 막는다.
+    todayRunsProvider.overrideWith((ref) async => [run()]),
     // R32 M1 — 운행 화면이 노선을 조회한다. 실제 서버로 나가지 않게 빈 노선으로 막는다.
     routeProvider.overrideWith((ref) async => const RouteResponse(stops: [])),
     driveModeRosterProvider.overrideWith((ref) async => _emptyRoster),

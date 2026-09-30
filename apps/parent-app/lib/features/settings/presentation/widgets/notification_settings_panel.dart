@@ -3,6 +3,7 @@ import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:parent_app/app/di.dart';
+import 'package:parent_app/core/ui/failure_message.dart';
 import 'package:parent_app/features/settings/domain/notification_settings.dart';
 import 'package:parent_app/features/settings/presentation/settings_providers.dart';
 
@@ -70,8 +71,7 @@ class _NotificationSwitchesState extends ConsumerState<_NotificationSwitches> {
         _submitting = false;
         _bannerTone = AlertTone.missed;
         _banner = switch (failure) {
-          ApiFailure(:final message) => message,
-          _ => '알림 설정을 바꾸지 못했습니다',
+          _ => failureMessage(failure, fallback: '알림 설정을 바꾸지 못했습니다'),
         };
       });
     }

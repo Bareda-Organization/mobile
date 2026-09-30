@@ -15,6 +15,7 @@ import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/features/drive_mode/presentation/drive_mode_providers.dart';
 import 'package:manager_app/features/drive_mode/presentation/drive_mode_screen.dart';
 import 'package:manager_app/features/home/data/models/manager_run.dart';
+import 'package:manager_app/features/home/presentation/home_providers.dart';
 import 'package:manager_app/features/position/data/models/position_request.dart';
 import 'package:manager_app/features/position/domain/position_repository.dart';
 import 'package:manager_app/features/roster/data/models/roster_response.dart';
@@ -106,6 +107,7 @@ void main() {
     addedCount: 0,
     removedCount: 0,
     ackRequired: false,
+    roleInRun: UserRole.driver,
   );
 
   /// [positionSourceProvider] 를 오버라이드하지 않는다 — `di.dart` 의
@@ -121,6 +123,11 @@ void main() {
     currentUserRoleProvider.overrideWith((ref) => role),
     selectedRunIdProvider.overrideWith((ref) => runId),
     driveModeRunProvider.overrideWithValue(currentRun),
+    // F06-12 — 송신 대상은 오늘 회차 목록에서 고른다(화면이 고른 회차가 아니다).
+    todayRunsProvider.overrideWith((ref) async {
+      final run = ref.watch(driveModeRunProvider);
+      return run == null ? <ManagerRun>[] : [run];
+    }),
     // R32 M1 — 운행 화면이 노선을 조회한다. 실제 서버로 나가지 않게 빈 노선으로 막는다.
     routeProvider.overrideWith((ref) async => const RouteResponse(stops: [])),
     driveModeRosterProvider.overrideWith((ref) async => _emptyRoster),
@@ -154,6 +161,11 @@ void main() {
         currentUserRoleProvider.overrideWith((ref) => UserRole.driver),
         selectedRunIdProvider.overrideWith((ref) => runId),
         driveModeRunProvider.overrideWith((ref) => ref.watch(runState)),
+        // F06-12 — 송신 대상은 오늘 회차 목록에서 고른다(화면이 고른 회차가 아니다).
+        todayRunsProvider.overrideWith((ref) async {
+          final run = ref.watch(driveModeRunProvider);
+          return run == null ? <ManagerRun>[] : [run];
+        }),
         // R32 M1 — 운행 화면이 노선을 조회한다. 실제 서버로 나가지 않게 빈 노선으로 막는다.
         routeProvider.overrideWith(
           (ref) async => const RouteResponse(stops: []),
@@ -178,6 +190,8 @@ void main() {
     expect(platform.listenerCount, 1);
 
     container.read(runState.notifier).state = run(RunStatus.finished);
+    // 회차 목록(송신 대상의 출처)이 비동기로 다시 계산된다 — 그 결과가 반영될 때까지 기다린다.
+    await tester.pump();
     await tester.pump();
 
     expect(platform.listenerCount, 0);

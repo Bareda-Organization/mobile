@@ -35,12 +35,14 @@ class _FakeEmergencyRepository implements EmergencyRepository {
     this.raiseFailure,
     this.cancelFailure,
     this.list,
+    this.listFailure,
   });
 
   final SendOutcome<EmergencyRaiseResult>? raiseOutcome;
   final Failure? raiseFailure;
   final Failure? cancelFailure;
   final EmergencyListResponse? list;
+  final Failure? listFailure;
 
   int raiseCallCount = 0;
   EmergencyRaiseRequest? lastRequest;
@@ -75,6 +77,9 @@ class _FakeEmergencyRepository implements EmergencyRepository {
 
   @override
   Future<EmergencyListResponse> fetchList({required String runId}) async {
+    // Failure 는 Exception/Error 를 상속하지 않는다 — 위 raise 와 같은 이유.
+    // ignore: only_throw_errors
+    if (listFailure != null) throw listFailure!;
     return list ?? const EmergencyListResponse(items: []);
   }
 }
@@ -107,6 +112,9 @@ class _FakePositionSource implements PositionSource {
 
   @override
   PositionAvailability get availability => PositionAvailability.available;
+
+  @override
+  Future<void> recheck() async {}
 
   @override
   void start() {}
@@ -695,5 +703,49 @@ void main() {
 
     expect(find.text('비상 알림 취소 가능 시간(발신 후 1분)이 지났습니다'), findsOneWidget);
     expect(fakeRepo.lastCanceledEmergencyId, 'e1');
+  });
+
+  // N-08 — 비상 신고 memo 는 200자까지다(API_SPEC 자유 입력 메모 상한, 넘으면 422).
+  testWidgets('상황 메모 입력칸은 200자에서 멈춘다', (tester) async {
+    final fakeRepo = _FakeEmergencyRepository(
+      raiseOutcome: Sent(
+        EmergencyRaiseResult(
+          emergencyId: 'e1',
+          raisedAt: raisedAt,
+          cancelableUntil: cancelableUntil,
+          notified: 1,
+        ),
+      ),
+      list: const EmergencyListResponse(items: []),
+    );
+    await tester.pumpWidget(
+      _wrap(const EmergencyScreen(), overridesFor(fakeRepo: fakeRepo)),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField), '가' * 250);
+
+    expect(
+      tester.widget<TextField>(find.byType(TextField)).controller!.text.length,
+      200,
+    );
+  });
+
+  // F06-06 — 이력 조회 오류가 `Failure.network(message: …)` 같은 개발용 표기 그대로 화면에 나오면
+  // 긴박한 상황에서 뜻을 알 수 없다. 다른 화면과 같이 일반 문구로 바꾼다.
+  testWidgets('이력 조회가 실패하면 개발용 표기 대신 알아볼 수 있는 문구를 보여준다', (tester) async {
+    final fakeRepo = _FakeEmergencyRepository(
+      listFailure: const Failure.network(message: 'SocketException: 연결 거부'),
+    );
+    await tester.pumpWidget(
+      _wrap(const EmergencyScreen(), overridesFor(fakeRepo: fakeRepo)),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('이력을 불러오지 못했습니다: 네트워크 상태를 확인해 주세요'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('SocketException'), findsNothing);
   });
 }

@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:parent_app/app/di.dart';
+import 'package:parent_app/core/auth/auth_providers.dart';
 import 'package:parent_app/features/home/domain/notification_item.dart';
 
 // `myStudentsProvider`(§3.1)·`runsForStudentProvider`(§3.5)는 `schedule`
@@ -12,15 +14,22 @@ import 'package:parent_app/features/home/domain/notification_item.dart';
 export 'package:parent_app/core/runs/presentation/run_providers.dart';
 export 'package:parent_app/core/students/presentation/student_providers.dart';
 
-/// 학생 계정 본인의 `student_id` — `GET /me` 의 `student_id` 필드(§2.10)를
-/// 그대로 쓴다. 학생용 `/me/students` 대응 엔드포인트가 부재하므로 이 값이
-/// 유일한 경로다.
-final myStudentIdProvider = FutureProvider<String?>((ref) async {
-  final me = await ref.watch(authRepositoryProvider).me();
-  return me.studentId;
+/// 알림 목록에서 한 번에 받는 건수 — [더 보기] 가 [notificationPageStep] 씩 늘린다(F05-08).
+/// 서버 한도가 100건(§1.8)이라 [notificationPageMax] 를 넘기지 않는다.
+const int notificationPageStep = 20;
+const int notificationPageMax = 100;
+
+final StateProvider<int> notificationPageSizeProvider = StateProvider<int>((
+  ref,
+) {
+  ref.watch(currentUserRoleProvider); // 계정이 바뀌면 처음 크기로
+  return notificationPageStep;
 });
 
-/// §3.12 — 알림 목록 1페이지(§1.8, 무한 스크롤 아님).
+/// §3.12 — 알림 목록. 첫 페이지(`page=0`)를 [notificationPageSizeProvider] 건수만큼 받는다.
 final notificationsProvider = FutureProvider<NotificationPage>((ref) {
-  return ref.watch(notificationRepositoryProvider).getNotifications();
+  // F05-01 — 계정이 바뀌면(로그아웃 = 역할 null) 앞 계정의 캐시를 버린다.
+  ref.watch(currentUserRoleProvider);
+  final size = ref.watch(notificationPageSizeProvider);
+  return ref.watch(notificationRepositoryProvider).getNotifications(size: size);
 });

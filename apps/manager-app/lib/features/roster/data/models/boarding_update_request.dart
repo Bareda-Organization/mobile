@@ -1,4 +1,5 @@
 import 'package:manager_app/core/run/run_enums.dart';
+import 'package:manager_app/core/time/wire_time.dart';
 
 /// §4.6 `verify_method` — `photo`(사진) · `manual`(명단 육안 확인). 이번
 /// 라운드는 카메라 연동을 범위에 두지 않아(스코프 밖, 보고서 참고)
@@ -30,7 +31,7 @@ class BoardingUpdateRequest {
     'status': status.wireValue,
     'verify_method': verifyMethod.wireValue,
     'client_key': clientKey,
-    if (occurredAt != null) 'occurred_at': occurredAt!.toIso8601String(),
+    if (occurredAt != null) 'occurred_at': toWireTime(occurredAt!),
   };
 
   final RiderStatus status;

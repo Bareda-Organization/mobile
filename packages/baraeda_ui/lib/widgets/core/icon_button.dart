@@ -3,6 +3,7 @@
 // 읽을 수 없어 [label]을 필수 파라미터로 두고 [Semantics]에 그대로 싣는다.
 
 import 'package:baraeda_ui/theme/baraeda_colors.dart';
+import 'package:baraeda_ui/tokens/spacing.dart';
 import 'package:baraeda_ui/widgets/core/icon.dart';
 import 'package:flutter/material.dart';
 
@@ -22,7 +23,7 @@ class BaraedaIconButton extends StatelessWidget {
     super.key,
     this.onPressed,
     this.tone = BaraedaIconButtonTone.plain,
-    this.size = 40,
+    this.size = BaraedaSpacing.tapMin,
   });
 
   /// Lucide 아이콘 이름.
@@ -34,7 +35,7 @@ class BaraedaIconButton extends StatelessWidget {
   final VoidCallback? onPressed;
   final BaraedaIconButtonTone tone;
 
-  /// 탭 영역 한 변. 최소 `BaraedaSpacing.tapMin`(48) 이상을 권장.
+  /// 탭 영역 한 변. 기본은 터치 최소 `BaraedaSpacing.tapMin`(48) 이다.
   final double size;
 
   bool get _disabled => onPressed == null;

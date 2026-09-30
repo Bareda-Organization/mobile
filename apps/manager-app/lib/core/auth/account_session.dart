@@ -7,8 +7,14 @@ import 'package:flutter_riverpod/legacy.dart';
 import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/core/auth/user_role.dart';
+import 'package:manager_app/core/run/run_termination_provider.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
+import 'package:manager_app/features/drive_mode/presentation/drive_mode_providers.dart';
+import 'package:manager_app/features/emergency/presentation/emergency_providers.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
+import 'package:manager_app/features/position/presentation/position_transmitter.dart';
+import 'package:manager_app/features/roster/presentation/roster_providers.dart';
+import 'package:manager_app/features/route_map/presentation/route_providers.dart';
 
 /// 계정 **상태**(`pending`·`active`·`rejected`) 를 담는다.
 ///
@@ -38,7 +44,11 @@ final StateProvider<bool> unsupportedRoleProvider = StateProvider<bool>(
 /// `/me` 응답이 만료된 access 토큰을 만나면 `ApiClient` 의 `_AuthInterceptor`
 /// 가 저장된 refresh 로 자동 재발급 후 재시도한다 — 이 provider 는 그 재발급
 /// 로직을 다시 구현하지 않는다.
-final authBootstrapProvider = FutureProvider<void>((ref) async {
+// 자동 재시도를 끈다 — Riverpod 3 은 실패한 provider 를 늘어나는 간격으로 조용히 다시 불러 그동안 스피너만
+// 보이는데, 여기서는 곧바로 [다시 시도] 안내를 보이는 것이 낫다(F06-10).
+final authBootstrapProvider = FutureProvider<void>(retry: (_, _) => null, (
+  ref,
+) async {
   final tokenStorage = ref.watch(tokenStorageProvider);
   final refreshToken = await tokenStorage.readRefreshToken();
   if (refreshToken == null) return;
@@ -55,6 +65,13 @@ final authBootstrapProvider = FutureProvider<void>((ref) async {
     );
     if (me.status == AccountStatus.active && me.role == AccountRole.driver) {
       await _resumeMovingRun(ref);
+    }
+  } on Failure catch (failure) {
+    // F06-10 — 연결이 끊겼거나 서버가 잠깐 죽은 것은 로그인이 풀린 것이 아니다. 토큰은 그대로 두고 앱이
+    // [다시 시도] 를 보이게 오류로 남긴다. 그 밖(401 등 인증 거절)은 로그인 화면으로 남긴다.
+    if (failure is NetworkFailure ||
+        (failure is ApiFailure && failure.statusCode >= 500)) {
+      rethrow;
     }
   } on Object {
     // 재발급까지 실패하면 인터셉터가 이미 토큰을 지웠다(§ api_client.dart
@@ -124,10 +141,14 @@ void applyRoleAndStatus(
 class RouterRefreshNotifier extends ChangeNotifier {
   /// `ref` 로 provider 변화를 구독하고 게이트 스트림을 함께 문다.
   RouterRefreshNotifier(this._ref) {
-    _roleSub = _ref.listen<UserRole?>(
-      currentUserRoleProvider,
-      (_, _) => notifyListeners(),
-    );
+    _roleSub = _ref.listen<UserRole?>(currentUserRoleProvider, (
+      previous,
+      next,
+    ) {
+      // 로그아웃·세션 만료(어느 경로든)로 역할이 비면 이 계정 소유의 상태를 함께 버린다(F06-02).
+      if (previous != null && next == null) _clearAccountScopedState();
+      notifyListeners();
+    });
     _statusSub = _ref.listen<AccountStatus?>(
       currentAccountStatusProvider,
       (_, _) => notifyListeners(),
@@ -144,6 +165,35 @@ class RouterRefreshNotifier extends ChangeNotifier {
         AccountGateReason.rejected => AccountStatus.rejected,
       };
     });
+    // 재발급이 401 로 거절돼(REST) 로그인이 풀렸다 — WS `sessionExpired` 와 같은 처리(K-02①).
+    // 토큰은 재발급기가 이미 지웠으므로 서버에 알릴 것이 없다.
+    _sessionExpiredSubscription = _ref
+        .read(apiClientProvider)
+        .sessionExpired
+        .listen(
+          (_) => applyRoleAndStatus(
+            _ref.read(unsupportedRoleProvider.notifier),
+            _ref.read(currentUserRoleProvider.notifier),
+            _ref.read(currentAccountStatusProvider.notifier),
+            role: null,
+            status: null,
+          ),
+        );
+  }
+
+  /// 다음 계정이 이전 계정의 회차 목록·선택값을 보거나, 이전 계정의 대기 요청을 자기 토큰으로 재생하지
+  /// 못하게 한다. 큐에는 사용자 열이 없어 비우는 수밖에 없다 — 로그아웃하면 미전송 처리는 버려진다.
+  void _clearAccountScopedState() {
+    _ref
+      ..invalidate(todayRunsProvider)
+      ..invalidate(emergencyListProvider)
+      ..invalidate(rosterProvider)
+      ..invalidate(driveModeRosterProvider)
+      ..invalidate(routeProvider);
+    _ref.read(selectedRunIdProvider.notifier).state = null;
+    _ref.read(transmissionEndedRunIdProvider.notifier).state = null;
+    _ref.read(lastArriveResultProvider.notifier).state = null;
+    unawaited(_ref.read(offlineQueueRepositoryProvider).clear());
   }
 
   final Ref _ref;
@@ -151,6 +201,7 @@ class RouterRefreshNotifier extends ChangeNotifier {
   late final ProviderSubscription<AccountStatus?> _statusSub;
   late final ProviderSubscription<bool> _unsupportedSub;
   late final StreamSubscription<AccountGateReason> _gateSubscription;
+  late final StreamSubscription<void> _sessionExpiredSubscription;
 
   @override
   void dispose() {
@@ -158,6 +209,7 @@ class RouterRefreshNotifier extends ChangeNotifier {
     _statusSub.close();
     _unsupportedSub.close();
     unawaited(_gateSubscription.cancel());
+    unawaited(_sessionExpiredSubscription.cancel());
     super.dispose();
   }
 }

@@ -1,5 +1,5 @@
-/// `API_SPEC §7` 공통 봉투의 `event` 필드 — 채널 4종이 방송하는 이벤트 9종
-/// (§7.1 8종 + `route_changed`). `AccountStatus` 와 같은
+/// `API_SPEC §7` 공통 봉투의 `event` 필드 — 채널 4종이 방송하는 이벤트 10종
+/// (§7.1 9종 + `route_changed`). `AccountStatus` 와 같은
 /// `wireValue` + `fromWireValueOrNull` 형태를 따른다.
 enum WsEventType {
   /// 5~10초 주기 위치 갱신 (`POST /runs/{runId}/position`).
@@ -26,6 +26,10 @@ enum WsEventType {
 
   /// 비상 알림 확인 (`POST /staff/emergencies/{id}/ack`) — 매니저 채널 전용.
   emergencyAcked('emergency_acked'),
+
+  /// 비상 알림 발신 후 1분 안 취소 (`DELETE /runs/{runId}/emergency/{id}`) —
+  /// 관계자·메인 관리자 채널 전용(§7.1). 매니저 채널은 받을 일이 없어 무시한다.
+  emergencyCanceled('emergency_canceled'),
 
   /// ②구간 변경 요청 접수 — 관계자 채널 전용.
   approvalRequested('approval_requested');

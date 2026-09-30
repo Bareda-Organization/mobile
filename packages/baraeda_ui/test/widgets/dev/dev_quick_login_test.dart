@@ -3,8 +3,8 @@
 // 시드 비밀번호를 상수로 들고 있어서, 릴리스에 남으면 그 문자열과 계정 목록이 그대로 나간다.
 // 편의 기능이지만 새는 쪽의 대가가 커서 검사를 붙인다.
 //
-// ⚠ `kReleaseMode` 는 컴파일 상수라 시험에서 바꿀 수 없다 — 시험은 항상 debug 로 돈다.
-// 그래서 "릴리스에서 안 그린다" 는 **소스에 그 분기가 실재하는지**로 대신 잰다. 약한 검사이지만
+// ⚠ `kDebugMode` 는 컴파일 상수라 시험에서 바꿀 수 없다 — 시험은 항상 debug 로 돈다.
+// 그래서 "디버그가 아니면(릴리스·프로파일) 안 그린다" 는 **소스에 그 분기가 실재하는지**로 대신 잰다. 약한 검사이지만
 // 분기를 지우는 변경은 잡는다.
 import 'dart:io';
 
@@ -40,14 +40,14 @@ void main() {
     ]);
   });
 
-  test('릴리스 빌드를 막는 분기가 소스에 실재한다', () {
+  test('디버그가 아닌 빌드(릴리스·프로파일)를 막는 분기가 소스에 실재한다', () {
     final source = File(
       'lib/widgets/dev/dev_quick_login.dart',
     ).readAsStringSync();
     expect(
-      source.contains('if (kReleaseMode) return const SizedBox.shrink();'),
+      source.contains('if (!kDebugMode) return const SizedBox.shrink();'),
       isTrue,
-      reason: '이 분기가 없으면 시드 비밀번호·계정 목록이 릴리스 빌드에 그대로 남는다',
+      reason: '이 분기가 없으면 시드 비밀번호·계정 목록이 릴리스·프로파일 빌드에 그대로 남는다(F07-13 d)',
     );
   });
 }

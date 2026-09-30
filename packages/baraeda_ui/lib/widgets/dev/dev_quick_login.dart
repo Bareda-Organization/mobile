@@ -4,7 +4,7 @@
 // 손으로(또는 자동화로) 넣는 일이 번번이 실패한다 — 글자가 섞이거나, 칸을 눌렀는데 초점이 안 가거나,
 // 입력 중에 화면이 스크롤돼 좌표가 바뀐다. 2026-09-21 사용자 지시로 이 우회로를 만들었다.
 //
-// ⚠ **릴리스 빌드에는 들어가지 않는다.** [DevQuickLogin] 이 `kReleaseMode` 에서 빈 위젯을
+// ⚠ **디버그 빌드에만 나온다.** [DevQuickLogin] 이 `kDebugMode` 가 아니면(릴리스·프로파일) 빈 위젯을
 // 돌려주므로 트리 자체가 안 생긴다. 비밀번호 상수도 **로컬 시드 전용**이다 — demo·prod 는
 // SSM 에서 받은 다른 값을 쓴다(`CLAUDE.md` Flyway 항목).
 import 'package:flutter/foundation.dart';
@@ -38,8 +38,9 @@ class DevQuickLogin extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 릴리스 빌드에서는 트리에 아예 넣지 않는다.
-    if (kReleaseMode) return const SizedBox.shrink();
+    // 디버그가 아닌 빌드(릴리스·프로파일)에서는 트리에 아예 넣지 않는다 — 프로파일 빌드는
+    // kReleaseMode 가 false 라 예전 조건으로는 시드 계정 목록이 그대로 나갔다.
+    if (!kDebugMode) return const SizedBox.shrink();
 
     return Padding(
       padding: const EdgeInsets.only(top: 24),
@@ -50,7 +51,7 @@ class DevQuickLogin extends StatelessWidget {
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 8),
             child: Text(
-              '개발용 빠른 로그인 (릴리스 빌드에는 부재)',
+              '개발용 빠른 로그인 (디버그 빌드에서만 표시)',
               style: TextStyle(fontSize: 12, color: Colors.grey),
             ),
           ),

@@ -79,7 +79,6 @@ class StudentRow extends StatelessWidget {
     return Semantics(
       button: onSelect != null,
       selected: selected,
-      label: [name, meta].whereType<String>().join(' · '),
       child: Material(
         color: selected ? colors.bgSubtle : colors.surfaceCard,
         child: InkWell(
@@ -105,11 +104,14 @@ class StudentRow extends StatelessWidget {
                     color: colors.bgSubtle,
                     shape: BoxShape.circle,
                   ),
-                  child: _StudentAvatar(
-                    photoUrl: photoUrl,
-                    photoHeaders: photoHeaders,
-                    initials: initials,
-                    textColor: colors.textBrand,
+                  // 이니셜은 이름을 줄인 그림일 뿐이라 낭독하지 않는다 — 이름 Text 가 읽는다(F07-10).
+                  child: ExcludeSemantics(
+                    child: _StudentAvatar(
+                      photoUrl: photoUrl,
+                      photoHeaders: photoHeaders,
+                      initials: initials,
+                      textColor: colors.textBrand,
+                    ),
                   ),
                 ),
                 const SizedBox(width: BaraedaSpacing.space3),
@@ -188,6 +190,8 @@ class _StudentAvatar extends StatelessWidget {
       headers: photoHeaders,
       width: 38,
       height: 38,
+      // 38px 자리에 원본(수 MP)을 그대로 디코딩하면 행 수만큼 메모리가 오른다.
+      cacheWidth: (38 * MediaQuery.devicePixelRatioOf(context)).round(),
       fit: BoxFit.cover,
       // `loadingBuilder` 의 progress 는 "시작 전"과 "다 됨"이 똑같이 null
       // 이라 두 상태를 못 가른다. `frameBuilder` 의 frame 은 프레임이 실제로
@@ -230,13 +234,14 @@ class _CallButton extends StatelessWidget {
           onTap: onCall,
           customBorder: const CircleBorder(),
           focusColor: colors.focusRing.withValues(alpha: 0.32),
+          // 도로 위에서 누르는 버튼이라 터치 영역은 최소 48 이다(F07-10).
           child: SizedBox(
-            width: 38,
-            height: 38,
+            width: BaraedaSpacing.tapMin,
+            height: BaraedaSpacing.tapMin,
             child: Center(
               child: BaraedaIcon(
                 'phone',
-                size: 16,
+                size: 18,
                 color: colors.textSecondary,
               ),
             ),

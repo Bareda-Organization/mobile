@@ -63,6 +63,52 @@ void main() {
     expect(find.text('주소를 확인할 수 없습니다. 다시 입력해 주세요'), findsOneWidget);
   });
 
+  testWidgets('F05-14 저장이 네트워크 오류로 실패하면 네트워크 확인 문구를 보여준다', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          weeklyAddressRepositoryProvider.overrideWithValue(
+            _ThrowingWeeklyAddressRepository(const Failure.network()),
+          ),
+        ],
+        child: const MaterialApp(
+          home: Scaffold(
+            body: WeeklyAddressEditor(studentId: 's-1', entries: [_entry]),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('저장하기'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('네트워크 상태를 확인해 주세요'), findsOneWidget);
+  });
+
+  // F05-11 — 한 칸을 비우고 저장하면 14건 전체가 거절돼 다른 요일 수정분까지 함께 잃는다. 보내기 전에 막는다.
+  testWidgets('F05-11 칸을 비운 채 저장하면 요청이 나가지 않고 어느 칸인지 안내한다', (tester) async {
+    final repository = _RecordingWeeklyAddressRepository();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          weeklyAddressRepositoryProvider.overrideWithValue(repository),
+        ],
+        child: const MaterialApp(
+          home: Scaffold(
+            body: WeeklyAddressEditor(studentId: 's-1', entries: [_entry]),
+          ),
+        ),
+      ),
+    );
+
+    await tester.enterText(find.byType(TextField).first, '   ');
+    await tester.tap(find.text('저장하기'));
+    await tester.pumpAndSettle();
+
+    expect(repository.saved, isEmpty);
+    expect(find.textContaining('주소를 입력해 주세요'), findsOneWidget);
+  });
+
   // R32 P11 — 등록된 주소가 하나도 없으면 편집할 칸이 없어 주소를 넣을 방법이 없었다.
   group('P11 빈 목록에서 추가', () {
     Future<_RecordingWeeklyAddressRepository> pumpEmpty(

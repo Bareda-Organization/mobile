@@ -40,8 +40,14 @@ class TokenStorage {
     await _storage.write(key: _refreshTokenKey, value: refreshToken);
   }
 
+  /// [clear] 가 불린 횟수 — 재발급처럼 응답을 기다리는 동안 로그아웃이 끼어들었는지
+  /// 알아내는 표식이다. 시작 때 읽어 둔 값이 저장 직전에 달라졌으면 그 사이 세션이 끝난 것이다.
+  int get clearCount => _clearCount;
+  int _clearCount = 0;
+
   /// 로그아웃·재발급 실패 시 두 토큰을 모두 지운다.
   Future<void> clear() async {
+    _clearCount += 1;
     await _storage.delete(key: _accessTokenKey);
     await _storage.delete(key: _refreshTokenKey);
   }

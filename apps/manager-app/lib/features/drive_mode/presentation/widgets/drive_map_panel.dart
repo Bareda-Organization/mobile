@@ -1,8 +1,6 @@
-import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:manager_app/core/map/map_surface.dart';
-import 'package:manager_app/features/route_map/data/models/route_response.dart';
+import 'package:manager_app/core/map/route_map_view.dart';
 import 'package:manager_app/features/route_map/presentation/route_providers.dart';
 
 /// 운행 화면 가운데 지도(M-08·M-09 "노선", R32 M1) — 확정 노선의 도로 경로 · 승하차지 핀 ·
@@ -38,57 +36,9 @@ class DriveMapPanel extends ConsumerWidget {
           ),
           data: (route) => route.stops.isEmpty
               ? const _Notice(message: '표시할 승하차지가 없습니다')
-              : _buildMap(route),
+              : RouteMapView(route: route, busPosition: busPosition),
         ),
       ),
-    );
-  }
-
-  Widget _buildMap(RouteResponse route) {
-    // 도로 경로는 2점 이상이어야 선이 된다 — 없거나 비었으면 핀과 버스만 보인다.
-    final hasPath = route.roadPath.length >= 2;
-    final anchor = route.currentStop ?? route.nextStop ?? route.stops.first;
-    final bus = busPosition;
-    return Stack(
-      children: [
-        Positioned.fill(
-          child: MapSurface(
-            camera: MapCamera(lat: anchor.lat, lng: anchor.lng, zoom: 14),
-            fitToContent: true,
-            markers: [
-              for (final stop in route.stops)
-                MapMarker(
-                  id: stop.stopId,
-                  lat: stop.lat,
-                  lng: stop.lng,
-                  kind: MapMarkerKind.stop,
-                  seq: stop.seq,
-                ),
-              if (bus != null)
-                MapMarker(
-                  id: 'bus',
-                  lat: bus.lat,
-                  lng: bus.lng,
-                  kind: MapMarkerKind.bus,
-                ),
-            ],
-            polylines: [
-              if (hasPath) MapPolyline(id: 'road', points: route.roadPath),
-            ],
-          ),
-        ),
-        // 직선 근사를 실제 도로로 오인하지 않게 알린다(Ruling 309).
-        if (hasPath && route.fallbackUsed)
-          const Positioned(
-            left: 8,
-            right: 8,
-            bottom: 8,
-            child: AlertBanner(
-              tone: AlertTone.info,
-              body: '근사 경로 — 실제 도로와 다를 수 있습니다',
-            ),
-          ),
-      ],
     );
   }
 }

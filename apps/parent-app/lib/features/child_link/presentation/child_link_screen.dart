@@ -154,7 +154,10 @@ class _ChildLinkScreenState extends ConsumerState<ChildLinkScreen> {
     return [
       const Text('학부모 연결 코드 생성', style: BaraedaTypography.h3),
       const SizedBox(height: BaraedaSpacing.space4),
-      const Text('코드는 1회만 쓸 수 있고 발급 후 일정 시간이 지나면 만료됩니다.'),
+      const Text(
+        '코드는 1회만 쓸 수 있고 발급 후 일정 시간이 지나면 만료됩니다. '
+        '다시 만들면 이전 코드는 더 이상 쓸 수 없습니다.',
+      ),
       const SizedBox(height: BaraedaSpacing.space4),
       BaraedaButton(
         label: '코드 생성하기',
