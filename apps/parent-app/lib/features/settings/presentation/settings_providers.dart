@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:parent_app/app/di.dart';
+import 'package:parent_app/core/auth/auth_providers.dart';
 import 'package:parent_app/features/settings/domain/notification_settings.dart';
 
 /// §3.14 — 설정 화면 진입 시 초기 조회. 쓰기(PATCH) 성공 뒤에는 화면이
@@ -9,6 +10,8 @@ import 'package:parent_app/features/settings/domain/notification_settings.dart';
 final notificationSettingsProvider = FutureProvider<NotificationSettings>((
   ref,
 ) {
+  // F05-01 — 계정이 바뀌면(로그아웃 = 역할 null) 앞 계정의 캐시를 버린다.
+  ref.watch(currentUserRoleProvider);
   final repository = ref.watch(notificationSettingsRepositoryProvider);
   return repository.getNotificationSettings();
 });

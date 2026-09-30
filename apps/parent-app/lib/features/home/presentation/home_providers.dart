@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:parent_app/app/di.dart';
+import 'package:parent_app/core/auth/auth_providers.dart';
 import 'package:parent_app/features/home/domain/notification_item.dart';
 
 // `myStudentsProvider`(§3.1)·`runsForStudentProvider`(§3.5)는 `schedule`
@@ -16,11 +17,15 @@ export 'package:parent_app/core/students/presentation/student_providers.dart';
 /// 그대로 쓴다. 학생용 `/me/students` 대응 엔드포인트가 부재하므로 이 값이
 /// 유일한 경로다.
 final myStudentIdProvider = FutureProvider<String?>((ref) async {
+  // F05-01 — 계정이 바뀌면(로그아웃 = 역할 null) 앞 계정의 캐시를 버린다.
+  ref.watch(currentUserRoleProvider);
   final me = await ref.watch(authRepositoryProvider).me();
   return me.studentId;
 });
 
 /// §3.12 — 알림 목록 1페이지(§1.8, 무한 스크롤 아님).
 final notificationsProvider = FutureProvider<NotificationPage>((ref) {
+  // F05-01 — 계정이 바뀌면(로그아웃 = 역할 null) 앞 계정의 캐시를 버린다.
+  ref.watch(currentUserRoleProvider);
   return ref.watch(notificationRepositoryProvider).getNotifications();
 });
