@@ -52,12 +52,9 @@ class DeviceRegistrar {
   /// 로그아웃 요청에 실을 기기 식별자 — 등록된 적이 없으면 `null`.
   Future<String?> deviceId() => _storage.readDeviceId();
 
-  /// 로그아웃 직후 호출한다 — 서버가 토큰을 해지했으니 로컬 표시와 이번 실행의
-  /// 등록 기록을 비운다.
-  Future<void> forget() async {
-    _registeredToken = null;
-    await _storage.clearToken();
-  }
+  /// 로그아웃 직후 호출한다 — 서버가 토큰을 해지했으니 로컬 표시를 비운다.
+  /// 이번 실행의 등록 기록은 두어도 된다 — 다음 로그인이 `force` 로 다시 등록한다.
+  Future<void> forget() => _storage.clearToken();
 
   static String _currentPlatform() => switch (defaultTargetPlatform) {
     TargetPlatform.android => 'android',

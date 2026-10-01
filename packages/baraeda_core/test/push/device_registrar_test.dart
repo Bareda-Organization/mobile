@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:baraeda_core/auth/auth_api.dart';
 import 'package:baraeda_core/push/device_registrar.dart';
 import 'package:baraeda_core/push/device_registration_storage.dart';
+import 'package:baraeda_core/push/placeholder_push_token_source.dart';
 import 'package:baraeda_core/push/push_token_source.dart';
 import 'package:baraeda_core/storage/token_storage.dart';
 import 'package:dio/dio.dart';
@@ -245,5 +246,15 @@ void main() {
     await api.login(loginId: 'p1', password: 'pw');
 
     expect(deviceCalls(), isEmpty);
+  });
+
+  test('기본 공급자는 기기 식별자에서 정한 같은 토큰을 매번 준다', () async {
+    final source = PlaceholderPushTokenSource(deviceStorage);
+
+    final first = await source.currentToken();
+    final second = await source.currentToken();
+
+    expect(first, 'placeholder-${await deviceStorage.readOrCreateDeviceId()}');
+    expect(second, first);
   });
 }
