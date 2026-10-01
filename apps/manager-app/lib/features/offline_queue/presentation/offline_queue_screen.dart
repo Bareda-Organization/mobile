@@ -76,6 +76,8 @@ class _OfflineQueueScreenState extends ConsumerState<OfflineQueueScreen> {
       if (result.stillPending > 0) '${result.stillPending}건 대기 중',
       if (result.droppedPermanently > 0)
         '${result.droppedPermanently}건 재시도 불가로 제외',
+      if (result.failedPermanently > 0)
+        '${result.failedPermanently}건 전송 실패(서버가 계속 받지 못함)',
     ];
     if (parts.isEmpty) return '대기 중인 요청이 없습니다';
     return parts.join(' · ');
@@ -167,7 +169,12 @@ class _OfflineQueueScreenState extends ConsumerState<OfflineQueueScreen> {
           const SizedBox(height: 4),
           Text(DateFormat('MM/dd HH:mm:ss').format(item.createdAt.toLocal())),
           const SizedBox(height: 4),
-          const WordWrapText('처리되지 않았습니다 · 대기 중'),
+          // 서버가 5xx 를 되풀이해 재생에서 뺀 행은 더 기다리지 않는다 — 보내지 못했음을 알리고 사용자가 정리한다.
+          WordWrapText(
+            item.failed
+                ? '전송 실패 · 서버가 계속 받지 못했습니다. 삭제한 뒤 다시 처리해 주세요'
+                : '처리되지 않았습니다 · 대기 중',
+          ),
           const SizedBox(height: 8),
           BaraedaButton(
             label: '삭제',

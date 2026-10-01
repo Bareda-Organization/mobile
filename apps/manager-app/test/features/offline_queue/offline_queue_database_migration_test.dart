@@ -51,4 +51,43 @@ void main() {
     raw2.close();
     expect(columns, isNot(contains('client_key')));
   });
+
+  // R46-FIXRT S-9 — v3 → v4 는 행별 시도 횟수(`attempts`)를 더한다. 이미 쌓여 있던 행이 사라지거나 영구 실패 행으로
+  // 읽히면 안 된다 — 기존 행은 0 회(재생 대상)로 남아야 한다.
+  test('v3 DB 가 v4 로 열리면 attempts 컬럼이 0 으로 더해지고 기존 행은 재생 대상으로 남는다', () async {
+    final dir = Directory.systemTemp.createTempSync('oq_migration_v4_test');
+    final path = '${dir.path}/oq.sqlite';
+
+    sqlite3.sqlite3.open(path)
+      ..execute('''
+      CREATE TABLE pending_requests (
+        id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+        endpoint TEXT NOT NULL,
+        method TEXT NOT NULL DEFAULT 'PATCH',
+        payload TEXT NOT NULL,
+        created_at INTEGER NOT NULL DEFAULT (unixepoch())
+      );
+    ''')
+      ..execute(
+        'INSERT INTO pending_requests (endpoint, method, payload) '
+        "VALUES ('/runs/1/emergency', 'POST', '{}')",
+      )
+      ..execute('PRAGMA user_version = 3')
+      ..close();
+
+    final db = OfflineQueueDatabase.forTesting(NativeDatabase(File(path)));
+    final rows = await db.select(db.pendingRequests).get();
+    expect(rows, hasLength(1));
+    expect(rows.single.endpoint, '/runs/1/emergency');
+    expect(rows.single.attempts, 0);
+    await db.close();
+
+    final raw = sqlite3.sqlite3.open(path);
+    final columns = raw
+        .select('PRAGMA table_info(pending_requests)')
+        .map((r) => r['name'] as String)
+        .toList();
+    raw.close();
+    expect(columns, contains('attempts'));
+  });
 }

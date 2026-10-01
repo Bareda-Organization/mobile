@@ -30,6 +30,12 @@ class PendingRequests extends Table {
   TextColumn get payload => text()();
 
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+
+  /// 서버가 5xx 로 응답해 재생에 실패한 횟수(스키마 v4) — 통신 두절은 세지
+  /// 않는다(행이 아니라 망의 문제). 상한(`OfflineQueueRepositoryImpl.maxAttempts`)에
+  /// 닿은 행이 **영구 실패 행**이다 — 재생에서 빠지고 큐 화면에는 남는다. 기본값은
+  /// `ALTER TABLE ADD COLUMN` 이 기존 행에 0 을 채우는 데 쓰인다.
+  IntColumn get attempts => integer().withDefault(const Constant(0))();
 }
 
 @DriftDatabase(tables: [PendingRequests])
@@ -42,7 +48,7 @@ class OfflineQueueDatabase extends _$OfflineQueueDatabase {
   OfflineQueueDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -59,6 +65,10 @@ class OfflineQueueDatabase extends _$OfflineQueueDatabase {
         // 지켜진다(FE-R2 목표 11). 남겨 둔 채로는 "멱등이 여기서
         // 지켜진다" 는 잘못된 신호를 주므로 컬럼째 제거한다.
         await m.dropColumn(pendingRequests, 'client_key');
+      }
+      if (from < 4) {
+        // 행별 시도 횟수 — 큐 머리의 한 행이 5xx 를 되풀이해도 뒤를 영구히 막지 않게 한다(R46-FIXRT S-9).
+        await m.addColumn(pendingRequests, pendingRequests.attempts);
       }
     },
   );

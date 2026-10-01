@@ -26,6 +26,8 @@ sealed class Failure with _$Failure {
   /// (`TOKEN_EXPIRED` 재시도 실패, §1.2).
   const factory Failure.unauthenticated() = UnauthenticatedFailure;
 
-  /// 위 세 가지로 분류되지 않는 나머지.
-  const factory Failure.unknown({String? message}) = UnknownFailure;
+  /// 위 세 가지로 분류되지 않는 나머지. 서버가 응답했는데 본문이 §1.10 형식이 아니면(nginx 의 HTML 502·504 등)
+  /// `statusCode` 가 그 HTTP 상태를 담는다 — 응답이 없었다면 `null`.
+  const factory Failure.unknown({String? message, int? statusCode}) =
+      UnknownFailure;
 }

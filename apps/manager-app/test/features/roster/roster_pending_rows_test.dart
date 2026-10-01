@@ -103,8 +103,11 @@ final _roster = RosterResponse(
 void main() {
   late _GatedRosterRepository repository;
 
-  Future<void> pumpRoster(WidgetTester tester) async {
-    repository = _GatedRosterRepository(_roster);
+  Future<void> pumpRoster(
+    WidgetTester tester, {
+    List<PendingRequestSummary> seededQueue = const [],
+  }) async {
+    repository = _GatedRosterRepository(_roster)..queue.addAll(seededQueue);
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -214,6 +217,36 @@ void main() {
     expect(buttonIn('김바래', '미승차'), findsNothing);
     expect(buttonIn('이바래', '탑승'), findsOneWidget, reason: '다른 학생 행은 그대로다');
     expect(repository.calls, ['r1:boarded']);
+  });
+
+  // R46-FIXRT S-9 — 서버가 5xx 를 되풀이해 재생에서 뺀 행은 "전송 대기" 가 아니다. 그 학생은 다시 눌러 새로 보낼 수
+  // 있어야 하고, 보내지 못한 처리가 있다는 것은 따로 알린다.
+  testWidgets('영구 실패 행은 학생 행을 전송 대기로 바꾸지 않고 따로 알린다', (tester) async {
+    await pumpRoster(
+      tester,
+      seededQueue: [
+        PendingRequestSummary(
+          id: 1,
+          endpoint: '/runs/run-1/riders/r1',
+          method: 'PATCH',
+          payload: '{"status":"boarded"}',
+          createdAt: DateTime(2026, 10, 1, 8),
+          failed: true,
+        ),
+      ],
+    );
+
+    expect(
+      find.descendant(of: rowOf('김바래'), matching: find.text('전송 대기')),
+      findsNothing,
+    );
+    expect(buttonIn('김바래', '탑승'), findsOneWidget, reason: '다시 눌러 새로 보낼 수 있다');
+    expect(
+      find.text('서버가 계속 받지 못해 보내지 못한 처리 1건 · 대기열에서 확인하세요'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('대기 중 '), findsNothing);
+    expect(find.text('대기열 1건'), findsOneWidget);
   });
 
   testWidgets('대기 안내 배너는 다른 학생을 처리해도 지워지지 않고 대기 건수를 보인다 (R46)', (tester) async {

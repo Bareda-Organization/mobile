@@ -42,5 +42,8 @@ Failure _mapBadResponse(DioException exception) {
     );
   }
 
-  return Failure.unknown(message: '서버 응답을 해석할 수 없음 (status: $statusCode)');
+  return Failure.unknown(
+    message: '서버 응답을 해석할 수 없음 (status: $statusCode)',
+    statusCode: statusCode,
+  );
 }

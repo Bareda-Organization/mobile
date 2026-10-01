@@ -336,7 +336,14 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
   ) {
     final photoHeaders = ref.watch(rosterPhotoHeadersProvider).value;
     final refreshError = ref.watch(rosterProvider).error;
-    final queuedRequests = ref.watch(pendingRequestsProvider).value ?? const [];
+    final allQueued = ref.watch(pendingRequestsProvider).value ?? const [];
+    // 서버가 5xx 를 되풀이해 재생에서 뺀 행(영구 실패)은 "전송 대기" 가 아니다 — 학생 행은 다시 누를 수 있게 두고
+    // 보내지 못한 처리가 있다는 것만 따로 알린다.
+    final queuedRequests = [
+      for (final request in allQueued)
+        if (!request.failed) request,
+    ];
+    final failedCount = allQueued.length - queuedRequests.length;
     final queuedRiderIds = {
       for (final request in queuedRequests) ?request.riderId,
     };
@@ -402,6 +409,13 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
           AlertBanner(
             tone: AlertTone.moving,
             body: '처리되지 않았습니다 · 대기 중 ${queuedRequests.length}건',
+          ),
+          const SizedBox(height: 12),
+        ],
+        if (failedCount > 0) ...[
+          AlertBanner(
+            tone: AlertTone.missed,
+            body: '서버가 계속 받지 못해 보내지 못한 처리 $failedCount건 · 대기열에서 확인하세요',
           ),
           const SizedBox(height: 12),
         ],

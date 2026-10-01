@@ -14,6 +14,7 @@ class PendingRequestSummary {
     required this.method,
     required this.payload,
     required this.createdAt,
+    this.failed = false,
   });
 
   final int id;
@@ -23,6 +24,10 @@ class PendingRequestSummary {
   /// 요청 본문(JSON 문자열) — 무슨 처리인지 사람이 읽는 이름을 만드는 데 쓴다.
   final String payload;
   final DateTime createdAt;
+
+  /// 서버가 5xx 를 되풀이해 재생에서 뺀 **영구 실패 행**이다(R46-FIXRT). 큐 화면에는 남아 사용자가 직접 지운다 —
+  /// 명단 행의 "전송 대기" 표시 대상이 아니다(다시 눌러 새로 보낼 수 있다).
+  final bool failed;
 
   /// 승하차 처리(`/runs/{runId}/riders/{riderId}`)면 그 학생의 rider id, 아니면 `null` — 명단 행이 "전송 대기"
   /// 로 바뀌는 근거다(R46).
@@ -68,6 +73,7 @@ class ReplayResult {
     required this.succeeded,
     required this.stillPending,
     required this.droppedPermanently,
+    this.failedPermanently = 0,
   });
 
   /// 재전송이 2xx 로 끝나 큐에서 빠진 건수.
@@ -79,4 +85,7 @@ class ReplayResult {
   /// 서버가 4xx 로 확정 거부해 재시도해도 성공할 수 없어 큐에서 뺀 건수
   /// (예: 그사이 회차가 종료돼 `RUN_NOT_MOVING` 등으로 굳어진 요청).
   final int droppedPermanently;
+
+  /// 서버가 5xx 를 시도·나이 상한까지 되풀이해 이번 재생에서 영구 실패로 뺀 건수 — 행은 큐 화면에 남는다.
+  final int failedPermanently;
 }

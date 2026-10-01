@@ -156,6 +156,66 @@ void main() {
     expect(find.text('처리되지 않았습니다 · 대기 중'), findsOneWidget);
   });
 
+  // R46-FIXRT S-9 — 서버가 5xx 를 되풀이해 재생에서 뺀 행은 "대기 중" 이 아니다. 사용자가 보내지지 않았음을 알고
+  // 직접 지우거나 다시 처리할 수 있어야 한다.
+  testWidgets('영구 실패 행은 대기 중 대신 전송 실패로 보이고 삭제할 수 있다', (tester) async {
+    final fakeRepo = _FakeOfflineQueueRepository(
+      pending: [
+        PendingRequestSummary(
+          id: 1,
+          endpoint: '/runs/run-1/emergency',
+          method: 'POST',
+          payload: '{"type":"accident","client_key":"K"}',
+          createdAt: DateTime(2026, 9, 12, 10),
+          failed: true,
+        ),
+        PendingRequestSummary(
+          id: 2,
+          endpoint: '/runs/run-1/riders/rider-2',
+          method: 'PATCH',
+          payload: '{"status":"boarded","client_key":"K2"}',
+          createdAt: DateTime(2026, 9, 12, 10, 1),
+        ),
+      ],
+    );
+    await tester.pumpWidget(
+      _wrap(const OfflineQueueScreen(), [
+        offlineQueueRepositoryProvider.overrideWithValue(fakeRepo),
+      ]),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('전송 실패 · 서버가 계속 받지 못했습니다'), findsOneWidget);
+    expect(
+      find.text('처리되지 않았습니다 · 대기 중'),
+      findsOneWidget,
+      reason: '대기 중 문구는 아직 재생 대상인 두 번째 행에만 남는다',
+    );
+    expect(find.text('삭제'), findsNWidgets(2));
+  });
+
+  testWidgets('영구 실패로 뺀 건수는 재시도 결과 요약에 보인다', (tester) async {
+    final fakeRepo = _FakeOfflineQueueRepository(
+      pending: [_riderRequest()],
+      replayResult: const ReplayResult(
+        succeeded: 1,
+        stillPending: 0,
+        droppedPermanently: 0,
+        failedPermanently: 2,
+      ),
+    );
+    await tester.pumpWidget(
+      _wrap(const OfflineQueueScreen(), [
+        offlineQueueRepositoryProvider.overrideWithValue(fakeRepo),
+      ]),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('재시도'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('1건 처리됨 · 2건 전송 실패(서버가 계속 받지 못함)'), findsOneWidget);
+  });
+
   testWidgets('재시도를 누르면 처리 결과 요약을 보여준다', (tester) async {
     final fakeRepo = _FakeOfflineQueueRepository(
       pending: [

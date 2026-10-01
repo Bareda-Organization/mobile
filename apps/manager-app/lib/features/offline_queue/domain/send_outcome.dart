@@ -14,8 +14,8 @@ class Sent<T> extends SendOutcome<T> {
   final T value;
 }
 
-/// 네트워크 장애로 서버에 닿지 못해 오프라인 큐에 쌓임 — 아직 처리되지
-/// 않았다. 화면은 "처리되지 않았습니다 · 대기 중" 을 보여준다(§1.9).
+/// 네트워크 장애로 서버에 닿지 못했거나 서버가 5xx 로 응답해 오프라인 큐에 쌓임 —
+/// 아직 처리되지 않았다. 화면은 "처리되지 않았습니다 · 대기 중" 을 보여준다(§1.9).
 class Queued<T> extends SendOutcome<T> {
   const Queued();
 }
