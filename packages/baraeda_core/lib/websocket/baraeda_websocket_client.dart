@@ -46,11 +46,18 @@ class BaraedaWebSocketClient {
     this.backoffPolicy = const WsBackoffPolicy(),
     Future<String?> Function()? refreshAccessToken,
     void Function(String message)? onDebugMessage,
+    this.connectTimeout = const Duration(seconds: 10),
+    this.pingInterval = const Duration(seconds: 10),
+    StompClient Function(StompConfig config)? stompClientFactory,
   }) : // 필드는 비공개, 파라미터는 공개 이름(`refreshAccessToken:`)을
        // 유지한다(`token_refresher.dart` 와 같은 이유).
        // ignore: prefer_initializing_formals
        _refreshAccessToken = refreshAccessToken,
-       _onDebugMessage = onDebugMessage ?? ((_) {});
+       _onDebugMessage = onDebugMessage ?? ((_) {}),
+       _stompClientFactory = stompClientFactory ?? _defaultStompClient;
+
+  static StompClient _defaultStompClient(StompConfig config) =>
+      StompClient(config: config);
 
   final String _url;
   final TokenStorage _tokenStorage;
@@ -62,6 +69,20 @@ class BaraedaWebSocketClient {
   final Future<String?> Function()? _refreshAccessToken;
   final void Function(String message) _onDebugMessage;
 
+  /// 연결 시도 한 번이 `CONNECTED` 를 받기까지의 한도 — 소켓 열기와 STOMP
+  /// 핸드셰이크를 합쳐 이 시간을 넘기면 시도를 끊고 백오프 재연결로 이어간다
+  /// (`API_SPEC §7` 연결 한도 표, R46-FIXCONN C-4). 인터넷 없는 Wi-Fi·서버
+  /// 인바운드 실행기 포화에서 OS 한도(수십~백 수십 초)까지 `connecting` 에
+  /// 머물던 것을 막는다.
+  final Duration connectTimeout;
+
+  /// WebSocket 계층의 핑 주기 — `dart:io` 가 이 주기로 핑을 보내고 퐁이 없으면
+  /// 소켓을 닫는다. STOMP 하트비트(무송신 20~30초)와 별개로 반쯤 죽은 TCP 를
+  /// 잡는다(R46-FIXCONN K-2).
+  final Duration pingInterval;
+
+  final StompClient Function(StompConfig config) _stompClientFactory;
+
   /// 재연결 대기 간격 정책 — 시험이 주입해 실제 시간을 기다리지 않고
   /// 검증할 수 있게 `final` 이 아니라 생성자 파라미터로 남겨 둔다.
   final WsBackoffPolicy backoffPolicy;
@@ -69,6 +90,10 @@ class BaraedaWebSocketClient {
   final _random = Random();
   StompClient? _stompClient;
   Timer? _reconnectTimer;
+
+  /// 연결 시도 시작 뒤 [connectTimeout] 안에 `CONNECTED` 가 오는지 지켜보는
+  /// 감시 — `_doConnect` 가 걸고, 연결되거나 끊기면 푼다.
+  Timer? _connectWatchdog;
   int _reconnectAttempt = 0;
   bool _manuallyDisconnected = true;
 
@@ -189,6 +214,9 @@ class BaraedaWebSocketClient {
       // 라이브러리 내장 재연결(고정 지연·무한 재시도)을 끈다 — 우리가
       // WsBackoffPolicy 로 직접 스케줄한다.
       reconnectDelay: Duration.zero,
+      // 소켓 열기 한도와 WebSocket 핑 — `connectTimeout`·`pingInterval` 참고.
+      connectionTimeout: connectTimeout,
+      pingInterval: pingInterval,
       // `stompConnectHeaders` 가 STOMP CONNECT 프레임의 네이티브 헤더로
       // 나간다 — 여기 실어야 `StompAuthChannelInterceptor` 의
       // `getFirstNativeHeader` 가 읽는다. `webSocketConnectHeaders` 는
@@ -197,6 +225,7 @@ class BaraedaWebSocketClient {
           ? const {}
           : {'Authorization': 'Bearer $token'},
       onConnect: (frame) {
+        _connectWatchdog?.cancel();
         _reconnectAttempt = 0;
         _setState(WsConnectionState.connected);
       },
@@ -237,13 +266,37 @@ class BaraedaWebSocketClient {
       onDebugMessage: _onDebugMessage,
     );
 
-    _stompClient = StompClient(config: config)..activate();
+    _stompClient = _stompClientFactory(config)..activate();
+    _watchConnecting(epoch);
+  }
+
+  /// 소켓은 열렸는데 `CONNECTED` 가 안 오면(서버 인바운드 포화·반쯤 죽은 서버)
+  /// 재연결 타이머는 close·error 뒤에만 예약되므로 `connecting` 에서 영영
+  /// 막힌다. [connectTimeout] 안에 연결이 안 되면 이 시도를 끊고 끊김과 같은
+  /// 경로로 백오프 재연결에 태운다(R46-FIXCONN C-4).
+  void _watchConnecting(int epoch) {
+    _connectWatchdog?.cancel();
+    _connectWatchdog = Timer(connectTimeout, () {
+      if (epoch != _epoch || _state != WsConnectionState.connecting) return;
+      _onDebugMessage(
+        '[BaraedaWebSocketClient] CONNECTED 를 ${connectTimeout.inSeconds}초 '
+        '안에 못 받아 이 연결 시도를 끊는다',
+      );
+      try {
+        _stompClient?.deactivate();
+      } on StompBadStateException {
+        // 소켓이 이미 닫힌 뒤라 DISCONNECT 를 쓰지 못했다 — 끊으려던 것이니
+        // 무시한다([disconnect] 와 같은 사정).
+      }
+      _handleDisconnected();
+    });
   }
 
   /// 연결 끊김·연결 실패 공통 처리. `onWebSocketError` 와 `onWebSocketDone`
   /// 양쪽에서 불릴 수 있어(필드 [_reconnectHandled] 문서 참고) 이번 연결
   /// 시도당 한 번만 실행되도록 가드한다.
   void _handleDisconnected() {
+    _connectWatchdog?.cancel();
     if (_reconnectHandled) return;
     _reconnectHandled = true;
 
@@ -312,6 +365,7 @@ class BaraedaWebSocketClient {
     _manuallyDisconnected = true;
     _epoch += 1;
     _reconnectTimer?.cancel();
+    _connectWatchdog?.cancel();
     try {
       _stompClient?.deactivate();
     } on StompBadStateException {
