@@ -154,10 +154,25 @@ class LiveMapNotifier extends StateNotifier<LiveMapState> {
     }
   }
 
+  /// 첫 연결 시도가 끝났다(연결됐거나 끊겨 재시도 대기에 들어갔다) — 이 뒤의
+  /// `connecting` 은 첫 진입이 아니라 재시도라 스피너로 그리지 않는다(C-5).
+  bool _firstAttemptSettled = false;
+
   void _applyConnectionState(WsConnectionState wsState) {
+    // 재연결 시도마다 `connecting` 이 오므로, 그대로 매핑하면 끊김 중에 지도와
+    // 전체 스피너가 시도 간격마다 번갈아 보인다. 스피너는 첫 진입의 첫 연결
+    // 시도에만 쓰고 그 뒤의 재시도는 `reconnecting`(지도 + 안내 배너)로 둔다.
+    if (wsState == WsConnectionState.connected ||
+        wsState == WsConnectionState.reconnecting ||
+        wsState == WsConnectionState.gaveUp) {
+      _firstAttemptSettled = true;
+    }
     final connection = switch (wsState) {
       WsConnectionState.disconnected => LiveMapConnection.idle,
-      WsConnectionState.connecting => LiveMapConnection.connecting,
+      WsConnectionState.connecting =>
+        _firstAttemptSettled
+            ? LiveMapConnection.reconnecting
+            : LiveMapConnection.connecting,
       WsConnectionState.connected => LiveMapConnection.connected,
       WsConnectionState.reconnecting => LiveMapConnection.reconnecting,
       WsConnectionState.gaveUp => LiveMapConnection.gaveUp,

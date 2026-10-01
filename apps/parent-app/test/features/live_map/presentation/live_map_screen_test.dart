@@ -588,6 +588,70 @@ void main() {
     });
   });
 
+  // R46-FIXCONN C-5 — 재연결 시도마다 `connecting` 이 와서, 끊김 중 지도(+배너)와
+  // 전체 스피너가 시도 간격마다 번갈아 보였다. 스피너는 첫 진입의 첫 연결
+  // 시도에만 쓴다 — 그 뒤의 재시도는 지도와 마지막 위치를 둔 채 재연결 안내로
+  // 표시한다.
+  group('재연결 시도 중 표시 — 스피너는 첫 진입만(C-5)', () {
+    Future<void> pumpUntilFirstConnecting(WidgetTester tester) async {
+      await pumpScreen(
+        tester,
+        extraOverrides: [
+          roleCapabilitiesProvider.overrideWithValue(
+            RoleCapabilities.of(UserRole.student),
+          ),
+          myStudentIdProvider.overrideWith((ref) async => 's-1'),
+        ],
+      );
+      await tester.pump();
+      await tester.pump();
+    }
+
+    testWidgets('연결됐다 끊긴 뒤의 재시도(connecting)에는 스피너 대신 지도와 재연결 안내가 남는다', (
+      tester,
+    ) async {
+      await pumpUntilFirstConnecting(tester);
+      client.emit(WsConnectionState.connected);
+      await tester.pump();
+      client.deliver(
+        _envelope(WsEventType.runStarted, {
+          'run_status': 'moving',
+          'started_at': '2026-09-13T08:00:00Z',
+          'auto_boarded_count': 3,
+        }),
+      );
+      await tester.pump();
+
+      client
+        ..emit(WsConnectionState.reconnecting)
+        ..emit(WsConnectionState.connecting);
+      await tester.pump();
+
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(find.text('재연결 시도 중입니다'), findsOneWidget);
+      expect(find.textContaining('운행 시작'), findsOneWidget);
+    });
+
+    testWidgets('한 번도 연결되지 못한 채 재시도해도 두 번째 connecting 부터는 스피너가 아니다', (
+      tester,
+    ) async {
+      await pumpUntilFirstConnecting(tester);
+      client.emit(WsConnectionState.connecting);
+      await tester.pump();
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+      client
+        ..emit(WsConnectionState.reconnecting)
+        ..emit(WsConnectionState.connecting);
+      await tester.pump();
+
+      // 받은 데이터가 아직 없으니 재연결 배너 대신 "데이터 없음" 화면이다 —
+      // 요지는 시도마다 전체 스피너로 돌아가지 않는다는 것.
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(find.text('아직 위치 정보가 없습니다'), findsOneWidget);
+    });
+  });
+
   group('연결·이벤트 반영 — P1(Ruling 208·349) 표시 중인 좌표의 신호 유실', () {
     final t0 = DateTime.utc(2026, 9, 13, 8);
 
