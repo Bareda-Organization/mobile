@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:parent_app/app/di.dart';
 import 'package:parent_app/core/auth/auth_providers.dart';
-import 'package:parent_app/features/route/domain/route_detail.dart';
+import 'package:parent_app/core/routes/domain/route_detail.dart';
 
 /// API_SPEC §3.10 — `studentId` 로 키를 삼는다. 화면을 나가면 버린다(F05-06 — 확정·③구간 제외가
 /// 반영되도록 들어올 때마다 새로 받는다). `date`·`runId` 는 항상

@@ -5,11 +5,12 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:parent_app/app/app_routes.dart';
 import 'package:parent_app/core/auth/auth_providers.dart';
+import 'package:parent_app/core/routes/domain/route_detail.dart';
+import 'package:parent_app/core/routes/presentation/route_providers.dart';
 import 'package:parent_app/core/students/presentation/selected_student.dart';
 import 'package:parent_app/core/students/presentation/student_providers.dart';
+import 'package:parent_app/core/students/presentation/student_switcher.dart';
 import 'package:parent_app/core/ui/failure_message.dart';
-import 'package:parent_app/features/route/domain/route_detail.dart';
-import 'package:parent_app/features/route/presentation/route_providers.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// 노선 상세 화면 — P-08 (IMPLEMENTATION_PLAN.md §3.1, §3.10).
@@ -62,29 +63,14 @@ class _ParentRouteDetail extends ConsumerWidget {
           );
         }
 
-        final selectedId =
-            ref.watch(selectedStudentIdProvider) ?? students.first.studentId;
+        final selectedId = watchSelectedStudentId(ref, students);
 
         return Padding(
           padding: const EdgeInsets.all(BaraedaSpacing.gutterMobile),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              if (students.length > 1) ...[
-                BaraedaSelect(
-                  label: '자녀 선택',
-                  value: selectedId,
-                  options: students
-                      .map(
-                        (s) => BaraedaSelectOption(s.studentId, label: s.name),
-                      )
-                      .toList(),
-                  onChanged: (value) =>
-                      ref.read(selectedStudentIdProvider.notifier).state =
-                          value,
-                ),
-                const SizedBox(height: BaraedaSpacing.space4),
-              ],
+              StudentSwitcher(students: students, selectedId: selectedId),
               Expanded(child: _RouteDetailBody(studentId: selectedId)),
             ],
           ),

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
@@ -6,7 +8,13 @@ import 'package:intl/intl.dart';
 import 'package:parent_app/app/di.dart';
 import 'package:parent_app/core/auth/account_session.dart';
 import 'package:parent_app/core/devices/presentation/device_registration_panel.dart';
+import 'package:parent_app/core/refresh/visible_poller.dart';
 import 'package:parent_app/features/auth/presentation/widgets/academy_picker.dart';
+
+/// 승인 대기 화면이 상태를 다시 조회하는 간격 — 푸시 SDK 가 없어 이 조회가
+/// 승인·거절을 아는 유일한 길이다(R46 B2 #20). 홈의 `pollInterval`(90초)보다 짧게 둔다:
+/// 승인을 기다리는 사람은 이 화면 하나만 보고 있고, 계정 상태 조회 한 건은 가볍다.
+const Duration pendingStatusPollInterval = Duration(seconds: 30);
 
 /// UF-X-02 — 승인 대기 · 거절 안내.
 ///
@@ -38,10 +46,41 @@ class _PendingApprovalScreenState extends ConsumerState<PendingApprovalScreen> {
   bool _submittingReapply = false;
   String? _reapplyError;
 
+  /// 앱이 보이는 동안만 [pendingStatusPollInterval] 마다, 백그라운드에서 돌아오면 바로 다시 조회한다.
+  late final VisiblePoller _poller = VisiblePoller(
+    interval: pendingStatusPollInterval,
+    onTick: () => unawaited(_pollQuietly()),
+  );
+
   @override
   void initState() {
     super.initState();
     _statusFuture = ref.read(authRepositoryProvider).signupStatus();
+    _poller.start();
+  }
+
+  @override
+  void dispose() {
+    _poller.dispose();
+    super.dispose();
+  }
+
+  /// 화면을 로딩·오류로 바꾸지 않고 조회한다 — 실패하면 보이던 상태를 그대로 두고 다음 간격에 다시 시도한다.
+  /// 승인(`active`)이면 계정 상태를 바꿔 라우터가 홈으로 보내게 한다.
+  Future<void> _pollQuietly() async {
+    try {
+      final status = await ref.read(authRepositoryProvider).signupStatus();
+      if (!mounted) return;
+      setState(() {
+        _statusFuture = Future.value(status);
+      });
+      if (status.status == AccountStatus.active) {
+        ref.read(currentAccountStatusProvider.notifier).state =
+            AccountStatus.active;
+      }
+    } on Object {
+      // 연결이 끊긴 동안의 실패는 오류 화면이 아니라 다음 조회로 넘긴다.
+    }
   }
 
   // F2(2026-09-26) — `settings_screen.dart` 가 만든 확인 대화를 재사용한다

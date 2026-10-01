@@ -1,4 +1,4 @@
-import 'package:parent_app/features/route/domain/route_detail.dart';
+import 'package:parent_app/core/routes/domain/route_detail.dart';
 
 /// 화면이 보는 노선 상세 계약 — API_SPEC §3.10.
 ///

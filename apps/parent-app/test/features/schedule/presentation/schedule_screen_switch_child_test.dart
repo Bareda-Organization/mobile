@@ -123,7 +123,7 @@ void main() {
 
   testWidgets('P5 자녀를 바꾸면 고른 회차가 비워져 다른 자녀의 회차로 신청되지 않는다', (tester) async {
     final (container, repository) = await _pump(tester);
-    await tester.tap(find.byType(DropdownButtonFormField<String>).at(1));
+    await tester.tap(find.byType(DropdownButtonFormField<String>).at(0));
     await tester.pumpAndSettle();
     await tester.tap(find.text('등원 · 1호차').last);
     await tester.pumpAndSettle();

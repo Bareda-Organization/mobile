@@ -76,8 +76,8 @@ Future<void> _pumpWith(
   await tester.tap(find.byType(BaraedaSwitch));
   await tester.pumpAndSettle();
   // R32 P4 — 끄기는 확인 창을 거친다. 실패 문구 시험은 확인까지 눌러 요청을 보낸다.
-  if (find.text('탑승 끄기').evaluate().isNotEmpty) {
-    await tester.tap(find.text('탑승 끄기'));
+  if (find.text('탑승 취소').evaluate().isNotEmpty) {
+    await tester.tap(find.text('탑승 취소'));
     await tester.pumpAndSettle();
   }
 }
@@ -337,20 +337,20 @@ void main() {
 
     await tester.tap(find.byType(BaraedaSwitch));
     await tester.pumpAndSettle();
-    expect(find.text('탑승 끄기'), findsOneWidget);
+    expect(find.text('탑승 취소'), findsOneWidget);
 
-    await tester.tap(find.text('취소'));
+    await tester.tap(find.text('닫기'));
     await tester.pumpAndSettle();
 
     expect(repository.calls, isEmpty);
   });
 
-  testWidgets('P4 확인 창에서 [탑승 끄기] 를 누르면 그때 요청이 나간다', (tester) async {
+  testWidgets('P4 확인 창에서 [탑승 취소] 를 누르면 그때 요청이 나간다', (tester) async {
     final repository = await pumpRecording(tester);
 
     await tester.tap(find.byType(BaraedaSwitch));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('탑승 끄기'));
+    await tester.tap(find.text('탑승 취소'));
     await tester.pumpAndSettle();
 
     expect(repository.calls, [false]);
@@ -362,7 +362,7 @@ void main() {
     await tester.tap(find.byType(BaraedaSwitch));
     await tester.pumpAndSettle();
 
-    expect(find.text('탑승 끄기'), findsNothing);
+    expect(find.text('탑승 취소'), findsNothing);
     expect(repository.calls, [true]);
   });
 
@@ -400,7 +400,7 @@ void main() {
     await tester.tap(find.byType(BaraedaSwitch));
     await tester.pumpAndSettle();
     expect(pushed, isEmpty);
-    await tester.tap(find.text('취소'));
+    await tester.tap(find.text('닫기'));
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('등원 · 1호차'));
@@ -456,7 +456,7 @@ void main() {
 
     await tester.tap(find.byType(BaraedaSwitch));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('탑승 끄기'));
+    await tester.tap(find.text('탑승 취소'));
     await tester.pumpAndSettle();
 
     expect(

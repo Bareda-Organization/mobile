@@ -103,7 +103,7 @@ void main() {
 
     await tester.tap(find.byType(BaraedaSwitch));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('탑승 끄기'));
+    await tester.tap(find.text('탑승 취소'));
     await tester.pumpAndSettle();
 
     // 회차 목록을 다시 받는 동안(응답 1초 지연)과 다 받은 뒤 모두 안내가 남는다.

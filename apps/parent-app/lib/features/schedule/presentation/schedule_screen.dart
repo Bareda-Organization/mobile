@@ -6,6 +6,7 @@ import 'package:parent_app/app/app_routes.dart';
 import 'package:parent_app/core/auth/auth_providers.dart';
 import 'package:parent_app/core/students/presentation/selected_student.dart';
 import 'package:parent_app/core/students/presentation/student_providers.dart';
+import 'package:parent_app/core/students/presentation/student_switcher.dart';
 import 'package:parent_app/core/ui/confirm_dialog.dart';
 import 'package:parent_app/features/schedule/presentation/schedule_providers.dart';
 import 'package:parent_app/features/schedule/presentation/widgets/change_request_panel.dart';
@@ -78,24 +79,12 @@ class _ParentSection extends ConsumerWidget {
           );
         }
 
-        final selectedId =
-            ref.watch(selectedStudentIdProvider) ?? students.first.studentId;
+        final selectedId = watchSelectedStudentId(ref, students);
 
         return ListView(
           padding: const EdgeInsets.all(BaraedaSpacing.gutterMobile),
           children: [
-            if (students.length > 1) ...[
-              BaraedaSelect(
-                label: '자녀 선택',
-                value: selectedId,
-                options: students
-                    .map((s) => BaraedaSelectOption(s.studentId, label: s.name))
-                    .toList(),
-                onChanged: (value) =>
-                    ref.read(selectedStudentIdProvider.notifier).state = value,
-              ),
-              const SizedBox(height: BaraedaSpacing.sectionGap),
-            ],
+            StudentSwitcher(students: students, selectedId: selectedId),
             _StudentScheduleBody(studentId: selectedId),
           ],
         );

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -9,8 +10,11 @@ import 'package:parent_app/core/auth/auth_providers.dart';
 import 'package:parent_app/core/auth/role_policy.dart';
 import 'package:parent_app/core/auth/user_role.dart';
 import 'package:parent_app/core/map/map_surface.dart';
+import 'package:parent_app/core/routes/domain/route_detail.dart';
+import 'package:parent_app/core/routes/domain/route_repository.dart';
 import 'package:parent_app/core/students/domain/student.dart';
 import 'package:parent_app/core/students/presentation/selected_student.dart';
+import 'package:parent_app/core/students/presentation/student_switcher.dart';
 import 'package:parent_app/features/home/presentation/home_providers.dart';
 import 'package:parent_app/features/live_map/domain/bus_position.dart';
 import 'package:parent_app/features/live_map/domain/bus_position_repository.dart';
@@ -124,6 +128,52 @@ class _FakeBusPositionRepository implements BusPositionRepository {
       Future.error(const Failure.unknown(message: 'test fake — no REST'));
 }
 
+/// 기본 노선 가짜 — 지도 시험 대부분은 내 승하차지 핀과 무관하므로 항상 실패하게 둔다.
+/// 실 `ApiClient`(Dio)를 거치면 "A Timer is still pending" 으로 시험이 깨진다.
+class _FakeRouteRepository implements RouteRepository {
+  _FakeRouteRepository([this.detail]);
+
+  final RouteDetail? detail;
+
+  @override
+  Future<RouteDetail> getRoute(
+    String studentId, {
+    DateTime? date,
+    String? runId,
+  }) => detail == null
+      ? Future.error(const Failure.unknown(message: 'test fake — no route'))
+      : Future.value(detail);
+}
+
+RouteDetail _routeWithMyStop({double? lat = 37.51, double? lng = 127.02}) =>
+    RouteDetail(
+      runId: 'r-1',
+      busNo: '1호차',
+      departTime: DateTime.utc(2026, 9, 13, 8),
+      confirmed: true,
+      driver: const RouteDriver(name: null),
+      escort: const RouteEscort(name: null, phone: null),
+      myStopId: 'stop-mine',
+      stops: [
+        const RouteStop(
+          stopId: 'stop-before',
+          seq: 1,
+          name: '앞 승하차지',
+          address: null,
+          lat: 37.5,
+          lng: 127,
+        ),
+        RouteStop(
+          stopId: 'stop-mine',
+          seq: 2,
+          name: '행복아파트 정문',
+          address: null,
+          lat: lat,
+          lng: lng,
+        ),
+      ],
+    );
+
 WebSocketEnvelope _envelope(WsEventType event, Map<String, dynamic> payload) {
   return WebSocketEnvelope(
     event: event,
@@ -158,6 +208,7 @@ void main() {
   Future<void> pumpScreen(
     WidgetTester tester, {
     required List<Override> extraOverrides,
+    RouteDetail? route,
   }) async {
     await tester.pumpWidget(
       ProviderScope(
@@ -165,6 +216,9 @@ void main() {
           webSocketClientProvider.overrideWithValue(client),
           busPositionRepositoryProvider.overrideWithValue(
             _FakeBusPositionRepository(),
+          ),
+          routeRepositoryProvider.overrideWithValue(
+            _FakeRouteRepository(route),
           ),
           ...extraOverrides,
         ],
@@ -252,7 +306,8 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('자녀 선택'), findsNothing);
+      expect(find.byType(StudentSwitcher), findsOneWidget);
+      expect(find.byType(BaraedaSegmentedControl), findsNothing);
     });
 
     testWidgets('자녀가 2명 이상이면 선택 UI 가 뜬다', (tester) async {
@@ -265,7 +320,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('자녀 선택'), findsOneWidget);
+      expect(find.byType(BaraedaSegmentedControl), findsOneWidget);
     });
   });
 
@@ -763,9 +818,13 @@ void main() {
   });
 
   group('F05-04·05 재연결 재구독 · 다음 회차 이벤트 초기화', () {
-    Future<void> pumpConnected(WidgetTester tester) async {
+    Future<void> pumpConnected(
+      WidgetTester tester, {
+      RouteDetail? route,
+    }) async {
       await pumpScreen(
         tester,
+        route: route,
         extraOverrides: [
           roleCapabilitiesProvider.overrideWithValue(
             RoleCapabilities.of(UserRole.student),
@@ -854,30 +913,126 @@ void main() {
       expect(find.textContaining('정문 도착'), findsNothing);
     });
 
-    // F05-09 — 버스 좌표가 2초마다 와도 카메라를 되돌리지 않는다(학부모가 지도를 옮기거나 줄일 수 있어야 한다).
-    testWidgets('F05-09 새 좌표가 와도 지도 카메라는 처음 자리에 머물고 [버스 위치로] 로만 따라간다', (
-      tester,
-    ) async {
+    Map<String, Object> pos(double lat) => {
+      'lat': lat,
+      'lng': 127.0,
+      'received_at': '2026-09-13T08:00:00Z',
+    };
+    MapSurface surface(WidgetTester tester) =>
+        tester.widget<MapSurface>(find.byType(MapSurface));
+
+    // R46 P3 — 버스가 움직여 화면 밖으로 나가도 지도가 따라간다. F05-09 는 "카메라를 고정하고
+    // [버스 위치로] 로만 따라간다" 였고, 그러면 켜 두고 기다리는 동안 버스가 지도에서 사라졌다.
+    testWidgets('R46 P3 새 좌표가 오면 지도 카메라가 버스를 따라간다', (tester) async {
       await pumpConnected(tester);
-      Map<String, Object> pos(double lat) => {
-        'lat': lat,
-        'lng': 127.0,
-        'received_at': '2026-09-13T08:00:00Z',
-      };
-      MapCamera camera() =>
-          tester.widget<MapSurface>(find.byType(MapSurface)).camera;
 
       client.deliver(_envelope(WsEventType.position, pos(37.5)));
       await tester.pump();
-      expect(camera().lat, 37.5);
+      expect(surface(tester).camera.lat, 37.5);
 
       client.deliver(_envelope(WsEventType.position, pos(37.6)));
       await tester.pump();
-      expect(camera().lat, 37.5, reason: '카메라는 사용자가 옮긴 자리를 덮어쓰지 않는다');
+      expect(surface(tester).camera.lat, 37.6);
+    });
+
+    // F05-09 의 이유(2초마다 사용자가 옮긴 지도가 되돌아감)는 그대로 지킨다 — 손으로 만지면 따라가기를 멈춘다.
+    testWidgets('R46 P3 사용자가 지도를 만지면 따라가기를 멈추고 [버스 위치로] 로 다시 켠다', (
+      tester,
+    ) async {
+      await pumpConnected(tester);
+      client.deliver(_envelope(WsEventType.position, pos(37.5)));
+      await tester.pump();
+
+      surface(tester).onUserGesture!();
+      client.deliver(_envelope(WsEventType.position, pos(37.6)));
+      await tester.pump();
+      expect(
+        surface(tester).camera.lat,
+        37.5,
+        reason: '사용자가 옮긴 자리를 덮어쓰지 않는다',
+      );
 
       await tester.tap(find.text('버스 위치로'));
       await tester.pump();
-      expect(camera().lat, 37.6);
+      expect(surface(tester).camera.lat, 37.6);
+
+      client.deliver(_envelope(WsEventType.position, pos(37.7)));
+      await tester.pump();
+      expect(surface(tester).camera.lat, 37.7, reason: '[버스 위치로] 뒤에는 다시 따라간다');
+    });
+
+    // R46 P1 — 지도에 버스 점만 있어 내 승하차지가 어디인지 알 수 없었다. 서버가 준 §3.10 좌표만 쓴다.
+    testWidgets('R46 P1 내 승하차지를 지도 핀과 한 줄 문구로 보여준다', (tester) async {
+      await pumpConnected(tester, route: _routeWithMyStop());
+      client.deliver(_envelope(WsEventType.position, pos(37.5)));
+      await tester.pump();
+      await tester.pump();
+
+      final stops = surface(
+        tester,
+      ).markers.where((m) => m.kind == MapMarkerKind.stop).toList();
+      expect(stops, hasLength(1));
+      expect((stops.single.lat, stops.single.lng), (37.51, 127.02));
+      expect(stops.single.label, '내 승하차지');
+      expect(find.text('내 승하차지 · 행복아파트 정문'), findsOneWidget);
+    });
+
+    // C-08 — 학부모·학생 앱은 도착 예정 시각(ETA)·"몇 곳 전"·탑승 인원을 표시하지 않는다. 내 승하차지 핀을 더한 뒤에도
+    // 같다: 서버가 준 좌표·이름만 쓰고 거리·시간을 새로 계산해 붙이지 않는다. 서버가 실수로 `eta`·인원을 실어 보내도
+    // 화면에 나오지 않아야 하므로 payload 에 일부러 실어 렌더된 글자 전체를 훑는다.
+    testWidgets('C-08 지도 화면 어디에도 ETA·몇 곳 전·탑승 인원 문구가 없다', (tester) async {
+      await pumpConnected(tester, route: _routeWithMyStop());
+      client
+        ..deliver(
+          _envelope(WsEventType.runStarted, {
+            'run_status': 'moving',
+            'started_at': '2026-09-13T07:50:00Z',
+            'auto_boarded_count': 7,
+          }),
+        )
+        ..deliver(
+          _envelope(WsEventType.position, {
+            ...pos(37.5),
+            'current_stop_name': '앞 승하차지',
+            'eta': '2026-09-13T08:07:00Z',
+            'boarded_count': 7,
+          }),
+        );
+      await tester.pump();
+      await tester.pump();
+
+      final rendered = tester
+          .widgetList<Text>(find.byType(Text))
+          .map((t) => t.data ?? t.textSpan?.toPlainText() ?? '')
+          .join('\n');
+      // 핀·내 승하차지 문구가 실제로 그려진 상태에서만 "없다" 가 의미가 있다.
+      expect(rendered, contains('내 승하차지 · 행복아파트 정문'));
+      expect(rendered, contains('마지막으로 지난 승하차지: 앞 승하차지'));
+      expect(
+        rendered,
+        isNot(matches(RegExp(r'도착 예정|ETA|예상|곳 전|정거장 전|분 후|탑승 인원|\d+\s*명'))),
+      );
+      // 문구가 아니라 값도 본다 — 서버가 실어 보낸 eta(08:07 UTC)를 날것으로든 기기 표준시로든 그리면 안 된다.
+      final etaLocal = DateTime.utc(2026, 9, 13, 8, 7).toLocal();
+      final etaClock =
+          '${etaLocal.hour.toString().padLeft(2, '0')}:'
+          '${etaLocal.minute.toString().padLeft(2, '0')}';
+      expect(rendered, isNot(contains('2026-09-13T08:07')));
+      expect(rendered, isNot(contains('08:07')));
+      expect(rendered, isNot(contains(etaClock)));
+    });
+
+    testWidgets('R46 P1 노선을 못 받거나 좌표가 없으면 버스만 그리고 오류 띠를 더하지 않는다', (
+      tester,
+    ) async {
+      await pumpConnected(tester); // 노선 가짜가 실패를 돌려준다
+      client.deliver(_envelope(WsEventType.position, pos(37.5)));
+      await tester.pump();
+      await tester.pump();
+
+      expect(surface(tester).markers.map((m) => m.kind), [MapMarkerKind.bus]);
+      expect(find.textContaining('내 승하차지'), findsNothing);
+      expect(find.byType(AlertBanner), findsNothing);
     });
   });
 }

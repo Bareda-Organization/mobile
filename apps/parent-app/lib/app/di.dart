@@ -6,6 +6,8 @@ import 'package:parent_app/core/change_requests/data/change_request_api.dart';
 import 'package:parent_app/core/change_requests/data/change_request_repository_impl.dart';
 import 'package:parent_app/core/change_requests/domain/change_request_repository.dart';
 import 'package:parent_app/core/constants/api_constants.dart';
+import 'package:parent_app/core/network/network_status.dart';
+import 'package:parent_app/core/routes/domain/route_repository.dart';
 import 'package:parent_app/core/runs/data/run_api.dart';
 import 'package:parent_app/core/runs/data/run_repository_impl.dart';
 import 'package:parent_app/core/runs/domain/run_repository.dart';
@@ -20,7 +22,6 @@ import 'package:parent_app/features/live_map/data/bus_position_repository_impl.d
 import 'package:parent_app/features/live_map/domain/bus_position_repository.dart';
 import 'package:parent_app/features/route/data/route_api.dart';
 import 'package:parent_app/features/route/data/route_repository_impl.dart';
-import 'package:parent_app/features/route/domain/route_repository.dart';
 import 'package:parent_app/features/schedule/data/weekly_address_api.dart';
 import 'package:parent_app/features/schedule/data/weekly_address_repository_impl.dart';
 import 'package:parent_app/features/schedule/domain/weekly_address_repository.dart';
@@ -54,6 +55,14 @@ final apiClientProvider = Provider<ApiClient>((ref) {
   final client = ApiClient(
     tokenStorage: ref.watch(tokenStorageProvider),
     baseUrl: ApiConstants.baseUrl,
+  );
+  // 서버에 닿는지를 요청 결과로 감시한다 — 끊김 한 줄 표시(`OfflineBar`)의 근거(R46 B2 #22).
+  final network = ref.read(networkStatusProvider.notifier);
+  client.dio.interceptors.add(
+    NetworkStatusInterceptor(
+      onReachable: network.markReachable,
+      onUnreachable: network.markUnreachable,
+    ),
   );
   ref.onDispose(client.dispose);
   return client;

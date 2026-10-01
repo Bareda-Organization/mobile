@@ -5,12 +5,12 @@ import 'package:parent_app/app/di.dart';
 import 'package:parent_app/core/auth/auth_providers.dart';
 import 'package:parent_app/core/auth/role_policy.dart';
 import 'package:parent_app/core/auth/user_role.dart';
+import 'package:parent_app/core/routes/domain/route_detail.dart';
+import 'package:parent_app/core/routes/domain/route_repository.dart';
+import 'package:parent_app/core/routes/presentation/route_providers.dart';
 import 'package:parent_app/core/students/domain/student.dart';
 import 'package:parent_app/core/students/presentation/student_providers.dart';
-import 'package:parent_app/features/route/domain/route_detail.dart';
-import 'package:parent_app/features/route/domain/route_repository.dart';
 import 'package:parent_app/features/route/presentation/route_detail_screen.dart';
-import 'package:parent_app/features/route/presentation/route_providers.dart';
 
 /// `routeRepositoryProvider` 대신 넣는 가짜 — **실제 서버 응답이 아니라
 /// 이 시험이 손으로 만든 원본 JSON**을 그대로 돌려준다.

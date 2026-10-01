@@ -25,6 +25,9 @@ class _StubAuthRepository implements AuthRepository {
   /// 두 번째 조회부터 이 상태로 응답한다(관리자가 그 사이에 승인·거절한 상황).
   AccountStatus? statusFromSecondCall;
 
+  /// 두 번째 조회부터 네트워크 오류로 실패한다(터널·지하처럼 끊긴 상황).
+  bool failFromSecondCall = false;
+
   @override
   Future<List<AcademySummary>> searchAcademies(String query) async => [];
 
@@ -35,6 +38,9 @@ class _StubAuthRepository implements AuthRepository {
   @override
   Future<SignupStatusResponse> signupStatus() async {
     signupStatusCalls++;
+    if (failFromSecondCall && signupStatusCalls > 1) {
+      return Future.error(const Failure.network());
+    }
     return SignupStatusResponse(
       status: signupStatusCalls > 1
           ? statusFromSecondCall ?? AccountStatus.pending
@@ -162,6 +168,71 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(container.read(currentAccountStatusProvider), AccountStatus.active);
+  });
+
+  // R46 B2 #20 — 푸시 SDK 가 없어 대기 화면이 한 번만 조회하면 승인이 나도 [상태 다시 확인] 을 눌러야 했다.
+  group('R46 주기 재확인', () {
+    // 사양(UF-X-02)이 정한 값 — 아래 시험은 이 상수로 시간을 흘리므로 값 자체는 여기서 고정한다.
+    test('재조회 간격은 30초다', () {
+      expect(pendingStatusPollInterval, const Duration(seconds: 30));
+    });
+
+    testWidgets(
+      '$pendingStatusPollInterval 마다 조용히 다시 조회하고 승인되면 계정 상태를 active 로 바꾼다',
+      (
+        tester,
+      ) async {
+        final authRepository = _StubAuthRepository()
+          ..statusFromSecondCall = AccountStatus.active;
+        await _pumpPendingApproval(tester, authRepository);
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(PendingApprovalScreen)),
+        );
+        expect(authRepository.signupStatusCalls, 1);
+
+        await tester.pump(
+          pendingStatusPollInterval - const Duration(seconds: 1),
+        );
+        expect(
+          authRepository.signupStatusCalls,
+          1,
+          reason: '간격이 지나기 전에는 조회하지 않는다',
+        );
+
+        await tester.pump(const Duration(seconds: 1));
+        await tester.pumpAndSettle();
+        expect(authRepository.signupStatusCalls, 2);
+        expect(
+          container.read(currentAccountStatusProvider),
+          AccountStatus.active,
+        );
+      },
+    );
+
+    testWidgets('앱이 백그라운드에서 돌아오면 간격을 기다리지 않고 바로 조회한다', (tester) async {
+      final authRepository = _StubAuthRepository();
+      await _pumpPendingApproval(tester, authRepository);
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pumpAndSettle();
+
+      expect(authRepository.signupStatusCalls, 2);
+    });
+
+    testWidgets('조용한 재확인이 네트워크로 실패해도 보이던 대기 화면을 오류 화면으로 바꾸지 않는다', (
+      tester,
+    ) async {
+      final authRepository = _StubAuthRepository()..failFromSecondCall = true;
+      await _pumpPendingApproval(tester, authRepository);
+
+      await tester.pump(pendingStatusPollInterval);
+      await tester.pumpAndSettle();
+
+      expect(authRepository.signupStatusCalls, 2);
+      expect(find.text('가입 승인을 기다리고 있습니다'), findsOneWidget);
+      expect(find.text('상태를 불러오지 못했습니다'), findsNothing);
+    });
   });
 
   testWidgets('가입 승인 대기 화면에 단말 등록 패널이 도달 가능하다', (tester) async {

@@ -140,8 +140,8 @@ void main() {
 
     await tester.tap(find.byType(BaraedaSwitch));
     await tester.pumpAndSettle();
-    expect(find.text('내일 탑승을 끌까요?'), findsOneWidget);
-    await tester.tap(find.text('탑승 끄기'));
+    expect(find.text('내일 탑승을 취소할까요?'), findsOneWidget);
+    await tester.tap(find.text('탑승 취소'));
     await tester.pumpAndSettle();
 
     expect(runs.intents, [('run-tomorrow', false)]);
@@ -159,7 +159,7 @@ void main() {
 
     await tester.tap(find.byType(BaraedaSwitch));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('탑승 끄기'));
+    await tester.tap(find.text('탑승 취소'));
     await tester.pumpAndSettle();
 
     expect(runs.requestedDates.where((d) => d != null).length, before + 1);
