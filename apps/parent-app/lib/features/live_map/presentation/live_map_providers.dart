@@ -106,7 +106,12 @@ class LiveMapNotifier extends StateNotifier<LiveMapState> {
   /// 를 맨손 `catch` 없이 지키는 방법이기도 하다). 결석 대조
   /// (`runsForStudentProvider`)가 실패해도 스냅샷 자체는 그대로 반영한다
   /// — 결석 여부를 모를 뿐 좌표 스냅샷은 유효한 정보이기 때문이다.
-  Future<void> _loadRestSnapshot() async {
+  ///
+  /// [adoptIfNewer] 가 참(재연결 뒤 호출)이면 스냅샷 좌표가 WS 로 이미 받은
+  /// 좌표보다 새로울 때 그 좌표로 갈아 끼운다 — 화면은 WS 좌표를 우선하므로
+  /// 그러지 않으면 음영 중 움직인 버스가 다음 `position` 이 올 때까지 옛
+  /// 자리에 남는다(R46-FIXCONN C-9).
+  Future<void> _loadRestSnapshot({bool adoptIfNewer = false}) async {
     state = state.copyWith(restPosition: const AsyncValue.loading());
 
     final result = await AsyncValue.guard(
@@ -132,6 +137,25 @@ class LiveMapNotifier extends StateNotifier<LiveMapState> {
 
     if (!mounted) return;
     state = state.copyWith(restPosition: result, isAbsent: isAbsent);
+
+    final current = state.position;
+    final receivedAt = position?.receivedAt;
+    if (adoptIfNewer &&
+        position != null &&
+        current != null &&
+        receivedAt != null &&
+        position.lat != null &&
+        position.lng != null &&
+        receivedAt.isAfter(current.receivedAt)) {
+      state = state.copyWith(
+        position: WsPositionPayload(
+          lat: position.lat!,
+          lng: position.lng!,
+          receivedAt: receivedAt,
+          currentStopName: position.currentStopName,
+        ),
+      );
+    }
   }
 
   void _onConnectionState(WsConnectionState wsState) {
@@ -150,7 +174,7 @@ class LiveMapNotifier extends StateNotifier<LiveMapState> {
     } else if (_unsubscribe == null) {
       _subscribe(_client);
       // 끊긴 사이 놓친 위치를 REST 스냅샷으로 메운다.
-      unawaited(_loadRestSnapshot());
+      unawaited(_loadRestSnapshot(adoptIfNewer: true));
     }
   }
 

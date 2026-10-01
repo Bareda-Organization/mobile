@@ -12,6 +12,7 @@ import 'package:parent_app/core/auth/user_role.dart';
 import 'package:parent_app/core/map/map_surface.dart';
 import 'package:parent_app/core/routes/domain/route_detail.dart';
 import 'package:parent_app/core/routes/domain/route_repository.dart';
+import 'package:parent_app/core/runs/domain/student_run.dart';
 import 'package:parent_app/core/students/domain/student.dart';
 import 'package:parent_app/core/students/presentation/selected_student.dart';
 import 'package:parent_app/core/students/presentation/student_switcher.dart';
@@ -128,6 +129,22 @@ class _FakeBusPositionRepository implements BusPositionRepository {
       Future.error(const Failure.unknown(message: 'test fake — no REST'));
 }
 
+/// 호출할 때마다 정해 둔 결과를 차례로 돌려주는 가짜 — 마지막 값은 이후에도 계속 쓴다.
+/// 첫 진입 스냅샷과 재연결 뒤 스냅샷이 다른 값을 주는 시험에 쓴다.
+class _ScriptedBusPositionRepository implements BusPositionRepository {
+  _ScriptedBusPositionRepository(this._results);
+
+  final List<BusPosition> _results;
+  int calls = 0;
+
+  @override
+  Future<BusPosition> getBusPosition(String studentId) async {
+    final index = calls < _results.length ? calls : _results.length - 1;
+    calls++;
+    return _results[index];
+  }
+}
+
 /// 기본 노선 가짜 — 지도 시험 대부분은 내 승하차지 핀과 무관하므로 항상 실패하게 둔다.
 /// 실 `ApiClient`(Dio)를 거치면 "A Timer is still pending" 으로 시험이 깨진다.
 class _FakeRouteRepository implements RouteRepository {
@@ -209,13 +226,14 @@ void main() {
     WidgetTester tester, {
     required List<Override> extraOverrides,
     RouteDetail? route,
+    BusPositionRepository? busPositionRepository,
   }) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           webSocketClientProvider.overrideWithValue(client),
           busPositionRepositoryProvider.overrideWithValue(
-            _FakeBusPositionRepository(),
+            busPositionRepository ?? _FakeBusPositionRepository(),
           ),
           routeRepositoryProvider.overrideWithValue(
             _FakeRouteRepository(route),
@@ -649,6 +667,105 @@ void main() {
       // 요지는 시도마다 전체 스피너로 돌아가지 않는다는 것.
       expect(find.byType(CircularProgressIndicator), findsNothing);
       expect(find.text('아직 위치 정보가 없습니다'), findsOneWidget);
+    });
+  });
+
+  // R46-FIXCONN C-9 — 재연결 때 REST 스냅샷을 다시 받아도 화면은 WS 로 한 번이라도
+  // 받은 좌표를 우선해 스냅샷이 반영되지 않았다. 음영 중 버스가 움직였다면 다음
+  // position 이 올 때까지 옛 좌표가 남는다 — 재연결 스냅샷이 더 새로우면 그것으로
+  // 갈아 끼운다.
+  group('재연결 뒤 위치 스냅샷 반영(C-9)', () {
+    Future<void> pumpWithSnapshots(
+      WidgetTester tester,
+      List<BusPosition> snapshots,
+    ) async {
+      await pumpScreen(
+        tester,
+        busPositionRepository: _ScriptedBusPositionRepository(snapshots),
+        extraOverrides: [
+          roleCapabilitiesProvider.overrideWithValue(
+            RoleCapabilities.of(UserRole.student),
+          ),
+          myStudentIdProvider.overrideWith((ref) async => 's-1'),
+          // 스냅샷이 좌표를 주면 결석 대조를 위해 회차 목록을 읽는다 — 네트워크를 건드리지 않게 비운다.
+          runsForStudentProvider.overrideWith((ref, id) async => const []),
+          clockProvider.overrideWithValue(
+            _MutableClock(DateTime.utc(2026, 9, 13, 8, 1)),
+          ),
+        ],
+      );
+      await tester.pump();
+      await tester.pump();
+      client.emit(WsConnectionState.connected);
+      await tester.pump();
+    }
+
+    BusPosition snapshot({required String stop, required DateTime at}) =>
+        BusPosition(
+          runId: 'r-1',
+          busNo: '1호차',
+          runStatus: RunStatus.moving,
+          lat: 37.6,
+          lng: 127.1,
+          receivedAt: at,
+          currentStopName: stop,
+        );
+
+    testWidgets('재연결 스냅샷이 WS 로 받은 좌표보다 새로우면 그 좌표로 바뀐다', (tester) async {
+      await pumpWithSnapshots(tester, [
+        snapshot(stop: '첫 승하차지', at: DateTime.utc(2026, 9, 13, 8)),
+        snapshot(stop: '음영 중 지난 승하차지', at: DateTime.utc(2026, 9, 13, 8, 0, 50)),
+      ]);
+      client.deliver(
+        _envelope(WsEventType.position, {
+          'lat': 37.5,
+          'lng': 127.0,
+          'received_at': '2026-09-13T08:00:00Z',
+          'current_stop_name': '첫 승하차지',
+        }),
+      );
+      await tester.pump();
+      expect(find.textContaining('첫 승하차지'), findsOneWidget);
+
+      client
+        ..emit(WsConnectionState.reconnecting)
+        ..emit(WsConnectionState.connected);
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.textContaining('음영 중 지난 승하차지'), findsOneWidget);
+      expect(find.textContaining('첫 승하차지'), findsNothing);
+
+      // 유실 재표시 타이머를 남기지 않게 화면을 내린다.
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+    });
+
+    testWidgets('재연결 스냅샷이 더 오래됐으면 WS 좌표를 그대로 둔다', (tester) async {
+      await pumpWithSnapshots(tester, [
+        snapshot(stop: '옛 스냅샷', at: DateTime.utc(2026, 9, 13, 7, 59)),
+      ]);
+      client.deliver(
+        _envelope(WsEventType.position, {
+          'lat': 37.5,
+          'lng': 127.0,
+          'received_at': '2026-09-13T08:00:00Z',
+          'current_stop_name': 'WS 최신 승하차지',
+        }),
+      );
+      await tester.pump();
+
+      client
+        ..emit(WsConnectionState.reconnecting)
+        ..emit(WsConnectionState.connected);
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.textContaining('WS 최신 승하차지'), findsOneWidget);
+      expect(find.textContaining('옛 스냅샷'), findsNothing);
+
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
     });
   });
 
