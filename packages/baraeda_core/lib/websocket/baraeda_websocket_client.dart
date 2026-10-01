@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:baraeda_core/storage/token_storage.dart';
+import 'package:baraeda_core/time/clock.dart';
 import 'package:baraeda_core/websocket/websocket_envelope.dart';
 import 'package:baraeda_core/websocket/ws_backoff_policy.dart';
 import 'package:baraeda_core/websocket/ws_connection_state.dart';
@@ -49,12 +50,16 @@ class BaraedaWebSocketClient {
     this.connectTimeout = const Duration(seconds: 10),
     this.pingInterval = const Duration(seconds: 10),
     StompClient Function(StompConfig config)? stompClientFactory,
+    Clock clock = const SystemClock(),
   }) : // 필드는 비공개, 파라미터는 공개 이름(`refreshAccessToken:`)을
        // 유지한다(`token_refresher.dart` 와 같은 이유).
        // ignore: prefer_initializing_formals
        _refreshAccessToken = refreshAccessToken,
        _onDebugMessage = onDebugMessage ?? ((_) {}),
-       _stompClientFactory = stompClientFactory ?? _defaultStompClient;
+       _stompClientFactory = stompClientFactory ?? _defaultStompClient,
+       // 필드를 private 으로 유지하려고 initializing formal 대신 명시 대입을 쓴다.
+       // ignore: prefer_initializing_formals
+       _clock = clock;
 
   static StompClient _defaultStompClient(StompConfig config) =>
       StompClient(config: config);
@@ -82,6 +87,22 @@ class BaraedaWebSocketClient {
   final Duration pingInterval;
 
   final StompClient Function(StompConfig config) _stompClientFactory;
+  final Clock _clock;
+
+  /// 서버가 이만큼 아무것도(하트비트 포함) 안 보냈으면 연결이 죽은 것으로 본다 —
+  /// 서버·클라이언트 하트비트 10초의 2배이고 `stomp_dart_client` 의 수신 점검
+  /// 기준(`ttl × 2`)과 같다(`API_SPEC §7` 연결 한도 표, R46-FIXCONN C-11).
+  static const serverSilenceLimit = Duration(seconds: 20);
+
+  /// 마지막으로 서버에서 무언가(CONNECTED·하트비트·메시지) 받은 시각 —
+  /// `stomp_dart_client` 가 받은 모든 데이터를 디버그 메시지(`<<<`)로 알리는 것을
+  /// 이용해 기록한다. 라이브러리가 이 값을 공개하지 않는다.
+  DateTime? _lastServerActivity;
+
+  /// 연결 시도마다 오르는 번호표 — 옛 시도의 소켓이 늦게 보내는 닫힘·오류·
+  /// 연결 신호가 새 시도를 끊김으로 오인하게 하지 않는다. 강제 재연결([reconnectNow])이
+  /// 옛 소켓을 닫고 바로 새 소켓을 열 때 필요하다.
+  int _attemptSeq = 0;
 
   /// 재연결 대기 간격 정책 — 시험이 주입해 실제 시간을 기다리지 않고
   /// 검증할 수 있게 `final` 이 아니라 생성자 파라미터로 남겨 둔다.
@@ -181,14 +202,50 @@ class BaraedaWebSocketClient {
   /// 앱이 백그라운드에서 돌아왔다 — 끊겨 재연결 대기 중([WsConnectionState.reconnecting])이거나 포기한
   /// ([WsConnectionState.gaveUp]) 연결을 다음 타이머(최대 30초)를 기다리지 않고 지금 다시 붙인다.
   /// 시도 횟수는 0 으로 돌아간다. 연결한 적 없거나(앱 복귀만으로 소켓을 새로 열지 않는다) 일부러 끊은
-  /// (거부·로그아웃) 연결, 재발급 실패로 멈춘 세션([sessionExpired]), 이미 연결 중·연결된 연결은 모두
-  /// `disconnected`·`connecting`·`connected` 라 건드리지 않는다.
+  /// (거부·로그아웃) 연결, 재발급 실패로 멈춘 세션([sessionExpired]), 연결 중인 연결은 모두
+  /// `disconnected`·`connecting` 이라 건드리지 않는다.
+  ///
+  /// `connected` 인 연결은 마지막 서버 프레임(하트비트 포함)이
+  /// [serverSilenceLimit] 을 넘었을 때만 죽은 것으로 보고 소켓을 닫고 새로
+  /// 연다 — 백그라운드에서 소켓이 조용히 죽어도 상태는 `connected` 로 남아,
+  /// 하트비트 점검(최대 10초 + 종료 시간)이 잡을 때까지 "연결됨" 으로
+  /// 오인하던 것을 막는다(R46-FIXCONN C-11).
   void reconnectNow() {
+    if (_state == WsConnectionState.connected) {
+      if (_isServerSilent()) _restartConnection();
+      return;
+    }
     if (_state != WsConnectionState.reconnecting &&
         _state != WsConnectionState.gaveUp) {
       return;
     }
     connect();
+  }
+
+  bool _isServerSilent() {
+    final last = _lastServerActivity;
+    if (last == null) return false;
+    return _clock.now().difference(last) > serverSilenceLimit;
+  }
+
+  /// 연결된 것으로 보이는 소켓을 닫고 새 소켓을 연다 — 시도 횟수는 0 으로 돌아간다.
+  void _restartConnection() {
+    _onDebugMessage(
+      '[BaraedaWebSocketClient] 서버가 ${serverSilenceLimit.inSeconds}초 넘게 '
+      '조용해 연결을 다시 연다',
+    );
+    _epoch += 1;
+    _reconnectTimer?.cancel();
+    _connectWatchdog?.cancel();
+    try {
+      _stompClient?.deactivate();
+    } on StompBadStateException {
+      // 소켓이 이미 죽어 DISCONNECT 를 쓰지 못했다 — 닫으려던 것이니
+      // 무시한다([disconnect] 와 같은 사정).
+    }
+    _manuallyDisconnected = false;
+    _reconnectAttempt = 0;
+    unawaited(_doConnect());
   }
 
   /// [overrideToken] 을 주면 저장소를 다시 읽지 않고 그 값을 그대로 싣는다
@@ -198,6 +255,7 @@ class BaraedaWebSocketClient {
   /// 강제할 계약이 아니다).
   Future<void> _doConnect({String? overrideToken}) async {
     final epoch = _epoch;
+    final attempt = ++_attemptSeq;
     _reconnectHandled = false;
     // 새 소켓은 이전 세션의 구독을 이어받지 않는다 — 화면이 `connected`
     // 를 다시 받으면 알아서 재구독하므로, 옛 목적지가 여기 남아 있으면
@@ -225,11 +283,14 @@ class BaraedaWebSocketClient {
           ? const {}
           : {'Authorization': 'Bearer $token'},
       onConnect: (frame) {
+        if (attempt != _attemptSeq) return;
         _connectWatchdog?.cancel();
+        _lastServerActivity = _clock.now();
         _reconnectAttempt = 0;
         _setState(WsConnectionState.connected);
       },
       onStompError: (frame) {
+        if (attempt != _attemptSeq) return;
         final message = frame.headers['message'];
         // API_SPEC §7 — 연결에 쓰인 access 토큰이 만료되면 서버가 이
         // 프레임으로 세션을 닫는다. 실제 재발급·재연결은 뒤이어 오는
@@ -257,13 +318,22 @@ class BaraedaWebSocketClient {
         );
       },
       onWebSocketError: (error) {
+        if (attempt != _attemptSeq) return;
         _onDebugMessage('[BaraedaWebSocketClient] WebSocket error: $error');
         // 소켓이 아예 안 열린 실패(서버 다운)는 `onWebSocketDone` 이 안 온다
         // — 아래 `_reconnectHandled` 가드 참고. 여기서도 같은 처리를 태운다.
         _handleDisconnected();
       },
-      onWebSocketDone: _handleDisconnected,
-      onDebugMessage: _onDebugMessage,
+      onWebSocketDone: () {
+        if (attempt != _attemptSeq) return;
+        _handleDisconnected();
+      },
+      onDebugMessage: (message) {
+        if (attempt == _attemptSeq && message.startsWith('<<<')) {
+          _lastServerActivity = _clock.now();
+        }
+        _onDebugMessage(message);
+      },
     );
 
     _stompClient = _stompClientFactory(config)..activate();
