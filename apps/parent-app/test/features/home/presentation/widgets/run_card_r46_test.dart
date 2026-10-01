@@ -147,6 +147,25 @@ void main() {
     });
   });
 
+  // C-08 — 홈 카드(지도 진입 표시를 더한 뒤에도)에 ETA·"몇 곳 전"·탑승 인원 문구가 없다.
+  testWidgets('C-08 운행 중 카드에도 ETA·몇 곳 전·탑승 인원 문구가 없다', (tester) async {
+    await _pump(
+      tester,
+      run: _run(runStatus: RunStatus.moving, confirmed: true),
+      isApprovalPending: true,
+    );
+
+    final rendered = tester
+        .widgetList<Text>(find.byType(Text))
+        .map((t) => t.data ?? t.textSpan?.toPlainText() ?? '')
+        .join('\n');
+    expect(rendered, contains('실시간 위치 보기 ›'));
+    expect(
+      rendered,
+      isNot(matches(RegExp(r'도착 예정|ETA|예상|곳 전|정거장 전|탑승 인원|\d+\s*명'))),
+    );
+  });
+
   group('B2 #25 용어 — 탑승 취소', () {
     testWidgets('스위치를 끄면 확인 창 제목과 버튼이 사양 용어 "탑승 취소" 다', (tester) async {
       await _pump(tester, run: _run());

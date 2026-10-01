@@ -977,6 +977,43 @@ void main() {
       expect(find.text('내 승하차지 · 행복아파트 정문'), findsOneWidget);
     });
 
+    // C-08 — 학부모·학생 앱은 도착 예정 시각(ETA)·"몇 곳 전"·탑승 인원을 표시하지 않는다. 내 승하차지 핀을 더한 뒤에도
+    // 같다: 서버가 준 좌표·이름만 쓰고 거리·시간을 새로 계산해 붙이지 않는다. 서버가 실수로 `eta`·인원을 실어 보내도
+    // 화면에 나오지 않아야 하므로 payload 에 일부러 실어 렌더된 글자 전체를 훑는다.
+    testWidgets('C-08 지도 화면 어디에도 ETA·몇 곳 전·탑승 인원 문구가 없다', (tester) async {
+      await pumpConnected(tester, route: _routeWithMyStop());
+      client
+        ..deliver(
+          _envelope(WsEventType.runStarted, {
+            'run_status': 'moving',
+            'started_at': '2026-09-13T07:50:00Z',
+            'auto_boarded_count': 7,
+          }),
+        )
+        ..deliver(
+          _envelope(WsEventType.position, {
+            ...pos(37.5),
+            'current_stop_name': '앞 승하차지',
+            'eta': '2026-09-13T08:07:00Z',
+            'boarded_count': 7,
+          }),
+        );
+      await tester.pump();
+      await tester.pump();
+
+      final rendered = tester
+          .widgetList<Text>(find.byType(Text))
+          .map((t) => t.data ?? t.textSpan?.toPlainText() ?? '')
+          .join('\n');
+      // 핀·내 승하차지 문구가 실제로 그려진 상태에서만 "없다" 가 의미가 있다.
+      expect(rendered, contains('내 승하차지 · 행복아파트 정문'));
+      expect(rendered, contains('마지막으로 지난 승하차지: 앞 승하차지'));
+      expect(
+        rendered,
+        isNot(matches(RegExp(r'도착 예정|ETA|예상|곳 전|정거장 전|분 후|탑승 인원|\d+\s*명'))),
+      );
+    });
+
     testWidgets('R46 P1 노선을 못 받거나 좌표가 없으면 버스만 그리고 오류 띠를 더하지 않는다', (
       tester,
     ) async {
