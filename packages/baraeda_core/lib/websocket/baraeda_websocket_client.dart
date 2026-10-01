@@ -243,7 +243,6 @@ class BaraedaWebSocketClient {
       // 소켓이 이미 죽어 DISCONNECT 를 쓰지 못했다 — 닫으려던 것이니
       // 무시한다([disconnect] 와 같은 사정).
     }
-    _manuallyDisconnected = false;
     _reconnectAttempt = 0;
     unawaited(_doConnect());
   }

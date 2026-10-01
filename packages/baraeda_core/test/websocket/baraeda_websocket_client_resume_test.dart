@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:baraeda_core/baraeda_core.dart';
@@ -79,10 +80,21 @@ class _StompServer {
         if (data is String && data.startsWith('CONNECT')) {
           connectCount += 1;
           socket.add('CONNECTED\nversion:1.2\n\n\x00');
+        } else if (data is String && data.startsWith('DISCONNECT')) {
+          // 실서버처럼 DISCONNECT 에 소켓을 닫는다 — 옛 소켓의 닫힘 신호가
+          // 클라이언트에 실제로 도착하는 상황을 만든다.
+          unawaited(socket.close());
         }
       });
     });
     return server.port;
+  }
+
+  /// 하트비트(빈 줄)를 보낸다 — 서버가 조용하지 않다는 신호.
+  void sendHeartbeat() {
+    for (final socket in _sockets) {
+      if (socket.readyState == WebSocket.open) socket.add('\n');
+    }
   }
 
   Future<void> stop() async {
@@ -153,6 +165,20 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 1500));
 
       expect(server.connectCount, 2);
+      expect(client.state, WsConnectionState.connected);
+    });
+
+    test('하트비트가 오면 마지막 서버 프레임 시각이 갱신돼 연결을 건드리지 않는다', () async {
+      // 연결 시각으로부터는 25초 — 하지만 15초 지점에 하트비트가 왔으니 마지막 프레임은 10초 전이다.
+      clock.value = clock.value.add(const Duration(seconds: 15));
+      server.sendHeartbeat();
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+      clock.value = clock.value.add(const Duration(seconds: 10));
+
+      client.reconnectNow();
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+
+      expect(server.connectCount, 1);
       expect(client.state, WsConnectionState.connected);
     });
 
