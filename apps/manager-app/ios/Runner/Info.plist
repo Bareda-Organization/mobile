@@ -32,6 +32,24 @@
 	     사용 중 권한으로 이미 시작된 위치 갱신을 이어 받는다. Always
 	     권한(NSLocationAlwaysAndWhenInUseUsageDescription)은 요구하지
 	     않는다. -->
+	<!-- R46-NAVI — 카카오내비 앱 실행 허용 목록. SDK 의 설치 확인(canOpenURL)은 이 목록의 스킴만 보므로,
+	     빠지면 카카오내비가 설치돼 있어도 "미설치" 로 나온다. -->
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>kakaonavi-sdk</string>
+	</array>
+	<!-- R46-NAVI — 카카오 SDK URL scheme(kakao<네이티브 앱 키>). 키는 사용자 자원이라 저장소에 없다 —
+	     값은 ios/Flutter/Local.xcconfig(git 밖)의 KAKAO_NATIVE_APP_KEY 로 받고, 없으면 자리표시
+	     `kakaoplaceholder` 가 들어가 빌드는 통과한다. 준비 절차는 docs/frontend/SETUP.md. -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>kakao$(KAKAO_NATIVE_APP_KEY)</string>
+			</array>
+		</dict>
+	</array>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>location</string>

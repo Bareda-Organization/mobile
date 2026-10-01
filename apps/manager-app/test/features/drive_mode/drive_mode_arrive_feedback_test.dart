@@ -17,6 +17,7 @@ import 'package:manager_app/features/drive_mode/domain/drive_mode_repository.dar
 import 'package:manager_app/features/drive_mode/presentation/drive_mode_providers.dart';
 import 'package:manager_app/features/drive_mode/presentation/drive_mode_screen.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
+import 'package:manager_app/features/navigation/data/kakao_navi_launcher.dart';
 import 'package:manager_app/features/navigation/data/models/navigation_route.dart';
 import 'package:manager_app/features/navigation/domain/navigation_repository.dart';
 import 'package:manager_app/features/roster/data/models/roster_response.dart';
@@ -76,6 +77,23 @@ class _FakeNavigationRepository implements NavigationRepository {
   }
 }
 
+/// 카카오내비 경계의 가짜 — 넘겨받은 경로를 기록하고 결과는 시험이 정한다. 실제 앱을 열지 않는다.
+class _FakeKakaoNaviLauncher implements KakaoNaviLauncher {
+  _FakeKakaoNaviLauncher(this.result);
+
+  final NaviLaunchResult result;
+  final launched = <NavigationRoute>[];
+
+  @override
+  Future<NaviLaunchResult> launch(NavigationRoute route) async {
+    launched.add(route);
+    return result;
+  }
+
+  @override
+  Uri get installUri => Uri.parse('https://navi.example/install');
+}
+
 /// 위치 권한·서비스 상태를 시험이 정하는 가짜 소스 — 좌표는 없다.
 class _FixedAvailabilitySource implements PositionSource {
   _FixedAvailabilitySource(this.availability);
@@ -125,6 +143,7 @@ void main() {
       List<String> settingsOpened,
       List<Uri> opened,
       _FakeNavigationRepository navigation,
+      _FakeKakaoNaviLauncher launcher,
     })
   >
   pumpDrive(
@@ -132,7 +151,7 @@ void main() {
     List<RosterStop>? stops,
     PositionAvailability availability = PositionAvailability.available,
     String naviAppKey = '',
-    bool openSucceeds = true,
+    NaviLaunchResult naviResult = NaviLaunchResult.launched,
     bool truncated = false,
     String navProvider = 'kakao',
   }) async {
@@ -141,6 +160,7 @@ void main() {
       truncated: truncated,
       provider: navProvider,
     );
+    final launcher = _FakeKakaoNaviLauncher(naviResult);
     final settingsOpened = <String>[];
     final opened = <Uri>[];
     await tester.pumpWidget(
@@ -152,9 +172,10 @@ void main() {
           ),
           kakaoNaviAppKeyProvider.overrideWithValue(naviAppKey),
           navigationRepositoryProvider.overrideWithValue(navigation),
+          kakaoNaviLauncherProvider.overrideWithValue(launcher),
           uriOpenerProvider.overrideWithValue((uri) async {
             opened.add(uri);
-            return openSucceeds;
+            return true;
           }),
           settingsOpenerProvider.overrideWithValue((page) async {
             settingsOpened.add(page.name);
@@ -194,6 +215,7 @@ void main() {
       settingsOpened: settingsOpened,
       opened: opened,
       navigation: navigation,
+      launcher: launcher,
     );
   }
 
@@ -235,35 +257,61 @@ void main() {
   });
 
   group('A #5 외부 내비(RUN-08)', () {
-    testWidgets('카카오 앱 키가 없으면 [외부 내비] 버튼을 그리지 않는다 (R46)', (tester) async {
+    testWidgets('카카오 앱 키가 없으면 [카카오내비 길안내] 버튼을 그리지 않는다 (R46)', (tester) async {
       await pumpDrive(tester);
 
-      expect(find.text('외부 내비'), findsNothing);
+      expect(find.text('카카오내비 길안내'), findsNothing);
     });
 
-    testWidgets('키가 있으면 서버 좌표열로 카카오내비 주소를 만들어 연다 (R46)', (tester) async {
+    testWidgets('키가 있으면 서버 경로를 받아 카카오내비 경계에 넘긴다 (R46)', (tester) async {
       final harness = await pumpDrive(tester, naviAppKey: 'KEY-1');
 
-      await tester.tap(find.text('외부 내비'));
+      await tester.tap(find.text('카카오내비 길안내'));
       await tester.pump();
       await tester.pump();
 
       expect(harness.navigation.calls, 1);
-      expect(harness.opened, hasLength(1));
-      final uri = harness.opened.single;
-      expect(uri.scheme, 'kakaonavi-sdk');
-      expect(uri.queryParameters['appkey'], 'KEY-1');
-      expect(uri.queryParameters['param'], contains('바른학원'));
+      final route = harness.launcher.launched.single;
+      expect(route.waypoints.map((p) => p.name), ['1번 승하차지']);
+      expect(route.destination.name, '바른학원');
+      expect(harness.opened, isEmpty, reason: '열린 것은 카카오내비 하나뿐이다');
     });
 
-    testWidgets('내비 앱이 열리지 않으면 이유를 알린다 (R46)', (tester) async {
-      await pumpDrive(tester, naviAppKey: 'KEY-1', openSucceeds: false);
+    testWidgets('설치돼 있지 않으면 설치 안내를 띄우고 [설치하기] 가 설치 페이지를 연다 (R46)', (
+      tester,
+    ) async {
+      final harness = await pumpDrive(
+        tester,
+        naviAppKey: 'KEY-1',
+        naviResult: NaviLaunchResult.notInstalled,
+      );
 
-      await tester.tap(find.text('외부 내비'));
+      await tester.tap(find.text('카카오내비 길안내'));
       await tester.pump();
       await tester.pump();
 
-      expect(find.textContaining('카카오내비를 열 수 없습니다'), findsOneWidget);
+      expect(find.textContaining('카카오내비가 설치돼 있지 않습니다'), findsOneWidget);
+      expect(harness.opened, isEmpty, reason: '누르기 전에는 스토어를 열지 않는다');
+
+      await tester.tap(find.text('설치하기'));
+      await tester.pump();
+
+      expect(harness.opened, [Uri.parse('https://navi.example/install')]);
+    });
+
+    testWidgets('설치돼 있는데 열지 못하면 이유를 알린다 (R46)', (tester) async {
+      await pumpDrive(
+        tester,
+        naviAppKey: 'KEY-1',
+        naviResult: NaviLaunchResult.failed,
+      );
+
+      await tester.tap(find.text('카카오내비 길안내'));
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.textContaining('카카오내비를 열지 못했습니다'), findsOneWidget);
+      expect(find.text('설치하기'), findsNothing);
     });
 
     testWidgets('서버가 정한 공급자가 카카오가 아니면 열지 않고 안내한다 (R46)', (tester) async {
@@ -273,18 +321,22 @@ void main() {
         navProvider: 'tmap',
       );
 
-      await tester.tap(find.text('외부 내비'));
+      await tester.tap(find.text('카카오내비 길안내'));
       await tester.pump();
       await tester.pump();
 
-      expect(harness.opened, isEmpty, reason: '카카오 주소로 다른 내비를 열 수 없다');
-      expect(find.textContaining('카카오내비를 열 수 없습니다'), findsOneWidget);
+      expect(
+        harness.launcher.launched,
+        isEmpty,
+        reason: '카카오 경계로 다른 내비를 열 수 없다',
+      );
+      expect(find.textContaining('카카오내비를 열지 못했습니다'), findsOneWidget);
     });
 
     testWidgets('상한 때문에 잘렸으면 서버가 준 안내 문구를 보인다 (R46)', (tester) async {
       await pumpDrive(tester, naviAppKey: 'KEY-1', truncated: true);
 
-      await tester.tap(find.text('외부 내비'));
+      await tester.tap(find.text('카카오내비 길안내'));
       await tester.pump();
       await tester.pump();
 

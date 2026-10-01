@@ -1,6 +1,6 @@
-import 'dart:convert';
-
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kakao_flutter_sdk_navi/kakao_flutter_sdk_navi.dart';
+import 'package:manager_app/features/navigation/data/kakao_navi_launcher.dart';
 import 'package:manager_app/features/navigation/data/models/navigation_route.dart';
 
 /// API_SPEC §4.16 응답 — 경유지 2개 + 목적지, 상한 때문에 잘린 경우.
@@ -46,41 +46,41 @@ void main() {
     });
   });
 
-  group('kakaoNaviUri — 카카오내비로 넘기는 주소', () {
+  group('kakaoNaviRequest — 공식 SDK 에 넘기는 요청', () {
     final route = NavigationRoute.fromJson(_json);
 
-    Map<String, dynamic> paramOf(Uri uri) =>
-        jsonDecode(uri.queryParameters['param']!) as Map<String, dynamic>;
+    test('목적지와 경유지를 x=경도 · y=위도 문자열로, 순서 그대로 싣는다', () {
+      final request = kakaoNaviRequest(route);
 
-    test('목적지와 경유지를 x=경도 · y=위도로, 순서 그대로 싣고 앱 키를 붙인다', () {
-      final uri = kakaoNaviUri(route, appKey: 'KEY-1');
-
-      expect(uri.scheme, 'kakaonavi-sdk');
-      expect(uri.host, 'navigate');
-      expect(uri.queryParameters['appkey'], 'KEY-1');
-      final param = paramOf(uri);
-      expect(param['destination'], {
+      expect(request.destination.toJson(), {
         'name': '바른학원',
-        'x': 127.03,
-        'y': 37.53,
+        'x': '127.03',
+        'y': '37.53',
       });
-      final via = (param['via_list'] as List).cast<Map<String, dynamic>>();
-      expect(via.map((p) => p['name']), ['한빛아파트 정문', '중앙로 스타빌딩 앞']);
-      expect(via.first['x'], 127.01);
-      expect(via.first['y'], 37.51);
-      expect((param['option'] as Map)['coord_type'], 'wgs84');
+      expect(request.viaList.map((p) => p.name), [
+        '한빛아파트 정문',
+        '중앙로 스타빌딩 앞',
+      ]);
+      expect(request.viaList.first.x, '127.01');
+      expect(request.viaList.first.y, '37.51');
     });
 
-    test('경유지가 없으면 via_list 를 싣지 않는다', () {
+    test('좌표계를 wgs84 로 못 박고 차종은 지정하지 않는다', () {
+      final option = kakaoNaviRequest(route).option;
+
+      // SDK 서버 기본값은 KATEC 이라 빠지면 좌표가 엉뚱한 곳을 가리킨다.
+      expect(option.coordType, CoordType.wgs84);
+      // 기사가 카카오내비 앱에 설정해 둔 차종을 따른다.
+      expect(option.vehicleType, isNull);
+    });
+
+    test('경유지가 없으면 viaList 가 비어 있다', () {
       final direct = NavigationRoute.fromJson({
         ..._json,
         'waypoints': <dynamic>[],
       });
 
-      expect(
-        paramOf(kakaoNaviUri(direct, appKey: 'k')).containsKey('via_list'),
-        isFalse,
-      );
+      expect(kakaoNaviRequest(direct).viaList, isEmpty);
     });
   });
 }
