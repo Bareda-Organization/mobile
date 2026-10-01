@@ -9,6 +9,7 @@ import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/core/auth/user_role.dart';
 import 'package:manager_app/core/constants/position_constants.dart';
 import 'package:manager_app/core/location/position_source.dart';
+import 'package:manager_app/core/run/manager_run_channel.dart';
 import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/features/drive_mode/presentation/drive_mode_providers.dart';
@@ -231,6 +232,42 @@ void main() {
       expect(repository.calls.length, callsAfterStop);
     },
   );
+
+  // R46-FIXCONN C-10 — 위치 POST 성공은 이 앱에서 서버에 다시 닿았다는
+  // 신호다 — 끊긴 실시간 연결을 바로 다시 붙이게 알린다.
+  testWidgets('위치 전송이 성공할 때마다 서버 도달 신호를 올린다', (tester) async {
+    final source = _FakePositionSource(
+      PositionSample(lat: 37.5, lng: 127, recordedAt: recordedAt),
+    );
+    final repository = _RecordingPositionRepository();
+    const interval = PositionConstants.transmissionInterval;
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: baseOverrides(
+          role: UserRole.driver,
+          runStatus: RunStatus.moving,
+          positionSource: source,
+          positionRepository: repository,
+        ),
+        child: const MaterialApp(home: DriveModeScreen()),
+      ),
+    );
+    await tester.pump();
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(DriveModeScreen)),
+    );
+    expect(container.read(serverReachedProvider), 0);
+
+    await tester.pump(interval);
+    await tester.pump();
+    expect(container.read(serverReachedProvider), 1);
+
+    await tester.pump(interval);
+    await tester.pump();
+    expect(container.read(serverReachedProvider), 2);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
 
   test('위치 전송 주기 상수는 2초로 고정한다 (2026-09-14 사용자 결정)', () {
     // ⚠ 값 자체를 하드코딩해 대조한다 — 위 위젯 시험처럼 상수를 그대로

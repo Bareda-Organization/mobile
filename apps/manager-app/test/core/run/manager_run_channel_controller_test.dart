@@ -151,6 +151,24 @@ void main() {
     expect(client.reconnectNowCalls, 1);
   });
 
+  // R46-FIXCONN C-10 — 음영에서 나와 위치 전송이 다시 성공해도 실시간 연결은
+  // 재연결 대기(최대 30초)가 끝나야 붙었다. 위치 POST 성공이 이 앱에서 서버에
+  // 다시 닿았다는 신호이므로(전송 칩의 근거와 같다) 그 순간 연결을 바로 다시
+  // 붙이게 요청한다.
+  testWidgets('위치 전송이 서버에 닿으면 끊긴 연결을 바로 다시 붙이게 요청한다', (tester) async {
+    final loads = _Loads();
+    final client = await _pumpController(tester, loads);
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(Consumer)),
+    );
+    expect(client.reconnectNowCalls, 0);
+
+    container.read(serverReachedProvider.notifier).state++;
+    await tester.pump();
+
+    expect(client.reconnectNowCalls, 1);
+  });
+
   // L4 — 한 방송마다 명단·노선을 바로 다시 받으면, 한 정류장에서 승차가 몰릴 때 탭마다 같은 조회가 연달아 나간다.
   group('이벤트 뒤 화면 값 재조회', () {
     testWidgets('이벤트가 몰려도 첫 이벤트 1초 뒤 한 번만 다시 읽는다', (tester) async {

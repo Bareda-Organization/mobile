@@ -7,6 +7,7 @@ import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/core/constants/position_constants.dart';
 import 'package:manager_app/core/location/position_source.dart';
+import 'package:manager_app/core/run/manager_run_channel.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
 import 'package:manager_app/features/position/data/models/position_request.dart';
 import 'package:manager_app/features/position/presentation/position_link.dart';
@@ -115,6 +116,8 @@ class PositionTransmitter extends Notifier<PositionTransmission> {
       // 서버가 받았다 — 운행 화면의 전송 상태 칩이 이 시각부터 센다. 그사이 송신 대상 회차가 바뀌었으면 옛 회차의 성공이다.
       if (ref.read(transmittingRunIdProvider) == runId) {
         ref.read(positionLinkProvider.notifier).markSent();
+        // 서버에 닿았다 — 끊겨 재연결 대기 중인 실시간 연결이 있으면 바로 다시 붙게 알린다(R46-FIXCONN C-10).
+        ref.read(serverReachedProvider.notifier).state++;
       }
     } on Failure {
       // 배경 전송 실패 — 다음 주기가 대신한다(§1.9 는 화면 액션의 낙관적 표시를 금지할 뿐이다). 실패는 조용히

@@ -103,6 +103,14 @@ void dispatchManagerChannelEvent(
 /// 값 자체에는 뜻이 없다 — 바뀌었다는 사실이 신호다.
 final StateProvider<int> appResumedProvider = StateProvider<int>((ref) => 0);
 
+/// 서버에 다시 닿았다는 신호(R46-FIXCONN C-10) — 위치 전송(REST)이 성공할
+/// 때마다 하나씩 오른다. 음영에서 나와 망이 돌아와도 실시간 연결은 재연결
+/// 대기(최대 30초)가 끝나야 붙으므로, [ManagerRunChannelController] 가 이
+/// 신호를 보고 바로 다시 붙는다. 이미 연결돼 있거나 연결 중이면
+/// 클라이언트가 건드리지 않아([BaraedaWebSocketClient.reconnectNow]) 2초마다
+/// 올라도 무해하다.
+final StateProvider<int> serverReachedProvider = StateProvider<int>((ref) => 0);
+
 /// 이벤트가 몰려도 명단·노선을 이 간격 안에서는 한 번만 다시 받는다(R46-FIXRT L4). 한 정류장에서 승차가
 /// 몰리면 방송 한 건마다 같은 조회가 탭마다 연달아 나가므로, 첫 이벤트 뒤 이 시간을 기다렸다 한 번에 읽는다.
 const Duration runViewRefetchWindow = Duration(seconds: 1);
@@ -148,7 +156,11 @@ class ManagerRunChannelController extends StateNotifier<ManagerChannelStatus> {
     _client.connect();
     // 앱 복귀 — 끊겨 대기 중인 연결을 바로 붙인다. 거부(forbidden)로 일부러 끊은 연결은 클라이언트가
     // 되살리지 않는다(`reconnectNow` 문서).
-    _ref.listen<int>(appResumedProvider, (_, _) => _client.reconnectNow());
+    _ref
+      ..listen<int>(appResumedProvider, (_, _) => _client.reconnectNow())
+      // 망 복귀 — 위치 전송이 서버에 닿으면 재연결 대기를 기다리지 않는다
+      // (R46-FIXCONN C-10).
+      ..listen<int>(serverReachedProvider, (_, _) => _client.reconnectNow());
   }
 
   final Ref _ref;
