@@ -250,7 +250,11 @@ void main() {
       await _connected(client);
       client.subscribe(_destination, (_) {});
 
-      await _until(() => server.conns.length == 2, what: '두 번째 연결');
+      // 소켓을 받은 것과 CONNECT 프레임이 도착한 것은 다르다 — 부하가 있으면 사이가 벌어진다.
+      await _until(
+        () => server.conns.length == 2 && server.conns[1].auth != null,
+        what: '두 번째 연결의 CONNECT',
+      );
       expect(server.conns[1].auth, 'Bearer $fresh');
       await _until(() => server.conns[0].closed, what: '옛 연결 종료');
 
@@ -435,6 +439,28 @@ void main() {
 
       expect(started.refreshed, isEmpty);
       expect(server.conns, hasLength(1));
+    });
+
+    test('갈아타는 중에 disconnect() 하면 두 연결을 모두 닫는다', () async {
+      final started = await start(
+        refresh: (_) async => _jwtExpiringIn(const Duration(minutes: 10)),
+      );
+      final client = started.client..connect();
+      await _connected(client);
+      client.subscribe(_destination, (_) {});
+
+      await _until(
+        () => server.conns.length == 2 && server.conns[1].auth != null,
+        what: '두 번째 연결',
+      );
+      client.disconnect();
+      await _until(
+        () => server.conns.every((conn) => conn.closed),
+        what: '두 연결 모두 종료',
+      );
+
+      expect(client.state, WsConnectionState.disconnected);
+      expect(server.conns, hasLength(2));
     });
 
     test('만료 시각을 읽을 수 없는 토큰이면 갈아타기를 예약하지 않는다', () async {
