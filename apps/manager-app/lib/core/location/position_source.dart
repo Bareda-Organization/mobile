@@ -247,9 +247,26 @@ class GeolocatorPositionSource implements PositionSource {
     await _ready;
     if (!_started || _subscription != null) return;
     if (_availability != PositionAvailability.available) return;
-    _subscription = Geolocator.getPositionStream(
-      locationSettings: buildLocationSettings(defaultTargetPlatform),
-    ).listen(_onPosition);
+    _subscription =
+        Geolocator.getPositionStream(
+          locationSettings: buildLocationSettings(defaultTargetPlatform),
+        ).listen(
+          _onPosition,
+          onError: (_) => _onStreamLost(),
+          onDone: _onStreamLost,
+        );
+  }
+
+  /// 스트림이 오류로 끊기거나 끝났다(운행 중 GPS 를 껐다 켠 경우 등) — 죽은
+  /// 구독을 비우고 권한·서비스를 다시 확인해 연다. 비우지 않으면 [_startStream]
+  /// 의 `_subscription != null` 검사에 막혀, 설정이 정상으로 돌아와도 그 회차가
+  /// 끝날 때까지 위치 송신이 멈춘다(leak K-4). 서비스가 꺼진 탓이면 다시 열지
+  /// 않고 [availability] 만 바꾼다 — 그 뒤 송신기의 주기 [start] 가 켜진 것을
+  /// 알아채 연다(F06-03).
+  void _onStreamLost() {
+    unawaited(_subscription?.cancel());
+    _subscription = null;
+    unawaited(_recheck());
   }
 
   @override
