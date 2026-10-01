@@ -19,8 +19,9 @@ enum LiveMapConnection {
   /// 연결이 끊어져 자동 재시도 중 — `WsConnectionState.reconnecting`.
   reconnecting,
 
-  /// 6회 재시도 후 포기 — `WsConnectionState.gaveUp`. "데이터 없음"이
-  /// 아니라 "연결 끊김"으로 표시해야 하는 자리.
+  /// 재시도 상한 도달 — `WsConnectionState.gaveUp`. "데이터 없음"이
+  /// 아니라 "연결 끊김"으로 표시해야 하는 자리. 기본 재연결 정책은 상한이
+  /// 없어(R46-FIXRT S-5) 운영에서는 이 상태에 들지 않는다.
   gaveUp,
 
   /// 이 학생 회차 채널 구독이 서버에서 거부됨(FORBIDDEN) — 연결 자체는

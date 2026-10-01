@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:parent_app/app/app.dart';
 import 'package:parent_app/app/app_routes.dart';
@@ -23,6 +24,25 @@ import 'package:parent_app/features/settings/presentation/settings_screen.dart';
 
 import '../support/fake_notification_repository.dart';
 import '../support/fake_token_storage.dart';
+
+/// 소켓 없이 "앱 복귀 때 재연결을 요청하는가" 만 보려는 가짜 클라이언트 — 세션 시작이 읽는 `sessionExpired` 와
+/// 복귀 때 부르는 `reconnectNow` 만 구현한다.
+class _FakeWsClient implements BaraedaWebSocketClient {
+  int reconnectNowCalls = 0;
+
+  @override
+  Stream<void> get sessionExpired => const Stream<void>.empty();
+
+  @override
+  void reconnectNow() => reconnectNowCalls++;
+
+  @override
+  void dispose() {}
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) =>
+      throw UnimplementedError('이 시험의 관심사가 아니다: ${invocation.memberName}');
+}
 
 class _FakeDeviceRegistrationStorage extends DeviceRegistrationStorage {
   @override
@@ -56,6 +76,7 @@ void main() {
     UserRole? role = UserRole.parent,
     AccountStatus status = AccountStatus.active,
     List<NotificationItem>? items,
+    List<Override> extraOverrides = const [],
   }) async {
     final repository = FakeNotificationRepository(
       items ?? [_item('a'), _item('b'), _item('c', unread: false)],
@@ -63,6 +84,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          ...extraOverrides,
           tokenStorageProvider.overrideWithValue(FakeTokenStorage()),
           currentUserRoleProvider.overrideWith((ref) => role),
           currentAccountStatusProvider.overrideWith((ref) => status),
@@ -266,6 +288,22 @@ void main() {
   });
 
   // F05-06 — 푸시 SDK 가 없어 앱 안 갱신이 유일한 통지 수단이다. 알림 탭을 열지 않아도 배지는 최신이어야 한다.
+  // R46-FIXRT S-5 — 앱이 백그라운드에서 돌아오면 끊겨 대기 중인 실시간 연결을 다음 재연결 타이머(최대 30초)를
+  // 기다리지 않고 바로 다시 붙인다. 지금까지는 알림 목록(REST)만 다시 받았다.
+  testWidgets('앱이 백그라운드에서 돌아오면 실시간 연결을 바로 다시 붙이게 요청한다', (tester) async {
+    final client = _FakeWsClient();
+    await pumpApp(
+      tester,
+      extraOverrides: [webSocketClientProvider.overrideWithValue(client)],
+    );
+    expect(client.reconnectNowCalls, 0);
+
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pumpAndSettle();
+
+    expect(client.reconnectNowCalls, 1);
+  });
+
   group('자동 갱신', () {
     testWidgets('90초가 지나면 알림을 다시 받아 배지가 최신이 된다', (tester) async {
       final repository = await pumpApp(tester);

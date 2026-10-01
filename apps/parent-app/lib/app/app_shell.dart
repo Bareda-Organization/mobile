@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:parent_app/app/app_routes.dart';
+import 'package:parent_app/app/di.dart';
 import 'package:parent_app/core/refresh/visible_poller.dart';
 import 'package:parent_app/features/notifications/presentation/notification_providers.dart';
 
@@ -26,7 +27,8 @@ class AppShell extends ConsumerStatefulWidget {
   ConsumerState<AppShell> createState() => _AppShellState();
 }
 
-class _AppShellState extends ConsumerState<AppShell> {
+class _AppShellState extends ConsumerState<AppShell>
+    with WidgetsBindingObserver {
   late final VisiblePoller _poller = VisiblePoller(
     interval: pollInterval,
     onTick: _refreshQuietly,
@@ -42,12 +44,24 @@ class _AppShellState extends ConsumerState<AppShell> {
   void initState() {
     super.initState();
     _poller.start();
+    WidgetsBinding.instance.addObserver(this);
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _poller.dispose();
     super.dispose();
+  }
+
+  /// 앱이 백그라운드에서 돌아왔다 — 끊겨 재연결 대기 중인 실시간 연결(위치 지도)을 다음 타이머(최대 30초)를
+  /// 기다리지 않고 바로 다시 붙인다. 연결한 적 없거나 일부러 끊은 연결은 클라이언트가 건드리지 않는다(R46-FIXRT S-5).
+  /// 알림 목록의 즉시 갱신은 [VisiblePoller] 가 맡는다.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      ref.read(webSocketClientProvider).reconnectNow();
+    }
   }
 
   void _refreshQuietly() =>
