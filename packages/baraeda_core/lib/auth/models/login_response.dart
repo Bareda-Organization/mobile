@@ -17,6 +17,7 @@ class LoginResponse {
     required this.accountId,
     this.refreshToken,
     this.academy,
+    this.mustChangePassword = false,
   });
 
   /// 응답 본문을 그대로 옮긴다.
@@ -29,6 +30,7 @@ class LoginResponse {
       status: AccountStatus.fromWireValueOrNull(json['status'] as String?),
       accountId: json['account_id'] as String,
       academy: academyJson == null ? null : AcademyRef.fromJson(academyJson),
+      mustChangePassword: json['must_change_password'] as bool? ?? false,
     );
   }
 
@@ -51,4 +53,8 @@ class LoginResponse {
 
   /// `system_admin` 은 `null`.
   final AcademyRef? academy;
+
+  /// 임시 비밀번호 강제 변경 표식(API_SPEC §2.5, Ruling 540) — 관리자가 비밀번호를 초기화한 계정이면 `true`.
+  /// 서버는 이 계정이 비밀번호를 바꾸기 전까지 다른 API 를 `403 PASSWORD_CHANGE_REQUIRED` 로 막는다.
+  final bool mustChangePassword;
 }

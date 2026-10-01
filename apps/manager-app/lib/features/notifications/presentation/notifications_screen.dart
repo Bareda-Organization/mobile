@@ -4,8 +4,11 @@ import 'package:baraeda_core/baraeda_core.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:manager_app/app/di.dart';
+import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/core/network/failure_messages.dart';
+import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/features/notifications/presentation/notification_kind.dart';
 import 'package:manager_app/features/notifications/presentation/notification_providers.dart';
 
@@ -13,7 +16,8 @@ import 'package:manager_app/features/notifications/presentation/notification_pro
 ///
 /// 목록 그리기(걸러 보기 · 날짜 머리 · 다음 쪽 자동 받기 · 당겨서 새로고침)는
 /// 학부모·학생 앱과 같은 공용 `NotificationListView` 가 맡는다.
-/// 행을 누르면 읽음 처리(§3.13)한다 — 갈 화면은 없다(`notification_kind.dart`).
+/// 행을 누르면 읽음 처리(§3.13)하고, 회차를 가리키는 알림(노선·배치 변경)은 그 회차의 화면으로 간다
+/// (`notification_kind.dart` 의 `destinationOf`).
 class NotificationsScreen extends ConsumerWidget {
   const NotificationsScreen({super.key});
 
@@ -70,8 +74,27 @@ class _ItemRow extends ConsumerWidget {
       timeSpoken: spokenClock(item.sentAt),
       unread: item.isUnread,
       important: kind.important,
-      onTap: item.isUnread ? () => _markRead(context, ref) : null,
+      onTap: _tapHandler(context, ref),
     );
+  }
+
+  /// 안 읽은 알림은 읽음 처리하고, 가리키는 회차가 있으면 그 화면으로 간다(Ruling 542). 둘 다 해당 없으면 `null`.
+  VoidCallback? _tapHandler(BuildContext context, WidgetRef ref) {
+    final destination = item.runId == null
+        ? null
+        : destinationOf(
+            item.type,
+            canOperateRun:
+                ref.read(roleCapabilitiesProvider)?.canOperateRun ?? false,
+          );
+    if (!item.isUnread && destination == null) return null;
+    return () {
+      if (item.isUnread) unawaited(_markRead(context, ref));
+      if (destination != null) {
+        ref.read(selectedRunIdProvider.notifier).state = item.runId;
+        unawaited(context.push(destination));
+      }
+    };
   }
 
   /// 읽음 처리. 실패하면 안 읽음으로 남으니 알린다.

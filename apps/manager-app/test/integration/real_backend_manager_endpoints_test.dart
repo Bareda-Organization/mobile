@@ -630,4 +630,32 @@ void main() {
       },
     );
   });
+  // R46-FUFEAT ③(Ruling 542) — 알림 항목은 `run_id` 키를 항상 싣는다(회차를 가리키지 않는 알림은 null).
+  // 매니저 앱이 이 키로 알림 행을 눌러 그 회차의 화면으로 간다 — 키가 사라지면 탭 이동이 조용히 죽는다.
+  group('§3.12 GET /notifications — run_id (Ruling 542)', () {
+    test(
+      '기사의 알림 목록은 모든 항목에 run_id 키가 있고 NotificationItem 이 읽는다',
+      () async {
+        if (!backendReachable) {
+          markTestSkipped('환경 문제: 백엔드 미기동($baseUrl)');
+          return;
+        }
+        final (:auth, :dio) = buildClient();
+        await auth.login(loginId: 'driverA1', password: 'password');
+
+        final response = await dio.get<Map<String, dynamic>>('/notifications');
+
+        expect(response.statusCode, 200);
+        final items = (response.data!['items'] as List<dynamic>)
+            .cast<Map<String, dynamic>>();
+        for (final item in items) {
+          expect(item.containsKey('run_id'), isTrue);
+        }
+        expect(
+          items.map(NotificationItem.fromJson).toList(),
+          hasLength(items.length),
+        );
+      },
+    );
+  });
 }

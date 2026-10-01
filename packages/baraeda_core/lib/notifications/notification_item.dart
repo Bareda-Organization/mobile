@@ -17,6 +17,7 @@ class NotificationItem {
     this.studentId,
     this.studentName,
     this.readAt,
+    this.runId,
   });
 
   /// §3.12 응답 항목 JSON 에서 만든다.
@@ -35,6 +36,7 @@ class NotificationItem {
             ? null
             : DateTime.parse(json['read_at'] as String),
         popup: json['popup'] as bool,
+        runId: json['run_id'] == null ? null : asIdString(json['run_id']),
       );
 
   /// 알림 식별자 — 읽음 처리(§3.13)의 경로 변수.
@@ -64,6 +66,11 @@ class NotificationItem {
   /// 팝업 노출 대상 여부(NTF-09).
   final bool popup;
 
+  /// 알림이 가리키는 회차 식별자(`run_id`, Ruling 542) — 매니저 알림(노선·배치
+  /// 변경)만 값이 있고 그 밖에는 `null`. 매니저 앱이 눌러서 그 회차의 화면으로
+  /// 가는 근거다.
+  final String? runId;
+
   /// 아직 읽지 않았는가.
   bool get isUnread => readAt == null;
 
@@ -78,6 +85,7 @@ class NotificationItem {
     studentId: studentId,
     studentName: studentName,
     readAt: at,
+    runId: runId,
   );
 }
 
