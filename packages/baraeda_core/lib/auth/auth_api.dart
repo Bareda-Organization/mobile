@@ -5,8 +5,10 @@ import 'package:baraeda_core/auth/models/me_response.dart';
 import 'package:baraeda_core/auth/models/reapply_response.dart';
 import 'package:baraeda_core/auth/models/signup_models.dart';
 import 'package:baraeda_core/auth/models/signup_status_response.dart';
+import 'package:baraeda_core/push/device_registrar.dart';
 import 'package:baraeda_core/storage/token_storage.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 
 /// API_SPEC §2 인증 엔드포인트 11개(§2.6 `/auth/refresh` 는 `ApiClient` 의
 /// 인터셉터가 내부적으로만 쓰므로 이 클래스가 노출하지 않는다)를 한 곳에
@@ -18,10 +20,18 @@ import 'package:dio/dio.dart';
 /// 뒤라 여기서는 각 응답의 필드만 그대로 읽는다.
 class AuthApi {
   /// `dio` 는 `ApiClient.dio`(인터셉터 부착된 인스턴스)를 그대로 받는다.
-  AuthApi({required this._dio, required this._tokenStorage});
+  ///
+  /// `deviceRegistrar` 가 있으면 로그인·`/me` 성공 뒤 푸시 단말을 등록하고 로그아웃에 `device_id` 를 싣는다
+  /// (NTF-12 · Ruling 510) — 없으면 예전 그대로다.
+  AuthApi({
+    required this._dio,
+    required this._tokenStorage,
+    this._deviceRegistrar,
+  });
 
   final Dio _dio;
   final TokenStorage _tokenStorage;
+  final DeviceRegistrar? _deviceRegistrar;
 
   /// §2.1 — 비인증. 검색어가 비어 있으면 서버가 `422` 를 던진다.
   Future<List<AcademySummary>> searchAcademies(String query) async {
@@ -81,6 +91,8 @@ class AuthApi {
         accessToken: loginResponse.accessToken,
         refreshToken: refreshToken,
       );
+      // 세션이 새로 생겼으니 같은 토큰이라도 이 계정으로 다시 등록한다.
+      await _registerDevice(force: true);
     }
     return loginResponse;
   }
@@ -88,15 +100,19 @@ class AuthApi {
   /// §2.7 — 저장된 refresh 토큰을 본문에 실어 서버 쪽을 무효화하고,
   /// 서버 호출 성패와 무관하게 로컬 토큰은 항상 지운다 — 로그아웃 버튼을
   /// 누른 사용자가 네트워크 실패로 로그인 상태에 갇히면 안 된다.
+  ///
+  /// 등록된 기기가 있으면 `device_id` 를 함께 보내 서버가 그 기기의 푸시 토큰을 해지하게 한다(§2.7 · §2.11).
   Future<void> logout() async {
     final refreshToken = await _tokenStorage.readRefreshToken();
+    final deviceId = await _deviceRegistrar?.deviceId();
     try {
       await _dio.post<void>(
         '/auth/logout',
-        data: {'refresh_token': refreshToken},
+        data: {'refresh_token': refreshToken, 'device_id': ?deviceId},
       );
     } finally {
       await _tokenStorage.clear();
+      await _deviceRegistrar?.forget();
     }
   }
 
@@ -137,7 +153,18 @@ class AuthApi {
   /// `role`·`status` 를 다시 얻는 유일한 경로(§2.10 이유 ②).
   Future<MeResponse> me() async {
     final response = await _dio.get<Map<String, dynamic>>('/me');
+    // 자동 로그인(앱 재실행)도 이 호출을 지나므로 토큰이 바뀐 경우를 여기서 따라잡는다.
+    await _registerDevice();
     return MeResponse.fromJson(response.data!);
+  }
+
+  /// 푸시 단말 등록은 부가 동작이다 — 실패해도 로그인·`/me` 를 막지 않고, 다음 `/me` 가 다시 시도한다.
+  Future<void> _registerDevice({bool force = false}) async {
+    try {
+      await _deviceRegistrar?.register(registerDevice, force: force);
+    } on Object catch (error) {
+      debugPrint('[push] 단말 등록 실패 — 다음 /me 에서 다시 시도: $error');
+    }
   }
 
   /// §2.11 등록.
