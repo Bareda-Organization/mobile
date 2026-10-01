@@ -79,6 +79,8 @@ class LiveMapNotifier extends StateNotifier<LiveMapState> {
   BaraedaWebSocketClient get _client => _ref.read(webSocketClientProvider);
 
   void _init() {
+    // 이 지도가 살아 있는 동안 연결을 붙잡는다 — 마지막 지도가 닫히면 연결도 끊긴다(R46-FIXCONN C-2).
+    _ref.listen(webSocketHoldProvider, (_, _) {});
     final client = _client;
     _applyConnectionState(client.state);
     _connectionSub = client.connectionState.listen(_onConnectionState);

@@ -48,6 +48,9 @@ final StateProvider<String?> sessionExpiredNoticeProvider =
 
 /// 재발급이 거절돼 로그인이 풀렸다 — REST·WS 두 경로가 같은 처리를 한다. 안내를 남기고 역할을 비운다(R46).
 void endSessionAsExpired(Ref ref) {
+  // 옛 계정의 토큰으로 붙은 실시간 연결을 닫는다 — 안 닫으면 다음 로그인
+  // 계정의 지도가 그 연결에 구독을 얹는다(R46-FIXCONN C-2).
+  ref.read(webSocketClientProvider).disconnect();
   ref.read(sessionExpiredNoticeProvider.notifier).state =
       '로그인이 만료됐습니다. 다시 로그인해 주세요';
   applyRoleAndStatus(
@@ -104,15 +107,21 @@ final authBootstrapProvider = FutureProvider<void>(retry: (_, _) => null, (
 /// 비면 라우터가 로그인 화면으로 보낸다(판정은 라우터 한 곳). 토큰은 `AuthApi.logout` 이 성패와 무관하게
 /// 지운다 — 여기서 역할까지 비우지 않으면 토큰 없이 로그인된 화면에 갇혀 요청마다 401 이 난다.
 ///
+/// 실시간 연결(`webSocketClientProvider`)도 닫는다(R46-FIXCONN C-2).
+///
 /// provider 를 await 전에 모두 읽어 둔다 — 로그아웃하면서 화면이 사라지면 그 뒤의 `ref` 는 쓸 수 없다.
 Future<void> signOut(WidgetRef ref) async {
   final repository = ref.read(authRepositoryProvider);
   final unsupported = ref.read(unsupportedRoleProvider.notifier);
   final role = ref.read(currentUserRoleProvider.notifier);
   final status = ref.read(currentAccountStatusProvider.notifier);
+  final wsClient = ref.read(webSocketClientProvider);
   try {
     await repository.logout();
   } finally {
+    // 서버 호출이 실패해도 옛 계정의 실시간 연결은 닫는다 — 다음 로그인
+    // 계정의 지도가 그 연결에 구독을 얹으면 안 된다(C-2).
+    wsClient.disconnect();
     applyRoleAndStatus(unsupported, role, status, role: null, status: null);
   }
 }

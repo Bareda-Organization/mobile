@@ -69,10 +69,12 @@ final apiClientProvider = Provider<ApiClient>((ref) {
 });
 
 /// F4-A 2단계 — `/ws/location` STOMP 연결. `apiClientProvider` 와 달리
-/// **앱 전역에 하나만** 둔다(autoDispose 아님) — 화면을 오갈 때마다
+/// **앱 전역에 하나만** 둔다(autoDispose 아님) — 지도에서 자녀를 전환하는 동안
 /// 재연결 핸드셰이크를 반복하지 않기 위함이다. 구독 자체는 화면 쪽
 /// (`live_map_providers.dart`)이 필요할 때만 걸고 dispose 시 반드시
-/// 해지하므로, 이 provider 는 연결 수명만 책임진다.
+/// 해지한다. 연결을 **언제 닫는가** 는 [webSocketHoldProvider](지도가 열려 있는
+/// 동안만 연결을 붙잡는다)와 로그아웃·세션 만료(`account_session.dart`)가 정한다
+/// (R46-FIXCONN C-2).
 ///
 /// URL 은 `ApiConstants.baseUrl`(REST) 에서 공용 `wsUrlFromApiBaseUrl` 로
 /// 유도한다 — 배포 서버(`https`)면 `wss` 가 돼야 해서 스킴을 여기서 박지 않는다
@@ -87,6 +89,21 @@ final webSocketClientProvider = Provider<BaraedaWebSocketClient>((ref) {
   );
   ref.onDispose(client.dispose);
   return client;
+});
+
+/// 실시간 연결을 지도 화면의 수명에 묶는 고리 — 지도(`LiveMapNotifier`)가
+/// 이 provider 를 듣고 있는 동안만 연결이 산다. 자녀 전환처럼 새 지도가 옛
+/// 지도보다 먼저 만들어지는 겹침에서는 듣는 쪽이 0 이 되지 않아 연결이
+/// 유지되고, 마지막 지도가 닫히면 연결을 끊는다. 지도가 없는 동안(홈·알림·
+/// 설정) 구독 없는 유휴 연결이 서버 세션을 차지하고 15분마다 토큰 만료 →
+/// 재발급 → 재연결을 되풀이하던 것을 없앤다(R46-FIXCONN C-2, K-3 — 매니저
+/// 앱 `managerRunChannelProvider` 와 같은 방식).
+// `Provider.autoDispose` 의 반환 타입은 `flutter_riverpod` 가 공개하지 않는다 —
+// `live_map_providers.dart` 의 `liveMapStateProvider` 와 같은 사정.
+// ignore: specify_nonobvious_property_types
+final webSocketHoldProvider = Provider.autoDispose<void>((ref) {
+  final client = ref.watch(webSocketClientProvider);
+  ref.onDispose(client.disconnect);
 });
 
 /// API_SPEC §2 인증 엔드포인트 — `ApiClient.dio`(인터셉터 부착)를 그대로
