@@ -1012,6 +1012,14 @@ void main() {
         rendered,
         isNot(matches(RegExp(r'도착 예정|ETA|예상|곳 전|정거장 전|분 후|탑승 인원|\d+\s*명'))),
       );
+      // 문구가 아니라 값도 본다 — 서버가 실어 보낸 eta(08:07 UTC)를 날것으로든 기기 표준시로든 그리면 안 된다.
+      final etaLocal = DateTime.utc(2026, 9, 13, 8, 7).toLocal();
+      final etaClock =
+          '${etaLocal.hour.toString().padLeft(2, '0')}:'
+          '${etaLocal.minute.toString().padLeft(2, '0')}';
+      expect(rendered, isNot(contains('2026-09-13T08:07')));
+      expect(rendered, isNot(contains('08:07')));
+      expect(rendered, isNot(contains(etaClock)));
     });
 
     testWidgets('R46 P1 노선을 못 받거나 좌표가 없으면 버스만 그리고 오류 띠를 더하지 않는다', (
