@@ -223,6 +223,14 @@ void main() {
         // 연결)에서 늘지 않는다.
         await Future<void>.delayed(const Duration(milliseconds: 200));
         expect(server.connectCount, 1);
+
+        // R46-FIXRT S-5 — 앱 복귀(reconnectNow)도 만료된 세션의 소켓을 되살리지
+        // 않는다. 이 상태는 일부러 끊은 것이 아니라(disconnect() 호출 없음)
+        // 재발급 실패로 멈춘 것이라 상태로만 가려낼 수 있다.
+        client.reconnectNow();
+        await Future<void>.delayed(const Duration(milliseconds: 200));
+        expect(server.connectCount, 1);
+        expect(client.state, WsConnectionState.disconnected);
       },
     );
   });

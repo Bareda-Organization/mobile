@@ -156,9 +156,9 @@ class BaraedaWebSocketClient {
   /// 앱이 백그라운드에서 돌아왔다 — 끊겨 재연결 대기 중([WsConnectionState.reconnecting])이거나 포기한
   /// ([WsConnectionState.gaveUp]) 연결을 다음 타이머(최대 30초)를 기다리지 않고 지금 다시 붙인다.
   /// 시도 횟수는 0 으로 돌아간다. 연결한 적 없거나(앱 복귀만으로 소켓을 새로 열지 않는다) 일부러 끊은
-  /// (거부·로그아웃) 연결, 이미 연결 중·연결된 연결은 건드리지 않는다.
+  /// (거부·로그아웃) 연결, 재발급 실패로 멈춘 세션([sessionExpired]), 이미 연결 중·연결된 연결은 모두
+  /// `disconnected`·`connecting`·`connected` 라 건드리지 않는다.
   void reconnectNow() {
-    if (_manuallyDisconnected) return;
     if (_state != WsConnectionState.reconnecting &&
         _state != WsConnectionState.gaveUp) {
       return;
