@@ -4,10 +4,37 @@ import 'dart:math';
 
 import 'package:baraeda_core/storage/token_storage.dart';
 import 'package:baraeda_core/time/clock.dart';
+import 'package:baraeda_core/websocket/token_renewal.dart';
 import 'package:baraeda_core/websocket/websocket_envelope.dart';
 import 'package:baraeda_core/websocket/ws_backoff_policy.dart';
 import 'package:baraeda_core/websocket/ws_connection_state.dart';
 import 'package:stomp_dart_client/stomp_dart_client.dart';
+
+/// [BaraedaWebSocketClient.subscribe] 로 걸어 둔 구독 한 건 — 만료 전 갈아타기가
+/// 같은 구독을 새 연결에 다시 걸 수 있게 클라이언트가 직접 들고 있는다.
+class _ActiveSubscription {
+  _ActiveSubscription(this.id, this.destination, this.onEnvelope);
+
+  final int id;
+  final String destination;
+  final void Function(WebSocketEnvelope envelope) onEnvelope;
+
+  /// 이 구독이 걸려 있는 연결 → 그 연결의 해제 함수(갈아타는 동안만 둘이다).
+  final Map<StompClient, StompUnsubscribe> handles = {};
+}
+
+/// 갈아타려고 새로 연 두 번째 연결 — 옛 연결이 계속 방송을 받는 동안 구독을 모두
+/// 걸고, 확인 대기가 끝나면 옛 연결을 대신한다.
+class _Standby {
+  _Standby(this.attempt, this.client, this.token);
+
+  final int attempt;
+  final StompClient client;
+  final String token;
+
+  /// 처음엔 연결 시도 한도 감시, `CONNECTED` 를 받은 뒤엔 구독 확인 대기.
+  Timer? timer;
+}
 
 /// `/ws/location` 하나에 STOMP 로 붙는 공용 클라이언트 — `API_SPEC §7`.
 ///
@@ -35,6 +62,14 @@ import 'package:stomp_dart_client/stomp_dart_client.dart';
 /// 네트워크 실패가 아니라 예정된 갱신이라 [WsBackoffPolicy] 의 재시도
 /// 횟수를 소모하지 않는다.
 ///
+/// **만료 전 갈아타기(R46-LATERRT C-14)** — 연결에 쓴 토큰의 만료
+/// [TokenRenewalTiming.lead] 전에 재발급해 새 토큰으로 두 번째 연결을 열고, 걸려
+/// 있는 구독을 모두 그 연결에 옮겨 건 뒤 거부 신호 없이 확인 대기가 지나면 옛
+/// 연결을 닫는다. 연결 상태는 `connected` 그대로라 [connectionState] 에 아무것도
+/// 흘리지 않는다. 재발급·새 연결이 실패하면 옛 연결을 그대로 두고, 만료 뒤
+/// `TOKEN_EXPIRED` 경로가 받는다. 갈아타는 동안 두 연결이 같은 방송을 보내면
+/// (구독 + 원문 본문)이 같은 것은 한 번만 전달한다.
+///
 /// **구독 정리** — [subscribe] 가 돌려주는 [StompUnsubscribe] 를 화면이
 /// `dispose()` 시점에 반드시 호출해야 한다. 이 클래스는 화면 생명주기를
 /// 모르므로 구독을 자동으로 추적·정리하지 않는다 — 강제로 추적하면
@@ -49,6 +84,7 @@ class BaraedaWebSocketClient {
     void Function(String message)? onDebugMessage,
     this.connectTimeout = const Duration(seconds: 10),
     this.pingInterval = const Duration(seconds: 10),
+    this.renewalTiming = const TokenRenewalTiming(),
     StompClient Function(StompConfig config)? stompClientFactory,
     Clock clock = const SystemClock(),
   }) : // 필드는 비공개, 파라미터는 공개 이름(`refreshAccessToken:`)을
@@ -86,6 +122,9 @@ class BaraedaWebSocketClient {
   /// 잡는다(R46-FIXCONN K-2).
   final Duration pingInterval;
 
+  /// 만료 전 갈아타기의 시간 값 — [TokenRenewalTiming] 참고.
+  final TokenRenewalTiming renewalTiming;
+
   final StompClient Function(StompConfig config) _stompClientFactory;
   final Clock _clock;
 
@@ -103,6 +142,22 @@ class BaraedaWebSocketClient {
   /// 연결 신호가 새 시도를 끊김으로 오인하게 하지 않는다. 강제 재연결([reconnectNow])이
   /// 옛 소켓을 닫고 바로 새 소켓을 열 때 필요하다.
   int _attemptSeq = 0;
+
+  /// 지금 방송을 받는 연결의 번호 — 갈아타려고 연 연결은 번호를 받아도 이 값이
+  /// 되기 전까지 밀려난 시도처럼 취급되지 않고 [_standby] 로 따로 가려진다.
+  int _currentAttempt = 0;
+
+  /// 지금 걸려 있는 구독 전부 — 갈아타기가 같은 구독을 새 연결에 옮기는 데 쓴다.
+  /// 새 연결(재연결)은 구독을 이어받지 않으므로 [_doConnect] 가 비운다(화면이
+  /// `connected` 를 다시 받아 직접 구독한다).
+  final Set<_ActiveSubscription> _subscriptions = {};
+  int _subscriptionSeq = 0;
+  Timer? _renewTimer;
+  _Standby? _standby;
+
+  /// 갈아타는 동안(과 그 직후) 본 방송 키 — 두 연결에서 같은 방송이 오면 한 번만
+  /// 전달한다([_deliver]). `null` 이면 거르지 않는다.
+  Set<String>? _seenDuringSwap;
 
   /// 재연결 대기 간격 정책 — 시험이 주입해 실제 시간을 기다리지 않고
   /// 검증할 수 있게 `final` 이 아니라 생성자 파라미터로 남겨 둔다.
@@ -255,24 +310,38 @@ class BaraedaWebSocketClient {
   Future<void> _doConnect({String? overrideToken}) async {
     final epoch = _epoch;
     final attempt = ++_attemptSeq;
+    _currentAttempt = attempt;
+    _cancelRenewal();
     _reconnectHandled = false;
     // 새 소켓은 이전 세션의 구독을 이어받지 않는다 — 화면이 `connected`
     // 를 다시 받으면 알아서 재구독하므로, 옛 목적지가 여기 남아 있으면
     // 다음 FORBIDDEN 이 엉뚱한(이미 끊긴) 목적지를 다시 흘려보낸다.
     _pendingSubscriptions.clear();
+    _subscriptions.clear();
     _setState(WsConnectionState.connecting);
     // 매 (재)연결마다 새로 읽는다 — 토큰 만료 처리 판단 근거 참고.
     final token = overrideToken ?? await _tokenStorage.readAccessToken();
     // 토큰을 읽는 사이 disconnect()·새 connect() 가 있었으면 이 소켓은 만들지 않는다.
     if (epoch != _epoch) return;
 
-    final config = StompConfig(
+    _stompClient = _stompClientFactory(_buildConfig(attempt, token))
+      ..activate();
+    _watchConnecting(epoch);
+  }
+
+  /// 연결 하나(첫 연결·재연결·갈아타려고 연 두 번째 연결)의 STOMP 설정. 번호표
+  /// ([attempt])로 이 연결이 지금 누구 몫인지 가른다 — 지금 방송을 받는
+  /// 연결이면 연결 상태 처리, 갈아타려고 연 연결이면 갈아타기 진행·실패 처리, 둘
+  /// 다 아니면(밀려난 옛 연결) 무시한다.
+  StompConfig _buildConfig(int attempt, String? token) {
+    bool isStandby() => _standby?.attempt == attempt;
+    return StompConfig(
       url: _url,
       // 라이브러리 내장 재연결(고정 지연·무한 재시도)을 끈다 — 우리가
       // WsBackoffPolicy 로 직접 스케줄한다.
       reconnectDelay: Duration.zero,
       // WebSocket 핑 — [pingInterval] 참고. 소켓 열기 한도는 라이브러리의
-      // `connectionTimeout` 이 아니라 아래 [_watchConnecting] 이 맡는다 — 소켓
+      // `connectionTimeout` 이 아니라 [_watchConnecting] 이 맡는다 — 소켓
       // 열기와 `CONNECTED` 를 한 번에 덮고, 클라이언트를 닫으면 같이 사라진다
       // (`connectionTimeout` 은 `Future.timeout` 타이머를 남겨 연결이 끝내 안
       // 되는 시험·종료 상황에서 타이머가 남는다).
@@ -285,14 +354,23 @@ class BaraedaWebSocketClient {
           ? const {}
           : {'Authorization': 'Bearer $token'},
       onConnect: (frame) {
-        if (attempt != _attemptSeq) return;
+        if (isStandby()) {
+          _onStandbyConnected();
+          return;
+        }
+        if (attempt != _currentAttempt) return;
         _connectWatchdog?.cancel();
         _lastServerActivity = _clock.now();
         _reconnectAttempt = 0;
         _setState(WsConnectionState.connected);
+        if (token != null) _scheduleRenewal(token);
       },
       onStompError: (frame) {
-        if (attempt != _attemptSeq) return;
+        if (isStandby()) {
+          _failStandby('STOMP ERROR ${frame.headers['message'] ?? ''}');
+          return;
+        }
+        if (attempt != _currentAttempt) return;
         final message = frame.headers['message'];
         // API_SPEC §7 — 연결에 쓰인 access 토큰이 만료되면 서버가 이
         // 프레임으로 세션을 닫는다. 실제 재발급·재연결은 뒤이어 오는
@@ -320,26 +398,31 @@ class BaraedaWebSocketClient {
         );
       },
       onWebSocketError: (error) {
-        if (attempt != _attemptSeq) return;
         _onDebugMessage('[BaraedaWebSocketClient] WebSocket error: $error');
+        if (isStandby()) {
+          _failStandby('WebSocket 오류');
+          return;
+        }
+        if (attempt != _currentAttempt) return;
         // 소켓이 아예 안 열린 실패(서버 다운)는 `onWebSocketDone` 이 안 온다
         // — 아래 `_reconnectHandled` 가드 참고. 여기서도 같은 처리를 태운다.
         _handleDisconnected();
       },
       onWebSocketDone: () {
-        if (attempt != _attemptSeq) return;
+        if (isStandby()) {
+          _failStandby('연결 닫힘');
+          return;
+        }
+        if (attempt != _currentAttempt) return;
         _handleDisconnected();
       },
       onDebugMessage: (message) {
-        if (attempt == _attemptSeq && message.startsWith('<<<')) {
+        if (attempt == _currentAttempt && message.startsWith('<<<')) {
           _lastServerActivity = _clock.now();
         }
         _onDebugMessage(message);
       },
     );
-
-    _stompClient = _stompClientFactory(config)..activate();
-    _watchConnecting(epoch);
   }
 
   /// 소켓은 열렸는데 `CONNECTED` 가 안 오면(서버 인바운드 포화·반쯤 죽은 서버)
@@ -371,6 +454,7 @@ class BaraedaWebSocketClient {
     _connectWatchdog?.cancel();
     if (_reconnectHandled) return;
     _reconnectHandled = true;
+    _cancelRenewal();
 
     if (_manuallyDisconnected) {
       _setState(WsConnectionState.disconnected);
@@ -438,6 +522,7 @@ class BaraedaWebSocketClient {
     _epoch += 1;
     _reconnectTimer?.cancel();
     _connectWatchdog?.cancel();
+    _cancelRenewal();
     try {
       _stompClient?.deactivate();
     } on StompBadStateException {
@@ -469,32 +554,200 @@ class BaraedaWebSocketClient {
       );
     }
     _pendingSubscriptions.add(destination);
-    final unsubscribe = client.subscribe(
-      destination: destination,
-      callback: (frame) {
-        final body = frame.body;
-        if (body == null) return;
-        final WebSocketEnvelope envelope;
-        try {
-          envelope = WebSocketEnvelope.fromJson(
-            jsonDecode(body) as Map<String, dynamic>,
-          );
-        } on Object catch (error) {
-          // 서버 프레임 하나가 깨졌다고 STOMP 콜백 밖으로 예외를 흘리지 않는다 — 그 프레임만
-          // 버리고 원인을 남겨 "이벤트가 안 온다" 로만 보이지 않게 한다.
-          _onDebugMessage('[BaraedaWebSocketClient] 프레임 파싱 실패: $error');
-          return;
-        }
-        onEnvelope(envelope);
-      },
+    final entry = _ActiveSubscription(
+      ++_subscriptionSeq,
+      destination,
+      onEnvelope,
     );
+    _subscriptions.add(entry);
+    _attachSubscription(client, entry);
+    // 갈아타는 중이고 새 연결이 이미 열렸으면 새 연결에도 건다 — 안 그러면 옛
+    // 연결을 닫는 순간 이 구독이 사라진다.
+    final standbyClient = _standby?.client;
+    if (standbyClient != null && standbyClient.connected) {
+      _attachSubscription(standbyClient, entry);
+    }
     // 화면이 스스로 정상 해제했으면 이 목적지는 더 이상 "거부 여부를
     // 지켜봐야 할 미해제 구독"이 아니다 — 반환하는 unsubscribe 를 감싸
     // 해제 시점에 [_pendingSubscriptions] 에서도 함께 뺀다.
     return ({Map<String, String>? unsubscribeHeaders}) {
+      _subscriptions.remove(entry);
       _pendingSubscriptions.remove(destination);
-      unsubscribe(unsubscribeHeaders: unsubscribeHeaders);
+      for (final unsubscribe in entry.handles.values.toList()) {
+        try {
+          unsubscribe(unsubscribeHeaders: unsubscribeHeaders);
+        } on StompBadStateException {
+          // 갈아타는 동안 둘 중 한 연결이 이미 닫혔다 — 그 연결의 구독은 서버에서도
+          // 사라졌으니 풀 것이 없고, 다른 연결의 구독은 계속 풀어야 한다.
+        }
+      }
+      entry.handles.clear();
     };
+  }
+
+  /// [client] 에 구독을 걸고 해제 함수를 구독 기록에 남긴다. 밀려난 연결(갈아타고
+  /// 닫힌 옛 연결)이 늦게 보내는 프레임은 버린다.
+  void _attachSubscription(StompClient client, _ActiveSubscription entry) {
+    entry.handles[client] = client.subscribe(
+      destination: entry.destination,
+      callback: (frame) {
+        if (!identical(client, _stompClient) &&
+            !identical(client, _standby?.client)) {
+          return;
+        }
+        final body = frame.body;
+        if (body == null) return;
+        _deliver(entry, body);
+      },
+    );
+  }
+
+  /// 갈아타는 동안 같은 방송이 두 연결에서 오면 한 번만 넘긴다. 방송 본문에 고유
+  /// 식별자가 없고 STOMP `message-id` 는 세션마다 따로 붙으므로(`Ruling 682`)
+  /// (구독 + 원문 본문)으로 가린다 — 서버는 같은 방송을 같은 바이트로 모든
+  /// 구독자에게 보낸다.
+  void _deliver(_ActiveSubscription entry, String body) {
+    final seen = _seenDuringSwap;
+    if (seen != null && !seen.add('${entry.id}\n$body')) return;
+    final WebSocketEnvelope envelope;
+    try {
+      envelope = WebSocketEnvelope.fromJson(
+        jsonDecode(body) as Map<String, dynamic>,
+      );
+    } on Object catch (error) {
+      // 서버 프레임 하나가 깨졌다고 STOMP 콜백 밖으로 예외를 흘리지 않는다 — 그 프레임만
+      // 버리고 원인을 남겨 "이벤트가 안 온다" 로만 보이지 않게 한다.
+      _onDebugMessage('[BaraedaWebSocketClient] 프레임 파싱 실패: $error');
+      return;
+    }
+    entry.onEnvelope(envelope);
+  }
+
+  /// 접근 토큰 만료 [TokenRenewalTiming.lead] 전에 갈아타기를 예약한다. 만료
+  /// 시각을 못 읽는 토큰이면 예약하지 않는다 — 그때는 기존 `TOKEN_EXPIRED` 경로가
+  /// 받는다. 갈아탄 뒤에는 새 토큰의 만료 시각으로 다시 예약한다.
+  void _scheduleRenewal(String token) {
+    _renewTimer?.cancel();
+    final expiresAt = readJwtExpiry(token);
+    if (expiresAt == null) return;
+    var delay = expiresAt.difference(_clock.now()) - renewalTiming.lead;
+    if (delay < renewalTiming.minDelay) delay = renewalTiming.minDelay;
+    _renewTimer = Timer(delay, () => unawaited(_renewConnection()));
+  }
+
+  /// 재발급 → 새 토큰으로 두 번째 연결. 재발급이 실패하면(콜백이 없거나 `null`·
+  /// 예외) 아무것도 바꾸지 않는다 — 연결은 그대로 두고, 만료 뒤 서버가 보내는
+  /// `TOKEN_EXPIRED` 가 기존 재발급·재연결 경로를 태운다(방송 공백은 이 기능이
+  /// 없을 때와 같다).
+  Future<void> _renewConnection() async {
+    _renewTimer = null;
+    final attempt = _currentAttempt;
+    final refresh = _refreshAccessToken;
+    if (refresh == null ||
+        _manuallyDisconnected ||
+        _state != WsConnectionState.connected) {
+      return;
+    }
+    final String? newToken;
+    try {
+      newToken = await refresh();
+    } on Object catch (error) {
+      _onDebugMessage(
+        '[BaraedaWebSocketClient] 만료 전 재발급 실패 — 기존 연결을 유지한다: $error',
+      );
+      return;
+    }
+    // 재발급을 기다리는 사이 연결이 끊겼거나 바뀌었으면(끊김·종료·재연결)
+    // 갈아타지 않는다.
+    if (newToken == null ||
+        _manuallyDisconnected ||
+        attempt != _currentAttempt ||
+        _state != WsConnectionState.connected) {
+      return;
+    }
+    _openStandby(newToken);
+  }
+
+  void _openStandby(String token) {
+    final attempt = ++_attemptSeq;
+    final client = _stompClientFactory(_buildConfig(attempt, token))
+      ..activate();
+    // 연결 시도 한도 — 소켓은 열렸는데 `CONNECTED` 가 안 오는 시도가 옛 연결을
+    // 닫을 때까지(최대 [TokenRenewalTiming.lead]) 매달리지 않게 한다.
+    _standby = _Standby(attempt, client, token)
+      ..timer = Timer(connectTimeout, () => _failStandby('연결 시간 초과'));
+  }
+
+  /// 두 번째 연결이 `CONNECTED` 를 받았다 — 걸려 있는 구독을 모두 새 연결에 걸고,
+  /// 확인 대기가 끝나면 옛 연결을 닫는다.
+  void _onStandbyConnected() {
+    final standby = _standby;
+    if (standby == null) return;
+    standby.timer?.cancel();
+    _seenDuringSwap = {};
+    for (final entry in _subscriptions) {
+      _attachSubscription(standby.client, entry);
+    }
+    standby.timer = Timer(renewalTiming.subscribeSettle, _promoteStandby);
+  }
+
+  /// 확인 대기 동안 거부 신호가 없었다 — 새 연결이 방송 받는 연결이 되고 옛
+  /// 연결을 닫는다. 연결 상태는 `connected` 그대로라 알림도 보내지 않는다.
+  void _promoteStandby() {
+    final standby = _standby;
+    final previous = _stompClient;
+    if (standby == null || previous == null) return;
+    _standby = null;
+    _stompClient = standby.client;
+    _currentAttempt = standby.attempt;
+    _lastServerActivity = _clock.now();
+    for (final entry in _subscriptions) {
+      entry.handles.remove(previous);
+    }
+    try {
+      previous.deactivate();
+    } on StompBadStateException {
+      // 옛 연결이 이미 닫혀 있었다 — 닫으려던 것이니 무시한다([disconnect] 와
+      // 같은 사정).
+    }
+    final seen = _seenDuringSwap;
+    Timer(renewalTiming.dedupTail, () {
+      if (identical(_seenDuringSwap, seen)) _seenDuringSwap = null;
+    });
+    _scheduleRenewal(standby.token);
+  }
+
+  void _failStandby(String reason) {
+    if (_standby == null) return;
+    _onDebugMessage(
+      '[BaraedaWebSocketClient] 만료 전 갈아타기 실패($reason) — 기존 연결을 유지한다',
+    );
+    _abortStandby();
+  }
+
+  /// 갈아타기를 접고 두 번째 연결만 닫는다 — 옛 연결은 건드리지 않는다.
+  void _abortStandby() {
+    final standby = _standby;
+    if (standby == null) return;
+    _standby = null;
+    _seenDuringSwap = null;
+    standby.timer?.cancel();
+    for (final entry in _subscriptions) {
+      entry.handles.remove(standby.client);
+    }
+    try {
+      standby.client.deactivate();
+    } on StompBadStateException {
+      // 이미 닫힌 연결을 다시 닫으려는 경우 — 무시한다.
+    }
+  }
+
+  /// 예약된 갈아타기와 진행 중인 갈아타기를 모두 접는다 — 연결이 끊기거나 새로
+  /// 시작되거나 닫힐 때.
+  void _cancelRenewal() {
+    _renewTimer?.cancel();
+    _renewTimer = null;
+    _abortStandby();
   }
 
   void _setState(WsConnectionState next) {

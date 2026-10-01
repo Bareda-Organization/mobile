@@ -32,6 +32,7 @@ export 'push/push_token_source.dart';
 export 'storage/token_storage.dart';
 export 'time/clock.dart';
 export 'websocket/baraeda_websocket_client.dart';
+export 'websocket/token_renewal.dart';
 export 'websocket/websocket_envelope.dart';
 export 'websocket/ws_backoff_policy.dart';
 export 'websocket/ws_channel.dart';
