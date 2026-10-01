@@ -1,3 +1,4 @@
+import 'package:baraeda_core/baraeda_core.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:manager_app/core/run/manager_channel_banner.dart';
@@ -48,6 +49,21 @@ void main() {
       );
       expect(content, isNotNull);
       expect(content!.tone, AlertTone.missed);
+    });
+
+    // R46-FIXCONN C-12 — 같은 끊김을 웹·학부모 앱과 같은 제목으로 알린다.
+    // 권한 거부(forbidden)는 이 앱에서 "배정되지 않음" 이라는 업무 의미가 있어 그 문구를 유지한다.
+    test('끊김 제목이 웹·학부모 앱과 같은 공용 문구다', () {
+      expect(
+        managerChannelBannerContentFor(
+          ManagerChannelStatus.reconnecting,
+        )!.title,
+        WsConnectionNotice.reconnectingTitle,
+      );
+      expect(
+        managerChannelBannerContentFor(ManagerChannelStatus.gaveUp)!.title,
+        WsConnectionNotice.gaveUpTitle,
+      );
     });
 
     test('gaveUp 과 forbidden 은 톤이 같아도 문구로 원인이 구별된다', () {

@@ -165,7 +165,7 @@ void main() {
       expect(connectCount, 1);
     });
 
-    test('소켓 연결 한도·WebSocket 핑 주기가 StompConfig 에 실린다', () async {
+    test('WebSocket 핑 주기가 StompConfig 에 실린다', () async {
       // 반쯤 죽은 TCP 는 dart:io 의 핑·퐁이 STOMP 하트비트와 별개로 잡는다 —
       // 설정이 실제로 라이브러리에 닿아야 한다.
       final configs = <StompConfig>[];
@@ -183,8 +183,36 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 100));
 
       expect(configs, isNotEmpty);
-      expect(configs.first.connectionTimeout, const Duration(seconds: 10));
       expect(configs.first.pingInterval, const Duration(seconds: 10));
+    });
+
+    test('소켓 핸드셰이크가 끝내 안 끝나는 서버도 한도 안에 끊고 다시 시도한다', () async {
+      // TCP 는 받지만 WebSocket 업그레이드에 응답하지 않는다 — 인터넷 없는
+      // Wi-Fi·포획 포털처럼 소켓 열기 단계에서 막히는 상황.
+      final raw = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
+      addTearDown(raw.close);
+      final accepted = <Socket>[];
+      raw.listen(accepted.add);
+      final client = BaraedaWebSocketClient(
+        url: 'ws://127.0.0.1:${raw.port}/ws/location',
+        tokenStorage: _buildTokenStorage(),
+        connectTimeout: const Duration(milliseconds: 200),
+        backoffPolicy: const WsBackoffPolicy(
+          initialDelay: Duration(milliseconds: 20),
+          maxDelay: Duration(milliseconds: 40),
+          jitterRatio: 0,
+        ),
+      );
+      addTearDown(client.dispose);
+
+      final reconnecting = client.connectionState
+          .firstWhere((s) => s == WsConnectionState.reconnecting)
+          .timeout(const Duration(seconds: 1));
+      client.connect();
+      await reconnecting;
+
+      await Future<void>.delayed(const Duration(milliseconds: 600));
+      expect(accepted.length, greaterThanOrEqualTo(2));
     });
   });
 }

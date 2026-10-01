@@ -1,3 +1,4 @@
+import 'package:baraeda_core/baraeda_core.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -57,13 +58,13 @@ ManagerChannelBannerContent? managerChannelBannerContentFor(
   ),
   ManagerChannelStatus.reconnecting => const ManagerChannelBannerContent(
     tone: AlertTone.moving,
-    title: '실시간 연결이 끊어져 재연결 중',
+    title: WsConnectionNotice.reconnectingTitle,
     body: '연결이 돌아올 때까지 자동으로 계속 다시 붙습니다 — 그동안 다른 직원의 변경이 늦게 보일 수 있습니다',
   ),
   // 기본 재연결 정책은 포기하지 않는다(R46-FIXRT S-5) — 상한을 준 정책에서만 이 상태에 든다.
   ManagerChannelStatus.gaveUp => const ManagerChannelBannerContent(
     tone: AlertTone.missed,
-    title: '실시간 연결 실패',
+    title: WsConnectionNotice.gaveUpTitle,
     body: '자동 재연결이 중단됐습니다. 새로고침해 다시 시도하세요',
   ),
   ManagerChannelStatus.forbidden => const ManagerChannelBannerContent(

@@ -35,6 +35,7 @@ export 'websocket/baraeda_websocket_client.dart';
 export 'websocket/websocket_envelope.dart';
 export 'websocket/ws_backoff_policy.dart';
 export 'websocket/ws_channel.dart';
+export 'websocket/ws_connection_notice.dart';
 export 'websocket/ws_connection_state.dart';
 export 'websocket/ws_event_type.dart';
 export 'websocket/ws_payloads.dart';

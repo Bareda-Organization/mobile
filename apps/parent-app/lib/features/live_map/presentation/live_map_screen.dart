@@ -223,7 +223,9 @@ class _LiveMapBodyState extends ConsumerState<_LiveMapBody> {
       final forbidden = connection == LiveMapConnection.forbidden;
       return AlertBanner(
         tone: AlertTone.missed,
-        title: forbidden ? '조회 권한 없음' : '연결 끊김',
+        title: forbidden
+            ? WsConnectionNotice.forbiddenTitle
+            : WsConnectionNotice.gaveUpTitle,
         body: forbidden
             ? '이 회차의 위치 정보를 볼 권한이 없습니다'
             : '실시간 위치 연결이 끊어졌습니다. 다시 시도해 주세요',
@@ -327,7 +329,10 @@ class _LiveMapBodyState extends ConsumerState<_LiveMapBody> {
         if (connection == LiveMapConnection.reconnecting)
           const Padding(
             padding: EdgeInsets.only(bottom: BaraedaSpacing.space4),
-            child: AlertBanner(tone: AlertTone.missed, body: '재연결 시도 중입니다'),
+            child: AlertBanner(
+              tone: AlertTone.missed,
+              body: WsConnectionNotice.reconnectingTitle,
+            ),
           ),
         if (hasFreshPosition)
           _BusMapSection(

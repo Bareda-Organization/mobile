@@ -271,8 +271,11 @@ class BaraedaWebSocketClient {
       // 라이브러리 내장 재연결(고정 지연·무한 재시도)을 끈다 — 우리가
       // WsBackoffPolicy 로 직접 스케줄한다.
       reconnectDelay: Duration.zero,
-      // 소켓 열기 한도와 WebSocket 핑 — `connectTimeout`·`pingInterval` 참고.
-      connectionTimeout: connectTimeout,
+      // WebSocket 핑 — [pingInterval] 참고. 소켓 열기 한도는 라이브러리의
+      // `connectionTimeout` 이 아니라 아래 [_watchConnecting] 이 맡는다 — 소켓
+      // 열기와 `CONNECTED` 를 한 번에 덮고, 클라이언트를 닫으면 같이 사라진다
+      // (`connectionTimeout` 은 `Future.timeout` 타이머를 남겨 연결이 끝내 안
+      // 되는 시험·종료 상황에서 타이머가 남는다).
       pingInterval: pingInterval,
       // `stompConnectHeaders` 가 STOMP CONNECT 프레임의 네이티브 헤더로
       // 나간다 — 여기 실어야 `StompAuthChannelInterceptor` 의

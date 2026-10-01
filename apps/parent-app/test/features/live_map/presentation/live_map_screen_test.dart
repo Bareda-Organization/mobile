@@ -289,7 +289,7 @@ void main() {
         await tester.pump();
 
         expect(find.byType(CircularProgressIndicator), findsOneWidget);
-        expect(find.text('연결 끊김'), findsNothing);
+        expect(find.text(WsConnectionNotice.gaveUpTitle), findsNothing);
         expect(find.text('아직 위치 정보가 없습니다'), findsNothing);
       },
     );
@@ -447,7 +447,7 @@ void main() {
       await pumpConnected(tester);
 
       expect(find.text('아직 위치 정보가 없습니다'), findsOneWidget);
-      expect(find.text('연결 끊김'), findsNothing);
+      expect(find.text(WsConnectionNotice.gaveUpTitle), findsNothing);
       expect(
         client.subscribedDestinations,
         contains(WsChannel.studentRun('s-1')),
@@ -506,7 +506,7 @@ void main() {
       client.forbid(WsChannel.studentRun('s-1'));
       await tester.pump();
 
-      expect(find.text('조회 권한 없음'), findsOneWidget);
+      expect(find.text(WsConnectionNotice.forbiddenTitle), findsOneWidget);
       expect(find.text('다시 시도'), findsNothing);
     });
 
@@ -517,7 +517,7 @@ void main() {
         client.emit(WsConnectionState.gaveUp);
         await tester.pump();
 
-        expect(find.text('연결 끊김'), findsOneWidget);
+        expect(find.text(WsConnectionNotice.gaveUpTitle), findsOneWidget);
         expect(find.text('아직 위치 정보가 없습니다'), findsNothing);
       },
     );
@@ -530,7 +530,7 @@ void main() {
         client.forbid(WsChannel.studentRun('s-1'));
         await tester.pump();
 
-        expect(find.text('조회 권한 없음'), findsOneWidget);
+        expect(find.text(WsConnectionNotice.forbiddenTitle), findsOneWidget);
         expect(find.text('아직 위치 정보가 없습니다'), findsNothing);
       },
     );
@@ -552,7 +552,7 @@ void main() {
         client.emit(WsConnectionState.connected);
         await tester.pump();
 
-        expect(find.text('조회 권한 없음'), findsOneWidget);
+        expect(find.text(WsConnectionNotice.forbiddenTitle), findsOneWidget);
         expect(
           client.callLog.contains(
             'subscribe:${WsChannel.studentRun('s-1')}',
@@ -601,7 +601,7 @@ void main() {
       client.emit(WsConnectionState.reconnecting);
       await tester.pump();
 
-      expect(find.text('재연결 시도 중입니다'), findsOneWidget);
+      expect(find.text(WsConnectionNotice.reconnectingTitle), findsOneWidget);
       expect(find.textContaining('운행 시작'), findsOneWidget);
     });
   });
@@ -646,7 +646,7 @@ void main() {
       await tester.pump();
 
       expect(find.byType(CircularProgressIndicator), findsNothing);
-      expect(find.text('재연결 시도 중입니다'), findsOneWidget);
+      expect(find.text(WsConnectionNotice.reconnectingTitle), findsOneWidget);
       expect(find.textContaining('운행 시작'), findsOneWidget);
     });
 
