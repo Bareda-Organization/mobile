@@ -7,6 +7,7 @@
 // 다크 테마에서도 트랙보다 밝은 표면이라는 시각 관계는 유지된다.
 import 'package:baraeda_ui/theme/baraeda_colors.dart';
 import 'package:baraeda_ui/tokens/typography.dart';
+import 'package:baraeda_ui/widgets/core/word_wrap_text.dart';
 import 'package:flutter/material.dart';
 
 /// 온/오프 스위치 + 라벨 한 줄.
@@ -58,7 +59,7 @@ class BaraedaSwitch extends StatelessWidget {
                         ),
                       ),
                       if (sublabel != null)
-                        Text(
+                        WordWrapText(
                           sublabel!,
                           style: BaraedaTypography.caption.copyWith(
                             color: colors.textTertiary,

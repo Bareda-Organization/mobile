@@ -5,6 +5,7 @@ import 'package:baraeda_ui/theme/baraeda_colors.dart';
 import 'package:baraeda_ui/tokens/spacing.dart';
 import 'package:baraeda_ui/tokens/typography.dart';
 import 'package:baraeda_ui/widgets/core/icon.dart';
+import 'package:baraeda_ui/widgets/core/word_wrap_text.dart';
 import 'package:flutter/material.dart';
 
 /// 배너의 상태 컬러 — `readme.md` 상태 컬러 규칙을 그대로 따른다.
@@ -106,7 +107,7 @@ class AlertBanner extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (title != null)
-                    Text(
+                    WordWrapText(
                       title!,
                       style: BaraedaTypography.labelSm.copyWith(
                         fontWeight: BaraedaFontWeight.bold,
@@ -116,7 +117,7 @@ class AlertBanner extends StatelessWidget {
                   if (body != null)
                     Padding(
                       padding: EdgeInsets.only(top: title != null ? 4 : 0),
-                      child: Text(
+                      child: WordWrapText(
                         body!,
                         style: BaraedaTypography.bodySm.copyWith(
                           color: context.colors.textPrimary,

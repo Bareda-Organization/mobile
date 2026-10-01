@@ -5,6 +5,7 @@
 import 'package:baraeda_ui/theme/baraeda_colors.dart';
 import 'package:baraeda_ui/tokens/shape.dart';
 import 'package:baraeda_ui/tokens/typography.dart';
+import 'package:baraeda_ui/widgets/core/word_wrap_text.dart';
 import 'package:flutter/material.dart';
 
 /// 여러 줄 텍스트 입력.
@@ -75,7 +76,7 @@ class BaraedaTextarea extends StatelessWidget {
         ),
         if (hasError || (hint != null && hint!.isNotEmpty)) ...[
           const SizedBox(height: 6),
-          Text(
+          WordWrapText(
             hasError ? error! : hint!,
             style: BaraedaTypography.caption.copyWith(
               color: hasError ? colors.statusMissed : colors.textTertiary,

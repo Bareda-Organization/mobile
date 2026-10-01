@@ -9,6 +9,7 @@ import 'package:baraeda_ui/tokens/shape.dart';
 import 'package:baraeda_ui/tokens/spacing.dart';
 import 'package:baraeda_ui/tokens/typography.dart';
 import 'package:baraeda_ui/widgets/core/button.dart';
+import 'package:baraeda_ui/widgets/core/word_wrap_text.dart';
 import 'package:flutter/material.dart';
 
 /// 화면 전체를 덮는 확인 대화상자.
@@ -55,7 +56,7 @@ class BaraedaDialog extends StatelessWidget {
         content ??
         (body == null
             ? null
-            : Text(
+            : WordWrapText(
                 body!,
                 style: BaraedaTypography.bodySm.copyWith(
                   color: colors.textSecondary,
