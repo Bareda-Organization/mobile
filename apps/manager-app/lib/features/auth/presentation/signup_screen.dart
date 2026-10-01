@@ -76,7 +76,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       if (!mounted) return;
       // 서버가 201 을 확정한 뒤에만 안내한다 — 낙관적 UI 금지(COMMON.md §6).
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('가입 신청이 접수되었습니다. 로그인 후 진행 상황을 볼 수 있습니다.')),
+        const SnackBar(
+          content: WordWrapText('가입 신청이 접수되었습니다. 로그인 후 진행 상황을 볼 수 있습니다.'),
+        ),
       );
       context.go(AppRoutes.login);
     } on Failure catch (failure) {

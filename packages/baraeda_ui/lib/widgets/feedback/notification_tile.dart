@@ -7,6 +7,7 @@ import 'package:baraeda_ui/tokens/spacing.dart';
 import 'package:baraeda_ui/tokens/typography.dart';
 import 'package:baraeda_ui/widgets/core/baraeda_status.dart';
 import 'package:baraeda_ui/widgets/core/icon.dart';
+import 'package:baraeda_ui/widgets/core/word_wrap_text.dart';
 import 'package:flutter/material.dart';
 
 /// 학부모·학생 앱 알림 목록 행.
@@ -196,7 +197,7 @@ class _Texts extends StatelessWidget {
         if (tile.body != null)
           Padding(
             padding: const EdgeInsets.only(top: 2),
-            child: Text(
+            child: WordWrapText(
               tile.body!,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,

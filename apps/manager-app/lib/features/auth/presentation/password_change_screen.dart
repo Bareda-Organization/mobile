@@ -120,7 +120,7 @@ class _PasswordChangeScreenState extends ConsumerState<PasswordChangeScreen> {
                 controller: _newPasswordController,
               ),
               const SizedBox(height: BaraedaSpacing.space4),
-              const Text('바꾸면 이 기기에서 로그아웃되고, 새 비밀번호로 다시 로그인해야 합니다'),
+              const WordWrapText('바꾸면 이 기기에서 로그아웃되고, 새 비밀번호로 다시 로그인해야 합니다'),
               if (_formError != null) ...[
                 const SizedBox(height: BaraedaSpacing.space4),
                 AlertBanner(tone: AlertTone.missed, body: _formError),

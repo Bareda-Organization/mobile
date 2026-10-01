@@ -281,7 +281,7 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
         ],
       ),
       body: runId == null
-          ? const Center(child: Text('선택된 운행이 없습니다 — 홈에서 운행을 선택하세요'))
+          ? const Center(child: WordWrapText('선택된 운행이 없습니다 — 홈에서 운행을 선택하세요'))
           : _buildBody(context, runId, run, transmission),
     );
   }
@@ -338,11 +338,6 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
                   busPosition: transmission.busPosition,
                 ),
                 const SizedBox(height: 16),
-                // 노선 변경 확인(M-04, R32 M4) — 기사는 명단 화면에 가지 않으므로 여기서 확인한다.
-                ChangeAckBanner(
-                  runId: runId,
-                  ackRequired: run?.ackRequired ?? false,
-                ),
                 // rosterAsync.when(...) 의 모든 분기 바깥 — "명단 없음"(정상)과
                 // "연결 끊김"(비정상)을 구별해야 한다(목표 9, ManagerChannelBanner
                 // 문서 참고).
@@ -366,6 +361,13 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
                 // 알림은 스크롤 본문이 아니라 버튼 바로 위 고정 영역에 둔다 — 지도·변경 배너 아래 접힌 곳에 두면
                 // 작은 화면에서 버튼 경계에 잘려 문구 끝이 안 보였다. 대신 높이를 막고 가장 중요한 한 건만 보인다.
                 BottomNoticeStack(
+                  // 노선 변경 확인(M-04, R32 M4) — 기사는 명단 화면에 가지
+                  // 않으므로 여기서 확인한다. 필수 확인 조작이라 스크롤 본문
+                  // (지도 아래)에 두면 첫 화면에서 영역 경계에 잘려, 접히지
+                  // 않는 맨 위 칸에 둔다(Ruling 596).
+                  leading: (run?.ackRequired ?? false)
+                      ? ChangeAckBanner(runId: runId, ackRequired: true)
+                      : null,
                   notices: _bottomNotices(
                     rosterAsync,
                     transmission.availability ?? _preStartAvailability,
@@ -490,7 +492,7 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
           !now.isBefore(run.startWindowFrom) && !now.isAfter(run.startWindowTo);
       if (!withinWindow) {
         // 언제부터 되는지를 알린다(R32 M10) — 이미 지났으면 지났다고 한다.
-        return Text(
+        return WordWrapText(
           now.isBefore(run.startWindowFrom)
               ? '${DateFormat('HH:mm').format(run.startWindowFrom.toLocal())} '
                     '부터 시작할 수 있습니다 (출발 ±10분)'
@@ -507,14 +509,14 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
     if (run.runStatus == RunStatus.moving) {
       final nextStop = nextUnarrivedStop(roster);
       if (nextStop == null) {
-        return const Text('모든 승하차지 도착 처리가 끝났습니다');
+        return const WordWrapText('모든 승하차지 도착 처리가 끝났습니다');
       }
       // 이름이 길어도 버튼 동사가 잘리지 않게 이름은 버튼 위 줄로 뺀다(R46) — 두 줄을 넘는 이름만 줄인다.
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
+          WordWrapText(
             '다음 승하차지: ${nextStop.name}',
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
@@ -545,7 +547,7 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text('이미 종료된 운행입니다'),
+        const WordWrapText('이미 종료된 운행입니다'),
         const SizedBox(height: 8),
         BaraedaButton(
           label: '종료 보고서 보기',

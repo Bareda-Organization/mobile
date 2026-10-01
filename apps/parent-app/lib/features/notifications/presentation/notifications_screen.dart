@@ -105,7 +105,7 @@ Future<void> _open(
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
+        content: WordWrapText(
           failureMessage(failure, fallback: '읽음 처리하지 못했습니다'),
         ),
       ),

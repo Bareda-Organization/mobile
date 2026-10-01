@@ -186,7 +186,7 @@ class _RunCardState extends ConsumerState<RunCard> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             if (_untilConfirm(run, now) case final left?)
-                              Text(
+                              WordWrapText(
                                 '확정까지 $left',
                                 style: BaraedaTypography.bodySm,
                               ),
@@ -195,7 +195,7 @@ class _RunCardState extends ConsumerState<RunCard> {
                       ),
                     if (widget.isApprovalPending)
                       MinuteTicker(
-                        builder: (context, now) => Text(
+                        builder: (context, now) => WordWrapText(
                           _approvalWaitText(run.departTime, now),
                           style: BaraedaTypography.bodySm,
                         ),

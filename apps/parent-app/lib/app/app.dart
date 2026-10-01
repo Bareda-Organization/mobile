@@ -42,7 +42,7 @@ class BaraedaParentApp extends ConsumerWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text('네트워크 상태를 확인해 주세요'),
+                  const WordWrapText('네트워크 상태를 확인해 주세요'),
                   const SizedBox(height: BaraedaSpacing.space4),
                   BaraedaButton(
                     label: '다시 시도',

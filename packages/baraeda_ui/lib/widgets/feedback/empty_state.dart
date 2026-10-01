@@ -4,6 +4,7 @@
 import 'package:baraeda_ui/theme/baraeda_colors.dart';
 import 'package:baraeda_ui/tokens/typography.dart';
 import 'package:baraeda_ui/widgets/core/icon.dart';
+import 'package:baraeda_ui/widgets/core/word_wrap_text.dart';
 import 'package:flutter/material.dart';
 
 /// 목록이 비었을 때 화면 중앙에 두는 안내.
@@ -52,7 +53,7 @@ class EmptyState extends StatelessWidget {
             if (title != null)
               Padding(
                 padding: const EdgeInsets.only(top: 16),
-                child: Text(
+                child: WordWrapText(
                   title!,
                   textAlign: TextAlign.center,
                   style: BaraedaTypography.h3.copyWith(
@@ -64,7 +65,7 @@ class EmptyState extends StatelessWidget {
             if (body != null)
               Padding(
                 padding: const EdgeInsets.only(top: 8),
-                child: Text(
+                child: WordWrapText(
                   body!,
                   textAlign: TextAlign.center,
                   style: BaraedaTypography.caption.copyWith(

@@ -337,7 +337,10 @@ class _LiveMapBodyState extends ConsumerState<_LiveMapBody> {
         else if (resolvedStaleText != null)
           Padding(
             padding: const EdgeInsets.only(bottom: BaraedaSpacing.space4),
-            child: Text(resolvedStaleText, style: BaraedaTypography.bodySm),
+            child: WordWrapText(
+              resolvedStaleText,
+              style: BaraedaTypography.bodySm,
+            ),
           )
         else if (!state.hasNoData)
           // 좌표는 아직 없지만(`run_started` 만 온 상태 등) "데이터 없음"도
@@ -345,7 +348,7 @@ class _LiveMapBodyState extends ConsumerState<_LiveMapBody> {
           // 문서 판단 근거 참고).
           const Padding(
             padding: EdgeInsets.only(bottom: BaraedaSpacing.space4),
-            child: Text('위치 신호 대기 중', style: BaraedaTypography.bodySm),
+            child: WordWrapText('위치 신호 대기 중', style: BaraedaTypography.bodySm),
           ),
         if (state.runStarted != null)
           _EventTile(
@@ -536,7 +539,7 @@ class _PositionTile extends StatelessWidget {
         children: [
           Text('현재 위치 · $timeText 기준', style: BaraedaTypography.bodySm),
           if (position.currentStopName != null)
-            Text(
+            WordWrapText(
               '마지막으로 지난 승하차지: ${position.currentStopName}',
               style: BaraedaTypography.body,
             ),

@@ -108,7 +108,7 @@ class _OfflineQueueScreenState extends ConsumerState<OfflineQueueScreen> {
                 child: Center(child: CircularProgressIndicator()),
               ),
               error: (error, _) =>
-                  Text('대기열을 불러오지 못했습니다: ${describeError(error)}'),
+                  WordWrapText('대기열을 불러오지 못했습니다: ${describeError(error)}'),
               data: _buildList,
             ),
           ],
@@ -167,7 +167,7 @@ class _OfflineQueueScreenState extends ConsumerState<OfflineQueueScreen> {
           const SizedBox(height: 4),
           Text(DateFormat('MM/dd HH:mm:ss').format(item.createdAt.toLocal())),
           const SizedBox(height: 4),
-          const Text('처리되지 않았습니다 · 대기 중'),
+          const WordWrapText('처리되지 않았습니다 · 대기 중'),
           const SizedBox(height: 8),
           BaraedaButton(
             label: '삭제',

@@ -9,6 +9,7 @@
 
 import 'package:baraeda_ui/theme/baraeda_colors.dart';
 import 'package:baraeda_ui/tokens/typography.dart';
+import 'package:baraeda_ui/widgets/core/word_wrap_text.dart';
 import 'package:baraeda_ui/widgets/forms/code_input_box.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -131,7 +132,7 @@ class _BaraedaCodeInputState extends State<BaraedaCodeInput> {
         ),
         if (hasError || (widget.hint != null && widget.hint!.isNotEmpty)) ...[
           const SizedBox(height: 6),
-          Text(
+          WordWrapText(
             hasError ? widget.error! : widget.hint!,
             style: BaraedaTypography.caption.copyWith(
               color: hasError ? colors.statusMissed : colors.textTertiary,

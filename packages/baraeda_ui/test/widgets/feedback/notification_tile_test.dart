@@ -159,7 +159,10 @@ void main() {
       expect(
         tester
             .widgetList<Text>(find.byType(Text))
-            .where((t) => (t.data ?? '').startsWith('아주'))
+            .where(
+              (t) =>
+                  (t.data ?? t.textSpan?.toPlainText() ?? '').startsWith('아주'),
+            )
             .single
             .maxLines,
         2,

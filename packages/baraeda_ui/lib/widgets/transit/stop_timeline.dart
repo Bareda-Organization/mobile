@@ -9,6 +9,7 @@
 import 'package:baraeda_ui/theme/baraeda_colors.dart';
 import 'package:baraeda_ui/tokens/typography.dart';
 import 'package:baraeda_ui/widgets/core/icon.dart';
+import 'package:baraeda_ui/widgets/core/word_wrap_text.dart';
 import 'package:flutter/material.dart';
 
 /// 정류장 진행 상태. done=지나감 · current=현재 이동 중 · next=다음 정류장 · upcoming=이후.
@@ -219,7 +220,7 @@ class _StopTimelineRow extends StatelessWidget {
                       if (stop.address != null)
                         Padding(
                           padding: const EdgeInsets.only(top: 2),
-                          child: Text(
+                          child: WordWrapText(
                             stop.address!,
                             style: BaraedaTypography.micro.copyWith(
                               color: colors.textTertiary,
