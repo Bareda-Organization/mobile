@@ -79,20 +79,30 @@ class RunSummaryCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Row(
-                  children: [
-                    BaraedaStatusPill(status: status, label: statusLabel),
-                    const Spacer(),
-                    if (bus != null)
-                      Text(
-                        leg != null ? '$bus · $leg' : bus!,
-                        style: BaraedaTypography.labelSm.copyWith(
-                          height: 1,
-                          fontWeight: BaraedaFontWeight.bold,
-                          color: colors.textSecondary,
+                // 큰 글자(2.0배)에서 알약과 `호차 · 등원` 이 한 줄에 못 들어가면
+                // 뒤쪽이 다음 줄로 내려간다 — `Row` + `Spacer` 였을 때 360 폭에서
+                // 57px 가로로 넘쳤다(R46-LAST `Ruling 582`). 한 줄에 들어가면
+                // `spaceBetween` 이 예전과 같이 양 끝에 놓는다 — `Wrap` 은 내용
+                // 너비로 줄어들어 양 끝 정렬을 못 하므로 전체 너비를 준다.
+                SizedBox(
+                  width: double.infinity,
+                  child: Wrap(
+                    alignment: WrapAlignment.spaceBetween,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    runSpacing: BaraedaSpacing.space2,
+                    children: [
+                      BaraedaStatusPill(status: status, label: statusLabel),
+                      if (bus != null)
+                        Text(
+                          leg != null ? '$bus · $leg' : bus!,
+                          style: BaraedaTypography.labelSm.copyWith(
+                            height: 1,
+                            fontWeight: BaraedaFontWeight.bold,
+                            color: colors.textSecondary,
+                          ),
                         ),
-                      ),
-                  ],
+                    ],
+                  ),
                 ),
                 if (eta != null)
                   Padding(

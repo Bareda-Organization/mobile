@@ -100,11 +100,6 @@ class _NeverResolvingTokenStorage extends TokenStorage {
   Future<String?> readAccessToken() => Completer<String?>().future;
 }
 
-/// 이 시험의 대상이 아닌 오류 — 공용 `RunSummaryCard`(baraeda_ui) 의 가로 넘침. 하단 영역 때문에
-/// 생긴 넘침만 걸러 내려고 이것만 허용한다.
-bool _isKnownSharedCardOverflow(FlutterErrorDetails details) =>
-    details.toString().contains('run_summary_card.dart');
-
 void main() {
   final errors = <FlutterErrorDetails>[];
 
@@ -244,11 +239,10 @@ void main() {
         if (scale == 1.0) {
           expect(noticeScroll.position.maxScrollExtent, 0);
         }
-        // 하단 알림 때문에 생긴 넘침은 없다(공용 카드의 넘침은 이 시험의 대상이 아니다).
-        expect(
-          errors.where((e) => !_isKnownSharedCardOverflow(e)),
-          isEmpty,
-        );
+        // 어떤 넘침도 없다 — 공용 `RunSummaryCard` 의 큰 글자 가로 넘침
+        // (R46-FUMGR `Ruling 573`)을 고친 뒤로 이 시험이 허용하던 예외를
+        // 걷었다(R46-LAST `Ruling 582`).
+        expect(errors, isEmpty);
       });
     }
   }

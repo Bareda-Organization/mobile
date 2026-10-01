@@ -52,7 +52,8 @@ class _AccountRecoveryScreenState extends ConsumerState<AccountRecoveryScreen> {
   String _messageFor(Failure failure) => switch (failure) {
     ApiFailure(
       code: 'VERIFICATION_CODE_INVALID',
-    ) => '휴대폰 번호 또는 인증번호를 확인할 수 없습니다',
+    ) =>
+      '휴대폰 번호 또는 인증번호를 확인할 수 없습니다',
     ApiFailure(code: 'RECOVERY_UNAVAILABLE') => _adminRecoveryNotice,
     ApiFailure(code: 'VALIDATION_FAILED') => '입력값을 다시 확인해 주세요',
     ApiFailure(:final message) => message,

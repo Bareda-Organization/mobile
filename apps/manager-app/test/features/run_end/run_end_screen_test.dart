@@ -268,6 +268,19 @@ void main() {
     expect(find.text('상황 메모 (필수)'), findsOneWidget);
   });
 
+  // R46-LAST `Ruling 583` — 이 칸은 퇴원 파기 대상 밖이라 입력 단계에서 개인정보를 줄인다.
+  testWidgets('상황 메모 칸 아래에 학생 이름·연락처를 적지 말라고 안내한다', (tester) async {
+    await tester.pumpWidget(
+      _wrap(const RunEndScreen(), [
+        selectedRunIdProvider.overrideWith((ref) => runId),
+        lastArriveResultProvider.overrideWith((ref) => null),
+      ]),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('학생 이름·연락처는 적지 마세요'), findsOneWidget);
+  });
+
   testWidgets('보호자 부재인데 대상 학생이 없으면 이유를 알려 준다', (tester) async {
     await tester.pumpWidget(
       _wrap(const RunEndScreen(), [

@@ -169,7 +169,9 @@ void main() {
   testWidgets('인증번호 요청이 성공하면 가입 여부를 단정하지 않는 안내를 보여준다', (tester) async {
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [authRepositoryProvider.overrideWithValue(_OkAuthRepository())],
+        overrides: [
+          authRepositoryProvider.overrideWithValue(_OkAuthRepository()),
+        ],
         child: const MaterialApp(home: AccountRecoveryScreen()),
       ),
     );
@@ -183,7 +185,9 @@ void main() {
     expect(find.text('인증번호를 발송했습니다. 문자로 받은 번호를 입력해 주세요'), findsNothing);
   });
 
-  testWidgets('VERIFICATION_CODE_INVALID 는 이유를 가르지 않는 공용 문구를 보여준다', (tester) async {
+  testWidgets('VERIFICATION_CODE_INVALID 는 이유를 가르지 않는 공용 문구를 보여준다', (
+    tester,
+  ) async {
     await _pumpAndRequestCode(tester, 'VERIFICATION_CODE_INVALID');
 
     expect(find.text(_expectedSharedMessage), findsOneWidget);

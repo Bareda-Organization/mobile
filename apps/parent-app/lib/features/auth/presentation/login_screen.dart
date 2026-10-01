@@ -62,6 +62,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         loginId: loginId,
         password: password,
       );
+      // 역할을 반영하기 전에 켠다 — 역할이 서는 순간 라우터가 판정하므로 그 시점에 표식이 이미 있어야 한다.
+      ref.read(mustChangePasswordProvider.notifier).state =
+          response.mustChangePassword;
       applyRoleAndStatus(
         ref.read(unsupportedRoleProvider.notifier),
         ref.read(currentUserRoleProvider.notifier),
@@ -76,6 +79,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         // 이 앱에서는 쓸 수 없는 계정이므로 즉시 무효화한다.
         await repository.logout();
         ref.read(unsupportedRoleProvider.notifier).state = false;
+        ref.read(mustChangePasswordProvider.notifier).state = false;
         if (!mounted) return;
         setState(() {
           _submitting = false;

@@ -240,7 +240,7 @@ class _RunEndScreenState extends ConsumerState<RunEndScreen> {
         const SizedBox(height: 12),
         BaraedaTextarea(
           label: '상황 메모 (필수)',
-          hint: '무슨 일이 있었는지 적어 주세요',
+          hint: '무슨 일이 있었는지 적어 주세요 · $freeTextPrivacyNotice',
           enabled: !_submitting,
           controller: _memoController,
         ),

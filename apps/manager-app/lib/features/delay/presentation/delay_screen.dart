@@ -6,6 +6,7 @@ import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/core/network/failure_messages.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
+import 'package:manager_app/core/ui/limited_text_controller.dart';
 import 'package:manager_app/features/delay/data/models/delay_request.dart';
 import 'package:manager_app/features/delay/data/models/delay_result.dart';
 
@@ -135,7 +136,7 @@ class _DelayScreenState extends ConsumerState<DelayScreen> {
           const SizedBox(height: 16),
           BaraedaTextarea(
             label: '안내 문구 (선택)',
-            hint: '비워두면 사유 기반 문구가 자동으로 사용됩니다',
+            hint: '비워두면 사유 기반 문구가 자동으로 사용됩니다 · $freeTextPrivacyNotice',
             enabled: !_submitting,
             controller: _messageController,
           ),
