@@ -69,6 +69,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         role: response.role,
         status: response.status,
       );
+      ref.read(sessionExpiredNoticeProvider.notifier).state = null;
 
       if (ref.read(unsupportedRoleProvider)) {
         // 로그인 자체는 서버 기준 성공이라 토큰이 이미 저장돼 있다 —
@@ -120,6 +121,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // 로그인이 만료돼 돌아왔다면 이유를 알린다(R46) — 이유 없이 로그인 화면만 나오면 오류인 줄 안다.
+    final expiredNotice = ref.watch(sessionExpiredNoticeProvider);
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
@@ -130,6 +133,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               const SizedBox(height: BaraedaSpacing.space16),
               const Text('바래다', style: BaraedaTypography.h1),
               const SizedBox(height: BaraedaSpacing.space8),
+              if (expiredNotice != null) ...[
+                AlertBanner(tone: AlertTone.moving, body: expiredNotice),
+                const SizedBox(height: BaraedaSpacing.space4),
+              ],
               BaraedaInput(
                 label: '아이디',
                 required: true,

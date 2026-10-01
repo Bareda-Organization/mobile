@@ -14,7 +14,9 @@ import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/features/home/data/models/manager_run.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
+import 'package:manager_app/features/offline_queue/data/models/pending_request_summary.dart';
 import 'package:manager_app/features/offline_queue/domain/send_outcome.dart';
+import 'package:manager_app/features/offline_queue/presentation/offline_queue_providers.dart';
 import 'package:manager_app/features/roster/data/models/ack_changes_result.dart';
 import 'package:manager_app/features/roster/data/models/boarding_update_request.dart';
 import 'package:manager_app/features/roster/data/models/no_show_contact_request.dart';
@@ -436,14 +438,24 @@ void main() {
         todayRunsProvider.overrideWith(
           (ref) async => [_managerRun(ackRequired: false)],
         ),
+        // 큐에 실제로 쌓인 것으로 답한다 — 안내는 큐 목록에서 그린다(R46).
+        pendingRequestsProvider.overrideWith(
+          (ref) async => [
+            PendingRequestSummary(
+              id: 1,
+              endpoint: '/runs/$runId/riders/r1',
+              method: 'PATCH',
+              payload: '{"status":"boarded"}',
+              createdAt: DateTime(2026, 9, 12, 9),
+            ),
+          ],
+        ),
       ]),
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.widgetWithText(BaraedaButton, '탑승'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('처리되지 않았습니다 · 대기 중'), findsOneWidget);
+    // 큐에 이미 쌓인 학생 행은 [탑승] 대신 "전송 대기" 다(R46) — 이 시험은 안내 문구만 본다.
+    expect(find.text('처리되지 않았습니다 · 대기 중 1건'), findsOneWidget);
   });
 
   testWidgets('승하차 상태 갱신이 즉시 성공하면 대기 안내를 보여주지 않는다', (tester) async {

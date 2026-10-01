@@ -49,6 +49,7 @@ dependencies:
   meta: ^1.16.0
   path: ^1.9.1
   path_provider: ^2.1.6
+  url_launcher: ^6.3.1  # R46 — 학원 전화(`tel:`)·외부 내비 열기. 학부모 앱과 같은 버전
   uuid: ^4.6.0
   wakelock_plus: ^1.8.0
 

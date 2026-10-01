@@ -1,6 +1,7 @@
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:manager_app/core/constants/api_constants.dart';
+import 'package:manager_app/core/constants/navigation_constants.dart';
 import 'package:manager_app/core/location/position_source.dart';
 import 'package:manager_app/core/wakelock/wakelock_port.dart';
 import 'package:manager_app/features/auth/data/auth_repository_impl.dart';
@@ -17,6 +18,9 @@ import 'package:manager_app/features/emergency/domain/emergency_repository.dart'
 import 'package:manager_app/features/home/data/manager_run_api.dart';
 import 'package:manager_app/features/home/data/manager_run_repository_impl.dart';
 import 'package:manager_app/features/home/domain/manager_run_repository.dart';
+import 'package:manager_app/features/navigation/data/navigation_api.dart';
+import 'package:manager_app/features/navigation/data/navigation_repository_impl.dart';
+import 'package:manager_app/features/navigation/domain/navigation_repository.dart';
 import 'package:manager_app/features/offline_queue/data/offline_queue_database.dart';
 import 'package:manager_app/features/offline_queue/data/offline_queue_repository_impl.dart';
 import 'package:manager_app/features/offline_queue/domain/offline_queue_repository.dart';
@@ -122,6 +126,20 @@ final routeApiProvider = Provider<RouteApi>((ref) {
 final routeRepositoryProvider = Provider<RouteRepository>((ref) {
   return RouteRepositoryImpl(api: ref.watch(routeApiProvider));
 });
+
+/// API_SPEC §4.16 — 외부 내비 좌표열(기사 전용 화면이 쓴다).
+final navigationApiProvider = Provider<NavigationApi>((ref) {
+  return NavigationApi(dio: ref.watch(apiClientProvider).dio);
+});
+
+final navigationRepositoryProvider = Provider<NavigationRepository>((ref) {
+  return NavigationRepositoryImpl(api: ref.watch(navigationApiProvider));
+});
+
+/// 카카오내비 앱 키 — 빈 값이면 외부 내비 버튼이 없다. 시험이 바꿔 끼운다.
+final kakaoNaviAppKeyProvider = Provider<String>(
+  (ref) => NavigationConstants.kakaoAppKey,
+);
 
 /// API_SPEC §4.9 — 지연 알림(동승자 전용).
 final delayApiProvider = Provider<DelayApi>((ref) {

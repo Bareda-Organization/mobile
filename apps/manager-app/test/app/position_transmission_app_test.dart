@@ -25,6 +25,7 @@ import 'package:manager_app/features/home/data/models/manager_run.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
 import 'package:manager_app/features/position/data/models/position_request.dart';
 import 'package:manager_app/features/position/domain/position_repository.dart';
+import 'package:manager_app/features/position/presentation/position_link.dart';
 import 'package:manager_app/features/position/presentation/position_transmitter.dart';
 import 'package:manager_app/features/roster/data/models/roster_response.dart';
 import 'package:manager_app/features/route_map/data/models/route_response.dart';
@@ -67,6 +68,9 @@ class _FakeSource implements PositionSource {
 class _RecordingPositionRepository implements PositionRepository {
   /// `true` 면 응답이 오지 않는 음영 구간을 흉내 낸다 — 요청이 끝나지 않는다.
   bool hang = false;
+
+  /// 주면 전송이 이 오류로 실패한다 — 서버에 닿지 못하는 음영 구간.
+  Failure? failWith;
   final List<PositionRequest> calls = [];
 
   @override
@@ -76,6 +80,9 @@ class _RecordingPositionRepository implements PositionRepository {
   }) async {
     calls.add(request);
     if (hang) await Completer<void>().future;
+    // `Failure` 는 이 저장소 전역에서 던지는 값이라 린트 예외를 둔다(다른 시험과 같다).
+    // ignore: only_throw_errors
+    if (failWith != null) throw failWith!;
   }
 }
 
@@ -304,6 +311,29 @@ void main() {
     await tester.pump(_interval);
 
     expect(repository.calls, hasLength(1));
+  });
+
+  testWidgets('전송이 성공하면 마지막 성공 시각을 기록하고, 실패하면 그 시각을 그대로 둔다 (R46)', (
+    tester,
+  ) async {
+    final container = await pumpApp(tester);
+    expect(container.read(positionLinkProvider).startedAt, isNotNull);
+    expect(container.read(positionLinkProvider).lastSentAt, isNull);
+
+    await tester.pump(_interval);
+    final sentAt = container.read(positionLinkProvider).lastSentAt;
+    expect(sentAt, isNotNull, reason: '서버가 받았으면 시각이 남는다');
+
+    repository.failWith = const NetworkFailure();
+    await tester.pump(_interval);
+    await tester.pump(_interval);
+
+    expect(repository.calls.length, greaterThan(1));
+    expect(
+      container.read(positionLinkProvider).lastSentAt,
+      sentAt,
+      reason: '실패한 전송은 마지막 성공 시각을 바꾸지 않는다',
+    );
   });
 
   // F06-17 — 좌표가 그대로면 상태가 같은 값이라 화면을 다시 그리게 알리지 않는다.

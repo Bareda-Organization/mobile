@@ -37,6 +37,13 @@ class _DelayScreenState extends ConsumerState<DelayScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    // 문구를 입력할 때마다 미리보기를 다시 그린다(R46).
+    _messageController.addListener(() => setState(() {}));
+  }
+
+  @override
   void dispose() {
     _messageController.dispose();
     super.dispose();
@@ -115,6 +122,8 @@ class _DelayScreenState extends ConsumerState<DelayScreen> {
             options: _reasonOptions,
             value: _reason.wireValue,
             block: true,
+            // 칸이 4개라 좁은 폭·큰 글자에서 낱말 중간에서 끊긴다 — 낱말 단위로 줄을 바꾼다(R46).
+            wrapByWord: true,
             onChanged: _submitting
                 ? null
                 : (value) => setState(
@@ -130,6 +139,8 @@ class _DelayScreenState extends ConsumerState<DelayScreen> {
             enabled: !_submitting,
             controller: _messageController,
           ),
+          const SizedBox(height: 8),
+          Text(_previewText(), style: Theme.of(context).textTheme.bodySmall),
           const SizedBox(height: 20),
           BaraedaButton(
             label: '지연 알림 보내기',
@@ -139,6 +150,21 @@ class _DelayScreenState extends ConsumerState<DelayScreen> {
         ],
       ),
     );
+  }
+
+  /// 보내기 전에 학부모·학생에게 나갈 문구를 보여준다(R46). 입력한 문구는 그대로 — 사양이 정한 앞머리
+  /// "{이름} 학생이 탄 버스 — " 만 붙는다(API_SPEC §4.9). 비우면 자동 문구인데 그 문장은 서버만 만든다(사유별 문장을
+  /// 앱이 따로 들고 있으면 서버가 바뀔 때 어긋난다) — 사양에 있는 것(사유·"현재 예상 지연 N분")만 알린다.
+  String _previewText() {
+    final message = _messageController.text.trim();
+    if (message.isNotEmpty) {
+      return '학부모·학생에게 이렇게 나갑니다 — "○○ 학생이 탄 버스 — $message"';
+    }
+    final reasonLabel = _reasonOptions
+        .firstWhere((option) => option.value == _reason.wireValue)
+        .label;
+    return '안내 문구를 비우면 자동 문구가 나갑니다 — '
+        '"$reasonLabel" 사유와 "현재 예상 지연 $_minutes분" 이 들어갑니다';
   }
 
   String _describeResult(DelayResult result) {

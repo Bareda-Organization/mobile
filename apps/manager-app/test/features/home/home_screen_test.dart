@@ -97,7 +97,8 @@ void main() {
     final expected =
         '${local.hour.toString().padLeft(2, '0')}:'
         '${local.minute.toString().padLeft(2, '0')}';
-    expect(find.textContaining(expected), findsOneWidget);
+    // 시각만 크게 있으면 출발인지 도착인지 모른다 — 앞에 "출발" 을 붙인다(R46, B2 #25).
+    expect(find.text('출발 $expected'), findsOneWidget);
   });
 
   testWidgets('로딩 중에는 진행 표시기를 보여준다', (tester) async {

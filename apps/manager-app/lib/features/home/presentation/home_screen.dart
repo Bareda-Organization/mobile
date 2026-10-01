@@ -187,7 +187,7 @@ class _ManagerHomeScreenState extends ConsumerState<ManagerHomeScreen>
                     leg: run.direction == RunDirection.toAcademy ? '등원' : '하원',
                     status: _statusOf(run.runStatus),
                     statusLabel: _statusLabelOf(run),
-                    eta: DateFormat('HH:mm').format(run.departTime.toLocal()),
+                    eta: _departLabel(run.departTime),
                     origin: run.origin,
                     destination: run.destination,
                     onTap: run.confirmed
@@ -300,3 +300,7 @@ class _ManagerHomeScreenState extends ConsumerState<ManagerHomeScreen>
     }
   }
 }
+
+/// 카드에 적는 출발 시각 — 시각만 크게 있으면 출발인지 도착인지 모른다(R46).
+String _departLabel(DateTime departTime) =>
+    '출발 ${DateFormat('HH:mm').format(departTime.toLocal())}';
