@@ -107,12 +107,17 @@ bool _isKnownSharedCardOverflow(FlutterErrorDetails details) =>
 void main() {
   final errors = <FlutterErrorDetails>[];
 
-  /// 화면이 보고하는 오류를 시험이 직접 받는다 — 시험 바인딩이 본문 시작 때 핸들러를 덮어쓰므로 본문 안에서 건다.
-  void collectErrors() {
+  /// 화면이 그리는 동안 보고하는 오류를 시험이 직접 받는다. 시험 바인딩이 본문 시작 때 핸들러를
+  /// 덮어쓰므로 본문 안에서 걸고, 판정(`expect`)이 실패할 때 바인딩과 얽히지 않게 그린 직후 돌려놓는다.
+  Future<void> collectErrorsWhile(Future<void> Function() body) async {
     errors.clear();
     final original = FlutterError.onError;
     FlutterError.onError = errors.add;
-    addTearDown(() => FlutterError.onError = original);
+    try {
+      await body();
+    } finally {
+      FlutterError.onError = original;
+    }
   }
 
   /// 알림이 세 건 쌓인 가장 나쁜 운행 화면 — 위치 권한 · 카카오내비 미설치 · 도착 처리됨.
@@ -121,70 +126,77 @@ void main() {
     required Size size,
     required double textScale,
   }) async {
-    collectErrors();
     tester.view
       ..physicalSize = size
       ..devicePixelRatio = 1;
     addTearDown(tester.view.reset);
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          tokenStorageProvider.overrideWithValue(_NeverResolvingTokenStorage()),
-          positionSourceProvider.overrideWithValue(_DeniedSource()),
-          kakaoNaviAppKeyProvider.overrideWithValue('KEY-1'),
-          navigationRepositoryProvider.overrideWithValue(_OneStopNavigation()),
-          kakaoNaviLauncherProvider.overrideWithValue(_NotInstalledLauncher()),
-          settingsOpenerProvider.overrideWithValue((page) async => true),
-          routeProvider.overrideWith(
-            (ref) async => const RouteResponse(stops: []),
-          ),
-          selectedRunIdProvider.overrideWith((ref) => 'run-1'),
-          currentUserRoleProvider.overrideWith((ref) => UserRole.driver),
-          todayRunsProvider.overrideWith(
-            (ref) async => [managerRunFixture(status: RunStatus.moving)],
-          ),
-          driveModeRosterProvider.overrideWith(
-            (ref) async => const RosterResponse(
-              runId: 'run-1',
-              busNo: '3호차',
-              direction: RunDirection.toAcademy,
-              counts: RosterCounts(
-                boarded: 0,
-                waiting: 0,
-                noShow: 0,
-                absentN: 0,
-              ),
-              stops: [
-                RosterStop(stopId: 's1', seq: 1, name: '1번', students: []),
-                RosterStop(stopId: 's2', seq: 2, name: '2번', students: []),
-                RosterStop(stopId: 's3', seq: 3, name: '3번', students: []),
-              ],
+    await collectErrorsWhile(() async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            tokenStorageProvider.overrideWithValue(
+              _NeverResolvingTokenStorage(),
             ),
+            positionSourceProvider.overrideWithValue(_DeniedSource()),
+            kakaoNaviAppKeyProvider.overrideWithValue('KEY-1'),
+            navigationRepositoryProvider.overrideWithValue(
+              _OneStopNavigation(),
+            ),
+            kakaoNaviLauncherProvider.overrideWithValue(
+              _NotInstalledLauncher(),
+            ),
+            settingsOpenerProvider.overrideWithValue((page) async => true),
+            routeProvider.overrideWith(
+              (ref) async => const RouteResponse(stops: []),
+            ),
+            selectedRunIdProvider.overrideWith((ref) => 'run-1'),
+            currentUserRoleProvider.overrideWith((ref) => UserRole.driver),
+            todayRunsProvider.overrideWith(
+              (ref) async => [managerRunFixture(status: RunStatus.moving)],
+            ),
+            driveModeRosterProvider.overrideWith(
+              (ref) async => const RosterResponse(
+                runId: 'run-1',
+                busNo: '3호차',
+                direction: RunDirection.toAcademy,
+                counts: RosterCounts(
+                  boarded: 0,
+                  waiting: 0,
+                  noShow: 0,
+                  absentN: 0,
+                ),
+                stops: [
+                  RosterStop(stopId: 's1', seq: 1, name: '1번', students: []),
+                  RosterStop(stopId: 's2', seq: 2, name: '2번', students: []),
+                  RosterStop(stopId: 's3', seq: 3, name: '3번', students: []),
+                ],
+              ),
+            ),
+            driveModeRepositoryProvider.overrideWithValue(_OkArrive()),
+          ],
+          child: MaterialApp(
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(
+                context,
+              ).copyWith(textScaler: TextScaler.linear(textScale)),
+              child: child!,
+            ),
+            home: const DriveModeScreen(),
           ),
-          driveModeRepositoryProvider.overrideWithValue(_OkArrive()),
-        ],
-        child: MaterialApp(
-          builder: (context, child) => MediaQuery(
-            data: MediaQuery.of(
-              context,
-            ).copyWith(textScaler: TextScaler.linear(textScale)),
-            child: child!,
-          ),
-          home: const DriveModeScreen(),
         ),
-      ),
-    );
-    await tester.pump();
-    await tester.pump(const Duration(seconds: 2));
-    // 큰 글자에서는 길안내 버튼이 스크롤 밖에 있다 — 보이게 한 뒤 누른다.
-    await tester.ensureVisible(find.text('다음 목적지'));
-    await tester.pump();
-    await tester.tap(find.text('다음 목적지'));
-    await tester.pump();
-    await tester.pump();
-    await tester.tap(find.text('도착 처리'));
-    await tester.pump();
-    await tester.pump();
+      );
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 2));
+      // 큰 글자에서는 길안내 버튼이 스크롤 밖에 있다 — 보이게 한 뒤 누른다.
+      await tester.ensureVisible(find.text('다음 목적지'));
+      await tester.pump();
+      await tester.tap(find.text('다음 목적지'));
+      await tester.pump();
+      await tester.pump();
+      await tester.tap(find.text('도착 처리'));
+      await tester.pump();
+      await tester.pump();
+    });
   }
 
   testWidgets('알림이 여럿이면 가장 중요한 한 건만 보이고 나머지는 눌러야 펼쳐진다', (tester) async {
