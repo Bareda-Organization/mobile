@@ -210,6 +210,7 @@ final offlineQueueRepositoryProvider = Provider<OfflineQueueRepository>((ref) {
   return OfflineQueueRepositoryImpl(
     database: ref.watch(offlineQueueDatabaseProvider),
     dio: ref.watch(apiClientProvider).dio,
+    clock: ref.watch(clockProvider),
   );
 });
 

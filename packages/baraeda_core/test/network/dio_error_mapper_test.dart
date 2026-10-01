@@ -86,8 +86,9 @@ void main() {
       expect(mapDioExceptionToFailure(exception), isA<UnknownFailure>());
     });
 
-    // R46-FIXRT S-9 — nginx 가 HTML 로 돌려주는 502·504 는 본문이 §1.10 형식이 아니라 `UnknownFailure` 가 된다.
-    // 오프라인 큐가 "서버가 응답하고도 못 받은 5xx" 를 가르려면 상태 코드가 값으로 남아야 한다(문구 파싱 금지).
+    // R46-FIXRT S-9 — nginx 가 HTML 로 돌려주는 502·504 는 본문이 §1.10 형식이
+    // 아니라 `UnknownFailure` 가 된다. 오프라인 큐가 "서버가 응답하고도 못 받은
+    // 5xx" 를 가르려면 상태 코드가 값으로 남아야 한다(문구 파싱 금지).
     test('§1.10 형식이 아닌 본문의 UnknownFailure 는 HTTP 상태를 값으로 싣는다', () {
       final exception = _badResponse(statusCode: 502, body: {'ok': false});
 
