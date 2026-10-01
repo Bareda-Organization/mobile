@@ -37,9 +37,32 @@ void main() {
       expect(policy.delayFor(20), const Duration(seconds: 30));
     });
 
-    test('maxAttempts(기본 6)를 넘긴 시도는 포기 대상이다', () {
-      expect(policy.shouldGiveUp(6), isFalse);
-      expect(policy.shouldGiveUp(7), isTrue);
+    // R46-FIXRT S-5 — 터널·음영이 1분을 넘기거나 백엔드 재기동이 길어지면
+    // (`start_period 90s`) 6회(약 1분) 뒤 포기하던 연결이 끊긴 채 방치됐다.
+    // 기본 정책은 포기 없이 30초 간격으로 계속 시도한다.
+    test('기본 정책은 몇 번째 시도에서도 포기하지 않는다', () {
+      expect(policy.shouldGiveUp(7), isFalse);
+      expect(policy.shouldGiveUp(100), isFalse);
+      expect(policy.shouldGiveUp(100000), isFalse);
+    });
+
+    test('상한을 준 정책은 그 횟수를 넘긴 시도를 포기 대상으로 본다', () {
+      const limited = WsBackoffPolicy(maxAttempts: 6);
+      expect(limited.shouldGiveUp(6), isFalse);
+      expect(limited.shouldGiveUp(7), isTrue);
+    });
+
+    test('포기 없이 오래 이어져도 대기는 30초 상한 안에서 지터만 붙는다', () {
+      for (final attempt in [7, 50, 1000]) {
+        expect(
+          policy.jitteredDelayFor(attempt, _FixedRandom(1)),
+          const Duration(milliseconds: 21000),
+        );
+        expect(
+          policy.jitteredDelayFor(attempt, _FixedRandom(0)),
+          const Duration(seconds: 30),
+        );
+      }
     });
 
     test('초기값을 바꾸면 그 값 기준으로 배수가 붙는다', () {

@@ -16,7 +16,8 @@ import 'package:stomp_dart_client/stomp_dart_client.dart';
 ///    거부하는 것을 그대로 노출한다 — §4 판단 근거 참고).
 /// 2. 구독 거부(`FORBIDDEN`)를 [forbiddenSubscriptions] 스트림으로 알린다.
 /// 3. 끊기면 [WsBackoffPolicy] 로 계산한 간격만큼 대기했다가 자동 재연결한다
-///    (무한 즉시 재시도가 아니다 — 상한 도달 시 [WsConnectionState.gaveUp]).
+///    (즉시 재시도가 아니라 30초 상한 백오프 — 기본 정책은 포기하지 않는다.
+///    상한을 준 정책이 도달하면 [WsConnectionState.gaveUp]).
 /// 4. 수신한 프레임을 [WebSocketEnvelope] 로 파싱해 넘긴다(id 흡수 포함).
 ///
 /// **토큰 만료 처리** — 서버는 연결에 쓰인 access 토큰이 만료되면 다음
@@ -152,6 +153,19 @@ class BaraedaWebSocketClient {
     unawaited(_doConnect());
   }
 
+  /// 앱이 백그라운드에서 돌아왔다 — 끊겨 재연결 대기 중([WsConnectionState.reconnecting])이거나 포기한
+  /// ([WsConnectionState.gaveUp]) 연결을 다음 타이머(최대 30초)를 기다리지 않고 지금 다시 붙인다.
+  /// 시도 횟수는 0 으로 돌아간다. 연결한 적 없거나(앱 복귀만으로 소켓을 새로 열지 않는다) 일부러 끊은
+  /// (거부·로그아웃) 연결, 이미 연결 중·연결된 연결은 건드리지 않는다.
+  void reconnectNow() {
+    if (_manuallyDisconnected) return;
+    if (_state != WsConnectionState.reconnecting &&
+        _state != WsConnectionState.gaveUp) {
+      return;
+    }
+    connect();
+  }
+
   /// [overrideToken] 을 주면 저장소를 다시 읽지 않고 그 값을 그대로 싣는다
   /// — 재발급 직후([_handleTokenExpired])는 방금 받은 새 토큰이 손에 있는데
   /// 굳이 저장소 왕복을 한 번 더 거칠 이유가 없고, 콜백이 저장까지 했는지
@@ -247,7 +261,7 @@ class BaraedaWebSocketClient {
     _scheduleReconnect();
   }
 
-  /// 백오프 정책대로 다음 재연결을 예약한다 — 한도를 넘기면 [WsConnectionState.gaveUp].
+  /// 백오프 정책대로 다음 재연결을 예약한다 — 정책에 상한이 있고 넘기면 [WsConnectionState.gaveUp].
   void _scheduleReconnect() {
     _reconnectAttempt += 1;
     if (backoffPolicy.shouldGiveUp(_reconnectAttempt)) {

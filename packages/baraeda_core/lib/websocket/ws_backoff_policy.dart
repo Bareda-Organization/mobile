@@ -1,6 +1,6 @@
 import 'dart:math';
 
-/// 재연결 대기 간격 정책 — 지수 백오프 + 상한 + 포기(give-up) 조건.
+/// 재연결 대기 간격 정책 — 지수 백오프 + 상한 + (선택) 포기(give-up) 조건.
 ///
 /// `stomp_dart_client` 의 `StompConfig.reconnectDelay` 는 **고정 지연 하나뿐**
 /// 이다 — 내부 구현이 `Timer(config.reconnectDelay, () => _connect())` 라
@@ -17,12 +17,13 @@ import 'dart:math';
 /// 분리해 두면 "3번째 재시도의 대기가 정확히 몇 ms 인가"를 `Timer` 없이
 /// 바로 검사할 수 있다.
 class WsBackoffPolicy {
-  /// 기본값은 1·2·4·8·16·30초 6회.
+  /// 기본값은 1·2·4·8·16·30초, 이후 30초(상한) 간격으로 **포기 없이** 계속 시도한다
+  /// (R46-FIXRT S-5). 지터는 매번 붙는다.
   const WsBackoffPolicy({
     this.initialDelay = const Duration(seconds: 1),
     this.maxDelay = const Duration(seconds: 30),
     this.multiplier = 2,
-    this.maxAttempts = 6,
+    this.maxAttempts,
     this.jitterRatio = 0.3,
   });
 
@@ -36,10 +37,11 @@ class WsBackoffPolicy {
   final num multiplier;
 
   /// 이 횟수를 넘기면 [shouldGiveUp] 이 `true` — 더 이상 자동 재시도하지 않는다.
-  /// 1·2·4·8·16·30(상한 도달) 초로 6회 시도 후 포기하면 마지막 시도까지
-  /// 누적 대기가 약 61초다 — 화면 하나를 띄워 둔 채 무한정 기다리게 하지
-  /// 않으면서도, 순간적인 서버 재기동(수 초~수십 초)은 흡수한다.
-  final int maxAttempts;
+  /// `null`(기본)이면 포기하지 않는다. 6회(약 1분) 뒤 포기하던 옛 기본값은 터널·음영이
+  /// 1분을 넘기거나 백엔드 재기동이 길어지면(`start_period 90s`) 실시간 연결을 끊긴
+  /// 채 방치해, 다른 직원의 변경을 못 받는 매니저 앱과 멈춘 위치를 보는 학부모
+  /// 지도를 만들었다. 망이 죽은 동안의 비용은 30초마다 소켓 시도 1회뿐이다.
+  final int? maxAttempts;
 
   /// [jitteredDelayFor] 가 대기를 최대 이 비율만큼 **줄이는** 폭. 0 이면 지터 없음.
   final double jitterRatio;
@@ -48,7 +50,10 @@ class WsBackoffPolicy {
   /// 을 계산하고 [maxDelay] 로 자른다.
   Duration delayFor(int attempt) {
     assert(attempt >= 1, 'attempt 는 1부터 시작한다 (첫 재연결 시도 = 1)');
-    final rawMs = initialDelay.inMilliseconds * pow(multiplier, attempt - 1);
+    // 실수로 계산한다 — 정수 `pow(2, 64)` 는 넘쳐서 0 이 되어, 포기 없이 64회(상한 30초면 약 30분)를 넘기면
+    // 대기가 0 이 돼 재연결이 쉬지 않고 도는 폭주가 된다. 실수는 무한대로 가서 상한으로 잘린다.
+    final rawMs =
+        initialDelay.inMilliseconds * pow(multiplier.toDouble(), attempt - 1);
     final cappedMs = min(rawMs, maxDelay.inMilliseconds.toDouble());
     return Duration(milliseconds: cappedMs.round());
   }
@@ -63,6 +68,10 @@ class WsBackoffPolicy {
     );
   }
 
-  /// `attempt` 번째 시도를 하기 전에 이미 포기 조건에 도달했는가.
-  bool shouldGiveUp(int attempt) => attempt > maxAttempts;
+  /// `attempt` 번째 시도를 하기 전에 이미 포기 조건에 도달했는가 — [maxAttempts] 가
+  /// `null` 이면 언제나 `false`.
+  bool shouldGiveUp(int attempt) {
+    final limit = maxAttempts;
+    return limit != null && attempt > limit;
+  }
 }
