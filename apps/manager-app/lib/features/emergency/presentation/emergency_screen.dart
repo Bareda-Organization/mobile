@@ -296,7 +296,9 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
         body: '비상 상황이 생기면 위에서 바로 보낼 수 있습니다',
       );
     }
+    // stretch 가 없으면 카드가 내용 폭으로 줄어 가운데에 뜬다(R46-SCREEN 화면 확인 — 폭 ~30%).
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         for (final item in items) ...[
           _buildListItem(runId, item, now),

@@ -62,6 +62,9 @@ class BaraedaCard extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(BaraedaRadius.card),
       child: Stack(
+        // 기본(loose)이면 부모가 폭을 정해 줘도 본체가 자식 폭으로 줄어든다
+        // (R46-SCREEN — 비상 발신 이력 카드가 화면 폭의 ~30%).
+        fit: StackFit.passthrough,
         children: [
           content,
           Positioned(
