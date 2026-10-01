@@ -2,10 +2,14 @@ import 'package:baraeda_core/baraeda_core.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:manager_app/app/app_routes.dart';
 import 'package:manager_app/app/di.dart';
+import 'package:manager_app/core/auth/auth_providers.dart';
+import 'package:manager_app/core/auth/user_role.dart';
+import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/features/notifications/presentation/notification_providers.dart';
 import 'package:manager_app/features/notifications/presentation/notifications_screen.dart';
 import 'package:manager_app/features/notifications/presentation/widgets/notification_bell_button.dart';
@@ -32,6 +36,7 @@ NotificationItem _item(
   String type = 'assignment_changed',
   DateTime? sentAt,
   bool unread = true,
+  String? runId,
 }) => NotificationItem(
   notificationId: id,
   type: type,
@@ -40,6 +45,7 @@ NotificationItem _item(
   sentAt: sentAt ?? _kst(9, 30, 8, 37),
   popup: false,
   readAt: unread ? null : _kst(9, 30, 9, 0),
+  runId: runId,
 );
 
 List<NotificationItem> _many(int count) => [
@@ -57,6 +63,8 @@ Future<FakeNotificationRepository> _pump(
   List<NotificationItem> items, {
   Widget home = const NotificationsScreen(),
   FakeNotificationRepository? repository,
+  List<GoRoute> extraRoutes = const [],
+  List<Override> extraOverrides = const [],
 }) async {
   final fake = repository ?? FakeNotificationRepository(items);
   final router = GoRouter(
@@ -66,6 +74,7 @@ Future<FakeNotificationRepository> _pump(
         path: AppRoutes.notifications,
         builder: (_, _) => const NotificationsScreen(),
       ),
+      ...extraRoutes,
     ],
   );
   await tester.pumpWidget(
@@ -74,6 +83,7 @@ Future<FakeNotificationRepository> _pump(
       overrides: [
         notificationRepositoryProvider.overrideWithValue(fake),
         clockProvider.overrideWithValue(_FixedClock(_now)),
+        ...extraOverrides,
       ],
       child: MaterialApp.router(routerConfig: router),
     ),
@@ -150,6 +160,98 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('알림 1'), findsOneWidget);
+  });
+
+  // R46-FUFEAT ③(Ruling 542) — 알림에 회차 식별자(run_id)가 실려 와서, 눌러서 관련 화면으로 간다.
+  group('알림 눌러 이동', () {
+    final marker = <String, GoRoute>{
+      for (final path in [
+        AppRoutes.routeMap,
+        AppRoutes.driveMode,
+        AppRoutes.roster,
+      ])
+        path: GoRoute(path: path, builder: (_, _) => Text('MARKER $path')),
+    };
+    Future<ProviderContainer> pumpWith(
+      WidgetTester tester,
+      List<NotificationItem> items, {
+      UserRole role = UserRole.driver,
+    }) async {
+      await _pump(
+        tester,
+        items,
+        extraRoutes: marker.values.toList(),
+        extraOverrides: [currentUserRoleProvider.overrideWith((ref) => role)],
+      );
+      return ProviderScope.containerOf(
+        tester.element(find.byType(NotificationsScreen)),
+      );
+    }
+
+    testWidgets('노선 변경 알림을 누르면 그 회차를 고르고 노선 화면으로 가며 읽음 처리도 한다', (tester) async {
+      final container = await pumpWith(tester, [
+        _item('1', type: 'route_changed', runId: 'run-7'),
+      ]);
+
+      await tester.tap(find.text('알림 1'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('MARKER ${AppRoutes.routeMap}'), findsOneWidget);
+      expect(container.read(selectedRunIdProvider), 'run-7');
+      expect(container.read(notificationFeedProvider).value!.unreadCount, 0);
+    });
+
+    testWidgets('배치 변경 알림은 기사에게 운전 화면으로 간다', (tester) async {
+      await pumpWith(tester, [_item('1', runId: 'run-9')]);
+
+      await tester.tap(find.text('알림 1'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('MARKER ${AppRoutes.driveMode}'), findsOneWidget);
+    });
+
+    testWidgets('배치 변경 알림은 동승자에게 명단 화면으로 간다', (tester) async {
+      await pumpWith(tester, [
+        _item('1', runId: 'run-9'),
+      ], role: UserRole.escort);
+
+      await tester.tap(find.text('알림 1'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('MARKER ${AppRoutes.roster}'), findsOneWidget);
+    });
+
+    testWidgets('이미 읽은 알림도 눌러서 이동한다', (tester) async {
+      final fake = FakeNotificationRepository([
+        _item('1', type: 'route_changed', runId: 'run-7', unread: false),
+      ]);
+      await _pump(
+        tester,
+        const [],
+        repository: fake,
+        extraRoutes: marker.values.toList(),
+      );
+
+      await tester.tap(find.text('알림 1'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('MARKER ${AppRoutes.routeMap}'), findsOneWidget);
+      expect(fake.marked, isEmpty);
+    });
+
+    testWidgets('회차 식별자가 없는 알림은 읽음 처리만 하고 이동하지 않는다', (tester) async {
+      final fake = await _pump(
+        tester,
+        [_item('1', type: 'route_changed')],
+        extraRoutes: marker.values.toList(),
+      );
+
+      await tester.tap(find.text('알림 1'));
+      await tester.pumpAndSettle();
+
+      expect(fake.marked, ['1']);
+      expect(find.byType(NotificationsScreen), findsOneWidget);
+    });
   });
 
   group('홈 머리말 진입 버튼', () {
