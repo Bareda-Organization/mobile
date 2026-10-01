@@ -18,8 +18,8 @@ class BottomNotice {
 class BottomNoticeStack extends StatefulWidget {
   const BottomNoticeStack({required this.notices, super.key});
 
-  /// 화면 높이에서 묶음이 차지할 수 있는 최대 비율. 작은 화면(360×640)에서 160px.
-  static const maxHeightFraction = 0.25;
+  /// 화면 높이에서 묶음이 차지할 수 있는 최대 비율. 작은 화면(360×640)에서 256px.
+  static const maxHeightFraction = 0.4;
 
   /// 중요한 순서 — 첫 번째가 접힌 상태에서 보이는 알림이다.
   final List<BottomNotice> notices;
@@ -49,16 +49,15 @@ class _BottomNoticeStackState extends State<BottomNoticeStack> {
           Flexible(
             child: SingleChildScrollView(
               child: Column(
+                spacing: 8,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  for (final notice in shown) ...[
+                  for (final notice in shown)
                     AlertBanner(
                       tone: notice.tone,
                       body: notice.body,
                       action: notice.action,
                     ),
-                    const SizedBox(height: 8),
-                  ],
                 ],
               ),
             ),

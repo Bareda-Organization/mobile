@@ -17,6 +17,7 @@ import 'package:manager_app/features/drive_mode/data/models/start_run_result.dar
 import 'package:manager_app/features/drive_mode/domain/drive_mode_repository.dart';
 import 'package:manager_app/features/drive_mode/presentation/drive_mode_providers.dart';
 import 'package:manager_app/features/drive_mode/presentation/drive_mode_screen.dart';
+import 'package:manager_app/features/drive_mode/presentation/widgets/bottom_notice_stack.dart';
 import 'package:manager_app/features/drive_mode/presentation/widgets/drive_map_panel.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
 import 'package:manager_app/features/navigation/data/kakao_navi_launcher.dart';
@@ -227,13 +228,22 @@ void main() {
           find.widgetWithText(BaraedaButton, '도착 처리'),
         );
         final scroll = tester.getRect(find.byType(SingleChildScrollView).first);
-        final map = tester.getSize(find.byType(DriveMapPanel));
+        final noticeScroll = tester.state<ScrollableState>(
+          find.descendant(
+            of: find.byType(BottomNoticeStack),
+            matching: find.byType(Scrollable),
+          ),
+        );
 
         // [도착 처리] 는 화면 안에 있고, 위쪽 스크롤 영역과 겹치지 않는다.
         expect(button.top, greaterThanOrEqualTo(scroll.bottom));
         expect(button.bottom, lessThanOrEqualTo(size.height));
-        // 지도 패널을 스크롤해서 통째로 볼 수 있다 — 스크롤 영역이 지도보다 작으면 지도는 늘 잘려 보인다.
-        expect(scroll.height, greaterThanOrEqualTo(map.height));
+        // 위쪽 스크롤 영역이 지도 패널의 최소 높이 이상으로 남는다 — 알림이 쌓여도 지도가 덮이지 않는다.
+        expect(scroll.height, greaterThanOrEqualTo(DriveMapPanel.minHeight));
+        // 기본 글자 크기에서는 가장 중요한 알림이 잘리지 않는다(큰 글자에서는 알림 안에서 스크롤한다).
+        if (scale == 1.0) {
+          expect(noticeScroll.position.maxScrollExtent, 0);
+        }
         // 하단 알림 때문에 생긴 넘침은 없다(공용 카드의 넘침은 이 시험의 대상이 아니다).
         expect(
           errors.where((e) => !_isKnownSharedCardOverflow(e)),

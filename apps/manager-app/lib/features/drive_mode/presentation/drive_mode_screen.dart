@@ -295,8 +295,8 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
     final rosterAsync = ref.watch(driveModeRosterProvider);
     // 지도 높이는 화면 비율로 정한다 — 작은 화면(360×640)에서도 아래 대형 버튼이 밀리지 않는다.
     final mapHeight = (MediaQuery.sizeOf(context).height * 0.3).clamp(
-      140.0,
-      320.0,
+      DriveMapPanel.minHeight,
+      DriveMapPanel.maxHeight,
     );
 
     return Column(
