@@ -9,6 +9,10 @@ import 'package:manager_app/features/route_map/presentation/route_providers.dart
 class DriveMapPanel extends ConsumerWidget {
   const DriveMapPanel({required this.height, this.busPosition, super.key});
 
+  /// 지도 면 높이의 하한·상한 — 작은 화면이어도 지도가 이보다 낮아지지 않는다(R46-FUMGR).
+  static const minHeight = 140.0;
+  static const maxHeight = 320.0;
+
   /// 지도 면의 높이 — 화면 비율로 정해 도착·종료 대형 버튼을 밀어내지 않는다.
   final double height;
 

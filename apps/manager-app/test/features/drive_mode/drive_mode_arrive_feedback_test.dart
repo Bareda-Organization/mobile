@@ -19,6 +19,7 @@ import 'package:manager_app/features/drive_mode/presentation/drive_mode_screen.d
 import 'package:manager_app/features/home/presentation/home_providers.dart';
 import 'package:manager_app/features/navigation/data/kakao_navi_launcher.dart';
 import 'package:manager_app/features/navigation/data/models/navigation_route.dart';
+import 'package:manager_app/features/navigation/data/models/navigation_scope.dart';
 import 'package:manager_app/features/navigation/domain/navigation_repository.dart';
 import 'package:manager_app/features/roster/data/models/roster_response.dart';
 import 'package:manager_app/features/route_map/data/models/route_response.dart';
@@ -58,7 +59,7 @@ class _FakeNavigationRepository implements NavigationRepository {
   int calls = 0;
 
   @override
-  Future<NavigationRoute> fetchRemaining(String runId) async {
+  Future<NavigationRoute> fetch(String runId, NavigationScope scope) async {
     calls++;
     return NavigationRoute(
       provider: provider,
@@ -257,16 +258,18 @@ void main() {
   });
 
   group('A #5 외부 내비(RUN-08)', () {
-    testWidgets('카카오 앱 키가 없으면 [카카오내비 길안내] 버튼을 그리지 않는다 (R46)', (tester) async {
+    testWidgets('카카오 앱 키가 없으면 길안내 버튼을 그리지 않는다 (R46)', (tester) async {
       await pumpDrive(tester);
 
       expect(find.text('카카오내비 길안내'), findsNothing);
+      expect(find.text('다음 목적지'), findsNothing);
+      expect(find.text('남은 전 구간'), findsNothing);
     });
 
     testWidgets('키가 있으면 서버 경로를 받아 카카오내비 경계에 넘긴다 (R46)', (tester) async {
       final harness = await pumpDrive(tester, naviAppKey: 'KEY-1');
 
-      await tester.tap(find.text('카카오내비 길안내'));
+      await tester.tap(find.text('남은 전 구간'));
       await tester.pump();
       await tester.pump();
 
@@ -286,7 +289,7 @@ void main() {
         naviResult: NaviLaunchResult.notInstalled,
       );
 
-      await tester.tap(find.text('카카오내비 길안내'));
+      await tester.tap(find.text('남은 전 구간'));
       await tester.pump();
       await tester.pump();
 
@@ -306,7 +309,7 @@ void main() {
         naviResult: NaviLaunchResult.failed,
       );
 
-      await tester.tap(find.text('카카오내비 길안내'));
+      await tester.tap(find.text('남은 전 구간'));
       await tester.pump();
       await tester.pump();
 
@@ -321,7 +324,7 @@ void main() {
         navProvider: 'tmap',
       );
 
-      await tester.tap(find.text('카카오내비 길안내'));
+      await tester.tap(find.text('남은 전 구간'));
       await tester.pump();
       await tester.pump();
 
@@ -336,7 +339,7 @@ void main() {
     testWidgets('상한 때문에 잘렸으면 서버가 준 안내 문구를 보인다 (R46)', (tester) async {
       await pumpDrive(tester, naviAppKey: 'KEY-1', truncated: true);
 
-      await tester.tap(find.text('카카오내비 길안내'));
+      await tester.tap(find.text('남은 전 구간'));
       await tester.pump();
       await tester.pump();
 

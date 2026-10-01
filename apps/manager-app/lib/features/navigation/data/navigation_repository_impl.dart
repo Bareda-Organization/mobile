@@ -1,5 +1,6 @@
 import 'package:manager_app/core/network/guard.dart';
 import 'package:manager_app/features/navigation/data/models/navigation_route.dart';
+import 'package:manager_app/features/navigation/data/models/navigation_scope.dart';
 import 'package:manager_app/features/navigation/data/navigation_api.dart';
 import 'package:manager_app/features/navigation/domain/navigation_repository.dart';
 
@@ -12,6 +13,6 @@ class NavigationRepositoryImpl implements NavigationRepository {
   final NavigationApi _api;
 
   @override
-  Future<NavigationRoute> fetchRemaining(String runId) =>
-      guardDio(() => _api.fetchRemaining(runId));
+  Future<NavigationRoute> fetch(String runId, NavigationScope scope) =>
+      guardDio(() => _api.fetch(runId, scope));
 }
