@@ -6,7 +6,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:parent_app/app/di.dart';
 import 'package:parent_app/core/auth/account_session.dart';
 import 'package:parent_app/core/auth/domain/auth_repository.dart';
-import 'package:parent_app/core/devices/data/device_registration_storage.dart';
 import 'package:parent_app/core/devices/presentation/device_registration_panel.dart';
 import 'package:parent_app/features/auth/presentation/pending_approval_screen.dart';
 
