@@ -777,6 +777,27 @@ void main() {
   });
 
   // N-08 — 비상 신고 memo 는 200자까지다(API_SPEC 자유 입력 메모 상한, 넘으면 422).
+  // R46-LAST `Ruling 583` — 이 칸은 퇴원 파기 대상 밖이라 입력 단계에서 개인정보를 줄인다.
+  testWidgets('상황 메모 칸 아래에 학생 이름·연락처를 적지 말라고 안내한다', (tester) async {
+    final fakeRepo = _FakeEmergencyRepository(
+      raiseOutcome: Sent(
+        EmergencyRaiseResult(
+          emergencyId: 'e1',
+          raisedAt: raisedAt,
+          cancelableUntil: cancelableUntil,
+          notified: 1,
+        ),
+      ),
+      list: const EmergencyListResponse(items: []),
+    );
+    await tester.pumpWidget(
+      _wrap(const EmergencyScreen(), overridesFor(fakeRepo: fakeRepo)),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('학생 이름·연락처는 적지 마세요'), findsOneWidget);
+  });
+
   testWidgets('상황 메모 입력칸은 200자에서 멈춘다', (tester) async {
     final fakeRepo = _FakeEmergencyRepository(
       raiseOutcome: Sent(

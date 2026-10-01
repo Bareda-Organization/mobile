@@ -122,6 +122,13 @@ void main() {
       ]),
     );
 
+    // R46-LAST `Ruling 583` — 이 문구는 탑승 학생 전원의 보호자에게 나가고 퇴원 파기 대상 밖이다.
+    testWidgets('안내 문구 칸 아래에 학생 이름·연락처를 적지 말라고 안내한다', (tester) async {
+      await pumpEscort(tester);
+
+      expect(find.textContaining('학생 이름·연락처는 적지 마세요'), findsOneWidget);
+    });
+
     testWidgets('안내 문구를 비우면 자동 문구가 나간다고 알리고 사유·분을 따라간다', (tester) async {
       await pumpEscort(tester);
 
