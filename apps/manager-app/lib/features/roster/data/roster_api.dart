@@ -6,7 +6,7 @@ import 'package:manager_app/features/roster/data/models/revert_result.dart';
 import 'package:manager_app/features/roster/data/models/rider_update_result.dart';
 import 'package:manager_app/features/roster/data/models/roster_response.dart';
 
-/// API_SPEC §4.2·§4.6·§4.7·§4.8·§4.11.
+/// API_SPEC §4.2·§4.2.1·§4.6·§4.7·§4.8·§4.11.
 class RosterApi {
   // 필드를 private 으로 유지하려고 initializing formal 대신 명시 대입을
   // 쓴다(AuthRepositoryImpl 과 같은 이유).
@@ -20,6 +20,17 @@ class RosterApi {
       '/runs/$runId/roster',
     );
     return RosterResponse.fromJson(response.data!);
+  }
+
+  /// §4.2.1 — 보호자 원번호 1건. 연결된 보호자가 없으면 `null`.
+  Future<String?> fetchGuardianPhone({
+    required String runId,
+    required String riderId,
+  }) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      '/runs/$runId/riders/$riderId/guardian-phone',
+    );
+    return response.data!['guardian_phone'] as String?;
   }
 
   Future<RiderUpdateResult> updateRiderStatus({

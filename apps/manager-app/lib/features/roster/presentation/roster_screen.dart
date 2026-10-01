@@ -9,6 +9,7 @@ import 'package:manager_app/app/app_routes.dart';
 import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/core/constants/api_constants.dart';
+import 'package:manager_app/core/launcher/device_launchers.dart';
 import 'package:manager_app/core/network/failure_messages.dart';
 import 'package:manager_app/core/run/manager_channel_banner.dart';
 import 'package:manager_app/core/run/run_enums.dart';
@@ -158,6 +159,43 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
     } on Failure catch (failure) {
       if (!mounted) return;
       setState(() => _errorMessage = describeFailure(failure));
+    } finally {
+      if (mounted) setState(() => _pendingRiderIds.remove(riderId));
+    }
+  }
+
+  /// 명단의 보호자 번호는 마스킹이라 걸 수 없다 — [전화] 를 누른 순간 그 학생 1명의 원번호를
+  /// 서버에서 받아 `tel:` 로 연다(Ruling 482). 원번호는 화면에 싣지 않고 바로 전화 앱에 넘긴다.
+  /// 번호를 못 받으면 걸지 않고 이유를 알린다.
+  Future<void> _callGuardian({
+    required String runId,
+    required String riderId,
+  }) async {
+    setState(() {
+      _pendingRiderIds.add(riderId);
+      _errorMessage = null;
+    });
+    try {
+      final phone = await ref
+          .read(guardianPhoneRepositoryProvider)
+          .fetchGuardianPhone(runId: runId, riderId: riderId);
+      if (!mounted) return;
+      if (phone == null || phone.trim().isEmpty) {
+        setState(() => _errorMessage = '등록된 보호자 연락처가 없습니다');
+        return;
+      }
+      final opened = await ref.read(uriOpenerProvider)(
+        Uri(scheme: 'tel', path: phone.trim()),
+      );
+      if (!opened && mounted) {
+        setState(() => _errorMessage = '전화 앱을 열지 못했습니다');
+      }
+    } on Failure catch (failure) {
+      if (!mounted) return;
+      setState(
+        () => _errorMessage =
+            '보호자 번호를 가져오지 못했습니다 — ${describeFailure(failure)}',
+      );
     } finally {
       if (mounted) setState(() => _pendingRiderIds.remove(riderId));
     }
@@ -398,6 +436,8 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
               riderId: riderId,
               waitEndsAt: _waitEndsAtOf(roster, riderId),
             ),
+            onCallGuardian: (riderId) =>
+                _callGuardian(runId: runId, riderId: riderId),
           ),
       ],
     );
@@ -422,6 +462,7 @@ class _StopSection extends StatelessWidget {
     required this.onNoShow,
     required this.onRevert,
     required this.onRecordContact,
+    required this.onCallGuardian,
   });
 
   final RosterStop stop;
@@ -443,6 +484,7 @@ class _StopSection extends StatelessWidget {
   final void Function(String riderId) onNoShow;
   final void Function(String riderId) onRevert;
   final void Function(String riderId) onRecordContact;
+  final void Function(String riderId) onCallGuardian;
 
   RosterPhoto? _photoOf(RosterStudent student) => resolveRosterPhoto(
     student.photoUrl,
@@ -522,6 +564,7 @@ class _StopSection extends StatelessWidget {
                       onNoShow: () => onNoShow(student.riderId),
                       onRevert: () => onRevert(student.riderId),
                       onRecordContact: () => onRecordContact(student.riderId),
+                      onCallGuardian: () => onCallGuardian(student.riderId),
                     )
                   : null,
             ),
@@ -615,6 +658,7 @@ class _StudentActions extends StatelessWidget {
     required this.onNoShow,
     required this.onRevert,
     required this.onRecordContact,
+    required this.onCallGuardian,
   });
 
   final RosterStudent student;
@@ -624,6 +668,7 @@ class _StudentActions extends StatelessWidget {
   final VoidCallback onNoShow;
   final VoidCallback onRevert;
   final VoidCallback onRecordContact;
+  final VoidCallback onCallGuardian;
 
   @override
   Widget build(BuildContext context) {
@@ -654,6 +699,17 @@ class _StudentActions extends StatelessWidget {
       onPressed: busy ? null : onRevert,
     );
 
+    // 연결된 보호자가 없으면(명단 번호가 비어 옴) 걸 곳이 없어 버튼을 그리지 않는다.
+    // 번호 자체는 마스킹돼 있어 이 버튼이 누른 순간 서버에서 원번호를 따로 받는다(Ruling 482).
+    final callButton = student.guardianPhone == null
+        ? null
+        : BaraedaButton(
+            label: '전화',
+            size: BaraedaButtonSize.sm,
+            variant: BaraedaButtonVariant.secondary,
+            onPressed: busy ? null : onCallGuardian,
+          );
+
     switch (student.status) {
       case RiderStatus.waiting:
         return Wrap(
@@ -661,6 +717,7 @@ class _StudentActions extends StatelessWidget {
           spacing: 6,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
+            ?callButton,
             BaraedaButton(
               label: '탑승',
               size: BaraedaButtonSize.sm,
@@ -694,6 +751,7 @@ class _StudentActions extends StatelessWidget {
           spacing: 6,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
+            ?callButton,
             BaraedaButton(
               label: '연락 기록',
               size: BaraedaButtonSize.sm,
