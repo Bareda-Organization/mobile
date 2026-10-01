@@ -59,6 +59,13 @@ final routerProvider = Provider<GoRouter>((ref) {
             : AppRoutes.pendingApproval;
       }
 
+      // 임시 비밀번호 강제 변경(Ruling 540) — 서버가 그 밖의 API 를 막으므로 변경 화면에 고정한다.
+      if (loggedIn && ref.read(mustChangePasswordProvider)) {
+        return location == AppRoutes.passwordChange
+            ? null
+            : AppRoutes.passwordChange;
+      }
+
       if (!loggedIn && !onAuthScreen) return AppRoutes.login;
       if (loggedIn && (onAuthScreen || location == AppRoutes.pendingApproval)) {
         return AppRoutes.home;

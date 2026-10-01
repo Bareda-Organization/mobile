@@ -37,6 +37,15 @@ final StateProvider<bool> unsupportedRoleProvider = StateProvider<bool>(
   (ref) => false,
 );
 
+/// 임시 비밀번호 강제 변경 표식(API_SPEC §1.4 · §2.5 · §2.10, Ruling 540) —
+/// 로그인·`/me` 응답이 켜고, 역할이 비는 모든 경로(로그아웃·세션 만료·변경 성공
+/// 뒤 로그아웃)가 [RouterRefreshNotifier] 에서 함께 끈다. 켜져 있는 동안 라우터는
+/// 비밀번호 변경 화면 밖으로 보내지 않는다 — 서버가 그 밖의 API 를
+/// `403 PASSWORD_CHANGE_REQUIRED` 로 막기 때문이다.
+final StateProvider<bool> mustChangePasswordProvider = StateProvider<bool>(
+  (ref) => false,
+);
+
 /// 세션이 만료돼(재발급 거절) 로그인 화면으로 돌아왔을 때 그 화면이 보여 줄 안내 — 처음 열었거나 직접 로그아웃했으면
 /// `null` 이다. 로그인에 성공하면 로그인 화면이 비운다(R46).
 final StateProvider<String?> sessionExpiredNoticeProvider =
@@ -85,6 +94,7 @@ final authBootstrapProvider = FutureProvider<void>(retry: (_, _) => null, (
       role: me.role,
       status: me.status,
     );
+    ref.read(mustChangePasswordProvider.notifier).state = me.mustChangePassword;
     ref.read(academyContactProvider.notifier).state = me.academy?.contact;
     if (me.status == AccountStatus.active && me.role == AccountRole.driver) {
       await _resumeMovingRun(ref);
@@ -180,6 +190,10 @@ class RouterRefreshNotifier extends ChangeNotifier {
       unsupportedRoleProvider,
       (_, _) => notifyListeners(),
     );
+    _mustChangeSub = _ref.listen<bool>(
+      mustChangePasswordProvider,
+      (_, _) => notifyListeners(),
+    );
     _gateSubscription = _ref.read(apiClientProvider).gateEvents.listen((
       reason,
     ) {
@@ -206,6 +220,7 @@ class RouterRefreshNotifier extends ChangeNotifier {
       ..invalidate(driveModeRosterProvider)
       ..invalidate(routeProvider);
     _ref.read(selectedRunIdProvider.notifier).state = null;
+    _ref.read(mustChangePasswordProvider.notifier).state = false;
     _ref.read(academyContactProvider.notifier).state = null;
     _ref.read(transmissionEndedRunIdProvider.notifier).state = null;
     _ref.read(lastArriveResultProvider.notifier).state = null;
@@ -216,6 +231,7 @@ class RouterRefreshNotifier extends ChangeNotifier {
   late final ProviderSubscription<UserRole?> _roleSub;
   late final ProviderSubscription<AccountStatus?> _statusSub;
   late final ProviderSubscription<bool> _unsupportedSub;
+  late final ProviderSubscription<bool> _mustChangeSub;
   late final StreamSubscription<AccountGateReason> _gateSubscription;
   late final StreamSubscription<void> _sessionExpiredSubscription;
 
@@ -224,6 +240,7 @@ class RouterRefreshNotifier extends ChangeNotifier {
     _roleSub.close();
     _statusSub.close();
     _unsupportedSub.close();
+    _mustChangeSub.close();
     unawaited(_gateSubscription.cancel());
     unawaited(_sessionExpiredSubscription.cancel());
     super.dispose();

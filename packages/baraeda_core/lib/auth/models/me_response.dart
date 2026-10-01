@@ -18,6 +18,7 @@ class MeResponse {
     this.managerId,
     this.managerRole,
     this.linkedStudentCount,
+    this.mustChangePassword = false,
   });
 
   /// 응답 본문을 그대로 옮긴다.
@@ -35,6 +36,7 @@ class MeResponse {
       managerId: json['manager_id'] as String?,
       managerRole: json['manager_role'] as String?,
       linkedStudentCount: json['linked_student_count'] as int?,
+      mustChangePassword: json['must_change_password'] as bool? ?? false,
     );
   }
 
@@ -70,4 +72,7 @@ class MeResponse {
 
   /// `role=parent` 일 때 연결 자녀 수.
   final int? linkedStudentCount;
+
+  /// 임시 비밀번호 강제 변경 표식(API_SPEC §2.10, Ruling 540) — 앱 재실행 때도 변경 화면으로 보내려고 쓴다.
+  final bool mustChangePassword;
 }

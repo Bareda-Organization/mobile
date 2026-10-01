@@ -72,6 +72,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         status: response.status,
       );
       ref.read(sessionExpiredNoticeProvider.notifier).state = null;
+      ref.read(mustChangePasswordProvider.notifier).state =
+          response.mustChangePassword;
       ref.read(academyContactProvider.notifier).state =
           response.academy?.contact;
 

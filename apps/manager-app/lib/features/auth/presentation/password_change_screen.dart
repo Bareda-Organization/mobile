@@ -14,6 +14,8 @@ import 'package:manager_app/core/network/failure_messages.dart';
 /// 서버가 기존 refresh 토큰을 전량 무효화한다(§2.8) — 그래서 이 기기도 로그아웃해 다시 로그인하게
 /// 한다. 로그아웃 호출은 서버 쪽 토큰이 이미 무효라 실패해도 상관없다(`AuthApi.logout` 이 성패와
 /// 무관하게 로컬 토큰을 지운다). 역할이 비면 라우터가 로그인 화면으로 보낸다.
+///
+/// 임시 비밀번호 강제 변경(Ruling 540) 중이면 라우터가 이 화면에 고정한다 — 뒤로 갈 길을 없애고 로그아웃만 연다.
 class PasswordChangeScreen extends ConsumerStatefulWidget {
   const PasswordChangeScreen({super.key});
 
@@ -83,10 +85,12 @@ class _PasswordChangeScreenState extends ConsumerState<PasswordChangeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final forced = ref.watch(mustChangePasswordProvider);
     return Scaffold(
       appBar: AppBar(
         title: const Text('비밀번호 변경'),
-        leading: BackButton(onPressed: () => context.pop()),
+        automaticallyImplyLeading: false,
+        leading: forced ? null : BackButton(onPressed: () => context.pop()),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -94,6 +98,13 @@ class _PasswordChangeScreenState extends ConsumerState<PasswordChangeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              if (forced) ...[
+                const AlertBanner(
+                  tone: AlertTone.info,
+                  body: '관리자가 초기화한 임시 비밀번호입니다. 새 비밀번호로 바꿔야 앱을 계속 쓸 수 있습니다',
+                ),
+                const SizedBox(height: BaraedaSpacing.space4),
+              ],
               BaraedaInput(
                 label: '현재 비밀번호',
                 required: true,
@@ -124,6 +135,13 @@ class _PasswordChangeScreenState extends ConsumerState<PasswordChangeScreen> {
                 size: BaraedaButtonSize.lg,
                 onPressed: _submitting ? null : _submit,
               ),
+              if (forced) ...[
+                const SizedBox(height: BaraedaSpacing.space4),
+                TextButton(
+                  onPressed: _submitting ? null : () => signOut(ref),
+                  child: const Text('로그아웃'),
+                ),
+              ],
             ],
           ),
         ),
