@@ -218,6 +218,7 @@ void main() {
       required Future<String?> Function(int call) refresh,
       String? initialToken,
       int? rejectSubscribeOnConnection,
+      TokenRenewalTiming timing = _fastTiming,
     }) async {
       server = _RenewalServer(
         rejectSubscribeOnConnection: rejectSubscribeOnConnection,
@@ -230,7 +231,7 @@ void main() {
         tokenStorage: await _storageWith(
           initialToken ?? _jwtExpiringIn(const Duration(seconds: 4)),
         ),
-        renewalTiming: _fastTiming,
+        renewalTiming: timing,
         refreshAccessToken: () async {
           calls += 1;
           final token = await refresh(calls);
@@ -325,6 +326,65 @@ void main() {
         () => server.events.contains('unsubscribe:1'),
         what: '새 연결의 UNSUBSCRIBE',
       );
+    });
+
+    test('만료 lead 전에 시작한다 — 일찍도 늦게도 아니다', () async {
+      // 만료까지 약 5~6초, lead 3초 → 갈아타기는 2~3초째.
+      final started = await start(
+        refresh: (_) async => _jwtExpiringIn(const Duration(minutes: 10)),
+        initialToken: _jwtExpiringIn(const Duration(seconds: 6)),
+      );
+      final client = started.client..connect();
+      await _connected(client);
+
+      await Future<void>.delayed(const Duration(milliseconds: 1200));
+      expect(server.conns, hasLength(1), reason: '만료 lead 보다 일찍 갈아탔다');
+      await Future<void>.delayed(const Duration(milliseconds: 2300));
+      expect(server.conns, hasLength(2), reason: '만료 lead 가 지났는데 갈아타지 않았다');
+    });
+
+    test('갈아탄 뒤에도 새 토큰의 만료 기준으로 다음 갈아타기가 예약된다', () async {
+      final started = await start(
+        refresh: (call) async => _jwtExpiringIn(
+          call == 1 ? const Duration(seconds: 5) : const Duration(minutes: 10),
+        ),
+      );
+      final client = started.client..connect();
+      await _connected(client);
+
+      await _until(() => server.conns.length == 3, what: '두 번째 갈아타기');
+      expect(started.refreshed, hasLength(2));
+    });
+
+    test('갈아타는 중에 새로 건 구독도 새 연결로 옮겨져 옛 연결을 닫은 뒤에도 방송을 받는다', () async {
+      final started = await start(
+        refresh: (_) async => _jwtExpiringIn(const Duration(minutes: 10)),
+        timing: const TokenRenewalTiming(
+          lead: Duration(seconds: 3),
+          minDelay: Duration.zero,
+          subscribeSettle: Duration(milliseconds: 800),
+          dedupTail: Duration(milliseconds: 300),
+        ),
+      );
+      final client = started.client..connect();
+      await _connected(client);
+      final received = <String>[];
+
+      await _until(
+        () => server.conns.length == 2 && server.conns[1].auth != null,
+        what: '두 번째 연결',
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      client.subscribe(_destination, (e) => received.add(e.runId));
+      await _until(
+        () => server.events.contains('subscribe:1:$_destination'),
+        what: '새 연결 구독',
+      );
+
+      await _until(() => server.conns[0].closed, what: '옛 연결 종료');
+      server.push(1, _envelope(5));
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      expect(received, ['5']);
     });
 
     test('재발급이 실패하면 연결을 그대로 두고 다른 연결을 열지 않는다', () async {
