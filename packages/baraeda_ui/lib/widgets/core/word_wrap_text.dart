@@ -8,7 +8,8 @@ const _wordJoiner = '\u2060';
 /// 공백으로 나뉜 낱말 안에서는 줄을 바꾸지 않는 [Text].
 ///
 /// Flutter 기본 줄바꿈은 한글을 음절마다 끊을 수 있어 `연락처 / 는` 처럼 낱말 한가운데서 줄이 바뀐다
-/// (R46-SCREEN 화면 확인 7곳, R46-POLISH Ruling 594). CSS `word-break: keep-all` 과 같은 효과를 내려고
+/// (R46-SCREEN 화면 확인 7곳, R46-POLISH Ruling 594). CSS `word-break: keep-all`
+/// 과 같은 효과를 내려고
 /// 낱말 안 글자 사이에 [_wordJoiner] 를 끼운다 — 줄은 공백에서만 바뀌고, 낱말 하나가 한 줄보다 길면
 /// 그때만 글자 단위로 끊는다.
 ///

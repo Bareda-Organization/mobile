@@ -19,7 +19,7 @@ final _cases = <String, Widget Function()>{
       children: [BaraedaDialog(title: '확인', body: _sentence)],
     ),
   ),
-  '알림 본문': () => NotificationTile(
+  '알림 본문': () => const NotificationTile(
     icon: 'map-pin',
     status: BaraedaStatus.moving,
     kindLabel: '미승차',
@@ -27,8 +27,6 @@ final _cases = <String, Widget Function()>{
     body: _sentence,
     time: '8:37',
     timeSpoken: '오전 8시 37분',
-    unread: false,
-    important: false,
   ),
   '입력칸 안내': () => const BaraedaInput(label: '메모', hint: _sentence),
   '입력칸 오류': () => const BaraedaInput(label: '메모', error: _sentence),
