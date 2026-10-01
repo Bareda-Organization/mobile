@@ -122,7 +122,7 @@ class _OfflineQueueScreenState extends ConsumerState<OfflineQueueScreen> {
       return const EmptyState(
         icon: 'clock',
         title: '대기 중인 요청이 없습니다',
-        body: '네트워크 장애로 보내지 못한 요청이 있으면 여기에 쌓입니다',
+        body: '네트워크 장애로 못 보낸 요청은 여기에 쌓입니다',
       );
     }
     return Column(
