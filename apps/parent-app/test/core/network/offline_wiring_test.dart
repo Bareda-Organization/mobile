@@ -78,6 +78,43 @@ void main() {
     expect(find.text('네트워크 연결이 끊겼습니다'), findsOneWidget);
   });
 
+  // 실기기(iOS 시뮬레이터)에서 표시줄 위 상태 표시줄 영역이 검게 비고 글자에 노란 밑줄이 떴다 —
+  // 앱 틀은 `Scaffold` 밖이라 `Material` 도 배경도 없었다. 위젯 시험이 `Scaffold` 안에서만 그려 못 잡았다.
+  testWidgets('끊김 표시줄은 Material 위에 그려지고 상태 표시줄 영역까지 같은 색이다', (tester) async {
+    tester.view
+      ..physicalSize = const Size(1200, 2400)
+      ..devicePixelRatio = 3
+      ..padding = const FakeViewPadding(top: 141); // 논리 47(노치 높이)
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          tokenStorageProvider.overrideWithValue(FakeTokenStorage()),
+          networkStatusProvider.overrideWith(
+            (ref) => NetworkStatusNotifier(
+              initial: const NetworkStatus(isOffline: true),
+            ),
+          ),
+        ],
+        child: const BaraedaParentApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final label = find.text('네트워크 연결이 끊겼습니다');
+    final material = find.ancestor(
+      of: label,
+      matching: find.byType(Material),
+    );
+    expect(material, findsWidgets, reason: 'Material 이 없으면 글자에 노란 밑줄이 뜬다');
+    // 가장 가까운 Material 이 화면 맨 위(상태 표시줄 영역)부터 글자 아래까지 칠한다.
+    final bar = tester.getRect(material.first);
+    expect(bar.top, 0);
+    expect(tester.getTopLeft(label).dy, greaterThanOrEqualTo(47));
+    expect(bar.bottom, greaterThan(tester.getBottomLeft(label).dy));
+  });
+
   group('홈', () {
     Future<void> pumpHome(
       WidgetTester tester, {

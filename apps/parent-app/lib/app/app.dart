@@ -64,8 +64,8 @@ class BaraedaParentApp extends ConsumerWidget {
       darkTheme: BaraedaTheme.light(),
       themeMode: ThemeMode.light,
       routerConfig: router,
-      // 연결이 끊기면 어느 화면이든 맨 위에 한 줄(R46 B2 #22). 막대가 보이는 동안은 아래 화면이 상태 표시줄 여백을
-      // 이미 막대가 차지했으므로 한 번 더 비우지 않게 위쪽 여백을 걷어 낸다.
+      // 연결이 끊기면 어느 화면이든 맨 위에 한 줄(R46 B2 #22). 표시줄이 상태 표시줄 여백을 이미 차지했으므로
+      // 아래 화면은 위쪽 여백을 한 번 더 비우지 않게 걷어 낸다.
       builder: (context, child) => _OfflineFrame(child: child),
     );
   }
@@ -86,7 +86,7 @@ class _OfflineFrame extends ConsumerWidget {
     if (!isOffline) return body;
     return Column(
       children: [
-        const SafeArea(bottom: false, child: OfflineBar()),
+        const OfflineBar(),
         Expanded(
           child: MediaQuery.removePadding(
             context: context,

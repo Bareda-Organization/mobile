@@ -37,6 +37,13 @@ class NaverMapAdapter extends StatefulWidget {
 }
 
 class _NaverMapAdapterState extends State<NaverMapAdapter> {
+  /// 카메라가 새 좌표로 옮겨 가는 시간 — 마커 보간 간격(위치 송신 주기 약 2초)보다 살짝 짧게 둬 다음 좌표 전에 끝낸다.
+  static const _cameraFollowDuration = Duration(milliseconds: 1800);
+
+  /// 승하차지 핀 색 — 디자인 시스템의 `statusMoving`(앰버)과 같은 계열로, 버스 핀(기본 초록)과 갈린다.
+  /// 지도 어댑터는 `BuildContext` 없이 마커를 만들어 토큰을 직접 읽지 못해 값을 한 곳에 둔다.
+  static const _stopMarkerTint = Color(0xFFE08A00);
+
   // `probe_map_main.dart` 와 같은 방식 — 런타임에 `--dart-define` 으로
   // 주입한다. 실제 키 값은 이 파일을 포함해 어디에도 커밋하지 않는다.
   static const _clientId = String.fromEnvironment('NAVER_MAP_CLIENT_ID');
@@ -81,14 +88,17 @@ class _NaverMapAdapterState extends State<NaverMapAdapter> {
     if (controller != null) {
       unawaited(_sync.request());
       if (!_sameCamera(oldWidget.camera, widget.camera)) {
-        unawaited(
-          controller.updateCamera(
+        // 마커는 새 좌표까지 약 2초에 걸쳐 미끄러진다 — 카메라가 즉시 옮겨 가면 마커가 매번 중앙에서 튕겨 나갔다
+        // 돌아오므로, 같은 속도로 따라가게 천천히 옮긴다(R46 B2 #12).
+        final update =
             NCameraUpdate.scrollAndZoomTo(
               target: NLatLng(widget.camera.lat, widget.camera.lng),
               zoom: widget.camera.zoom,
-            ),
-          ),
-        );
+            )..setAnimation(
+              animation: NCameraAnimation.linear,
+              duration: _cameraFollowDuration,
+            );
+        unawaited(controller.updateCamera(update));
       }
     }
   }
@@ -215,6 +225,11 @@ class _NaverMapAdapterState extends State<NaverMapAdapter> {
           caption: NOverlayCaption(
             text: entry.value.label ?? _captionFor(entry.value.kind),
           ),
+          // 기본 핀이 전부 같은 초록이라 버스와 내 승하차지가 글자 없이는 안 갈렸다(R46 B2 #10).
+          // 생성할 때 한 번만 지정한다 — 만든 뒤 바꾸지 않아 네이티브 호출이 늘지 않는다.
+          iconTintColor: entry.value.kind == MapMarkerKind.stop
+              ? _stopMarkerTint
+              : Colors.transparent,
         );
         _markersById[entry.key] = marker;
         toAdd.add(marker);
