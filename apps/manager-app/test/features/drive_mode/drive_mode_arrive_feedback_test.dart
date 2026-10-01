@@ -50,16 +50,17 @@ class _ArriveRecorder implements DriveModeRepository {
 
 /// 외부 내비 좌표열 — 호출을 세고 [truncated] 여부를 시험이 정한다.
 class _FakeNavigationRepository implements NavigationRepository {
-  _FakeNavigationRepository({this.truncated = false});
+  _FakeNavigationRepository({this.truncated = false, this.provider = 'kakao'});
 
   final bool truncated;
+  final String provider;
   int calls = 0;
 
   @override
   Future<NavigationRoute> fetchRemaining(String runId) async {
     calls++;
     return NavigationRoute(
-      provider: 'kakao',
+      provider: provider,
       waypoints: const [
         NavigationPoint(lat: 37.51, lng: 127.01, name: '1번 승하차지'),
       ],
@@ -133,9 +134,13 @@ void main() {
     String naviAppKey = '',
     bool openSucceeds = true,
     bool truncated = false,
+    String navProvider = 'kakao',
   }) async {
     final repository = _ArriveRecorder();
-    final navigation = _FakeNavigationRepository(truncated: truncated);
+    final navigation = _FakeNavigationRepository(
+      truncated: truncated,
+      provider: navProvider,
+    );
     final settingsOpened = <String>[];
     final opened = <Uri>[];
     await tester.pumpWidget(
@@ -258,6 +263,21 @@ void main() {
       await tester.pump();
       await tester.pump();
 
+      expect(find.textContaining('카카오내비를 열 수 없습니다'), findsOneWidget);
+    });
+
+    testWidgets('서버가 정한 공급자가 카카오가 아니면 열지 않고 안내한다 (R46)', (tester) async {
+      final harness = await pumpDrive(
+        tester,
+        naviAppKey: 'KEY-1',
+        navProvider: 'tmap',
+      );
+
+      await tester.tap(find.text('외부 내비'));
+      await tester.pump();
+      await tester.pump();
+
+      expect(harness.opened, isEmpty, reason: '카카오 주소로 다른 내비를 열 수 없다');
       expect(find.textContaining('카카오내비를 열 수 없습니다'), findsOneWidget);
     });
 

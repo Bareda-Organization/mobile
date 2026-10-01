@@ -545,6 +545,28 @@ void main() {
     expect(find.text('학원에 전화'), findsNothing);
   });
 
+  testWidgets('학원 번호가 공백뿐이어도 전화 버튼은 없다 — 걸리지 않는 버튼을 그리지 않는다 (R46)', (
+    tester,
+  ) async {
+    final fakeRepo = _FakeEmergencyRepository(
+      raiseOutcome: const Queued<EmergencyRaiseResult>(),
+      list: const EmergencyListResponse(items: []),
+    );
+
+    await tester.pumpWidget(
+      _wrap(const EmergencyScreen(), [
+        ...overridesFor(fakeRepo: fakeRepo),
+        academyContactProvider.overrideWith((ref) => '  '),
+      ]),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('비상 알림 보내기'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('전송 안 됨 — 학원에 전화하세요'), findsOneWidget);
+    expect(find.text('학원에 전화'), findsNothing);
+  });
+
   testWidgets('발신이 서버 거절(403 FORBIDDEN)로 실패하면 단일 사유를 보여준다', (tester) async {
     // §4.15 의 403 은 배치되지 않은 회차·타 학원 회차·존재하지 않는 회차를
     // 한 코드로 묶는다(Ruling 259(b)) — 404 로 분리하지 않는다.
