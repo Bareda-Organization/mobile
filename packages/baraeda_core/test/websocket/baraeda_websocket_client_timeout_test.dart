@@ -117,9 +117,10 @@ void main() {
         );
         addTearDown(client.dispose);
 
+        // 한도(200ms)의 몇 배 안에 끊겨야 한다 — 한도가 실제로 쓰이는지 가리는 값.
         final reconnecting = client.connectionState
             .firstWhere((s) => s == WsConnectionState.reconnecting)
-            .timeout(const Duration(seconds: 3));
+            .timeout(const Duration(seconds: 1));
         client.connect();
         await reconnecting;
 
