@@ -7,11 +7,13 @@ import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:parent_app/app/app.dart';
 import 'package:parent_app/app/app_routes.dart';
+import 'package:parent_app/app/app_shell.dart';
 import 'package:parent_app/app/di.dart';
 import 'package:parent_app/app/router.dart';
 import 'package:parent_app/core/auth/account_session.dart';
 import 'package:parent_app/core/auth/auth_providers.dart';
 import 'package:parent_app/core/auth/user_role.dart';
+import 'package:parent_app/core/network/network_status.dart';
 import 'package:parent_app/core/runs/presentation/run_providers.dart';
 import 'package:parent_app/core/students/presentation/student_providers.dart';
 import 'package:parent_app/features/auth/presentation/login_screen.dart';
@@ -302,6 +304,50 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(client.reconnectNowCalls, 1);
+  });
+
+  // R46-FIXCONN C-10 — 와이파이가 돌아와도 재연결 대기(최대 30초)가
+  // 끝나야 실시간 연결이 붙었다. 이 앱은 REST 성공이 사실상의 망 복귀
+  // 신호이므로(`NetworkStatusNotifier`), 끊김(오프라인)에서 서버에 다시 닿는
+  // 순간 연결을 바로 다시 붙이게 요청한다.
+  group('망 복귀 — 실시간 연결을 바로 다시 붙인다(C-10)', () {
+    testWidgets('서버에 못 닿다가(오프라인) 다시 닿으면 재연결을 요청한다', (tester) async {
+      final client = _FakeWsClient();
+      await pumpApp(
+        tester,
+        extraOverrides: [webSocketClientProvider.overrideWithValue(client)],
+      );
+      final network = ProviderScope.containerOf(
+        tester.element(find.byType(AppShell)),
+      ).read(networkStatusProvider.notifier);
+
+      // 중간에 확인(expect)이 끼어 한 번에 이을 수 없다.
+      // ignore: cascade_invocations
+      network.markUnreachable();
+      await tester.pump();
+      expect(client.reconnectNowCalls, 0, reason: '끊긴 순간에는 요청하지 않는다');
+
+      network.markReachable();
+      await tester.pump();
+
+      expect(client.reconnectNowCalls, 1);
+    });
+
+    testWidgets('계속 닿고 있는 동안의 성공 응답은 재연결을 요청하지 않는다', (tester) async {
+      final client = _FakeWsClient();
+      await pumpApp(
+        tester,
+        extraOverrides: [webSocketClientProvider.overrideWithValue(client)],
+      );
+      ProviderScope.containerOf(
+          tester.element(find.byType(AppShell)),
+        ).read(networkStatusProvider.notifier)
+        ..markReachable()
+        ..markReachable();
+      await tester.pump();
+
+      expect(client.reconnectNowCalls, 0);
+    });
   });
 
   group('자동 갱신', () {
