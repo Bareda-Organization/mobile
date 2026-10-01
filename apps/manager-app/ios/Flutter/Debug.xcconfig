@@ -1,1 +1,4 @@
 #include "Generated.xcconfig"
+// 카카오 URL scheme 의 앱 키 자리표시 — 실제 키는 git 밖 Local.xcconfig 에 `KAKAO_NATIVE_APP_KEY = <키>` 로 둔다.
+KAKAO_NATIVE_APP_KEY = placeholder
+#include? "Local.xcconfig"

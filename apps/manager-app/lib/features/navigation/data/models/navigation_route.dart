@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 /// 외부 내비에 넘길 지점 하나 — 위도·경도·이름.
 class NavigationPoint {
   const NavigationPoint({
@@ -21,7 +19,7 @@ class NavigationPoint {
 }
 
 /// `GET /runs/{runId}/navigation` 응답(API_SPEC §4.16, RUN-08) — 서버가 순서를 정하고 공급자 상한만큼 자른 좌표열.
-/// 딥링크는 서버가 만들지 않는다 — 앱이 [kakaoNaviUri] 로 만든다.
+/// 딥링크는 서버가 만들지 않는다 — 앱이 공식 SDK(`kakaoNaviRequest`)로 카카오내비를 연다.
 class NavigationRoute {
   const NavigationRoute({
     required this.provider,
@@ -69,31 +67,4 @@ class NavigationRoute {
 
   /// 자르기 전 남은 승하차지 수.
   final int totalRemainingStops;
-}
-
-/// 카카오내비(SDK 스킴)로 길안내를 여는 주소 — 목적지·경유지는 `x=경도 · y=위도`(WGS84)다.
-///
-/// ⚠ 스킴 형식(`kakaonavi-sdk://navigate?apiver&appkey&param`)은 카카오내비 SDK 의 규격을 따른 것이고,
-/// **실제 앱 키·카카오내비가 설치된 기기로는 아직 열어 보지 못했다**(앱 키는 사용자 자원). 시험은 주소 조립만 지킨다.
-Uri kakaoNaviUri(NavigationRoute route, {required String appKey}) {
-  Map<String, dynamic> pointJson(NavigationPoint p) => {
-    'name': p.name,
-    'x': p.lng,
-    'y': p.lat,
-  };
-  final param = <String, dynamic>{
-    'destination': pointJson(route.destination),
-    'option': {'coord_type': 'wgs84', 'vehicle_type': 1, 'route_info': false},
-    if (route.waypoints.isNotEmpty)
-      'via_list': route.waypoints.map(pointJson).toList(),
-  };
-  return Uri(
-    scheme: 'kakaonavi-sdk',
-    host: 'navigate',
-    queryParameters: {
-      'apiver': '1.0',
-      'appkey': appKey,
-      'param': jsonEncode(param),
-    },
-  );
 }

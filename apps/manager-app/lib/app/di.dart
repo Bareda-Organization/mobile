@@ -18,6 +18,7 @@ import 'package:manager_app/features/emergency/domain/emergency_repository.dart'
 import 'package:manager_app/features/home/data/manager_run_api.dart';
 import 'package:manager_app/features/home/data/manager_run_repository_impl.dart';
 import 'package:manager_app/features/home/domain/manager_run_repository.dart';
+import 'package:manager_app/features/navigation/data/kakao_navi_launcher.dart';
 import 'package:manager_app/features/navigation/data/navigation_api.dart';
 import 'package:manager_app/features/navigation/data/navigation_repository_impl.dart';
 import 'package:manager_app/features/navigation/domain/navigation_repository.dart';
@@ -163,6 +164,11 @@ final navigationRepositoryProvider = Provider<NavigationRepository>((ref) {
 /// 카카오내비 앱 키 — 빈 값이면 외부 내비 버튼이 없다. 시험이 바꿔 끼운다.
 final kakaoNaviAppKeyProvider = Provider<String>(
   (ref) => NavigationConstants.kakaoAppKey,
+);
+
+/// 카카오내비를 여는 경계(공식 SDK) — 시험이 가짜로 바꿔 끼워 실제 앱을 열지 않는다.
+final kakaoNaviLauncherProvider = Provider<KakaoNaviLauncher>(
+  (ref) => SdkKakaoNaviLauncher(appKey: ref.watch(kakaoNaviAppKeyProvider)),
 );
 
 /// API_SPEC §4.9 — 지연 알림(동승자 전용).
