@@ -52,8 +52,9 @@ void main() {
     expect(columns, isNot(contains('client_key')));
   });
 
-  // R46-FIXRT S-9 — v3 → v4 는 행별 시도 횟수(`attempts`)를 더한다. 이미 쌓여 있던 행이 사라지거나 영구 실패 행으로
-  // 읽히면 안 된다 — 기존 행은 0 회(재생 대상)로 남아야 한다.
+  // R46-FIXRT S-9 — v3 → v4 는 행별 시도 횟수(`attempts`)를 더한다. 이미 쌓여
+  // 있던 행이 사라지거나 영구 실패 행으로 읽히면 안 된다 — 기존 행은 0 회(재생
+  // 대상)로 남아야 한다.
   test('v3 DB 가 v4 로 열리면 attempts 컬럼이 0 으로 더해지고 기존 행은 재생 대상으로 남는다', () async {
     final dir = Directory.systemTemp.createTempSync('oq_migration_v4_test');
     final path = '${dir.path}/oq.sqlite';

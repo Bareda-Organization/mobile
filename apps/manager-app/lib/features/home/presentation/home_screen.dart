@@ -10,6 +10,7 @@ import 'package:manager_app/core/auth/account_session.dart';
 import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/core/auth/role_policy.dart';
 import 'package:manager_app/core/network/failure_messages.dart';
+import 'package:manager_app/core/run/manager_run_channel.dart';
 import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/features/emergency/presentation/widgets/emergency_button.dart';
@@ -58,7 +59,11 @@ class _ManagerHomeScreenState extends ConsumerState<ManagerHomeScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) _reloadQuietly();
+    if (state != AppLifecycleState.resumed) return;
+    _reloadQuietly();
+    // 실시간 연결도 다시 붙게 한다 — REST 만 다시 읽으면 끊긴 소켓이 다음 재연결 타이머(최대 30초)를 기다린다.
+    // 운행 화면이 열려 있지 않으면 듣는 컨트롤러가 없어 아무 일도 일어나지 않는다(R46-FIXRT S-5).
+    ref.read(appResumedProvider.notifier).state++;
   }
 
   /// 회차 목록과 알림(배지)을 스피너 없이 다시 받는다 — 푸시 SDK 가 없어 앱 안 갱신이 유일한 통지 수단이다.

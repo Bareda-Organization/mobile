@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:manager_app/app/app_routes.dart';
 import 'package:manager_app/app/di.dart';
+import 'package:manager_app/core/run/manager_run_channel.dart';
 import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/features/emergency/presentation/widgets/emergency_button.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
@@ -61,6 +62,26 @@ void main() {
       tester.widget<RunSummaryCard>(find.byType(RunSummaryCard)).onTap,
       isNotNull,
     );
+  });
+
+  // R46-FIXRT S-5 — 앱이 백그라운드에서 돌아오면 회차 목록(REST)만이 아니라 실시간 연결도 다시 붙게 신호를 올린다.
+  testWidgets('앱이 백그라운드에서 돌아오면 목록을 다시 받고 실시간 연결 복귀 신호도 올린다', (tester) async {
+    var calls = 0;
+    await tester.pumpWidget(
+      app(const ManagerHomeScreen(), fetches: () => ++calls),
+    );
+    await tester.pumpAndSettle();
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(ManagerHomeScreen)),
+    );
+    expect(calls, 1);
+    expect(container.read(appResumedProvider), 0);
+
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pumpAndSettle();
+
+    expect(calls, 2);
+    expect(container.read(appResumedProvider), 1);
   });
 
   testWidgets('비상 버튼은 낡은 목록이 아니라 다시 받은 목록으로 신고 가능 여부를 판정한다', (tester) async {

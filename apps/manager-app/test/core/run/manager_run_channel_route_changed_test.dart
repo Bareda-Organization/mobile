@@ -198,11 +198,18 @@ void main() {
     await Future<void>.delayed(Duration.zero);
   }
 
+  /// 명단·노선 재조회는 이벤트 뒤 [runViewRefetchWindow] 에 한 번 나간다
+  /// (R46-FIXRT L4) — 그 시간을 지나 보낸다.
+  Future<void> waitRefetchWindow() => Future<void>.delayed(
+    runViewRefetchWindow + const Duration(milliseconds: 100),
+  );
+
   test('route_changed 방송 → 노선·명단을 다시 불러와 새 응답(한 곳 skipped)으로 바뀐다', () async {
     expect(routeRepo.fetchCount, 1);
     expect(rosterRepo.fetchCount, 1);
 
     await receive(_envelope('route_changed', 'run-1'));
+    await waitRefetchWindow();
     final route = await container.read(routeProvider.future);
     final roster = await container.read(driveModeRosterProvider.future);
 
@@ -222,6 +229,7 @@ void main() {
 
   test('rider_changed 방송(③구간 미등원 — stop_skipped) → 같은 재조회 경로를 탄다', () async {
     await receive(_envelope('rider_changed', 'run-1'));
+    await waitRefetchWindow();
     final roster = await container.read(driveModeRosterProvider.future);
 
     expect(routeRepo.fetchCount, 2);
@@ -255,6 +263,7 @@ void main() {
   test('재연결되면 끊긴 동안 놓친 변경을 되찾도록 명단·노선·회차 목록을 다시 받는다', () async {
     client.emitConnected();
     await Future<void>.delayed(Duration.zero);
+    await waitRefetchWindow();
     await container.read(driveModeRosterProvider.future);
     await container.read(routeProvider.future);
     await container.read(todayRunsProvider.future);

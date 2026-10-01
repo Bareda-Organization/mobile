@@ -35,7 +35,8 @@ enum ManagerChannelStatus {
   /// 끊겨서 백오프 대기 중 — 자동으로 [connecting] 으로 돌아간다.
   reconnecting,
 
-  /// 재시도 상한 도달 — 더 이상 자동 재연결하지 않는다.
+  /// 재시도 상한 도달 — 더 이상 자동 재연결하지 않는다. 기본 정책은 상한이 없어(R46-FIXRT S-5) 운영에서는
+  /// 이 상태에 들지 않는다.
   gaveUp,
 
   /// 이 회차에 배정되지 않은 매니저가 구독을 시도해 서버가 4403 으로
@@ -97,6 +98,15 @@ void dispatchManagerChannelEvent(
   }
 }
 
+/// 앱이 백그라운드에서 돌아올 때마다 하나씩 오르는 신호(R46-FIXRT S-5) — 홈 화면의 복귀 훅이 올리고,
+/// [ManagerRunChannelController] 가 보고 다음 재연결 타이머(최대 30초)를 기다리지 않고 바로 다시 붙는다.
+/// 값 자체에는 뜻이 없다 — 바뀌었다는 사실이 신호다.
+final StateProvider<int> appResumedProvider = StateProvider<int>((ref) => 0);
+
+/// 이벤트가 몰려도 명단·노선을 이 간격 안에서는 한 번만 다시 받는다(R46-FIXRT L4). 한 정류장에서 승차가
+/// 몰리면 방송 한 건마다 같은 조회가 탭마다 연달아 나가므로, 첫 이벤트 뒤 이 시간을 기다렸다 한 번에 읽는다.
+const Duration runViewRefetchWindow = Duration(seconds: 1);
+
 /// `runId` 하나에 대한 `/topic/manager/runs/{runId}` 구독을 소유하는
 /// 컨트롤러 — DriveMode·StopRoster 화면이 각자 [managerRunChannelProvider]
 /// 로 이 컨트롤러를 얻는다(두 화면은 기사·동승자로 역할이 갈려 한 세션에
@@ -136,6 +146,9 @@ class ManagerRunChannelController extends StateNotifier<ManagerChannelStatus> {
       (_) => _onSessionExpired(),
     );
     _client.connect();
+    // 앱 복귀 — 끊겨 대기 중인 연결을 바로 붙인다. 거부(forbidden)로 일부러 끊은 연결은 클라이언트가
+    // 되살리지 않는다(`reconnectNow` 문서).
+    _ref.listen<int>(appResumedProvider, (_, _) => _client.reconnectNow());
   }
 
   final Ref _ref;
@@ -235,16 +248,26 @@ class ManagerRunChannelController extends StateNotifier<ManagerChannelStatus> {
     );
   }
 
-  /// 운행 화면이 그리는 명단(§4.2·두 화면)과 노선(§4.3)을 버려 다시 조회하게 한다.
+  /// 이미 다시 읽기를 기다리는 중이면 새 이벤트는 그 묶음에 들어간다 — 타이머를 밀지 않는다. 이벤트가
+  /// 쉬지 않고 이어져도 화면이 [runViewRefetchWindow] 보다 오래 낡지 않고, 조회는 그 간격에 한 번을 넘지 않는다.
+  Timer? _refetchTimer;
+
+  /// 운행 화면이 그리는 명단(§4.2·두 화면)과 노선(§4.3)을 버려 다시 조회하게 한다 —
+  /// [runViewRefetchWindow] 뒤에 한 번.
   void _invalidateRunViews() {
-    _ref
-      ..invalidate(rosterProvider)
-      ..invalidate(driveModeRosterProvider)
-      ..invalidate(routeProvider);
+    if (_refetchTimer?.isActive ?? false) return;
+    _refetchTimer = Timer(runViewRefetchWindow, () {
+      if (!mounted) return;
+      _ref
+        ..invalidate(rosterProvider)
+        ..invalidate(driveModeRosterProvider)
+        ..invalidate(routeProvider);
+    });
   }
 
   @override
   void dispose() {
+    _refetchTimer?.cancel();
     unawaited(_connectionSub.cancel());
     unawaited(_forbiddenSub.cancel());
     unawaited(_sessionExpiredSub.cancel());

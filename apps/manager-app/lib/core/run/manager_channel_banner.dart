@@ -58,8 +58,9 @@ ManagerChannelBannerContent? managerChannelBannerContentFor(
   ManagerChannelStatus.reconnecting => const ManagerChannelBannerContent(
     tone: AlertTone.moving,
     title: '실시간 연결이 끊어져 재연결 중',
-    body: '자동으로 다시 붙습니다 — 그동안 목록이 늦게 반영될 수 있습니다',
+    body: '연결이 돌아올 때까지 자동으로 계속 다시 붙습니다 — 그동안 다른 직원의 변경이 늦게 보일 수 있습니다',
   ),
+  // 기본 재연결 정책은 포기하지 않는다(R46-FIXRT S-5) — 상한을 준 정책에서만 이 상태에 든다.
   ManagerChannelStatus.gaveUp => const ManagerChannelBannerContent(
     tone: AlertTone.missed,
     title: '실시간 연결 실패',
