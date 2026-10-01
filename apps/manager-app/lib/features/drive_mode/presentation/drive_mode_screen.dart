@@ -19,6 +19,7 @@ import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/core/ui/confirm_dialog.dart';
 import 'package:manager_app/core/wakelock/wakelock_port.dart';
 import 'package:manager_app/features/drive_mode/presentation/drive_mode_providers.dart';
+import 'package:manager_app/features/drive_mode/presentation/widgets/bottom_notice_stack.dart';
 import 'package:manager_app/features/drive_mode/presentation/widgets/drive_map_panel.dart';
 import 'package:manager_app/features/drive_mode/presentation/widgets/navigation_scope_buttons.dart';
 import 'package:manager_app/features/drive_mode/presentation/widgets/remaining_stops_list.dart';
@@ -362,81 +363,24 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // 위치 권한·서비스 안내는 스크롤 본문이 아니라 버튼 바로 위 고정 영역에 둔다 —
-                // 지도·변경 배너 아래 접힌 곳에 두면 작은 화면에서 버튼 경계에 잘려 문구 끝이 안 보였다.
-                if (transmission.availability ?? _preStartAvailability
-                    case final availability?)
-                  if (_positionGuidance(availability) case final guidance?) ...[
-                    AlertBanner(
-                      tone: AlertTone.missed,
-                      body: guidance,
-                      action: BaraedaButton(
-                        label: '설정 열기',
-                        size: BaraedaButtonSize.sm,
-                        variant: BaraedaButtonVariant.secondary,
-                        onPressed: () => unawaited(
-                          ref.read(settingsOpenerProvider)(
-                            availability ==
-                                    PositionAvailability.permissionDenied
-                                ? DeviceSettingsPage.app
-                                : DeviceSettingsPage.location,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                  ],
-                if (_navNotice != null) ...[
-                  AlertBanner(tone: AlertTone.moving, body: _navNotice),
-                  const SizedBox(height: 12),
-                ],
-                if (_naviNotInstalled) ...[
-                  AlertBanner(
-                    tone: AlertTone.missed,
-                    body: '카카오내비가 설치돼 있지 않습니다. 설치한 뒤 다시 눌러 주세요',
-                    action: BaraedaButton(
-                      label: '설치하기',
-                      size: BaraedaButtonSize.sm,
-                      variant: BaraedaButtonVariant.secondary,
-                      onPressed: () => unawaited(
-                        ref.read(uriOpenerProvider)(
-                          ref.read(kakaoNaviLauncherProvider).installUri,
-                        ),
-                      ),
-                    ),
+                // 알림은 스크롤 본문이 아니라 버튼 바로 위 고정 영역에 둔다 — 지도·변경 배너 아래 접힌 곳에 두면
+                // 작은 화면에서 버튼 경계에 잘려 문구 끝이 안 보였다. 대신 높이를 막고 가장 중요한 한 건만 보인다.
+                BottomNoticeStack(
+                  notices: _bottomNotices(
+                    rosterAsync,
+                    transmission.availability ?? _preStartAvailability,
                   ),
-                  const SizedBox(height: 12),
-                ],
-                if (_arrivedNotice != null) ...[
-                  AlertBanner(tone: AlertTone.boarded, body: _arrivedNotice),
-                  const SizedBox(height: 12),
-                ],
-                if (_errorMessage != null) ...[
-                  AlertBanner(tone: AlertTone.missed, body: _errorMessage),
-                  const SizedBox(height: 12),
-                ],
+                ),
                 // 갱신이 실패해도 마지막으로 받은 명단을 지우지 않는다 — 음영 구간을 지난 직후에
                 // [도착 처리] 가 사라지면 다음 실시간 이벤트가 올 때까지 기사가 조작할 수 없다(R46).
+                // 조회 실패 안내는 위 알림 묶음이 맡는다.
                 rosterAsync.when(
                   skipLoadingOnReload: true,
                   skipError: true,
                   loading: () =>
                       const Center(child: CircularProgressIndicator()),
-                  error: (error, _) => _rosterFailure(error),
-                  data: (roster) => Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      if (rosterAsync.hasError) ...[
-                        _rosterFailure(
-                          rosterAsync.error!,
-                          stale: true,
-                        ),
-                        const SizedBox(height: 12),
-                      ],
-                      _buildActionArea(runId, run, roster),
-                    ],
-                  ),
+                  error: (_, _) => const SizedBox.shrink(),
+                  data: (roster) => _buildActionArea(runId, run, roster),
                 ),
               ],
             ),
@@ -444,6 +388,61 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
         ),
       ],
     );
+  }
+
+  /// 하단 알림을 중요한 순서로 모은다 — 접힌 상태에서는 첫 건만 보인다([BottomNoticeStack]).
+  /// 도착 처리 실패 > 명단 조회 실패 > 위치 송신 불가 > 카카오내비 미설치 > 길안내 안내 > 도착 처리됨 순이다:
+  /// 지금 조작이 막힌 것을 앞에, 이미 끝난 일의 확인을 뒤에 둔다.
+  List<BottomNotice> _bottomNotices(
+    AsyncValue<RosterResponse> rosterAsync,
+    PositionAvailability? availability,
+  ) {
+    final guidance = _positionGuidance(availability);
+    return [
+      if (_errorMessage != null)
+        BottomNotice(tone: AlertTone.missed, body: _errorMessage!),
+      if (rosterAsync.hasError)
+        _rosterFailureNotice(
+          rosterAsync.error!,
+          stale: rosterAsync.hasValue,
+        ),
+      if (guidance != null)
+        BottomNotice(
+          tone: AlertTone.missed,
+          body: guidance,
+          action: BaraedaButton(
+            label: '설정 열기',
+            size: BaraedaButtonSize.sm,
+            variant: BaraedaButtonVariant.secondary,
+            onPressed: () => unawaited(
+              ref.read(settingsOpenerProvider)(
+                availability == PositionAvailability.permissionDenied
+                    ? DeviceSettingsPage.app
+                    : DeviceSettingsPage.location,
+              ),
+            ),
+          ),
+        ),
+      if (_naviNotInstalled)
+        BottomNotice(
+          tone: AlertTone.missed,
+          body: '카카오내비가 설치돼 있지 않습니다. 설치한 뒤 다시 눌러 주세요',
+          action: BaraedaButton(
+            label: '설치하기',
+            size: BaraedaButtonSize.sm,
+            variant: BaraedaButtonVariant.secondary,
+            onPressed: () => unawaited(
+              ref.read(uriOpenerProvider)(
+                ref.read(kakaoNaviLauncherProvider).installUri,
+              ),
+            ),
+          ),
+        ),
+      if (_navNotice != null)
+        BottomNotice(tone: AlertTone.moving, body: _navNotice!),
+      if (_arrivedNotice != null)
+        BottomNotice(tone: AlertTone.boarded, body: _arrivedNotice!),
+    ];
   }
 
   bool _canUseExternalNavigation(ManagerRun? run) =>
@@ -457,18 +456,19 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
       '출발 ${DateFormat('HH:mm').format(run.departTime.toLocal())}';
 
   /// 명단 조회 실패 안내 + [다시 시도]. [stale] 이면 화면의 명단이 마지막 성공분이라는 뜻이다.
-  Widget _rosterFailure(Object error, {bool stale = false}) => AlertBanner(
-    tone: AlertTone.missed,
-    body: stale
-        ? '최신 명단을 불러오지 못했습니다 · 이전 명단을 보고 있습니다: ${describeError(error)}'
-        : '명단을 불러오지 못했습니다: ${describeError(error)}',
-    action: BaraedaButton(
-      label: '다시 시도',
-      size: BaraedaButtonSize.sm,
-      variant: BaraedaButtonVariant.secondary,
-      onPressed: () => ref.invalidate(driveModeRosterProvider),
-    ),
-  );
+  BottomNotice _rosterFailureNotice(Object error, {required bool stale}) =>
+      BottomNotice(
+        tone: AlertTone.missed,
+        body: stale
+            ? '최신 명단을 불러오지 못했습니다 · 이전 명단을 보고 있습니다: ${describeError(error)}'
+            : '명단을 불러오지 못했습니다: ${describeError(error)}',
+        action: BaraedaButton(
+          label: '다시 시도',
+          size: BaraedaButtonSize.sm,
+          variant: BaraedaButtonVariant.secondary,
+          onPressed: () => ref.invalidate(driveModeRosterProvider),
+        ),
+      );
 
   Widget _buildActionArea(
     String runId,
