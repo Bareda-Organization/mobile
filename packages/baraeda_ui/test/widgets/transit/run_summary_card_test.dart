@@ -41,8 +41,10 @@ void main() {
     expect(find.text('다음 정류장'), findsNothing);
   });
 
-  // R46-LAST `Ruling 582`(R46-FUMGR `Ruling 573`) — 360 폭 · 글자 1.3배에서 상태 알약 + `호차 · 등원` 한 줄이
-  // 57px, 글자 2.0배에서 42px 가로로 넘쳤다(실기기 release 는 글자 잘림 · debug 는 노란 띠).
+  // R46-LAST `Ruling 582`(R46-FUMGR `Ruling 573`) — 글자 2.0배에서 상태 알약 +
+  // `호차 · 등원` 한 줄이 가로로 넘쳤다(360×640 에서 57px · 375×750 에서 42px,
+  // 1.0·1.3배는 원래 넘치지 않음). 아래 세 크기를 모두 지킨다.
+  // (실기기 release 는 글자 잘림 · debug 는 노란 띠로 보인다.)
   for (final scale in const [1.0, 1.3, 2.0]) {
     testWidgets('360 폭 · 글자 $scale배에서도 가로로 넘치지 않는다', (tester) async {
       tester.view
@@ -68,7 +70,6 @@ void main() {
               child: RunSummaryCard(
                 bus: '3호차',
                 leg: '등원',
-                status: BaraedaStatus.moving,
                 statusLabel: '운행 중',
                 eta: '약 5분 후 도착합니다',
                 origin: '송파 롯데월드타워 정문 앞 집결지',
