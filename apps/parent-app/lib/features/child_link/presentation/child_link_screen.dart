@@ -1,11 +1,14 @@
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:parent_app/app/di.dart';
 import 'package:parent_app/core/auth/auth_providers.dart';
 import 'package:parent_app/core/students/presentation/student_providers.dart';
 import 'package:parent_app/core/ui/format_date_time.dart';
+import 'package:parent_app/core/ui/minute_ticker.dart';
 
 /// 자녀 연결 (FEATURE_SPEC §5.1 색인 기준 P-02, BRIEF 표기 "P-01" 은
 /// 정본과 어긋남 — 보고서 §2 참고) · 학생 코드 생성(S-05) 화면.
@@ -99,6 +102,20 @@ class _ChildLinkScreenState extends ConsumerState<ChildLinkScreen> {
     }
   }
 
+  /// 클립보드에 복사하고 결과를 알린다 — 복사 성공은 되돌릴 수 없는 동작이 아니라 한 줄 안내로 충분하다.
+  Future<void> _copy(String text, String doneMessage) async {
+    await Clipboard.setData(ClipboardData(text: text));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(doneMessage)));
+  }
+
+  /// 학부모에게 메신저로 붙여 넣을 문장 — 코드만 보내면 어디에 입력하는지 모른다.
+  String _shareMessage(String code, DateTime expiresAt) =>
+      '바래다 자녀 연결 코드 $code · 학부모 앱의 [자녀 연결] 에서 입력해 주세요 · '
+      '${DateFormat('H:mm').format(expiresAt.toLocal())} 까지 쓸 수 있습니다';
+
   String _messageFor(Failure failure) => switch (failure) {
     ApiFailure(code: 'ALREADY_LINKED') => '이미 연결된 자녀입니다',
     ApiFailure(code: 'LINK_CODE_INVALID') => '코드가 올바르지 않거나 만료됐습니다',
@@ -172,10 +189,40 @@ class _ChildLinkScreenState extends ConsumerState<ChildLinkScreen> {
             style: BaraedaTypography.h1.copyWith(letterSpacing: 8),
           ),
         ),
-        if (_generatedCodeExpiresAt != null) ...[
+        if (_generatedCodeExpiresAt case final expiresAt?) ...[
           const SizedBox(height: BaraedaSpacing.space2),
-          Center(
-            child: Text('만료 시각: ${formatDateTime(_generatedCodeExpiresAt!)}'),
+          Center(child: Text('만료 시각: ${formatDateTime(expiresAt)}')),
+          Center(child: _RemainingTime(expiresAt: expiresAt)),
+          const SizedBox(height: BaraedaSpacing.space4),
+          MinuteTicker(
+            builder: (context, now) {
+              final isExpired = !expiresAt.isAfter(now);
+              return Wrap(
+                alignment: WrapAlignment.center,
+                spacing: BaraedaSpacing.space2,
+                children: [
+                  BaraedaButton(
+                    label: '코드 복사',
+                    size: BaraedaButtonSize.sm,
+                    variant: BaraedaButtonVariant.secondary,
+                    onPressed: isExpired
+                        ? null
+                        : () => _copy(_code, '코드를 복사했습니다'),
+                  ),
+                  BaraedaButton(
+                    label: '안내 문구 복사',
+                    size: BaraedaButtonSize.sm,
+                    variant: BaraedaButtonVariant.secondary,
+                    onPressed: isExpired
+                        ? null
+                        : () => _copy(
+                            _shareMessage(_code, expiresAt),
+                            '안내 문구를 복사했습니다',
+                          ),
+                  ),
+                ],
+              );
+            },
           ),
         ],
       ],
@@ -201,5 +248,27 @@ class _ChildLinkScreenState extends ConsumerState<ChildLinkScreen> {
         AlertBanner(tone: AlertTone.boarded, body: _successMessage),
       ],
     ];
+  }
+}
+
+/// 코드 만료까지 남은 시간 — 1분마다 줄고, 만료되면 새로 만들라고 알린다(코드는 1회용이라 만료 뒤에는 쓸 수 없다).
+class _RemainingTime extends StatelessWidget {
+  const _RemainingTime({required this.expiresAt});
+
+  final DateTime expiresAt;
+
+  @override
+  Widget build(BuildContext context) {
+    return MinuteTicker(
+      builder: (context, now) {
+        final left = expiresAt.difference(now);
+        return Text(
+          left <= Duration.zero
+              ? '코드가 만료됐습니다 · 새 코드를 만들어 주세요'
+              : '남은 시간 ${formatRemaining(left)}',
+          style: BaraedaTypography.bodySm,
+        );
+      },
+    );
   }
 }
