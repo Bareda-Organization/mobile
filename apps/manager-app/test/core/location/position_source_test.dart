@@ -14,7 +14,7 @@ import 'package:manager_app/core/location/position_source.dart';
 class _FakeGeolocatorPlatform extends GeolocatorPlatform {
   LocationPermission checkPermissionResult = LocationPermission.whileInUse;
   bool serviceEnabled = true;
-  final _positionController = StreamController<Position>.broadcast();
+  var _positionController = StreamController<Position>.broadcast();
 
   @override
   Future<LocationPermission> checkPermission() async => checkPermissionResult;
@@ -35,6 +35,16 @@ class _FakeGeolocatorPlatform extends GeolocatorPlatform {
   }
 
   void emit(Position position) => _positionController.add(position);
+
+  /// 운행 중 GPS 를 껐다 켜는 것처럼 스트림이 오류를 내는 순간(leak K-4).
+  void emitError(Object error) => _positionController.addError(error);
+
+  /// 스트림이 끝나는 순간 — 다시 열면 새 스트림이 나가도록 컨트롤러를 갈아 둔다.
+  Future<void> endStream() {
+    final ended = _positionController;
+    _positionController = StreamController<Position>.broadcast();
+    return ended.close();
+  }
 
   /// `sampleOnce` 시험용 — 값을 그대로 낼지, 예외를 던질지 고른다(BRIEF-BG2).
   Position? currentPositionResult;
@@ -254,6 +264,69 @@ void main() {
 
     expect(source.availability, PositionAvailability.available);
     expect(platform.streamOpens, 0);
+  });
+
+  // R46-KFIXFE(leak K-4) — 스트림이 오류·종료돼도 구독 변수가 남아 `_startStream` 이 다시 열지 않았다.
+  // availability 는 available 인 채라 송신기도 재시작을 안 불러, 그 회차가 끝날 때까지 위치 송신이 멈췄다.
+  group('위치 스트림이 오류·종료돼도', () {
+    test('오류가 나면 구독을 비우고 다시 열어 좌표가 계속 들어온다', () async {
+      final platform = _FakeGeolocatorPlatform();
+      GeolocatorPlatform.instance = platform;
+      final source = GeolocatorPositionSource()..start();
+      await source.ready;
+      await Future<void>.delayed(Duration.zero);
+      expect(platform.streamOpens, 1);
+
+      platform.emitError(Exception('GPS 스트림 오류'));
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(platform.streamOpens, 2);
+      platform.emit(_position());
+      await Future<void>.delayed(Duration.zero);
+      expect(source.sample(), isNotNull);
+    });
+
+    test('스트림이 끝나도 다시 열어 좌표가 계속 들어온다', () async {
+      final platform = _FakeGeolocatorPlatform();
+      GeolocatorPlatform.instance = platform;
+      final source = GeolocatorPositionSource()..start();
+      await source.ready;
+      await Future<void>.delayed(Duration.zero);
+
+      await platform.endStream();
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(platform.streamOpens, 2);
+      platform.emit(_position());
+      await Future<void>.delayed(Duration.zero);
+      expect(source.sample(), isNotNull);
+    });
+
+    test('위치 서비스를 끈 탓이면 다시 열지 않고 상태만 알리다가, 켜면 다음 start() 에서 연다', () async {
+      final platform = _FakeGeolocatorPlatform();
+      GeolocatorPlatform.instance = platform;
+      final source = GeolocatorPositionSource()..start();
+      await source.ready;
+      await Future<void>.delayed(Duration.zero);
+
+      platform
+        ..serviceEnabled = false
+        ..emitError(const LocationServiceDisabledException());
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(source.availability, PositionAvailability.serviceDisabled);
+      expect(platform.streamOpens, 1);
+
+      platform.serviceEnabled = true;
+      source.start();
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(platform.streamOpens, 2);
+    });
   });
 
   // BRIEF-BG2 — 스트림 좌표가 없을 때(비상 발신, 동승자 단말·송신 두절
