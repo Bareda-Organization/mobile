@@ -17,7 +17,9 @@ import 'package:manager_app/features/emergency/data/models/emergency_raise_resul
 import 'package:manager_app/features/emergency/data/models/emergency_type.dart';
 import 'package:manager_app/features/emergency/domain/emergency_repository.dart';
 import 'package:manager_app/features/emergency/presentation/emergency_screen.dart';
+import 'package:manager_app/features/offline_queue/data/models/pending_request_summary.dart';
 import 'package:manager_app/features/offline_queue/domain/send_outcome.dart';
+import 'package:manager_app/features/offline_queue/presentation/offline_queue_providers.dart';
 
 /// 시각을 고정해 취소 가능 창 판정을 결정적으로 만드는 가짜 시계
 /// (`drive_mode_screen_test.dart` 와 같은 패턴, 이월 11 · Ruling 266).
@@ -39,7 +41,11 @@ class _FakeEmergencyRepository implements EmergencyRepository {
     this.cancelFailure,
     this.list,
     this.listFailure,
+    this.onRaise,
   });
+
+  /// 발신이 큐에 쌓이는 시험이 실제 저장소처럼 큐 목록을 바꾸는 자리.
+  final void Function()? onRaise;
 
   final SendOutcome<EmergencyRaiseResult>? raiseOutcome;
   final Failure? raiseFailure;
@@ -58,6 +64,7 @@ class _FakeEmergencyRepository implements EmergencyRepository {
   }) async {
     raiseCallCount++;
     lastRequest = request;
+    onRaise?.call();
     // Failure 는 의도적으로 Exception/Error 를 상속하지 않는다
     // (baraeda_core/error/failure.dart 참고) — delay_screen_test.dart 와
     // 같은 패턴.
@@ -133,6 +140,18 @@ Widget _wrap(Widget child, List<Override> overrides) {
   );
 }
 
+/// Ruling 616 — 비상 신고가 큐에서 계속 다시 보내지는 동안 화면이 보이는 안내.
+const _failureNotice = '전송 실패 — 계속 다시 보내는 중 · 급하면 학원에 전화';
+
+/// 오프라인 큐에 남은 비상 신고 한 건 — `OfflineQueueRepositoryImpl` 이 쌓는 모양 그대로.
+final _queuedEmergency = PendingRequestSummary(
+  id: 1,
+  endpoint: '/runs/run-1/emergency',
+  method: 'POST',
+  payload: '{"client_key":"K","type":"accident"}',
+  createdAt: DateTime(2026, 9, 12, 9),
+);
+
 void main() {
   const runId = 'run-1';
   final raisedAt = DateTime(2026, 9, 12, 9);
@@ -147,8 +166,15 @@ void main() {
     // 낸다. 좌표를 직접 다루지 않는 시험은 이 기본값(둘 다 null)으로
     // 충분하다.
     PositionSource? positionSource,
+    // 오프라인 큐에 남아 있는 요청 — 비상 화면이 "전송 실패 — 계속 다시 보내는 중" 을 보이는 근거다(Ruling 616).
+    List<PendingRequestSummary> pending = const [],
+    // 시험 도중 큐 내용이 바뀌는 경우 — 읽을 때마다 이 함수가 돌려주는 목록을 쓴다.
+    List<PendingRequestSummary> Function()? pendingNow,
   }) {
     return [
+      pendingRequestsProvider.overrideWith(
+        (ref) async => pendingNow?.call() ?? pending,
+      ),
       selectedRunIdProvider.overrideWith((ref) => runId),
       emergencyRepositoryProvider.overrideWithValue(fakeRepo),
       clockProvider.overrideWithValue(_FixedClock(now ?? raisedAt)),
@@ -510,7 +536,7 @@ void main() {
 
     await tester.pumpWidget(
       _wrap(const EmergencyScreen(), [
-        ...overridesFor(fakeRepo: fakeRepo),
+        ...overridesFor(fakeRepo: fakeRepo, pending: [_queuedEmergency]),
         academyContactProvider.overrideWith((ref) => '02-555-0101'),
         uriOpenerProvider.overrideWithValue((uri) async {
           opened.add(uri);
@@ -522,7 +548,7 @@ void main() {
     await tester.tap(find.text('비상 알림 보내기'));
     await tester.pumpAndSettle();
 
-    expect(find.text('전송 안 됨 — 학원에 전화하세요'), findsOneWidget);
+    expect(find.text(_failureNotice), findsOneWidget);
     await tester.tap(find.text('학원에 전화'));
     await tester.pump();
 
@@ -536,13 +562,16 @@ void main() {
     );
 
     await tester.pumpWidget(
-      _wrap(const EmergencyScreen(), overridesFor(fakeRepo: fakeRepo)),
+      _wrap(
+        const EmergencyScreen(),
+        overridesFor(fakeRepo: fakeRepo, pending: [_queuedEmergency]),
+      ),
     );
     await tester.pumpAndSettle();
     await tester.tap(find.text('비상 알림 보내기'));
     await tester.pumpAndSettle();
 
-    expect(find.text('전송 안 됨 — 학원에 전화하세요'), findsOneWidget);
+    expect(find.text(_failureNotice), findsOneWidget);
     expect(find.text('학원에 전화'), findsNothing);
   });
 
@@ -556,7 +585,7 @@ void main() {
 
     await tester.pumpWidget(
       _wrap(const EmergencyScreen(), [
-        ...overridesFor(fakeRepo: fakeRepo),
+        ...overridesFor(fakeRepo: fakeRepo, pending: [_queuedEmergency]),
         academyContactProvider.overrideWith((ref) => '  '),
       ]),
     );
@@ -564,8 +593,99 @@ void main() {
     await tester.tap(find.text('비상 알림 보내기'));
     await tester.pumpAndSettle();
 
-    expect(find.text('전송 안 됨 — 학원에 전화하세요'), findsOneWidget);
+    expect(find.text(_failureNotice), findsOneWidget);
     expect(find.text('학원에 전화'), findsNothing);
+  });
+
+  // Ruling 616 — 비상 신고는 서버가 5분 넘게 못 받아도 영구 실패로 빠지지
+  // 않고 계속 다시 보낸다. 그동안 화면은 "아직 안 갔다" 는 사실을 숨기면
+  // 안 된다 — 이 화면을 나갔다 다시 열어도 큐에 남아 있는 한 같은 안내가
+  // 보여야 한다.
+  testWidgets('이 화면을 새로 열어도 큐에 비상 신고가 남아 있으면 전송 실패 안내를 보여준다', (tester) async {
+    final fakeRepo = _FakeEmergencyRepository(
+      list: const EmergencyListResponse(items: []),
+    );
+
+    await tester.pumpWidget(
+      _wrap(
+        const EmergencyScreen(),
+        overridesFor(fakeRepo: fakeRepo, pending: [_queuedEmergency]),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text(_failureNotice), findsOneWidget);
+    expect(fakeRepo.raiseCallCount, 0, reason: '이 화면에서 보내지 않았다');
+  });
+
+  testWidgets('방금 누른 신고가 큐에 쌓이면 화면을 다시 열지 않아도 곧바로 안내가 뜬다', (tester) async {
+    // 실제 저장소는 큐에 쌓은 뒤 Queued 를 돌려준다 — 큐 목록은 그 뒤에 다시 읽혀야 안내가 뜬다.
+    final queue = <PendingRequestSummary>[];
+    final fakeRepo = _FakeEmergencyRepository(
+      raiseOutcome: const Queued<EmergencyRaiseResult>(),
+      list: const EmergencyListResponse(items: []),
+      onRaise: () => queue.add(_queuedEmergency),
+    );
+    await tester.pumpWidget(
+      _wrap(
+        const EmergencyScreen(),
+        overridesFor(fakeRepo: fakeRepo, pendingNow: () => List.of(queue)),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text(_failureNotice), findsNothing);
+
+    await tester.tap(find.text('비상 알림 보내기'));
+    await tester.pumpAndSettle();
+
+    expect(find.text(_failureNotice), findsOneWidget);
+  });
+
+  testWidgets('이미 영구 실패로 굳은 옛 비상 행은 계속 다시 보내는 중이라고 하지 않는다', (tester) async {
+    final fakeRepo = _FakeEmergencyRepository(
+      list: const EmergencyListResponse(items: []),
+    );
+    final failedRow = PendingRequestSummary(
+      id: 3,
+      endpoint: '/runs/run-1/emergency',
+      method: 'POST',
+      payload: '{"client_key":"K3","type":"accident"}',
+      createdAt: DateTime(2026, 9, 12, 9),
+      failed: true,
+    );
+
+    await tester.pumpWidget(
+      _wrap(
+        const EmergencyScreen(),
+        overridesFor(fakeRepo: fakeRepo, pending: [failedRow]),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text(_failureNotice), findsNothing);
+  });
+
+  testWidgets('큐에 비상 신고가 없으면 안내를 보이지 않고, 승하차 대기만 있어도 보이지 않는다', (tester) async {
+    final fakeRepo = _FakeEmergencyRepository(
+      list: const EmergencyListResponse(items: []),
+    );
+    final riderRow = PendingRequestSummary(
+      id: 2,
+      endpoint: '/runs/run-1/riders/7',
+      method: 'PATCH',
+      payload: '{"client_key":"K2","status":"boarded"}',
+      createdAt: DateTime(2026, 9, 12, 9),
+    );
+
+    await tester.pumpWidget(
+      _wrap(
+        const EmergencyScreen(),
+        overridesFor(fakeRepo: fakeRepo, pending: [riderRow]),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text(_failureNotice), findsNothing);
   });
 
   testWidgets('발신이 서버 거절(403 FORBIDDEN)로 실패하면 단일 사유를 보여준다', (tester) async {

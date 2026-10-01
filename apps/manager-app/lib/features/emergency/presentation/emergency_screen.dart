@@ -18,6 +18,7 @@ import 'package:manager_app/features/emergency/data/models/emergency_type.dart';
 import 'package:manager_app/features/emergency/presentation/emergency_providers.dart';
 import 'package:manager_app/features/emergency/presentation/widgets/emergency_button.dart';
 import 'package:manager_app/features/offline_queue/domain/send_outcome.dart';
+import 'package:manager_app/features/offline_queue/presentation/offline_queue_providers.dart';
 
 /// EmergencyScreen — 비상 발신·취소·이력 조회 (API_SPEC §4.14·§4.15, M-15,
 /// UF-X-08). 기사·동승자 둘 다 호출 가능해 역할 제한을 두지 않는다
@@ -131,6 +132,8 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
           // 이미 우회함 — baraeda_ui 자체는 이번 범위 밖). 아래에서
           // AlertTone.moving 을 재사용한다.
           setState(() => _queueNotice = '처리되지 않았습니다 · 대기 중');
+          // 방금 쌓인 신고를 큐 목록에 반영해 위 전송 실패 안내가 바로 뜨게 한다.
+          ref.invalidate(pendingRequestsProvider);
       }
     } on Failure catch (failure) {
       if (!mounted) return;
@@ -181,6 +184,13 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
     // 위젯 안에서 `DateTime.now()` 를 직접 부르지 않는다
     // (CONVENTIONS_FLUTTER.md §9, 이월 11) — 취소 가능 창 판정에 쓴다.
     final now = ref.watch(clockProvider).now();
+    // 큐에서 아직 안 나간 비상 신고가 있는가 — 이 화면에서 누른 것뿐 아니라 앞서 쌓인 것도 센다.
+    final hasUnsentEmergency =
+        ref
+            .watch(pendingRequestsProvider)
+            .value
+            ?.any((request) => request.isEmergency && !request.failed) ??
+        false;
 
     return RefreshIndicator(
       onRefresh: () => ref.refresh(emergencyListProvider.future),
@@ -191,14 +201,17 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
             AlertBanner(tone: AlertTone.missed, body: _errorMessage),
             const SizedBox(height: 12),
           ],
-          if (_queueNotice != null) ...[
-            // 비상이 서버에 닿지 못했다 — 아무에게도 안 갔으니 사람에게 직접 알려야 한다(R46).
+          if (hasUnsentEmergency) ...[
+            // 비상이 서버에 닿지 못했다 — 아무에게도 안 갔으니 사람에게 직접 알려야 한다(R46). 큐가 영구 실패로 빼지 않고
+            // 성공할 때까지 계속 다시 보내므로(Ruling 616) 큐에 남아 있는 동안은 이 화면을 다시 열어도 보인다.
             AlertBanner(
               tone: AlertTone.missed,
-              body: '전송 안 됨 — 학원에 전화하세요',
+              body: '전송 실패 — 계속 다시 보내는 중 · 급하면 학원에 전화',
               action: _buildCallAcademyButton(),
             ),
             const SizedBox(height: 12),
+          ],
+          if (_queueNotice != null) ...[
             AlertBanner(tone: AlertTone.moving, body: _queueNotice),
             const SizedBox(height: 12),
           ],

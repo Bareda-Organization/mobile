@@ -36,11 +36,11 @@ class OfflineQueueRepositoryImpl implements OfflineQueueRepository {
        _clock = clock;
 
   /// 한 행이 5xx 로 재생에 실패하는 횟수 상한 — 닿으면 영구 실패로 재생에서 뺀다. 주기 재생(30초)이 한 번씩
-  /// 세므로 약 5분이다.
+  /// 세므로 약 5분이다. **비상 신고에는 적용하지 않는다**(Ruling 616).
   static const maxAttempts = 10;
 
   /// 5xx 를 받은 행이 쌓인 지 이만큼 지났으면 횟수와 무관하게 영구 실패로 뺀다. 통신 두절만 이어진 행에는
-  /// 적용하지 않는다 — 터널·음영이 길다고 쌓아 둔 승하차를 버리지 않는다.
+  /// 적용하지 않는다 — 터널·음영이 길다고 쌓아 둔 승하차를 버리지 않는다. 비상 신고에도 적용하지 않는다(Ruling 616).
   static const maxAge = Duration(minutes: 30);
 
   final OfflineQueueDatabase _database;
@@ -200,13 +200,18 @@ class OfflineQueueRepositoryImpl implements OfflineQueueRepository {
           droppedPermanently++;
           continue;
         }
-        // 서버가 5xx 로 응답했다 — 이 행이 계속 5xx 를 받으면 행 쪽 문제일 수 있다. 상한에 닿으면 영구 실패로
-        // 빼고(큐 화면에 남는다) 뒤 행을 이어 보낸다. 안 닿았으면 아래에서 멈춘다.
-        if (countAttempts &&
-            _isServerError(exception.response?.statusCode) &&
-            await _recordServerError(row)) {
-          failedPermanently++;
-          continue;
+        if (_isServerError(exception.response?.statusCode)) {
+          // 비상 신고는 영구 실패로 빼지 않는다(Ruling 616) — 시도 횟수도 나이도 세지 않고 성공하거나 사용자가 큐
+          // 화면에서 지울 때까지 남긴다. 상한이 없는 대신 뒤 행은 이어 보낸다 — 비상이 승하차를 영구히 막지 않게.
+          if (PendingRequestSummary.isEmergencyEndpoint(row.endpoint)) {
+            continue;
+          }
+          // 서버가 5xx 로 응답했다 — 이 행이 계속 5xx 를 받으면 행 쪽 문제일 수 있다. 상한에 닿으면 영구 실패로
+          // 빼고(큐 화면에 남는다) 뒤 행을 이어 보낸다. 안 닿았으면 아래에서 멈춘다.
+          if (countAttempts && await _recordServerError(row)) {
+            failedPermanently++;
+            continue;
+          }
         }
         // 아직 두절이거나 서버가 일시적으로 못 받는 상태(5xx·429·401)다. 남은
         // 행도 같은 타임아웃을 되풀이할 뿐이고, 중간 건만 성공하면 큐 안의

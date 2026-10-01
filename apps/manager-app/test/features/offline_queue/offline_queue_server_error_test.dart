@@ -290,6 +290,80 @@ void main() {
     });
   });
 
+  // Ruling 616 — 비상 신고는 영구 실패 상한에서 뺀다. 5분 넘는 서버 장애에 신고가 재생에서 조용히 빠지면 아무에게도 안 간
+  // 신고가 사라진 것과 같다. `client_key` 가 서버 중복을 막으므로 늦게 도착해도 중복 접수는 없다. 사용자가 큐 화면에서
+  // 지울 때까지(또는 성공할 때까지) 재시도한다. 승하차 상한은 위 그룹이 그대로 지킨다.
+  group('재생 — 비상 신고는 영구 실패로 빼지 않는다 (Ruling 616)', () {
+    const emergencyPath = '/runs/1/emergency';
+
+    Future<void> pressEmergency(OfflineQueueRepositoryImpl repository) =>
+        _press(
+          repository,
+          emergencyPath,
+          const Failure.network(),
+          method: 'POST',
+          payload: {'client_key': 'K-E', 'type': 'accident'},
+        );
+
+    test('5xx 가 시도 상한(10회)을 훌쩍 넘어도 영구 실패가 되지 않고 계속 재생 대상이다', () async {
+      final s = _setup((_) => 500);
+      await pressEmergency(s.repository);
+
+      for (var i = 0; i < OfflineQueueRepositoryImpl.maxAttempts * 3; i++) {
+        final result = await s.repository.replayPending();
+        expect(result.failedPermanently, 0);
+        expect(result.stillPending, 1);
+      }
+
+      expect((await s.repository.fetchPending()).single.failed, isFalse);
+      await s.database.close();
+    });
+
+    test('나이 상한(30분)을 훌쩍 넘어도 5xx 를 받아도 영구 실패가 되지 않는다', () async {
+      final s = _setup((_) => 500);
+      await pressEmergency(s.repository);
+      s.clock.current = s.clock.current.add(const Duration(hours: 3));
+
+      final result = await s.repository.replayPending();
+
+      expect(result.failedPermanently, 0);
+      expect(result.stillPending, 1);
+      expect((await s.repository.fetchPending()).single.failed, isFalse);
+      await s.database.close();
+    });
+
+    test('서버가 한참 뒤 돌아오면 그 신고가 나가고 큐가 빈다', () async {
+      var serverUp = false;
+      final s = _setup((_) => serverUp ? 201 : 500);
+      await pressEmergency(s.repository);
+      for (var i = 0; i < OfflineQueueRepositoryImpl.maxAttempts * 2; i++) {
+        await s.repository.replayPending();
+      }
+
+      serverUp = true;
+      final result = await s.repository.replayPending();
+
+      expect(result.succeeded, 1);
+      expect(await s.repository.fetchPending(), isEmpty);
+      await s.database.close();
+    });
+
+    test('큐 머리의 비상 신고가 계속 5xx 여도 뒤 승하차 행을 막지 않는다', () async {
+      // 비상이 막히면 승하차가 영구히 못 나간다 — 상한을 없앤 대신 뒤 행을 건너뛰어 이어 보낸다.
+      final s = _setup((path) => path == emergencyPath ? 500 : 200);
+      await pressEmergency(s.repository);
+      await _press(s.repository, _healthyPath, const Failure.network());
+
+      final result = await s.repository.replayPending();
+
+      expect(result.succeeded, 1, reason: '뒤 승하차 행은 나간다');
+      expect(result.stillPending, 1, reason: '비상 신고는 남는다');
+      final rest = await s.repository.fetchPending();
+      expect(rest.single.endpoint, emergencyPath);
+      await s.database.close();
+    });
+  });
+
   // S-9 ③ — 재생 순서는 id(쌓인 순서)로 명시한다. 일반 SELECT 는 구현 세부(rowid 순)에 기대고 있었다.
   test('재생과 대기 목록은 id 오름차순이다', () async {
     final s = _setup((_) => 200);

@@ -29,6 +29,14 @@ class PendingRequestSummary {
   /// 명단 행의 "전송 대기" 표시 대상이 아니다(다시 눌러 새로 보낼 수 있다).
   final bool failed;
 
+  /// 비상 신고 요청(`POST /runs/{runId}/emergency`)의 경로인가 — 큐 재생이 영구 실패 상한에서 빼는 대상이고(Ruling 616),
+  /// 비상 화면이 "전송 실패 — 계속 다시 보내는 중" 을 보일 근거다.
+  static bool isEmergencyEndpoint(String endpoint) =>
+      endpoint.endsWith('/emergency');
+
+  /// 이 요청이 비상 신고인가 — [isEmergencyEndpoint].
+  bool get isEmergency => isEmergencyEndpoint(endpoint);
+
   /// 승하차 처리(`/runs/{runId}/riders/{riderId}`)면 그 학생의 rider id, 아니면 `null` — 명단 행이 "전송 대기"
   /// 로 바뀌는 근거다(R46).
   String? get riderId {
@@ -39,7 +47,7 @@ class PendingRequestSummary {
   /// 사람이 알아볼 수 있는 이름 — `PATCH /runs/…/riders/…` 같은 내부 표기를 화면에 내지 않는다(F06-15).
   String get description {
     final body = _decodeBody();
-    if (endpoint.endsWith('/emergency')) {
+    if (isEmergency) {
       final type = EmergencyType.fromWireValueOrNull(body['type'] as String?);
       return type == null ? '비상 신고' : '비상 신고 · ${type.label}';
     }
