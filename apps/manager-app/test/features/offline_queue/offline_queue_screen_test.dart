@@ -194,6 +194,43 @@ void main() {
     expect(find.text('삭제'), findsNWidgets(2));
   });
 
+  // 화면 확인(R46-FIXRT)에서 발견 — 목록 `Column` 이 가운데 정렬이라 문구가 짧은 카드(`대기 중`)만 내용 폭으로 줄어
+  // 가운데에 떴다. 문구가 긴 `전송 실패` 카드와 폭이 달라 한 목록이 들쭉날쭉했다(`Ruling 592` 와 같은 갈래).
+  testWidgets('대기 중 카드와 전송 실패 카드는 같은 폭으로 그려진다', (tester) async {
+    final fakeRepo = _FakeOfflineQueueRepository(
+      pending: [
+        PendingRequestSummary(
+          id: 1,
+          endpoint: '/runs/run-1/emergency',
+          method: 'POST',
+          payload: '{"type":"accident","client_key":"K"}',
+          createdAt: DateTime(2026, 9, 12, 10),
+          failed: true,
+        ),
+        PendingRequestSummary(
+          id: 2,
+          endpoint: '/runs/run-1/riders/rider-2',
+          method: 'PATCH',
+          payload: '{"status":"boarded","client_key":"K2"}',
+          createdAt: DateTime(2026, 9, 12, 10, 1),
+        ),
+      ],
+    );
+    await tester.pumpWidget(
+      _wrap(const OfflineQueueScreen(), [
+        offlineQueueRepositoryProvider.overrideWithValue(fakeRepo),
+      ]),
+    );
+    await tester.pumpAndSettle();
+
+    final widths = tester
+        .widgetList<BaraedaCard>(find.byType(BaraedaCard))
+        .map((card) => tester.getSize(find.byWidget(card)).width)
+        .toSet();
+
+    expect(widths, hasLength(1), reason: '카드 폭이 제각각이다: $widths');
+  });
+
   testWidgets('영구 실패로 뺀 건수는 재시도 결과 요약에 보인다', (tester) async {
     final fakeRepo = _FakeOfflineQueueRepository(
       pending: [_riderRequest()],

@@ -127,7 +127,9 @@ class _OfflineQueueScreenState extends ConsumerState<OfflineQueueScreen> {
         body: '네트워크 장애로 못 보낸 요청은 여기에 쌓입니다',
       );
     }
+    // 카드가 문구 길이대로 줄어 가운데에 뜨지 않게 전체 폭으로 편다(`Ruling 592` 와 같은 처리).
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         for (final item in items) ...[
           _buildListItem(item),
