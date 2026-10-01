@@ -76,8 +76,32 @@ final authApiProvider = Provider<AuthApi>((ref) {
   return AuthApi(
     dio: apiClient.dio,
     tokenStorage: ref.watch(tokenStorageProvider),
+    deviceRegistrar: ref.watch(deviceRegistrarProvider),
   );
 });
+
+/// 단말 등록 로컬 상태(NTF-12) — 기기 식별자와 마지막 등록 토큰.
+final deviceRegistrationStorageProvider = Provider<DeviceRegistrationStorage>(
+  (ref) => DeviceRegistrationStorage(),
+);
+
+/// 푸시 토큰 공급자(NTF-12 · Ruling 510) — Firebase 를 붙이기 전에는 기기별
+/// 자리표시 토큰이다. Firebase 를 붙일 때 이 provider 한 곳만 바꾼다
+/// (`docs/infra/DEPLOYMENT.md` "외부 연동 준비물").
+final pushTokenSourceProvider = Provider<PushTokenSource>(
+  (ref) => PlaceholderPushTokenSource(
+    ref.watch(deviceRegistrationStorageProvider),
+  ),
+);
+
+/// 로그인 뒤 단말 등록 · 로그아웃 해지 — `AuthApi` 가 부른다. 매니저는 알림
+/// on/off 권한이 없어(FEATURE_SPEC §4.15) 끄기 스위치가 없다.
+final deviceRegistrarProvider = Provider<DeviceRegistrar>(
+  (ref) => DeviceRegistrar(
+    tokenSource: ref.watch(pushTokenSourceProvider),
+    storage: ref.watch(deviceRegistrationStorageProvider),
+  ),
+);
 
 /// `authApiProvider`(data)를 [AuthRepository](domain 인터페이스)에 묶는
 /// 조립 지점 — `di.dart` 는 앱의 합성 루트라 계층 전부를 알 수 있다.

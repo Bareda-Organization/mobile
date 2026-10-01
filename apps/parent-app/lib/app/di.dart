@@ -6,7 +6,6 @@ import 'package:parent_app/core/change_requests/data/change_request_api.dart';
 import 'package:parent_app/core/change_requests/data/change_request_repository_impl.dart';
 import 'package:parent_app/core/change_requests/domain/change_request_repository.dart';
 import 'package:parent_app/core/constants/api_constants.dart';
-import 'package:parent_app/core/devices/data/device_registration_storage.dart';
 import 'package:parent_app/core/runs/data/run_api.dart';
 import 'package:parent_app/core/runs/data/run_repository_impl.dart';
 import 'package:parent_app/core/runs/domain/run_repository.dart';
@@ -89,6 +88,7 @@ final authApiProvider = Provider<AuthApi>((ref) {
   return AuthApi(
     dio: apiClient.dio,
     tokenStorage: ref.watch(tokenStorageProvider),
+    deviceRegistrar: ref.watch(deviceRegistrarProvider),
   );
 });
 
@@ -207,4 +207,21 @@ final notificationSettingsRepositoryProvider =
 /// 를 통해 서버와 통신하므로 여기서는 로컬 상태만 감싼다.
 final deviceRegistrationStorageProvider = Provider<DeviceRegistrationStorage>(
   (ref) => DeviceRegistrationStorage(),
+);
+
+/// 푸시 토큰 공급자(NTF-12 · Ruling 510) — Firebase 를 붙이기 전에는 기기별
+/// 자리표시 토큰이다. Firebase 를 붙일 때 이 provider 한 곳만 바꾼다
+/// (`docs/infra/DEPLOYMENT.md` "외부 연동 준비물").
+final pushTokenSourceProvider = Provider<PushTokenSource>(
+  (ref) => PlaceholderPushTokenSource(
+    ref.watch(deviceRegistrationStorageProvider),
+  ),
+);
+
+/// 로그인 뒤 단말 등록 · 로그아웃 해지 — `AuthApi` 가 부른다.
+final deviceRegistrarProvider = Provider<DeviceRegistrar>(
+  (ref) => DeviceRegistrar(
+    tokenSource: ref.watch(pushTokenSourceProvider),
+    storage: ref.watch(deviceRegistrationStorageProvider),
+  ),
 );

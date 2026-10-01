@@ -11,7 +11,6 @@ import 'package:parent_app/app/router.dart';
 import 'package:parent_app/core/auth/account_session.dart';
 import 'package:parent_app/core/auth/auth_providers.dart';
 import 'package:parent_app/core/auth/user_role.dart';
-import 'package:parent_app/core/devices/data/device_registration_storage.dart';
 import 'package:parent_app/core/runs/presentation/run_providers.dart';
 import 'package:parent_app/core/students/presentation/student_providers.dart';
 import 'package:parent_app/features/auth/presentation/login_screen.dart';

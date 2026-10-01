@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:parent_app/app/di.dart';
 import 'package:parent_app/core/auth/domain/auth_repository.dart';
-import 'package:parent_app/core/devices/data/device_registration_storage.dart';
 import 'package:parent_app/core/devices/presentation/device_registration_panel.dart';
 
 /// P2 게이트 조건 ① — `device_registration_panel.dart:89` 에 `on Failure

@@ -7,7 +7,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:parent_app/app/di.dart';
 import 'package:parent_app/core/ui/failure_message.dart';
-import 'package:uuid/uuid.dart';
 
 /// NTF-12 · API_SPEC §2.11 — 이 기기의 푸시 알림 수신 등록. (이전 판은
 /// `AUTH-11` 로 잘못 표기돼 있었다 — `FEATURE_SPEC.md:269` 의 `AUTH-11` 은
@@ -25,9 +24,10 @@ import 'package:uuid/uuid.dart';
 /// `SettingsScreen` 도 (active 계정 대상으로) 같은 위젯을 그대로 쓴다 —
 /// `core/devices` 로 승격한 이유가 이 두 feature 의 공유다.
 ///
-/// 이 저장소에는 FCM·APNs SDK 가 없다(`baraeda_core`·앱 어디에도 부재,
-/// 확인됨) — 그래서 `token` 은 실제 푸시 토큰이 아니라 기기별로 한 번만
-/// 만드는 자리표시 값이다. 실제 SDK 연동은 이번 범위 밖.
+/// 토큰은 `pushTokenSourceProvider` 가 준다 — Firebase 를 붙이기 전에는 기기별
+/// 자리표시 값이고(Ruling 510), 줄 토큰이 없으면(`null`) 켜지 않고 안내만 한다.
+/// 로그인 뒤 자동 등록은 `AuthApi` 가 하므로, 사용자가 여기서 끈 기기는
+/// `saveOptedOut` 으로 기억해 다음 로그인·앱 실행이 다시 켜지 않게 한다.
 class DeviceRegistrationPanel extends ConsumerStatefulWidget {
   const DeviceRegistrationPanel({super.key});
 
@@ -73,8 +73,17 @@ class _DeviceRegistrationPanelState
 
     try {
       if (value) {
+        final token = await ref.read(pushTokenSourceProvider).currentToken();
+        if (token == null) {
+          if (!mounted) return;
+          setState(() {
+            _submitting = false;
+            _bannerTone = AlertTone.info;
+            _banner = '이 기기에서는 아직 푸시 알림을 받을 수 없습니다';
+          });
+          return;
+        }
         final deviceId = await storage.readOrCreateDeviceId();
-        final token = const Uuid().v4();
         await repository.registerDevice(
           DeviceRegistrationRequest(
             token: token,
@@ -83,12 +92,14 @@ class _DeviceRegistrationPanelState
           ),
         );
         await storage.saveToken(token);
+        await storage.saveOptedOut(optedOut: false);
       } else {
         final token = await storage.readToken();
         if (token != null) {
           await repository.unregisterDevice(token);
         }
         await storage.clearToken();
+        await storage.saveOptedOut(optedOut: true);
       }
       if (!mounted) return;
       setState(() {

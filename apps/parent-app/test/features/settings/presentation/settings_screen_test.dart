@@ -8,7 +8,6 @@ import 'package:parent_app/core/auth/account_session.dart';
 import 'package:parent_app/core/auth/auth_providers.dart';
 import 'package:parent_app/core/auth/domain/auth_repository.dart';
 import 'package:parent_app/core/auth/user_role.dart';
-import 'package:parent_app/core/devices/data/device_registration_storage.dart';
 import 'package:parent_app/features/settings/domain/notification_settings.dart';
 import 'package:parent_app/features/settings/presentation/settings_providers.dart';
 import 'package:parent_app/features/settings/presentation/settings_screen.dart';
