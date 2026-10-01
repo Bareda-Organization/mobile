@@ -68,7 +68,6 @@ class _FakeSecureStoragePlatform
   }) async => const SecureStorageUpgradeStatus(
     state: SecureStorageUpgradeState.ok,
   );
-
 }
 
 /// `--dart-define=API_BASE_URL` 로 지정한 서버를 실제로 때리는 계약
@@ -144,6 +143,8 @@ void main() {
         password: 'password',
       );
       expect(login.status, AccountStatus.pending);
+      // R46-FUFEAT ① — 임시 비밀번호 강제 변경 표식(§2.5)은 항상 값이 있다. 초기화한 적 없는 계정은 false.
+      expect(login.mustChangePassword, isFalse);
 
       // §2.3·§2.7·§2.10·§2.11 은 pending 허용 목록 — 그 밖의
       // `GET /notifications`(§3.12) 로 게이트를 확인한다.
@@ -163,6 +164,7 @@ void main() {
       // 아니라 허용 목록만 열어 둔 것인지 함께 확인.
       final me = await auth.me();
       expect(me.status, AccountStatus.pending);
+      expect(me.mustChangePassword, isFalse); // §2.10 — 항상 값이 있다(Ruling 540)
     },
   );
 
