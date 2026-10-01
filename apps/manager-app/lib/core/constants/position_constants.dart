@@ -23,4 +23,14 @@ abstract final class PositionConstants {
   /// 마지막 성공 전송이 이 시간 넘게 없으면 "전송 안 됨" 이다 — 학부모 화면이 "마지막 확인 위치 N분 전" 으로
   /// 바뀌기 전에 기사가 먼저 알도록 잡은 값(R46).
   static const linkLostAfter = Duration(seconds: 30);
+
+  /// 위치 POST 한 건의 송신 한도 — 공용 Dio 설정(15초)보다 짧게 잡는다.
+  /// 위치는 2초 주기라 5초 넘는 요청은 가치가 없고, 앞 요청이 안 끝나면 다음
+  /// 주기를 건너뛰므로 느린 요청이 길수록 음영 복구 뒤 전송 재개가 늦어진다
+  /// (R46-FIXCONN C-7).
+  static const requestSendTimeout = Duration(seconds: 4);
+
+  /// 위치 POST 한 건의 응답 한도 — 공용 Dio 설정(30초)보다 짧게 잡는다.
+  /// [requestSendTimeout] 과 같은 이유.
+  static const requestReceiveTimeout = Duration(seconds: 5);
 }
