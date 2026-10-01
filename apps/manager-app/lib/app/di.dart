@@ -28,8 +28,10 @@ import 'package:manager_app/features/offline_queue/domain/offline_queue_reposito
 import 'package:manager_app/features/position/data/position_api.dart';
 import 'package:manager_app/features/position/data/position_repository_impl.dart';
 import 'package:manager_app/features/position/domain/position_repository.dart';
+import 'package:manager_app/features/roster/data/guardian_phone_repository_impl.dart';
 import 'package:manager_app/features/roster/data/roster_api.dart';
 import 'package:manager_app/features/roster/data/roster_repository_impl.dart';
+import 'package:manager_app/features/roster/domain/guardian_phone_repository.dart';
 import 'package:manager_app/features/roster/domain/roster_repository.dart';
 import 'package:manager_app/features/route_map/data/route_api.dart';
 import 'package:manager_app/features/route_map/data/route_repository_impl.dart';
@@ -141,6 +143,13 @@ final rosterRepositoryProvider = Provider<RosterRepository>((ref) {
     api: ref.watch(rosterApiProvider),
     offlineQueue: ref.watch(offlineQueueRepositoryProvider),
   );
+});
+
+/// API_SPEC §4.2.1 — 보호자 전화 원번호(명단 [전화] 버튼, Ruling 482).
+final guardianPhoneRepositoryProvider = Provider<GuardianPhoneRepository>((
+  ref,
+) {
+  return GuardianPhoneRepositoryImpl(api: ref.watch(rosterApiProvider));
 });
 
 /// API_SPEC §4.3 — 실시간 노선 조회(RouteMapScreen, 기사·동승자 둘 다).
