@@ -50,5 +50,14 @@
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
         </intent>
+        <!-- R46 — 학원 전화(tel:)와 카카오내비(kakaonavi-sdk:)를 여는 url_launcher 가 Android 11+ 에서 두 스킴을 볼 수 있게 한다. -->
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="tel"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="kakaonavi-sdk"/>
+        </intent>
     </queries>
 </manifest>
