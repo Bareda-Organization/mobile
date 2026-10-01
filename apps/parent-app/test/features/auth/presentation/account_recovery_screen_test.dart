@@ -10,12 +10,9 @@ import 'package:parent_app/core/auth/auth_providers.dart';
 import 'package:parent_app/core/auth/domain/auth_repository.dart';
 import 'package:parent_app/features/auth/presentation/account_recovery_screen.dart';
 
-/// P2 게이트 조건 ① — 계정 열거(enumeration) 노출 확인. `_messageFor` 가
-/// `ACCOUNT_NOT_FOUND`(미등록 번호) 와 `VERIFICATION_CODE_INVALID`(등록된
-/// 번호인데 인증번호가 틀림) 를 서로 다른 문구로 보여주면, 공격자가 문구
-/// 차이만으로 "이 번호가 가입돼 있는지" 를 알아낼 수 있다. 두 코드가
-/// **정확히 같은 문구**를 내는지를 이 테스트가 직접 대조한다 — 지금까지는
-/// 클래스 문서의 주석 하나만 이 사실을 지키고 있었고 테스트는 없었다.
+/// P2 게이트 조건 ① — 계정 열거(enumeration) 노출 확인. 서버는 번호의 가입 여부를
+/// 응답으로 구분하지 않는다(Ruling 553) — 인증번호 요청이 성공한 뒤 안내가 "보냈다" 고
+/// 단정하면 미등록 번호에서는 사실이 아니고, 실패 문구가 코드별로 갈리면 단서가 된다.
 class _FailingAuthRepository implements AuthRepository {
   _FailingAuthRepository(this._code);
 
@@ -133,6 +130,18 @@ class _StallingAuthRepository implements AuthRepository {
   Future<void> unregisterDevice(String token) => throw UnimplementedError();
 }
 
+/// 인증번호 요청이 성공하는 가짜 — 서버가 미등록 번호에도 200 을 주는 경우와 같은 화면 경로를 만든다.
+class _OkAuthRepository extends _FailingAuthRepository {
+  _OkAuthRepository() : super('');
+
+  @override
+  Future<void> recover({
+    required String type,
+    required String phone,
+    String? verificationCode,
+  }) async {}
+}
+
 const _expectedSharedMessage = '휴대폰 번호 또는 인증번호를 확인할 수 없습니다';
 
 Future<void> _pumpAndRequestCode(
@@ -157,27 +166,29 @@ Future<void> _pumpAndRequestCode(
 }
 
 void main() {
-  testWidgets('ACCOUNT_NOT_FOUND 은 계정 존재 여부를 드러내지 않는 공용 문구를 보여준다', (
-    tester,
-  ) async {
-    await _pumpAndRequestCode(tester, 'ACCOUNT_NOT_FOUND');
+  testWidgets('인증번호 요청이 성공하면 가입 여부를 단정하지 않는 안내를 보여준다', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [authRepositoryProvider.overrideWithValue(_OkAuthRepository())],
+        child: const MaterialApp(home: AccountRecoveryScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
 
-    expect(find.text(_expectedSharedMessage), findsOneWidget);
-    // 서버 원본 메시지가 그대로 새면 안 된다 — 코드로 구분되는 순간
-    // 열거 공격에 쓰인다.
-    expect(find.text('서버 원본 메시지(ACCOUNT_NOT_FOUND)'), findsNothing);
+    await tester.enterText(find.byType(TextField).first, '01000000000');
+    await tester.tap(find.text('인증번호 받기'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('가입된 번호라면'), findsOneWidget);
+    expect(find.text('인증번호를 발송했습니다. 문자로 받은 번호를 입력해 주세요'), findsNothing);
   });
 
-  testWidgets('VERIFICATION_CODE_INVALID 도 ACCOUNT_NOT_FOUND 와 같은 문구를 보여준다', (
-    tester,
-  ) async {
+  testWidgets('VERIFICATION_CODE_INVALID 는 이유를 가르지 않는 공용 문구를 보여준다', (tester) async {
     await _pumpAndRequestCode(tester, 'VERIFICATION_CODE_INVALID');
 
-    expect(
-      find.text(_expectedSharedMessage),
-      findsOneWidget,
-      reason: '두 실패 코드가 다른 문구로 갈리면 계정 존재 여부가 노출된다',
-    );
+    expect(find.text(_expectedSharedMessage), findsOneWidget);
+    // 서버 원본 메시지가 그대로 새면 안 된다 — 코드로 구분되는 순간 열거 공격에 쓰인다.
+    expect(find.text('서버 원본 메시지(VERIFICATION_CODE_INVALID)'), findsNothing);
   });
 
   // Ruling 329 — SMS 연동 전까지 서버가 503 RECOVERY_UNAVAILABLE 을 낸다. 원문 메시지나 일반 오류가

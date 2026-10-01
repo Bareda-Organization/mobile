@@ -9,12 +9,11 @@ import 'package:parent_app/app/di.dart';
 /// 화면에서만 들어온다, `router.dart` 의 `redirect` 가 로그인 전 화면으로
 /// 허용).
 ///
-/// **계정 존재 여부 노출 주의.** 서버 자체가 `404 ACCOUNT_NOT_FOUND` 로
-/// 미등록 전화번호를 구분해 응답한다(§2.9) — 이 화면이 문구를 더 파고들어
-/// 구분하면 열거 공격을 오히려 쉽게 만든다. 그래서 `ACCOUNT_NOT_FOUND` 와
-/// `VERIFICATION_CODE_INVALID` 를 **같은 문구**로 안내해 화면 단에서는
-/// 추가로 구분해 주지 않는다(서버 응답 자체의 구분은 이 화면이 고칠 수
-/// 있는 범위 밖이라 보고서 §2 에 남긴다).
+/// **계정 존재 여부 노출 주의.** 서버는 번호의 가입 여부를 응답으로 구분하지
+/// 않는다(§2.9 · Ruling 553) — 인증번호 요청은 미등록 번호도 `200` 이고 문자만
+/// 나가지 않는다. 그래서 요청 뒤 안내는 **"가입된 번호라면 문자를 보냈다"** 로만
+/// 말하고(번호가 없다고도, 보냈다고 단정하지도 않는다), 대조 실패는 이유를 가르지
+/// 않는 `VERIFICATION_CODE_INVALID` 하나다.
 ///
 /// **SMS 연동 전까지 서버가 `503 RECOVERY_UNAVAILABLE` 을 낸다**
 /// (Ruling 329) — 문자 발송 수단이 없어 전화번호 인증이 성립하지 않는다.
@@ -49,10 +48,8 @@ class _AccountRecoveryScreenState extends ConsumerState<AccountRecoveryScreen> {
     super.dispose();
   }
 
-  /// `ACCOUNT_NOT_FOUND`·`VERIFICATION_CODE_INVALID` 를 같은 문구로 묶는다
-  /// (클래스 문서의 열거 위험 참고).
+  /// 대조 실패는 이유를 가르지 않는 한 문구다(클래스 문서의 열거 위험 참고).
   String _messageFor(Failure failure) => switch (failure) {
-    ApiFailure(code: 'ACCOUNT_NOT_FOUND') ||
     ApiFailure(
       code: 'VERIFICATION_CODE_INVALID',
     ) => '휴대폰 번호 또는 인증번호를 확인할 수 없습니다',
@@ -79,7 +76,7 @@ class _AccountRecoveryScreenState extends ConsumerState<AccountRecoveryScreen> {
         _submitting = false;
         _codeRequested = true;
         _bannerTone = AlertTone.boarded;
-        _banner = '인증번호를 발송했습니다. 문자로 받은 번호를 입력해 주세요';
+        _banner = '가입된 번호라면 인증번호를 문자로 보냈습니다. 받은 번호를 입력해 주세요';
       });
     } on Failure catch (failure) {
       if (!mounted) return;
