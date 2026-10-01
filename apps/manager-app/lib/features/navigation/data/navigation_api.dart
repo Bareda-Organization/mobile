@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:manager_app/features/navigation/data/models/navigation_route.dart';
+import 'package:manager_app/features/navigation/data/models/navigation_scope.dart';
 
 /// API_SPEC §4.16.
 class NavigationApi {
@@ -9,11 +10,11 @@ class NavigationApi {
 
   final Dio _dio;
 
-  /// 남은 전 구간(`remaining`)을 받는다 — 서버가 공급자 상한만큼 잘라 준다.
-  Future<NavigationRoute> fetchRemaining(String runId) async {
+  /// [scope] 범위의 경로를 받는다 — `remaining` 이면 서버가 공급자 상한만큼 잘라 준다.
+  Future<NavigationRoute> fetch(String runId, NavigationScope scope) async {
     final response = await _dio.get<Map<String, dynamic>>(
       '/runs/$runId/navigation',
-      queryParameters: {'scope': 'remaining'},
+      queryParameters: {'scope': scope.name},
     );
     return NavigationRoute.fromJson(response.data!);
   }

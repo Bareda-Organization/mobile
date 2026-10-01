@@ -20,11 +20,13 @@ import 'package:manager_app/core/ui/confirm_dialog.dart';
 import 'package:manager_app/core/wakelock/wakelock_port.dart';
 import 'package:manager_app/features/drive_mode/presentation/drive_mode_providers.dart';
 import 'package:manager_app/features/drive_mode/presentation/widgets/drive_map_panel.dart';
+import 'package:manager_app/features/drive_mode/presentation/widgets/navigation_scope_buttons.dart';
 import 'package:manager_app/features/drive_mode/presentation/widgets/remaining_stops_list.dart';
 import 'package:manager_app/features/emergency/presentation/widgets/emergency_button.dart';
 import 'package:manager_app/features/home/data/models/manager_run.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
 import 'package:manager_app/features/navigation/data/kakao_navi_launcher.dart';
+import 'package:manager_app/features/navigation/data/models/navigation_scope.dart';
 import 'package:manager_app/features/position/presentation/position_link.dart';
 import 'package:manager_app/features/position/presentation/position_transmitter.dart';
 import 'package:manager_app/features/roster/data/models/roster_response.dart';
@@ -207,9 +209,9 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
     }
   }
 
-  /// 서버가 정한 남은 경로(§4.16)를 카카오내비로 넘긴다(RUN-08). 카카오내비는 공식 SDK 가 연다 —
+  /// 서버가 정한 [scope] 범위의 경로(§4.16)를 카카오내비로 넘긴다(RUN-08). 카카오내비는 공식 SDK 가 연다 —
   /// 서버는 딥링크를 만들지 않는다.
-  Future<void> _openNavigation(String runId) async {
+  Future<void> _openNavigation(String runId, NavigationScope scope) async {
     setState(() {
       _navigating = true;
       _errorMessage = null;
@@ -219,7 +221,7 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
     try {
       final route = await ref
           .read(navigationRepositoryProvider)
-          .fetchRemaining(runId);
+          .fetch(runId, scope);
       // 서버가 정한 공급자가 카카오가 아니면(티맵 등) 이 앱은 열 수 없다.
       final result = route.provider == 'kakao'
           ? await ref.read(kakaoNaviLauncherProvider).launch(route)
@@ -324,16 +326,9 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
                 // 확정 뒤부터 운행 중까지 기사만.
                 if (_canUseExternalNavigation(run)) ...[
                   const SizedBox(height: 8),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: BaraedaButton(
-                      label: '카카오내비 길안내',
-                      size: BaraedaButtonSize.sm,
-                      variant: BaraedaButtonVariant.secondary,
-                      onPressed: _navigating
-                          ? null
-                          : () => _openNavigation(runId),
-                    ),
+                  NavigationScopeButtons(
+                    enabled: !_navigating,
+                    onSelected: (scope) => _openNavigation(runId, scope),
                   ),
                 ],
                 const SizedBox(height: 16),
