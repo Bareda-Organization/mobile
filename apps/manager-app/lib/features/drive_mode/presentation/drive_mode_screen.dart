@@ -281,7 +281,7 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
         ],
       ),
       body: runId == null
-          ? const Center(child: Text('선택된 운행이 없습니다 — 홈에서 운행을 선택하세요'))
+          ? const Center(child: WordWrapText('선택된 운행이 없습니다 — 홈에서 운행을 선택하세요'))
           : _buildBody(context, runId, run, transmission),
     );
   }
@@ -492,7 +492,7 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
           !now.isBefore(run.startWindowFrom) && !now.isAfter(run.startWindowTo);
       if (!withinWindow) {
         // 언제부터 되는지를 알린다(R32 M10) — 이미 지났으면 지났다고 한다.
-        return Text(
+        return WordWrapText(
           now.isBefore(run.startWindowFrom)
               ? '${DateFormat('HH:mm').format(run.startWindowFrom.toLocal())} '
                     '부터 시작할 수 있습니다 (출발 ±10분)'
@@ -509,14 +509,14 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
     if (run.runStatus == RunStatus.moving) {
       final nextStop = nextUnarrivedStop(roster);
       if (nextStop == null) {
-        return const Text('모든 승하차지 도착 처리가 끝났습니다');
+        return const WordWrapText('모든 승하차지 도착 처리가 끝났습니다');
       }
       // 이름이 길어도 버튼 동사가 잘리지 않게 이름은 버튼 위 줄로 뺀다(R46) — 두 줄을 넘는 이름만 줄인다.
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
+          WordWrapText(
             '다음 승하차지: ${nextStop.name}',
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
@@ -547,7 +547,7 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text('이미 종료된 운행입니다'),
+        const WordWrapText('이미 종료된 운행입니다'),
         const SizedBox(height: 8),
         BaraedaButton(
           label: '종료 보고서 보기',

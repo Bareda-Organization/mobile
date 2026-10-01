@@ -171,7 +171,7 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('비상 알림')),
       body: runId == null
-          ? const Center(child: Text('선택된 운행이 없습니다 — 홈에서 운행을 선택하세요'))
+          ? const Center(child: WordWrapText('선택된 운행이 없습니다 — 홈에서 운행을 선택하세요'))
           : _buildBody(runId),
     );
   }
@@ -242,7 +242,7 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
               child: Center(child: CircularProgressIndicator()),
             ),
             error: (error, _) =>
-                Text('이력을 불러오지 못했습니다: ${describeError(error)}'),
+                WordWrapText('이력을 불러오지 못했습니다: ${describeError(error)}'),
             data: (list) => _buildList(runId, list.items, now),
           ),
         ],

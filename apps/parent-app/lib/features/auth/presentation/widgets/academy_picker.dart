@@ -104,7 +104,7 @@ class _AcademyPickerState extends State<AcademyPicker> {
         if (_error != null)
           Padding(
             padding: const EdgeInsets.only(top: BaraedaSpacing.space2),
-            child: Text(
+            child: WordWrapText(
               _error!,
               style: BaraedaTypography.caption.copyWith(
                 color: context.colors.statusMissed,
@@ -114,7 +114,7 @@ class _AcademyPickerState extends State<AcademyPicker> {
         if (_searched && _results.isEmpty && _error == null)
           Padding(
             padding: const EdgeInsets.only(top: BaraedaSpacing.space2),
-            child: Text(
+            child: WordWrapText(
               '학원을 찾을 수 없습니다 — 학원에 문의해 주세요',
               style: BaraedaTypography.caption.copyWith(
                 color: context.colors.textSecondary,

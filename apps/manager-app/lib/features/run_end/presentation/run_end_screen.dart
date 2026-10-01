@@ -113,7 +113,7 @@ class _RunEndScreenState extends ConsumerState<RunEndScreen> {
         title: Text(termination == null ? '예외 보고' : '운행 종료'),
       ),
       body: runId == null
-          ? const Center(child: Text('선택된 운행이 없습니다 — 홈에서 운행을 선택하세요'))
+          ? const Center(child: WordWrapText('선택된 운행이 없습니다 — 홈에서 운행을 선택하세요'))
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -232,7 +232,7 @@ class _RunEndScreenState extends ConsumerState<RunEndScreen> {
           if (remaining.isEmpty)
             const Padding(
               padding: EdgeInsets.only(top: 8),
-              child: Text(
+              child: WordWrapText(
                 '보호자 부재로 보고할 학생이 없습니다 — 혼자 귀가할 수 없는 학생이 탑승 중일 때만 고를 수 있습니다',
               ),
             ),

@@ -106,7 +106,7 @@ class _ItemRow extends ConsumerWidget {
     } on Failure catch (failure) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(describeFailure(failure))),
+        SnackBar(content: WordWrapText(describeFailure(failure))),
       );
     }
   }

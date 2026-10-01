@@ -293,7 +293,10 @@ class _RouteStopTile extends StatelessWidget {
                   // 있다(academy.address nullable) — 그 경우 줄 자체를
                   // 비운다.
                   if (stop.address != null)
-                    Text(stop.address!, style: BaraedaTypography.bodySm),
+                    WordWrapText(
+                      stop.address!,
+                      style: BaraedaTypography.bodySm,
+                    ),
                 ],
               ),
             ),

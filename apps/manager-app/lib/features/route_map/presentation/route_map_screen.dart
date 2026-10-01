@@ -38,7 +38,7 @@ class _RouteMapScreenState extends ConsumerState<RouteMapScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('노선 지도')),
       body: runId == null
-          ? const Center(child: Text('선택된 운행이 없습니다 — 홈에서 운행을 선택하세요'))
+          ? const Center(child: WordWrapText('선택된 운행이 없습니다 — 홈에서 운행을 선택하세요'))
           : _buildBody(context, runId),
     );
   }
@@ -68,8 +68,9 @@ class _RouteMapScreenState extends ConsumerState<RouteMapScreen> {
         Expanded(
           child: routeAsync.when(
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (error, _) =>
-                Center(child: Text('노선을 불러오지 못했습니다: ${describeError(error)}')),
+            error: (error, _) => Center(
+              child: WordWrapText('노선을 불러오지 못했습니다: ${describeError(error)}'),
+            ),
             data: _buildMap,
           ),
         ),
@@ -82,7 +83,7 @@ class _RouteMapScreenState extends ConsumerState<RouteMapScreen> {
       // §4.3 은 "노선 없음" 을 별도 상태로 정의하지 않는다 — stops[] 가
       // 빈 배열인 것도 정상 응답이다(연결 끊김과는 다른 경우 — 그쪽은
       // 위 배너가 맡는다).
-      return const Center(child: Text('표시할 승하차지가 없습니다'));
+      return const Center(child: WordWrapText('표시할 승하차지가 없습니다'));
     }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,

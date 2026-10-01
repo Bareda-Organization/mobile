@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -57,7 +58,7 @@ class EmergencyButton extends ConsumerWidget {
     final candidates = runs.where(canRaiseEmergency).toList();
     if (candidates.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('확정된 운행이 있을 때 비상 신고를 보낼 수 있습니다')),
+        const SnackBar(content: WordWrapText('확정된 운행이 있을 때 비상 신고를 보낼 수 있습니다')),
       );
       return;
     }

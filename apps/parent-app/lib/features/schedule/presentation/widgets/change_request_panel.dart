@@ -185,7 +185,7 @@ class _ChangeRequestPanelState extends ConsumerState<ChangeRequestPanel> {
           ),
           data: (runs) {
             if (runs.isEmpty) {
-              return const Text('그날 운행이 아직 없습니다');
+              return const WordWrapText('그날 운행이 아직 없습니다');
             }
             final runOptions = runs
                 .map((r) => (r.runId, runOptionLabel(r)))
@@ -264,7 +264,7 @@ class _ChangeRequestPanelState extends ConsumerState<ChangeRequestPanel> {
         ],
         // 버튼이 왜 눌리지 않는지 알려 준다.
         if (_missingInput != null) ...[
-          Text(_missingInput!, style: BaraedaTypography.bodySm),
+          WordWrapText(_missingInput!, style: BaraedaTypography.bodySm),
           const SizedBox(height: BaraedaSpacing.space2),
         ],
         BaraedaButton(
@@ -288,7 +288,7 @@ class _ChangeRequestPanelState extends ConsumerState<ChangeRequestPanel> {
                 item.type == ChangeRequestType.cancel ? '탑승 취소' : '승하차지 변경',
               ),
               subtitle: item.rejectReason != null
-                  ? Text('반려: ${item.rejectReason}')
+                  ? WordWrapText('반려: ${item.rejectReason}')
                   : null,
               trailing: BaraedaBadge(
                 label: _statusLabel(item.status),

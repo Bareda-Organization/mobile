@@ -193,8 +193,8 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
     } on Failure catch (failure) {
       if (!mounted) return;
       setState(
-        () => _errorMessage =
-            '보호자 번호를 가져오지 못했습니다 — ${describeFailure(failure)}',
+        () =>
+            _errorMessage = '보호자 번호를 가져오지 못했습니다 — ${describeFailure(failure)}',
       );
     } finally {
       if (mounted) setState(() => _pendingRiderIds.remove(riderId));
@@ -283,7 +283,7 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
           Expanded(
             child: runId == null
                 ? const Center(
-                    child: Text('선택된 운행이 없습니다 — 홈에서 운행을 선택하세요'),
+                    child: WordWrapText('선택된 운행이 없습니다 — 홈에서 운행을 선택하세요'),
                   )
                 : _buildBody(context, runId),
           ),
@@ -313,8 +313,9 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
             skipLoadingOnReload: true,
             skipError: true,
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (error, _) =>
-                Center(child: Text('명단을 불러오지 못했습니다: ${describeError(error)}')),
+            error: (error, _) => Center(
+              child: WordWrapText('명단을 불러오지 못했습니다: ${describeError(error)}'),
+            ),
             data: (roster) => _buildRoster(
               runId,
               canDecide,
@@ -857,7 +858,7 @@ class _NoShowContactSheetState extends State<_NoShowContactSheet> {
         if (_remaining > Duration.zero)
           Padding(
             padding: const EdgeInsets.only(top: 4),
-            child: Text(
+            child: WordWrapText(
               '대기 시간이 끝나기까지 남은 시간 '
               '${_remaining.inMinutes}분 '
               '${(_remaining.inSeconds % 60).toString().padLeft(2, '0')}초',

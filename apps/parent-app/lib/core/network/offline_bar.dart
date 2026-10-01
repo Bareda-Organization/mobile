@@ -39,7 +39,7 @@ class OfflineBar extends ConsumerWidget {
                 horizontal: BaraedaSpacing.gutterMobile,
                 vertical: BaraedaSpacing.space2,
               ),
-              child: Text(
+              child: WordWrapText(
                 text,
                 style: BaraedaTypography.bodySm.copyWith(
                   color: colors.textPrimary,

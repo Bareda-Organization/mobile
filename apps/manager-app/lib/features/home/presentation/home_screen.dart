@@ -109,7 +109,11 @@ class _ManagerHomeScreenState extends ConsumerState<ManagerHomeScreen>
           error: (error, _) => ListView(
             children: [
               const SizedBox(height: 120),
-              Center(child: Text('오늘 운행을 불러오지 못했습니다: ${describeError(error)}')),
+              Center(
+                child: WordWrapText(
+                  '오늘 운행을 불러오지 못했습니다: ${describeError(error)}',
+                ),
+              ),
             ],
           ),
           data: (runs) {
@@ -137,7 +141,7 @@ class _ManagerHomeScreenState extends ConsumerState<ManagerHomeScreen>
                 children: [
                   ?staleBanner,
                   const SizedBox(height: 120),
-                  const Center(child: Text('오늘 배정된 운행이 없습니다')),
+                  const Center(child: WordWrapText('오늘 배정된 운행이 없습니다')),
                 ],
               );
             }
@@ -198,7 +202,7 @@ class _ManagerHomeScreenState extends ConsumerState<ManagerHomeScreen>
                   if (!run.confirmed)
                     Padding(
                       padding: const EdgeInsets.only(top: 4, left: 4),
-                      child: Text(
+                      child: WordWrapText(
                         switch (run.confirmAt) {
                           null => '출발 30분 전 확정 후 열립니다',
                           final at =>
@@ -273,7 +277,7 @@ class _ManagerHomeScreenState extends ConsumerState<ManagerHomeScreen>
       content: FutureBuilder<int>(
         future: pendingCount,
         initialData: 0,
-        builder: (context, snapshot) => Text(
+        builder: (context, snapshot) => WordWrapText(
           [
             if (hasMovingRun)
               '운행 중에 로그아웃하면 명단·위치 송신이 멈춥니다'

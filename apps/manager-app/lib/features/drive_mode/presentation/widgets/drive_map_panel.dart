@@ -1,3 +1,4 @@
+import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:manager_app/core/map/route_map_view.dart';
@@ -61,7 +62,7 @@ class _Notice extends StatelessWidget {
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          children: [Text(message), ?action],
+          children: [WordWrapText(message), ?action],
         ),
       ),
     );

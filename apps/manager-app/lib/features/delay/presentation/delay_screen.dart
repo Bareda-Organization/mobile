@@ -86,9 +86,9 @@ class _DelayScreenState extends ConsumerState<DelayScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('지연 알림')),
       body: runId == null
-          ? const Center(child: Text('선택된 운행이 없습니다 — 홈에서 운행을 선택하세요'))
+          ? const Center(child: WordWrapText('선택된 운행이 없습니다 — 홈에서 운행을 선택하세요'))
           : !canSend
-          ? const Center(child: Text('동승자만 지연 알림을 보낼 수 있습니다'))
+          ? const Center(child: WordWrapText('동승자만 지연 알림을 보낼 수 있습니다'))
           : _buildBody(runId),
     );
   }
@@ -141,7 +141,10 @@ class _DelayScreenState extends ConsumerState<DelayScreen> {
             controller: _messageController,
           ),
           const SizedBox(height: 8),
-          Text(_previewText(), style: Theme.of(context).textTheme.bodySmall),
+          WordWrapText(
+            _previewText(),
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
           const SizedBox(height: 20),
           BaraedaButton(
             label: '지연 알림 보내기',

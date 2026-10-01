@@ -108,7 +108,7 @@ class _ChildLinkScreenState extends ConsumerState<ChildLinkScreen> {
     if (!mounted) return;
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(doneMessage)));
+      ..showSnackBar(SnackBar(content: WordWrapText(doneMessage)));
   }
 
   /// 학부모에게 메신저로 붙여 넣을 문장 — 코드만 보내면 어디에 입력하는지 모른다.
@@ -149,7 +149,7 @@ class _ChildLinkScreenState extends ConsumerState<ChildLinkScreen> {
     return [
       const Text('자녀가 발급받은 코드 입력', style: BaraedaTypography.h3),
       const SizedBox(height: BaraedaSpacing.space4),
-      const Text('자녀 앱에서 만든 연결 코드를 입력해 주세요.'),
+      const WordWrapText('자녀 앱에서 만든 연결 코드를 입력해 주세요.'),
       const SizedBox(height: BaraedaSpacing.space4),
       BaraedaCodeInput(
         value: _code,
@@ -171,7 +171,7 @@ class _ChildLinkScreenState extends ConsumerState<ChildLinkScreen> {
     return [
       const Text('학부모 연결 코드 생성', style: BaraedaTypography.h3),
       const SizedBox(height: BaraedaSpacing.space4),
-      const Text(
+      const WordWrapText(
         '코드는 1회만 쓸 수 있고 발급 후 일정 시간이 지나면 만료됩니다. '
         '다시 만들면 이전 코드는 더 이상 쓸 수 없습니다.',
       ),
@@ -237,7 +237,7 @@ class _ChildLinkScreenState extends ConsumerState<ChildLinkScreen> {
         AlertBanner(tone: AlertTone.missed, body: _formError),
         if (_formErrorIsCodeInvalid) ...[
           const SizedBox(height: BaraedaSpacing.space2),
-          const Text(
+          const WordWrapText(
             '여러 번 틀리면 10분 동안 입력이 막힙니다 · 계속 안 되면 자녀 앱에서 코드를 다시 발급',
             style: BaraedaTypography.bodySm,
           ),
@@ -262,7 +262,7 @@ class _RemainingTime extends StatelessWidget {
     return MinuteTicker(
       builder: (context, now) {
         final left = expiresAt.difference(now);
-        return Text(
+        return WordWrapText(
           left <= Duration.zero
               ? '코드가 만료됐습니다 · 새 코드를 만들어 주세요'
               : '남은 시간 ${formatRemaining(left)}',

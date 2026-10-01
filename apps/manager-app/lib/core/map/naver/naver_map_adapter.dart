@@ -9,6 +9,7 @@ library;
 import 'dart:async';
 
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:manager_app/core/map/map_surface.dart';
@@ -112,7 +113,7 @@ class _NaverMapAdapterState extends State<NaverMapAdapter> {
     if (_initError != null) {
       return const ColoredBox(
         color: Colors.black12,
-        child: Center(child: Text('지도를 불러오지 못했습니다')),
+        child: Center(child: WordWrapText('지도를 불러오지 못했습니다')),
       );
     }
     if (!_initialized) {

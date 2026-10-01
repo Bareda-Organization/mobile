@@ -131,7 +131,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   void _goToLoginAfterSignup() {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('가입 신청이 접수되었습니다. 로그인 후 진행 상황을 볼 수 있습니다.')),
+      const SnackBar(
+        content: WordWrapText('가입 신청이 접수되었습니다. 로그인 후 진행 상황을 볼 수 있습니다.'),
+      ),
     );
     context.go(AppRoutes.login);
   }
@@ -225,7 +227,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
               ),
               if (!_submitting && emptyFields.isNotEmpty) ...[
                 const SizedBox(height: BaraedaSpacing.space2),
-                Text(
+                WordWrapText(
                   '아직 채우지 않은 항목 · ${emptyFields.join(' · ')}',
                   style: BaraedaTypography.bodySm,
                 ),
