@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
@@ -15,6 +17,9 @@ import 'package:parent_app/core/auth/credential_limits.dart';
 /// 부르지만 이미 서버 쪽 토큰은 무효화된 뒤라 그 API 호출 자체는 실패해도
 /// 상관없다(`AuthApi.logout()` 이 성패와 무관하게 로컬 토큰을 지우는
 /// `finally` 를 갖고 있음, `auth_api.dart` 참고) — 그래서 실패를 무시한다.
+///
+/// 임시 비밀번호 강제 변경(Ruling 540 · R46-LAST `Ruling 581`) 중이면 라우터가 이 화면에 고정한다 — 뒤로 갈
+/// 길을 없애고 로그아웃만 연다(매니저 앱과 같은 갈래).
 class PasswordChangeScreen extends ConsumerStatefulWidget {
   const PasswordChangeScreen({super.key});
 
@@ -94,14 +99,27 @@ class _PasswordChangeScreenState extends ConsumerState<PasswordChangeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final forced = ref.watch(mustChangePasswordProvider);
     return Scaffold(
-      appBar: AppHeader(title: '비밀번호 변경', onBack: () => context.pop()),
+      // 강제 변경 중에는 이 화면이 유일한 경로라 `onBack` 을 비우면
+      // (`AppHeader` 가 뒤에 화면이 없으면 버튼을 안 그린다) 뒤로 가기가 없다.
+      appBar: AppHeader(
+        title: '비밀번호 변경',
+        onBack: forced ? null : () => context.pop(),
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(BaraedaSpacing.gutterMobile),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              if (forced) ...[
+                const AlertBanner(
+                  tone: AlertTone.info,
+                  body: '관리자가 초기화한 임시 비밀번호입니다. 새 비밀번호로 바꿔야 앱을 계속 쓸 수 있습니다',
+                ),
+                const SizedBox(height: BaraedaSpacing.space4),
+              ],
               BaraedaInput(
                 label: '현재 비밀번호',
                 required: true,
@@ -139,6 +157,15 @@ class _PasswordChangeScreenState extends ConsumerState<PasswordChangeScreen> {
                 size: BaraedaButtonSize.lg,
                 onPressed: _submitting ? null : _submit,
               ),
+              if (forced) ...[
+                const SizedBox(height: BaraedaSpacing.space4),
+                TextButton(
+                  onPressed: _submitting
+                      ? null
+                      : () => unawaited(confirmLogout(context, ref)),
+                  child: const Text('로그아웃'),
+                ),
+              ],
             ],
           ),
         ),
