@@ -100,6 +100,16 @@ void main() {
       expect(storage.saved, 's-2');
     });
 
+    testWidgets('자녀 3명도 이름이 나란히 보인다 — 칩의 최대 수는 3명이다', (tester) async {
+      await pump(
+        tester,
+        [for (var i = 1; i <= 3; i++) _child('s-$i', '자녀$i')],
+        _MemoryStorage(),
+      );
+      expect(find.byType(BaraedaSegmentedControl), findsOneWidget);
+      expect(find.byType(BaraedaSelect), findsNothing);
+    });
+
     testWidgets('자녀 4명 이상은 이름이 좁아 고르는 창(드롭다운)으로 둔다', (tester) async {
       await pump(
         tester,

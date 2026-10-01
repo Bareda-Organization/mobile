@@ -173,6 +173,11 @@ void main() {
 
   // R46 B2 #20 — 푸시 SDK 가 없어 대기 화면이 한 번만 조회하면 승인이 나도 [상태 다시 확인] 을 눌러야 했다.
   group('R46 주기 재확인', () {
+    // 사양(UF-X-02)이 정한 값 — 아래 시험은 이 상수로 시간을 흘리므로 값 자체는 여기서 고정한다.
+    test('재조회 간격은 30초다', () {
+      expect(pendingStatusPollInterval, const Duration(seconds: 30));
+    });
+
     testWidgets(
       '$pendingStatusPollInterval 마다 조용히 다시 조회하고 승인되면 계정 상태를 active 로 바꾼다',
       (

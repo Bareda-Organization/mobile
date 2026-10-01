@@ -22,8 +22,9 @@ class OfflineBar extends ConsumerWidget {
         : '네트워크 연결이 끊겼습니다 · 마지막 갱신 '
               '${DateFormat('H:mm').format(lastReachableAt.toLocal())}';
     final colors = context.colors;
-    // 앱 틀(MaterialApp.builder)은 Scaffold 밖이라 Material 도 배경도 없다 — 직접 가진다. 안 그러면 글자에
-    // 노란 밑줄이 뜨고 상태 표시줄 영역이 검게 빈다. 배경이 위쪽 안전 영역까지 칠해지도록 SafeArea 가 안쪽이다.
+    // 앱 틀(MaterialApp.builder)은 Scaffold 밖이라 Material 도 배경도 없다 — 직접 가진다.
+    // 안 그러면 글자에 노란 밑줄이 뜨고 상태 표시줄 영역이 검게 빈다.
+    // 배경이 위쪽 안전 영역까지 칠해지도록 SafeArea 가 안쪽이다.
     return Semantics(
       liveRegion: true,
       container: true,
