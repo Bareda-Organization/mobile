@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:parent_app/app/router.dart';
 import 'package:parent_app/core/auth/account_session.dart';
+import 'package:parent_app/core/network/network_status.dart';
+import 'package:parent_app/core/network/offline_bar.dart';
 
 /// 학부모·학생 앱 진입점. 라이트 기본이며 `ThemeMode.system` 은 쓰지 않는다
 /// — 다크는 야간 하원 화면·매니저 앱 전용(CONVENTIONS_FLUTTER.md §3).
@@ -62,6 +64,37 @@ class BaraedaParentApp extends ConsumerWidget {
       darkTheme: BaraedaTheme.light(),
       themeMode: ThemeMode.light,
       routerConfig: router,
+      // 연결이 끊기면 어느 화면이든 맨 위에 한 줄(R46 B2 #22). 막대가 보이는 동안은 아래 화면이 상태 표시줄 여백을
+      // 이미 막대가 차지했으므로 한 번 더 비우지 않게 위쪽 여백을 걷어 낸다.
+      builder: (context, child) => _OfflineFrame(child: child),
+    );
+  }
+}
+
+/// 앱 전체를 감싸 끊김 한 줄을 맨 위에 붙이는 틀.
+class _OfflineFrame extends ConsumerWidget {
+  const _OfflineFrame({required this.child});
+
+  final Widget? child;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isOffline = ref.watch(
+      networkStatusProvider.select((status) => status.isOffline),
+    );
+    final body = child ?? const SizedBox.shrink();
+    if (!isOffline) return body;
+    return Column(
+      children: [
+        const SafeArea(bottom: false, child: OfflineBar()),
+        Expanded(
+          child: MediaQuery.removePadding(
+            context: context,
+            removeTop: true,
+            child: body,
+          ),
+        ),
+      ],
     );
   }
 }

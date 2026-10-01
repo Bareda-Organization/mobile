@@ -10,6 +10,7 @@ import 'package:parent_app/core/auth/account_session.dart';
 import 'package:parent_app/core/auth/auth_providers.dart';
 import 'package:parent_app/core/change_requests/domain/change_request.dart';
 import 'package:parent_app/core/change_requests/presentation/change_request_providers.dart';
+import 'package:parent_app/core/network/network_status.dart';
 import 'package:parent_app/core/refresh/visible_poller.dart';
 import 'package:parent_app/core/students/presentation/selected_student.dart';
 import 'package:parent_app/core/students/presentation/student_switcher.dart';
@@ -274,6 +275,9 @@ class _RunsSectionState extends ConsumerState<_RunsSection> {
         ? ref.watch(runsForStudentProvider(studentId))
         : ref.watch(runsForStudentOnProvider((studentId, date)));
     final dayWord = isToday ? '오늘' : '내일';
+    final isOffline = ref.watch(
+      networkStatusProvider.select((status) => status.isOffline),
+    );
     // P-03 — ②구간 신청이 승인을 기다리는 회차는 카드에 출발까지 남은 시간을 붙인다.
     // 신청 이력이 아직 없거나 실패면 붙이지 않는다.
     final waitingRunIds = {
@@ -318,7 +322,8 @@ class _RunsSectionState extends ConsumerState<_RunsSection> {
               : retryBanner('$dayWord 회차를 불러오지 못했습니다'),
           data: (runs) => Column(
             children: [
-              if (runsAsync.hasError)
+              // 끊긴 동안은 맨 위 한 줄(`OfflineBar`)이 같은 말을 한다 — 카드마다 또 알리지 않는다.
+              if (runsAsync.hasError && !isOffline)
                 retryBanner('최신 $dayWord 회차를 불러오지 못했습니다 · 이전 정보입니다'),
               if (runs.isEmpty)
                 EmptyState(title: '$dayWord 예정된 회차가 없습니다')
