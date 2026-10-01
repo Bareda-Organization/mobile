@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
@@ -709,6 +710,44 @@ void main() {
 
     expect(find.text('취소'), findsOneWidget);
     expect(find.text('확인 대기 중'), findsNWidgets(2));
+  });
+
+  testWidgets('발신 이력 카드는 내용 폭으로 줄어 가운데에 뜨지 않고 화면 폭을 채운다 (R46-SCREEN)', (
+    tester,
+  ) async {
+    final fakeRepo = _FakeEmergencyRepository(
+      list: EmergencyListResponse(
+        items: [
+          EmergencyItem(
+            emergencyId: 'e1',
+            type: EmergencyType.vehicleFault,
+            raisedAt: raisedAt,
+            cancelableUntil: raisedAt.subtract(const Duration(minutes: 4)),
+            acked: false,
+          ),
+        ],
+      ),
+    );
+
+    await tester.pumpWidget(
+      _wrap(const EmergencyScreen(), overridesFor(fakeRepo: fakeRepo)),
+    );
+    await tester.pumpAndSettle();
+
+    // 눈에 보이는 카드 본체(배경이 칠해진 상자)의 폭을 잰다 — 바깥 BaraedaCard 상자만 재면 본체가 줄어든 결함을 놓친다.
+    final cardWidth = tester
+        .getSize(
+          find
+              .descendant(
+                of: find.byType(BaraedaCard),
+                matching: find.byType(Container),
+              )
+              .first,
+        )
+        .width;
+    final screenWidth = tester.getSize(find.byType(Scaffold)).width;
+    // 좌우 여백(스크롤 영역 패딩)을 빼고도 카드가 화면 폭의 대부분을 차지해야 한다 — 화면 확인에서 카드가 ~30% 폭이었다.
+    expect(cardWidth, greaterThan(screenWidth * 0.8));
   });
 
   testWidgets('확인자 이름이 빈 문자열이면 이름 없는 문구 대신 확인됨을 보여준다', (tester) async {
