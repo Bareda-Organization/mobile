@@ -25,7 +25,8 @@ class _StubAuthRepository implements AuthRepository {
   /// 두 번째 조회부터 실패로 응답한다.
   bool failFromSecondCall = false;
 
-  /// 학원이 대표 연락처를 등록하지 않은 응답(`academy_contact: null` — API_SPEC §2.3, Ruling 781).
+  /// 학원이 대표 연락처를 등록하지 않은 응답
+  /// (`academy_contact: null` — API_SPEC §2.3, Ruling 781).
   bool academyContactMissing = false;
 
   @override
