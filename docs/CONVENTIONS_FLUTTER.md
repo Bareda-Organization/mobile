@@ -17,7 +17,7 @@ React 쪽 규칙은 `docs/frontend/CONVENTIONS_REACT.md` 이며 **두 문서는 
 | HTTP | **dio** | 인터셉터로 토큰 재발급(`§2.6`)·멱등 키(`§1.7`)를 한곳에서 처리 |
 | 모델·직렬화 | **freezed** + `json_serializable` | 불변 모델 · 유니온(상태머신)·`copyWith` 자동 생성 |
 | 로컬 저장 | **flutter_secure_storage**(토큰) · **drift**(오프라인 큐) | refresh 토큰은 평문 저장 금지. 오프라인 큐(M-06)는 트랜잭션이 필요 |
-| 린트 | **very_good_analysis** | 기본 `flutter_lints` 보다 엄격. `analysis_options.yaml` 에 고정 |
+| 린트 | **very_good_analysis** 11 | 기본 `flutter_lints` 보다 엄격. `analysis_options.yaml` 에 고정(4곳). 개별 규칙 예외는 `unnecessary_type_name_in_constructor` 1종 — Dart 3.13 의 `new(...)` 생성자 문법을 freezed 코드 생성이 아직 읽지 못함(`docs/frontend/IMPLEMENTATION_PLAN.md §5.35` · `Ruling 770`). 앱 2종·`baraeda_ui` 는 `public_member_api_docs` 도 끔 |
 
 ---
 
