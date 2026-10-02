@@ -15,7 +15,7 @@ for dir in "${FLUTTER_DIRS[@]}"; do
     cd "$dir"
     flutter pub get
     if grep -q build_runner pubspec.yaml; then
-      dart run build_runner build --delete-conflicting-outputs
+      dart run build_runner build
     fi
     flutter analyze
     flutter test --exclude-tags real_backend
