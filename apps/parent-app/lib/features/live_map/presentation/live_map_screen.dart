@@ -150,7 +150,7 @@ class _StudentLiveMap extends ConsumerWidget {
 /// 끊긴 상태에서 "표시할 데이터가 없다"는 문구가 함께 뜨지 않게 한다.
 ///
 /// **판단 근거 — 지도는 `state.position` 이 있을 때만 그린다.**
-/// `docs/USER_FLOWS.md` UF-P-07 은 "(운행 시간 아님) → 지도 대신 '운행
+/// `docs/planning/USER_FLOWS.md` UF-P-07 은 "(운행 시간 아님) → 지도 대신 '운행
 /// 예정 시간' 안내"라고 명시한다 — 즉 좌표가 없는 상태에서 지도를 먼저
 /// 보여주면 안 되고, 그 상태의 문구는 이미 위 `EmptyState` 분기가 사양대로
 /// 채우고 있다. 지도는 그 문구를 대체하지 않고 데이터가 실제로 있는

@@ -19,4 +19,4 @@ scripts/verify.sh     # CI 와 같은 검사 — 4개 패키지 analyze + test(�
 
 ## 관련 저장소
 
-같은 조직(`Bareda-Organization`)의 `backend`(Spring Boot · 세 저장소 공통 사양 `docs/`) · `web`(관계자 웹 · Vercel). 로컬에서는 세 저장소를 같은 폴더 아래 나란히 clone 합니다.
+같은 조직(`Bareda-Organization`)의 `backend`(Spring Boot) · `web`(관계자 웹 · Vercel) · `workspace`(모든 문서 `docs/` 와 Claude 설정). `workspace` 를 받은 폴더(`baraeda/`) 안에 나머지 셋을 clone 합니다.

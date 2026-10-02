@@ -5,7 +5,7 @@
 /// 환경에서도 앱이 빌드·시험되도록 기본 구현은
 /// `PlaceholderPushTokenSource` 이고, Firebase 구현은 배포 때
 /// `pushTokenSourceProvider` 한 줄로 바꾼다
-/// (`docs/infra/DEPLOYMENT.md` 의 "외부 연동 준비물").
+/// (`docs/backend/infra/DEPLOYMENT.md` 의 "외부 연동 준비물").
 abstract interface class PushTokenSource {
   /// 이 단말의 푸시 토큰. **줄 수 없으면 `null`**(Firebase 미설정 · 알림 권한
   /// 거부) — 등록을 건너뛴다.
