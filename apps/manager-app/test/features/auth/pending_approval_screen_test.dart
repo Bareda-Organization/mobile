@@ -25,9 +25,21 @@ class _StubAuthRepository implements AuthRepository {
   /// 두 번째 조회부터 실패로 응답한다.
   bool failFromSecondCall = false;
 
+  /// 학원이 대표 연락처를 등록하지 않은 응답(`academy_contact: null` — API_SPEC §2.3, Ruling 781).
+  bool academyContactMissing = false;
+
   @override
   Future<SignupStatusResponse> signupStatus() async {
     signupStatusCalls++;
+    if (academyContactMissing) {
+      // 서버가 보내는 JSON 그대로 읽는다 — 파싱이 null 을 못 받으면 여기서 던진다.
+      return SignupStatusResponse.fromJson({
+        'status': 'pending',
+        'academy': {'name': '바래다학원', 'region': '서울', 'code': 'A-001'},
+        'requested_at': '2026-09-01T00:00:00Z',
+        'academy_contact': null,
+      });
+    }
     if (signupStatusCalls > 1 && failFromSecondCall) {
       // Failure 는 Exception/Error 를 상속하지 않는다(다른 시험의 같은 패턴).
       // ignore: only_throw_errors
@@ -55,10 +67,12 @@ void main() {
     WidgetTester tester, {
     AccountStatus? statusFromSecondCall,
     bool failFromSecondCall = false,
+    bool academyContactMissing = false,
   }) async {
     final repository = _StubAuthRepository()
       ..statusFromSecondCall = statusFromSecondCall
-      ..failFromSecondCall = failFromSecondCall;
+      ..failFromSecondCall = failFromSecondCall
+      ..academyContactMissing = academyContactMissing;
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -76,6 +90,21 @@ void main() {
     await tester.pumpAndSettle();
     return repository;
   }
+
+  // BR-301(Ruling 781) — 학원이 연락처를 등록하지 않아 academy_contact 가 null 이어도 화면이 뜬다.
+  testWidgets('학원 문의처가 null 이면 대체 문구를 보여준다', (tester) async {
+    await pumpPending(tester, academyContactMissing: true);
+
+    expect(find.byType(PendingApprovalScreen), findsOneWidget);
+    expect(find.text('등록된 문의처 없음'), findsOneWidget);
+  });
+
+  testWidgets('학원 문의처가 있으면 그 값을 보여주고 대체 문구는 없다', (tester) async {
+    await pumpPending(tester);
+
+    expect(find.text('02-000-0000'), findsOneWidget);
+    expect(find.text('등록된 문의처 없음'), findsNothing);
+  });
 
   testWidgets('대기 화면에 [상태 다시 확인] 이 있다', (tester) async {
     await pumpPending(tester);

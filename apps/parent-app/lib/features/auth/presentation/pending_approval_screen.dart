@@ -258,7 +258,7 @@ class _StatusBody extends StatelessWidget {
             value: dateFormat.format(status.requestedAt.toLocal()),
           ),
           _InfoRow(label: '현재 상태', value: _isRejected ? '거절됨' : '승인 대기'),
-          _InfoRow(label: '학원 문의처', value: status.academyContact),
+          _InfoRow(label: '학원 문의처', value: status.academyContactText),
           const SizedBox(height: BaraedaSpacing.space4),
           // R32 P9 — 상태를 처음 한 번만 조회해, 승인·거절이 나도 앱을 껐다 켜야 알 수 있었다.
           BaraedaButton(

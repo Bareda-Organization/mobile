@@ -24,7 +24,7 @@ class SignupStatusResponse {
       academyRegion: academy['region'] as String,
       academyCode: academy['code'] as String,
       requestedAt: DateTime.parse(json['requested_at'] as String),
-      academyContact: json['academy_contact'] as String,
+      academyContact: json['academy_contact'] as String?,
       rejectReason: json['reject_reason'] as String?,
     );
   }
@@ -44,8 +44,14 @@ class SignupStatusResponse {
   /// 신청 일시.
   final DateTime requestedAt;
 
-  /// 학원 문의처.
-  final String academyContact;
+  /// 학원 문의처 — 학원이 대표 연락처를 등록하지 않았으면 `null`(Ruling 781).
+  final String? academyContact;
+
+  /// 학원 문의처가 `null` 일 때 화면이 보이는 대체 문구 — 웹과 같다(시험이 웹 파일과 대조한다).
+  static const noAcademyContactText = '등록된 문의처 없음';
+
+  /// 화면에 그릴 문의처 — 값이 없으면 [noAcademyContactText].
+  String get academyContactText => academyContact ?? noAcademyContactText;
 
   /// `rejected` 일 때만 채워짐.
   final String? rejectReason;

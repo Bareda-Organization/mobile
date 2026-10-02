@@ -28,6 +28,9 @@ class _StubAuthRepository implements AuthRepository {
   /// 두 번째 조회부터 네트워크 오류로 실패한다(터널·지하처럼 끊긴 상황).
   bool failFromSecondCall = false;
 
+  /// 학원이 대표 연락처를 등록하지 않은 응답(`academy_contact: null` — API_SPEC §2.3, Ruling 781).
+  bool academyContactMissing = false;
+
   @override
   Future<List<AcademySummary>> searchAcademies(String query) async => [];
 
@@ -38,6 +41,15 @@ class _StubAuthRepository implements AuthRepository {
   @override
   Future<SignupStatusResponse> signupStatus() async {
     signupStatusCalls++;
+    if (academyContactMissing) {
+      // 서버가 보내는 JSON 그대로 읽는다 — 파싱이 null 을 못 받으면 여기서 던진다.
+      return SignupStatusResponse.fromJson({
+        'status': 'pending',
+        'academy': {'name': '바래다학원', 'region': '서울', 'code': 'A-001'},
+        'requested_at': '2026-09-01T00:00:00Z',
+        'academy_contact': null,
+      });
+    }
     if (failFromSecondCall && signupStatusCalls > 1) {
       return await Future.error(const Failure.network());
     }
@@ -140,6 +152,22 @@ Future<void> _pumpPendingApproval(
 }
 
 void main() {
+  // BR-301(Ruling 781) — 학원이 연락처를 등록하지 않아 academy_contact 가 null 이어도 화면이 뜬다.
+  testWidgets('학원 문의처가 null 이면 대체 문구를 보여준다', (tester) async {
+    final authRepository = _StubAuthRepository()..academyContactMissing = true;
+    await _pumpPendingApproval(tester, authRepository);
+
+    expect(find.byType(PendingApprovalScreen), findsOneWidget);
+    expect(find.text('등록된 문의처 없음'), findsOneWidget);
+  });
+
+  testWidgets('학원 문의처가 있으면 그 값을 보여주고 대체 문구는 없다', (tester) async {
+    await _pumpPendingApproval(tester, _StubAuthRepository());
+
+    expect(find.text('02-000-0000'), findsOneWidget);
+    expect(find.text('등록된 문의처 없음'), findsNothing);
+  });
+
   // R32 P9 — 상태를 처음 한 번만 조회해, 관리자가 승인·거절해도 앱을 껐다 켜야 알 수 있었다.
   testWidgets('P9 [상태 다시 확인] 을 누르면 승인 상태를 다시 조회해 화면에 반영한다', (tester) async {
     final authRepository = _StubAuthRepository()
