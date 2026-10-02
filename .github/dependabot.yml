@@ -1,0 +1,22 @@
+# 의존성·액션 버전 갱신 — 주 1회, 생태계별로 한 묶음(PR 이 쏟아지지 않게).
+version: 2
+updates:
+  - package-ecosystem: pub
+    directories:
+      - /packages/baraeda_core
+      - /packages/baraeda_ui
+      - /apps/manager-app
+      - /apps/parent-app
+    schedule:
+      interval: weekly
+    groups:
+      pub:
+        patterns: ["*"]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      github-actions:
+        patterns: ["*"]

@@ -1,0 +1,42 @@
+# PR·main 검증: 분석 · 시험 — 공용 패키지 2개 + 앱 2종. 이 워크플로는 아무것도 배포하지 않는다(스토어 배포는 별도).
+# 실서버 계약 시험(real_backend)은 돌지 않는다(백엔드 부재). 로컬 재현은 scripts/verify.sh.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# 같은 PR 에 새 커밋이 오면 앞선 실행을 취소한다. main push 는 취소하지 않는다(모든 커밋의 결과가 남는다).
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  flutter:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      # 연결 끊김 문구 대조 시험(ws_connection_notice_test)이 읽는 웹 파일 — web 저장소(같은 조직, 공개)에서 한 파일만 받는다.
+      - uses: actions/checkout@v7
+        with:
+          repository: ${{ github.repository_owner }}/web
+          path: .web-src
+          sparse-checkout: src/shared/lib/ws/wsConnectionNotice.ts
+          sparse-checkout-cone-mode: false
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.47.6
+          cache: true
+
+      - name: 분석 · 시험(실서버 계약 시험 제외) — 4개 패키지
+        env:
+          WEB_REPO_DIR: ${{ github.workspace }}/.web-src
+        run: scripts/verify.sh

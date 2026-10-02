@@ -1,0 +1,20 @@
+# OS · IDE
+.DS_Store
+.idea/
+*.iml
+
+# Flutter — 빌드 산출물 · 패키지 잠금 · 생성물(2026-10-02 통합 저장소의 frontend/** 규칙을 그대로 옮김)
+**/build/
+**/.dart_tool/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/.packages
+**/pubspec.lock
+**/*.g.dart
+**/*.freezed.dart
+**/.env
+
+# 로컬 색인 · 도구 캐시(재생성 가능)
+graft/
+.docgraph/
+.mcp.json
