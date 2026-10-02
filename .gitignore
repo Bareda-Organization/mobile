@@ -18,3 +18,4 @@
 graft/
 .docgraph/
 .mcp.json
+.ignore
