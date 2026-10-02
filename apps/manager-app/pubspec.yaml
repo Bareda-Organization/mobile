@@ -33,7 +33,7 @@ dependencies:
     path: ../../packages/baraeda_core
   baraeda_ui:
     path: ../../packages/baraeda_ui
-  cupertino_icons: ^1.0.8
+  cupertino_icons: ^2.0.0
   dio: ^5.11.1
   drift: ^2.34.4
   flutter:
