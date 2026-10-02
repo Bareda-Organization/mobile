@@ -36,7 +36,7 @@ final Provider<String?> transmittingRunIdProvider = Provider<String?>((ref) {
 /// 송신기가 마지막으로 본 값 — 운행 화면이 버스 마커·위치 안내를 그릴 때 쓴다.
 @immutable
 class PositionTransmission {
-  const PositionTransmission({this.availability, this.busPosition});
+  const new({this.availability, this.busPosition});
 
   // 값이 같으면 같은 상태다 — 2초마다 같은 좌표로 상태를 다시 넣어도 화면을 다시 그리지 않게 한다(F06-17).
   @override

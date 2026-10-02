@@ -3,7 +3,7 @@ import 'package:parent_app/features/schedule/domain/weekly_address_entry.dart';
 
 /// API_SPEC §3.7.
 class WeeklyAddressApi {
-  WeeklyAddressApi({required this._dio});
+  new({required this._dio});
 
   final Dio _dio;
 

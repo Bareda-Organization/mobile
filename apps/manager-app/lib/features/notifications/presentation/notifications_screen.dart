@@ -19,7 +19,7 @@ import 'package:manager_app/features/notifications/presentation/notification_pro
 /// 행을 누르면 읽음 처리(§3.13)하고, 회차를 가리키는 알림(노선·배치 변경)은 그 회차의 화면으로 간다
 /// (`notification_kind.dart` 의 `destinationOf`).
 class NotificationsScreen extends ConsumerWidget {
-  const NotificationsScreen({super.key});
+  const new({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -57,7 +57,7 @@ class NotificationsScreen extends ConsumerWidget {
 }
 
 class _ItemRow extends ConsumerWidget {
-  const _ItemRow({required this.item});
+  const new({required this.item});
 
   final NotificationItem item;
 

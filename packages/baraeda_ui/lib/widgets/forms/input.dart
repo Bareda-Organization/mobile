@@ -15,7 +15,7 @@ import 'package:flutter/material.dart';
 /// [label]이 있으면 필드 위에, [hint]는 라벨 아래 보조 설명으로, [error]가
 /// 있으면 hint 대신 레드로 노출된다(둘 다 동시에 보이지 않는다).
 class BaraedaInput extends StatelessWidget {
-  const BaraedaInput({
+  const new({
     super.key,
     this.label,
     this.hint,
@@ -121,7 +121,7 @@ OutlineInputBorder _borderFor(Color color, {double width = 1}) {
 }
 
 class _InputLabel extends StatelessWidget {
-  const _InputLabel({required this.label, required this.required});
+  const new({required this.label, required this.required});
 
   final String label;
   final bool required;

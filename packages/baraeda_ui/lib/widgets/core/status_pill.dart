@@ -15,7 +15,7 @@ import 'package:flutter/material.dart';
 /// `missed`는 한 화면에 한 번만 노출한다(prompt.md) — 이 위젯 자체는
 /// 그 규칙을 강제하지 않으므로 호출부에서 지킨다.
 class BaraedaStatusPill extends StatelessWidget {
-  const BaraedaStatusPill({
+  const new({
     required this.status,
     this.label,
     super.key,
@@ -85,7 +85,7 @@ class BaraedaStatusPill extends StatelessWidget {
 }
 
 class _StatusPillPalette {
-  const _StatusPillPalette({
+  const new({
     required this.background,
     required this.foreground,
   });

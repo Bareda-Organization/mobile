@@ -5,7 +5,7 @@ import 'package:parent_app/features/live_map/domain/bus_position.dart';
 import 'package:parent_app/features/live_map/domain/bus_position_repository.dart';
 
 class BusPositionRepositoryImpl implements BusPositionRepository {
-  const BusPositionRepositoryImpl({required this._busPositionApi});
+  const new({required this._busPositionApi});
   final BusPositionApi _busPositionApi;
 
   @override

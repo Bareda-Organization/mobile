@@ -12,7 +12,7 @@ import 'package:flutter/material.dart';
 /// 예: `EmptyState(icon: 'clock', title: '오늘 운행이 아직 시작되지 않았어요',
 /// body: '등원 운행은 8:10에 시작됩니다.')`.
 class EmptyState extends StatelessWidget {
-  const EmptyState({
+  const new({
     super.key,
     this.icon = 'bus',
     this.title,

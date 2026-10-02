@@ -1,12 +1,12 @@
 /// 외부 내비에 넘길 지점 하나 — 위도·경도·이름.
 class NavigationPoint {
-  const NavigationPoint({
+  const new({
     required this.lat,
     required this.lng,
     required this.name,
   });
 
-  factory NavigationPoint.fromJson(Map<String, dynamic> json) =>
+  factory fromJson(Map<String, dynamic> json) =>
       NavigationPoint(
         lat: (json['lat'] as num).toDouble(),
         lng: (json['lng'] as num).toDouble(),
@@ -21,7 +21,7 @@ class NavigationPoint {
 /// `GET /runs/{runId}/navigation` 응답(API_SPEC §4.16, RUN-08) — 서버가 순서를 정하고 공급자 상한만큼 자른 좌표열.
 /// 딥링크는 서버가 만들지 않는다 — 앱이 공식 SDK(`kakaoNaviRequest`)로 카카오내비를 연다.
 class NavigationRoute {
-  const NavigationRoute({
+  const new({
     required this.provider,
     required this.waypoints,
     required this.destination,
@@ -31,7 +31,7 @@ class NavigationRoute {
     this.truncatedReason,
   });
 
-  factory NavigationRoute.fromJson(Map<String, dynamic> json) {
+  factory fromJson(Map<String, dynamic> json) {
     final origin = json['origin'] as Map<String, dynamic>?;
     return NavigationRoute(
       provider: json['provider'] as String,

@@ -27,7 +27,7 @@ import '../support/manager_run_fixture.dart';
 /// R32 M8 — 불러오기에 실패했을 때 예외 원문(`Exception: …` · `Instance of …`)을 화면에 그대로
 /// 보이지 않고, 다른 화면과 같은 쉬운 문구(`describeFailure`)로 보인다. 5개 화면 각 1건.
 class _NeverResolvingTokenStorage extends TokenStorage {
-  _NeverResolvingTokenStorage()
+  new()
     : super(
         accessTokenKey: 'test_access_token',
         refreshTokenKey: 'test_refresh_token',

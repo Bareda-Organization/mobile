@@ -53,7 +53,7 @@ final liveMapStateProvider = StateNotifierProvider.autoDispose
     .family<LiveMapNotifier, LiveMapState, String>(LiveMapNotifier.new);
 
 class LiveMapNotifier extends StateNotifier<LiveMapState> {
-  LiveMapNotifier(this._ref, this._studentId) : super(const LiveMapState()) {
+  new(this._ref, this._studentId) : super(const LiveMapState()) {
     _init();
   }
 

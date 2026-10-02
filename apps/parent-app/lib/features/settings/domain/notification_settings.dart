@@ -3,13 +3,13 @@
 /// 지연 알림은 설정 항목 자체가 없다(항상 발송) — 이 클래스에 그 필드를
 /// 두지 않는다.
 class NotificationSettings {
-  const NotificationSettings({
+  const new({
     required this.arrive,
     required this.boarding,
     required this.noShow,
   });
 
-  factory NotificationSettings.fromJson(Map<String, dynamic> json) =>
+  factory fromJson(Map<String, dynamic> json) =>
       NotificationSettings(
         arrive: json['arrive'] as bool,
         boarding: json['boarding'] as bool,

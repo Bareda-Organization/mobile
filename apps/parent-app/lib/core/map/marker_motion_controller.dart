@@ -15,7 +15,7 @@ import 'package:parent_app/core/map/marker_interpolator.dart';
 /// 수 있다. 실제 프레임 타이머는 `naver/naver_map_adapter.dart` 가
 /// `DateTime.now()` 를 넘겨 호출한다.
 class MarkerMotionController {
-  MarkerMotionController({
+  new({
     this.defaultIntervalMs = 2000,
     this.maxIntervalMs = 10000,
   });

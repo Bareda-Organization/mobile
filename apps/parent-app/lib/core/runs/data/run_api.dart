@@ -4,7 +4,7 @@ import 'package:parent_app/core/runs/domain/student_run.dart';
 
 /// API_SPEC §3.5·§3.6 — `ApiClient.dio` 를 그대로 받는다.
 class RunApi {
-  RunApi({required this._dio});
+  new({required this._dio});
 
   final Dio _dio;
 

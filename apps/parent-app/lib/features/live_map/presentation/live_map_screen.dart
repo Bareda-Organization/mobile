@@ -36,7 +36,7 @@ const _positionStaleThreshold = Duration(minutes: 2);
 /// (`roleCapabilitiesProvider.canToggleAttendance`, §1.1) — 학부모는
 /// 연결된 자녀 중 선택한 한 명, 학생은 본인 `student_id` 하나.
 class LiveMapScreen extends ConsumerWidget {
-  const LiveMapScreen({super.key});
+  const new({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -56,7 +56,7 @@ class LiveMapScreen extends ConsumerWidget {
 /// `_ParentSection` 과 같은 `selectedStudentIdProvider` 를 공유해, 홈에서
 /// 고른 자녀가 이 화면에도 그대로 이어진다).
 class _ParentLiveMap extends ConsumerWidget {
-  const _ParentLiveMap();
+  const new();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -100,7 +100,7 @@ class _ParentLiveMap extends ConsumerWidget {
 /// UF-P-07 — 지도 다음 단계가 "[노선 자세히 보기]" 다. 이 버튼이 없어서 RouteDetailScreen 에
 /// 도달할 길이 부재했다(2026-09-21). 학생(S-04)도 같은 화면을 본다(R32 P6).
 class _RouteDetailButton extends StatelessWidget {
-  const _RouteDetailButton();
+  const new();
 
   @override
   Widget build(BuildContext context) {
@@ -114,7 +114,7 @@ class _RouteDetailButton extends StatelessWidget {
 
 /// 학생 갈래 — 본인 `student_id` 하나만 쓴다(조회 전용).
 class _StudentLiveMap extends ConsumerWidget {
-  const _StudentLiveMap();
+  const new();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -166,7 +166,7 @@ class _StudentLiveMap extends ConsumerWidget {
 /// `position` 방송은 버려질 수 있다) 서버가 다시 판정해 줄 기회가 없다
 /// — 그래서 이 화면이 매 빌드마다 `clockProvider` 로 직접 잰다.
 class _LiveMapBody extends ConsumerStatefulWidget {
-  const _LiveMapBody({required this.studentId});
+  const new({required this.studentId});
 
   final String studentId;
 
@@ -399,7 +399,7 @@ class _LiveMapBodyState extends ConsumerState<_LiveMapBody> {
 /// 버그를 만들기 쉽다 — 화면에 한 번 그려지고 나면 다시 사라질 일이
 /// 없는 상태라 `StatefulWidget` 로 충분하다.
 class _BusMapSection extends ConsumerStatefulWidget {
-  const _BusMapSection({required this.studentId, required this.position});
+  const new({required this.studentId, required this.position});
 
   final String studentId;
   final WsPositionPayload position;
@@ -528,7 +528,7 @@ class _BusMapSectionState extends ConsumerState<_BusMapSection> {
 /// 를 조건부로 그리고 있었던 것은 이 화면이 참조하는 채널이 원래 ETA
 /// 를 보내지 않아 드러나지 않았을 뿐인 사양 위반이라 이번에 제거한다.
 class _PositionTile extends StatelessWidget {
-  const _PositionTile({required this.position});
+  const new({required this.position});
 
   final WsPositionPayload position;
 
@@ -557,7 +557,7 @@ class _PositionTile extends StatelessWidget {
 /// 운행 이벤트 한 줄. 운행 시작·종료에 인원수를 붙이지 않는다 — 학부모·학생 앱은 탑승 인원을
 /// 표시하지 않고(C-08) 학생 채널에도 실리지 않는다(Ruling 335).
 class _EventTile extends StatelessWidget {
-  const _EventTile({required this.label, required this.time});
+  const new({required this.label, required this.time});
 
   final String label;
   final DateTime time;

@@ -5,7 +5,7 @@ import 'package:parent_app/features/schedule/domain/weekly_address_entry.dart';
 import 'package:parent_app/features/schedule/domain/weekly_address_repository.dart';
 
 class WeeklyAddressRepositoryImpl implements WeeklyAddressRepository {
-  const WeeklyAddressRepositoryImpl({required this._weeklyAddressApi});
+  const new({required this._weeklyAddressApi});
 
   final WeeklyAddressApi _weeklyAddressApi;
 

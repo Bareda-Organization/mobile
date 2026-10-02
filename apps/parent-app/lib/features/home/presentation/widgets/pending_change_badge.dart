@@ -10,7 +10,7 @@ import 'package:parent_app/core/change_requests/presentation/change_request_prov
 /// 화면의 본체(회차 목록)를 가리지 않도록 조용히 넘어간다 — 배지는 부가
 /// 정보라 실패해도 홈 화면 자체를 막을 이유가 없다.
 class PendingChangeBadge extends ConsumerWidget {
-  const PendingChangeBadge({required this.studentId, super.key});
+  const new({required this.studentId, super.key});
 
   final String studentId;
 

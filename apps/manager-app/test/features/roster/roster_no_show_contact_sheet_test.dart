@@ -21,7 +21,7 @@ import '../../support/manager_run_fixture.dart';
 /// 학원 설정값(A-17, 기본 3분)이라 화면에 "3분" 을 박지 않고, 명단 응답의 `no_show_case.expires_at`
 /// (서버가 학원 설정으로 계산)을 그대로 쓴다.
 class _MutableClock implements Clock {
-  _MutableClock(this.current);
+  new(this.current);
 
   DateTime current;
 
@@ -30,7 +30,7 @@ class _MutableClock implements Clock {
 }
 
 class _NeverResolvingTokenStorage extends TokenStorage {
-  _NeverResolvingTokenStorage()
+  new()
     : super(
         accessTokenKey: 'test_access_token',
         refreshTokenKey: 'test_refresh_token',

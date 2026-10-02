@@ -13,7 +13,7 @@ import 'package:stomp_dart_client/stomp_dart_client.dart';
 /// [BaraedaWebSocketClient.subscribe] 로 걸어 둔 구독 한 건 — 만료 전 갈아타기가
 /// 같은 구독을 새 연결에 다시 걸 수 있게 클라이언트가 직접 들고 있는다.
 class _ActiveSubscription {
-  _ActiveSubscription(this.id, this.destination, this.onEnvelope);
+  new(this.id, this.destination, this.onEnvelope);
 
   final int id;
   final String destination;
@@ -26,7 +26,7 @@ class _ActiveSubscription {
 /// 갈아타려고 새로 연 두 번째 연결 — 옛 연결이 계속 방송을 받는 동안 구독을 모두
 /// 걸고, 확인 대기가 끝나면 옛 연결을 대신한다.
 class _Standby {
-  _Standby(this.attempt, this.client, this.token);
+  new(this.attempt, this.client, this.token);
 
   final int attempt;
   final StompClient client;
@@ -76,7 +76,7 @@ class _Standby {
 /// 화면 프레임워크(위젯 트리)에 대한 가정이 이 패키지에 스며든다.
 class BaraedaWebSocketClient {
   /// `url` 은 `/ws/location` 주소, `tokenStorage` 는 CONNECT 인증 토큰의 출처다.
-  BaraedaWebSocketClient({
+  new({
     required this._url,
     required this._tokenStorage,
     this.backoffPolicy = const WsBackoffPolicy(),

@@ -19,7 +19,7 @@ import 'dart:math';
 class WsBackoffPolicy {
   /// 기본값은 1·2·4·8·16·30초, 이후 30초(상한) 간격으로 **포기 없이** 계속 시도한다
   /// (R46-FIXRT S-5). 지터는 매번 붙는다.
-  const WsBackoffPolicy({
+  const new({
     this.initialDelay = const Duration(seconds: 1),
     this.maxDelay = const Duration(seconds: 30),
     this.multiplier = 2,

@@ -2,13 +2,13 @@ import 'package:manager_app/core/run/run_enums.dart';
 
 /// `POST /runs/{runId}/start` 응답 (API_SPEC §4.4, RUN-02 · M-10).
 class StartRunResult {
-  const StartRunResult({
+  const new({
     required this.runStatus,
     required this.startedAt,
     this.autoBoardedCount,
   });
 
-  factory StartRunResult.fromJson(Map<String, dynamic> json) {
+  factory fromJson(Map<String, dynamic> json) {
     return StartRunResult(
       runStatus:
           RunStatus.fromWireValueOrNull(json['run_status'] as String?) ??

@@ -3,10 +3,10 @@
 class AcademyRef {
   /// [id]·[name] 둘 다 필수 — 서버가 `academy` 를 내려줄 때는 항상 이 둘을
   /// 채워서 보낸다(`system_admin` 은 `academy` 자체가 `null`).
-  const AcademyRef({required this.id, required this.name, this.contact});
+  const new({required this.id, required this.name, this.contact});
 
   /// 응답 JSON 의 `academy` 객체를 그대로 옮긴다.
-  factory AcademyRef.fromJson(Map<String, dynamic> json) => AcademyRef(
+  factory fromJson(Map<String, dynamic> json) => AcademyRef(
     id: json['id'] as String,
     name: json['name'] as String,
     contact: json['contact'] as String?,

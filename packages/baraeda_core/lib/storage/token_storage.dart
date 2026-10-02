@@ -13,7 +13,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 /// 이름으로 저장하게 된다.
 class TokenStorage {
   /// [accessTokenKey]·[refreshTokenKey] 는 앱이 넘기는 저장 키다.
-  TokenStorage({
+  new({
     required String accessTokenKey,
     required String refreshTokenKey,
     FlutterSecureStorage? storage,

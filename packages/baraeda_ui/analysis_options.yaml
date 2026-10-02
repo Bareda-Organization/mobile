@@ -7,8 +7,6 @@ linter:
     # 토큰 파일은 CSS 원본과 1:1 대응이 값 관리의 핵심이라
     # public 상수를 한 파일에 모아 두는 구조를 그대로 쓴다.
     public_member_api_docs: false
-    # Dart 3.13 새 생성자 문법(`new(...)`)이 전제인 규칙 — Ruling 770 (baraeda_core 와 같은 이유).
-    unnecessary_type_name_in_constructor: false
 
 analyzer:
   exclude:

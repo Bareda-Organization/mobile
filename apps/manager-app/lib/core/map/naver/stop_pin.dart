@@ -8,7 +8,7 @@ import 'package:flutter/material.dart';
 /// 어댑터가 이 위젯을 이미지로 굳혀 마커 아이콘으로 쓴다. SDK 마커의 기준점이 이미지의
 /// **아래 가운데**라 끝점을 위젯 아래 끝에 둔다 — 그래서 크기를 [size] 로 고정한다.
 class StopPin extends StatelessWidget {
-  const StopPin({super.key, this.seq, this.skipped = false});
+  const new({super.key, this.seq, this.skipped = false});
 
   final int? seq;
 
@@ -59,7 +59,7 @@ class StopPin extends StatelessWidget {
 /// 윤곽 — 머리는 (12,12) 중심 반지름 12 의 원, 끝점은 (12,32). 흰 테두리 두께만큼(1) 사방을
 /// 넓힌 26×34 좌표계를 위젯 크기에 맞춰 늘린다.
 class _StopPinPainter extends CustomPainter {
-  const _StopPinPainter(this.color);
+  const new(this.color);
 
   final Color color;
 

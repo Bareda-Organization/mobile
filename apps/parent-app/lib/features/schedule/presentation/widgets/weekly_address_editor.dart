@@ -17,7 +17,7 @@ import 'package:parent_app/features/schedule/presentation/unsaved_edits.dart';
 /// 조합만 편집한다. 등록된 주소가 하나도 없을 때만 [추가] 로 첫 조합 하나를 넣을 수 있다
 /// (R32 P11 — 편집할 칸이 없어 주소를 넣을 방법이 없었다). 조합을 더 늘리는 UI 는 범위 밖.
 class WeeklyAddressEditor extends ConsumerStatefulWidget {
-  const WeeklyAddressEditor({
+  const new({
     required this.studentId,
     required this.entries,
     super.key,

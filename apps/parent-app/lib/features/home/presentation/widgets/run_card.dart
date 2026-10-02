@@ -22,7 +22,7 @@ import 'package:parent_app/features/home/presentation/home_providers.dart';
 /// [date] 가 있으면 그날(내일) 회차 카드다 — 문구가 '내일 탑승' 이 되고, 확정까지 남은 시간
 /// (오늘 출발 판정용)과 지도 진입(운행 중에만 의미)은 뺀다(R34 P1).
 class RunCard extends ConsumerStatefulWidget {
-  const RunCard({
+  const new({
     required this.studentId,
     required this.run,
     required this.canToggle,

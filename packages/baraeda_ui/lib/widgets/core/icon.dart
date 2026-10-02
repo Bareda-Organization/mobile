@@ -73,7 +73,7 @@ const Map<String, IconData> _kBaraedaIconGlyphs = {
 /// BaraedaIcon('triangle-alert', color: context.colors.statusMissed)
 /// ```
 class BaraedaIcon extends StatelessWidget {
-  const BaraedaIcon(
+  const new(
     this.name, {
     super.key,
     this.size = 20,

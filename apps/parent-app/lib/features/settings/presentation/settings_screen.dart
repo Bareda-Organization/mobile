@@ -14,7 +14,7 @@ import 'package:parent_app/features/settings/presentation/widgets/notification_s
 /// 일일 스케줄 변경" 뿐이고 둘 다 Home·Schedule 화면 소관이다). 그래서
 /// `roleCapabilitiesProvider` 를 참조하지 않는다.
 class SettingsScreen extends ConsumerWidget {
-  const SettingsScreen({super.key});
+  const new({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

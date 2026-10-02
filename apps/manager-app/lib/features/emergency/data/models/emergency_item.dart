@@ -6,7 +6,7 @@ import 'package:manager_app/features/emergency/data/models/emergency_type.dart';
 /// 반영(WS `emergency_acked`)은 F4 범위 — 이 라운드는 WebSocket 클라이언트를
 /// 두지 않는다(지시서 범위 제한).
 class EmergencyItem {
-  const EmergencyItem({
+  const new({
     required this.emergencyId,
     required this.type,
     required this.raisedAt,
@@ -17,7 +17,7 @@ class EmergencyItem {
     this.canceledAt,
   });
 
-  factory EmergencyItem.fromJson(Map<String, dynamic> json) {
+  factory fromJson(Map<String, dynamic> json) {
     return EmergencyItem(
       emergencyId: json['emergency_id'] as String,
       type:
@@ -53,9 +53,9 @@ class EmergencyItem {
 /// 이 엔드포인트 절에는 명시돼 있지 않아(`page`·`size`·`total_count` 언급
 /// 부재) `items[]` 하나만 옮긴다.
 class EmergencyListResponse {
-  const EmergencyListResponse({required this.items});
+  const new({required this.items});
 
-  factory EmergencyListResponse.fromJson(Map<String, dynamic> json) {
+  factory fromJson(Map<String, dynamic> json) {
     final rawItems = json['items'] as List<dynamic>;
     return EmergencyListResponse(
       items: rawItems

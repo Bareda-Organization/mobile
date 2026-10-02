@@ -3,7 +3,7 @@ import 'package:parent_app/core/routes/domain/route_detail.dart';
 
 /// API_SPEC §3.10 — `ApiClient.dio` 를 그대로 받는다.
 class RouteApi {
-  RouteApi({required this._dio});
+  new({required this._dio});
 
   final Dio _dio;
 

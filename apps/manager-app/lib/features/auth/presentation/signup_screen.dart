@@ -16,7 +16,7 @@ import 'package:manager_app/features/auth/presentation/widgets/academy_picker.da
 /// 바뀐다(§1.1).
 class SignupScreen extends ConsumerStatefulWidget {
   /// 이 앱 라우트(`/signup`)로만 진입한다.
-  const SignupScreen({super.key});
+  const new({super.key});
 
   @override
   ConsumerState<SignupScreen> createState() => _SignupScreenState();

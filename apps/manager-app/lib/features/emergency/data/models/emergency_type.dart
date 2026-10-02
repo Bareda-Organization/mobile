@@ -5,7 +5,7 @@ enum EmergencyType {
   studentEmergency('student_emergency'),
   etc('etc');
 
-  EmergencyType(this.wireValue);
+  new(this.wireValue);
 
   final String wireValue;
 

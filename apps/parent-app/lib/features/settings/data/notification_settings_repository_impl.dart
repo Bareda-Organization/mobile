@@ -9,7 +9,7 @@ import 'package:parent_app/features/settings/domain/notification_settings_reposi
 /// (`change_request_repository_impl.dart` 참고).
 class NotificationSettingsRepositoryImpl
     implements NotificationSettingsRepository {
-  const NotificationSettingsRepositoryImpl({
+  const new({
     required this._notificationSettingsApi,
   });
 

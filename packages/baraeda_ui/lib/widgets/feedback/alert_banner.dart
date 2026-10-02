@@ -13,13 +13,13 @@ enum AlertTone { info, moving, missed, boarded }
 
 /// [AlertTone] 별 아이콘·전경/배경 색을 테마에서 뽑아 주는 헬퍼.
 class _AlertToneStyle {
-  const _AlertToneStyle({
+  const new({
     required this.icon,
     required this.foreground,
     required this.background,
   });
 
-  factory _AlertToneStyle.of(BuildContext context, AlertTone tone) {
+  factory of(BuildContext context, AlertTone tone) {
     final colors = context.colors;
     return switch (tone) {
       AlertTone.info => _AlertToneStyle(
@@ -52,7 +52,7 @@ class _AlertToneStyle {
 
 /// 화면 상단 상황 안내 배너. 느낌표·이모지는 쓰지 않는다(카피 규칙).
 class AlertBanner extends StatelessWidget {
-  const AlertBanner({
+  const new({
     required this.tone,
     super.key,
     this.title,

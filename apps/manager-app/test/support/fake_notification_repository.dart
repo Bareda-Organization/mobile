@@ -4,7 +4,7 @@ import 'package:baraeda_core/baraeda_core.dart';
 ///
 /// `unread_count` 는 서버처럼 걸러 보기와 무관하게 **전체** 안 읽은 수다(§3.12).
 class FakeNotificationRepository implements NotificationRepository {
-  FakeNotificationRepository(List<NotificationItem> items)
+  new(List<NotificationItem> items)
     : _items = [...items];
 
   List<NotificationItem> _items;

@@ -6,7 +6,7 @@ import 'package:manager_app/features/roster/data/models/roster_response.dart';
 /// **조회 전용**이다 — 승하차 처리는 동승자만 한다(M-12 · C-06), 그래서 이 위젯에는 처리
 /// 버튼이 없다.
 class RemainingStopsList extends StatelessWidget {
-  const RemainingStopsList({required this.roster, super.key});
+  const new({required this.roster, super.key});
 
   final RosterResponse roster;
 

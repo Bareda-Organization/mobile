@@ -15,7 +15,7 @@ import 'package:parent_app/features/child_link/presentation/child_link_screen.da
 /// (`LINK_CODE_INVALID`·`ALREADY_LINKED`)이 이 화면에서 실제로 다른 문구로
 /// 갈리는지 확인한다.
 class _StubLinkRepository implements LinkRepository {
-  _StubLinkRepository({this.confirmLinkFailure, this.generateLinkCodeFailure});
+  new({this.confirmLinkFailure, this.generateLinkCodeFailure});
 
   final Failure? confirmLinkFailure;
   final Failure? generateLinkCodeFailure;

@@ -40,7 +40,7 @@ import 'package:manager_app/features/roster/presentation/widgets/change_ack_bann
 /// 참고). 가운데 지도(R32 M1)는 [DriveMapPanel] — 노선·승하차지·버스 위치를 보인다.
 /// 도착·종료 대형 버튼은 지도 아래가 아니라 화면 아래에 붙여 둔다 — 지도가 커져도 밀려나지 않는다.
 class DriveModeScreen extends ConsumerStatefulWidget {
-  const DriveModeScreen({super.key});
+  const new({super.key});
 
   @override
   ConsumerState<DriveModeScreen> createState() => _DriveModeScreenState();

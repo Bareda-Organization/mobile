@@ -13,7 +13,7 @@ const Duration pollInterval = Duration(seconds: 90);
 /// 위에 있으면([isCovered]) 그 틱을 건너뛰며 ③백그라운드에서 돌아오면 간격을 기다리지 않고 즉시 한 번 받는다.
 /// 위치 실시간(WebSocket)은 이 갱신과 무관하다.
 class VisiblePoller with WidgetsBindingObserver {
-  VisiblePoller({required this.interval, required this.onTick, this.isCovered});
+  new({required this.interval, required this.onTick, this.isCovered});
 
   final Duration interval;
   final VoidCallback onTick;

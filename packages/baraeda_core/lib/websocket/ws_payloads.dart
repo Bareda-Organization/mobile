@@ -14,7 +14,7 @@ import 'package:baraeda_core/id/as_id_string.dart';
 /// `position` — 학부모·학생 채널은 [eta] 가 항상 `null`(C-08), 관제 채널만 값이 온다.
 class WsPositionPayload {
   /// 값을 그대로 받는다.
-  const WsPositionPayload({
+  const new({
     required this.lat,
     required this.lng,
     required this.receivedAt,
@@ -23,7 +23,7 @@ class WsPositionPayload {
   });
 
   /// 봉투 `payload` 원문을 파싱한다 — 키는 `API_SPEC §7.1` 의 snake_case.
-  factory WsPositionPayload.fromJson(Map<String, dynamic> json) =>
+  factory fromJson(Map<String, dynamic> json) =>
       WsPositionPayload(
         lat: (json['lat'] as num).toDouble(),
         lng: (json['lng'] as num).toDouble(),
@@ -55,7 +55,7 @@ class WsPositionPayload {
 /// 바뀌지 않는다(`rider_changed` 가 별도로 온다).
 class WsStopArrivedPayload {
   /// 값을 그대로 받는다.
-  const WsStopArrivedPayload({
+  const new({
     required this.stopId,
     required this.seq,
     required this.name,
@@ -64,7 +64,7 @@ class WsStopArrivedPayload {
   });
 
   /// 봉투 `payload` 원문을 파싱한다 — 키는 `API_SPEC §7.1` 의 snake_case.
-  factory WsStopArrivedPayload.fromJson(Map<String, dynamic> json) =>
+  factory fromJson(Map<String, dynamic> json) =>
       WsStopArrivedPayload(
         stopId: asIdString(json['stop_id']),
         seq: json['seq'] as int,
@@ -96,7 +96,7 @@ class WsStopArrivedPayload {
 /// 사양이 값 사전을 별도로 두지 않아 원문 그대로 넘긴다.
 class WsRiderChangedPayload {
   /// 값을 그대로 받는다.
-  const WsRiderChangedPayload({
+  const new({
     required this.riderId,
     required this.studentId,
     required this.studentName,
@@ -108,7 +108,7 @@ class WsRiderChangedPayload {
   });
 
   /// 봉투 `payload` 원문을 파싱한다 — 키는 `API_SPEC §7.1` 의 snake_case.
-  factory WsRiderChangedPayload.fromJson(Map<String, dynamic> json) =>
+  factory fromJson(Map<String, dynamic> json) =>
       WsRiderChangedPayload(
         riderId: asIdString(json['rider_id']),
         studentId: asIdString(json['student_id']),
@@ -153,14 +153,14 @@ class WsRiderChangedPayload {
 /// 싣지 않는다(C-08, Ruling 335).
 class WsRunStartedPayload {
   /// 값을 그대로 받는다.
-  const WsRunStartedPayload({
+  const new({
     required this.runStatus,
     required this.startedAt,
     this.autoBoardedCount,
   });
 
   /// 봉투 `payload` 원문을 파싱한다 — 키는 `API_SPEC §7.1` 의 snake_case.
-  factory WsRunStartedPayload.fromJson(Map<String, dynamic> json) =>
+  factory fromJson(Map<String, dynamic> json) =>
       WsRunStartedPayload(
         runStatus: json['run_status'] as String,
         startedAt: DateTime.parse(json['started_at'] as String),
@@ -183,14 +183,14 @@ class WsRunStartedPayload {
 /// 싣지 않는다(C-08, Ruling 335).
 class WsRunEndedPayload {
   /// 값을 그대로 받는다.
-  const WsRunEndedPayload({
+  const new({
     required this.runStatus,
     required this.finishedAt,
     this.autoAlightedCount,
   });
 
   /// 봉투 `payload` 원문을 파싱한다 — 키는 `API_SPEC §7.1` 의 snake_case.
-  factory WsRunEndedPayload.fromJson(Map<String, dynamic> json) =>
+  factory fromJson(Map<String, dynamic> json) =>
       WsRunEndedPayload(
         runStatus: json['run_status'] as String,
         finishedAt: DateTime.parse(json['finished_at'] as String),
@@ -210,14 +210,14 @@ class WsRunEndedPayload {
 /// [WsEmergencyRaisedPayload.raisedBy] 하위 객체.
 class WsEmergencyRaisedBy {
   /// 값을 그대로 받는다.
-  const WsEmergencyRaisedBy({
+  const new({
     required this.name,
     required this.role,
     required this.phone,
   });
 
   /// 봉투 `payload` 원문을 파싱한다 — 키는 `API_SPEC §7.1` 의 snake_case.
-  factory WsEmergencyRaisedBy.fromJson(Map<String, dynamic> json) =>
+  factory fromJson(Map<String, dynamic> json) =>
       WsEmergencyRaisedBy(
         name: json['name'] as String,
         role: json['role'] as String,
@@ -237,10 +237,10 @@ class WsEmergencyRaisedBy {
 /// [WsEmergencyRaisedPayload.position] 하위 객체 — 발신 시점 좌표.
 class WsEmergencyPosition {
   /// 값을 그대로 받는다.
-  const WsEmergencyPosition({required this.lat, required this.lng});
+  const new({required this.lat, required this.lng});
 
   /// 봉투 `payload` 원문을 파싱한다 — 키는 `API_SPEC §7.1` 의 snake_case.
-  factory WsEmergencyPosition.fromJson(Map<String, dynamic> json) =>
+  factory fromJson(Map<String, dynamic> json) =>
       WsEmergencyPosition(
         lat: (json['lat'] as num).toDouble(),
         lng: (json['lng'] as num).toDouble(),
@@ -256,7 +256,7 @@ class WsEmergencyPosition {
 /// `emergency_raised` — 관계자·메인 관리자 채널 전용(C-17).
 class WsEmergencyRaisedPayload {
   /// 값을 그대로 받는다.
-  const WsEmergencyRaisedPayload({
+  const new({
     required this.emergencyId,
     required this.type,
     required this.busNo,
@@ -267,7 +267,7 @@ class WsEmergencyRaisedPayload {
   });
 
   /// 봉투 `payload` 원문을 파싱한다 — 키는 `API_SPEC §7.1` 의 snake_case.
-  factory WsEmergencyRaisedPayload.fromJson(Map<String, dynamic> json) =>
+  factory fromJson(Map<String, dynamic> json) =>
       WsEmergencyRaisedPayload(
         emergencyId: asIdString(json['emergency_id']),
         type: json['type'] as String,
@@ -308,14 +308,14 @@ class WsEmergencyRaisedPayload {
 /// `emergency_acked` — 매니저 채널 전용. 발신자 앱에 "학원이 확인했습니다" 표시(A-16).
 class WsEmergencyAckedPayload {
   /// 값을 그대로 받는다.
-  const WsEmergencyAckedPayload({
+  const new({
     required this.emergencyId,
     required this.ackedByName,
     required this.ackedAt,
   });
 
   /// 봉투 `payload` 원문을 파싱한다 — 키는 `API_SPEC §7.1` 의 snake_case.
-  factory WsEmergencyAckedPayload.fromJson(Map<String, dynamic> json) =>
+  factory fromJson(Map<String, dynamic> json) =>
       WsEmergencyAckedPayload(
         emergencyId: asIdString(json['emergency_id']),
         ackedByName: json['acked_by_name'] as String,
@@ -335,7 +335,7 @@ class WsEmergencyAckedPayload {
 /// `approval_requested` — 관계자 채널 전용(REQ-05).
 class WsApprovalRequestedPayload {
   /// 값을 그대로 받는다.
-  const WsApprovalRequestedPayload({
+  const new({
     required this.approvalId,
     required this.studentName,
     required this.runId,
@@ -344,7 +344,7 @@ class WsApprovalRequestedPayload {
   });
 
   /// 봉투 `payload` 원문을 파싱한다 — 키는 `API_SPEC §7.1` 의 snake_case.
-  factory WsApprovalRequestedPayload.fromJson(Map<String, dynamic> json) =>
+  factory fromJson(Map<String, dynamic> json) =>
       WsApprovalRequestedPayload(
         approvalId: asIdString(json['approval_id']),
         studentName: json['student_name'] as String,

@@ -5,7 +5,7 @@ import 'package:parent_app/app/di.dart';
 
 /// 서버에 닿는지 여부 — 화면 맨 위 한 줄 표시(`OfflineBar`)의 근거다(R46 B2 #22).
 class NetworkStatus {
-  const NetworkStatus({this.isOffline = false, this.lastReachableAt});
+  const new({this.isOffline = false, this.lastReachableAt});
 
   /// 마지막 요청이 연결 실패·시간 초과로 끝났는가.
   final bool isOffline;
@@ -15,7 +15,7 @@ class NetworkStatus {
 }
 
 class NetworkStatusNotifier extends StateNotifier<NetworkStatus> {
-  NetworkStatusNotifier({
+  new({
     NetworkStatus initial = const NetworkStatus(),
     this._clock = const SystemClock(),
   }) : super(initial);
@@ -48,7 +48,7 @@ final networkStatusProvider =
 ///
 /// 서버가 4xx·5xx 로 답한 것은 서버에 닿은 것이라 끊김이 아니다. 요청 취소나 알 수 없는 오류는 판단하지 않는다.
 class NetworkStatusInterceptor extends Interceptor {
-  NetworkStatusInterceptor({
+  new({
     required this.onReachable,
     required this.onUnreachable,
   });

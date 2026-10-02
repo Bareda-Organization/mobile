@@ -3,7 +3,7 @@ import 'package:parent_app/core/change_requests/domain/change_request.dart';
 
 /// API_SPEC §3.8·§3.9.
 class ChangeRequestApi {
-  ChangeRequestApi({required this._dio});
+  new({required this._dio});
 
   final Dio _dio;
 

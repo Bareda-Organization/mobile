@@ -14,7 +14,7 @@ import 'package:parent_app/features/auth/presentation/account_recovery_screen.da
 /// 응답으로 구분하지 않는다(Ruling 553) — 인증번호 요청이 성공한 뒤 안내가 "보냈다" 고
 /// 단정하면 미등록 번호에서는 사실이 아니고, 실패 문구가 코드별로 갈리면 단서가 된다.
 class _FailingAuthRepository implements AuthRepository {
-  _FailingAuthRepository(this._code);
+  new(this._code);
 
   final String _code;
 
@@ -132,7 +132,7 @@ class _StallingAuthRepository implements AuthRepository {
 
 /// 인증번호 요청이 성공하는 가짜 — 서버가 미등록 번호에도 200 을 주는 경우와 같은 화면 경로를 만든다.
 class _OkAuthRepository extends _FailingAuthRepository {
-  _OkAuthRepository() : super('');
+  new() : super('');
 
   @override
   Future<void> recover({

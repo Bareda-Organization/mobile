@@ -17,7 +17,7 @@ import 'package:parent_app/features/schedule/presentation/widgets/weekly_address
 /// 학부모만 편집한다(§1.1 `canChangeBoardingLocation`). 학생 계정은 이 화면
 /// 대신 부모 연결 코드 생성 진입점(S-05)만 본다.
 class ScheduleScreen extends ConsumerWidget {
-  const ScheduleScreen({super.key});
+  const new({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -54,7 +54,7 @@ class ScheduleScreen extends ConsumerWidget {
 }
 
 class _ParentSection extends ConsumerWidget {
-  const _ParentSection();
+  const new();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -94,7 +94,7 @@ class _ParentSection extends ConsumerWidget {
 }
 
 class _StudentScheduleBody extends ConsumerWidget {
-  const _StudentScheduleBody({required this.studentId});
+  const new({required this.studentId});
 
   final String studentId;
 
@@ -138,7 +138,7 @@ class _StudentScheduleBody extends ConsumerWidget {
 /// 학생 계정 — 이 화면에서 편집 권한이 없으므로 부모 연결 코드 생성 화면
 /// (S-05)으로 안내한다.
 class _StudentSection extends StatelessWidget {
-  const _StudentSection();
+  const new();
 
   @override
   Widget build(BuildContext context) {

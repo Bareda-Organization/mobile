@@ -121,7 +121,7 @@ PositionSample _toSample(Position position) => PositionSample(
 /// 직전에 `clockProvider` 로 다시 "지금"을 물으면 그사이 지연(대기열
 /// 등)만큼 실제 측정 시각과 어긋난다.
 class PositionSample {
-  const PositionSample({
+  const new({
     required this.lat,
     required this.lng,
     required this.recordedAt,
@@ -139,7 +139,7 @@ class PositionSample {
 /// 위치 플러그인이 연동되기 전 자리표시로 쓰던 구현 — 항상 `null`
 /// (이제 `di.dart` 는 [GeolocatorPositionSource] 를 쓴다, 시험용으로만 남긴다).
 class UnavailablePositionSource implements PositionSource {
-  const UnavailablePositionSource();
+  const new();
 
   @override
   PositionSample? sample() => null;
@@ -171,7 +171,7 @@ class UnavailablePositionSource implements PositionSource {
 /// (`Ruling 360` — 동승자 단말에서는 이 구독 자체가 시작되지 않아야
 /// 한다, 생성자에서 자동 구독하면 역할과 무관하게 켜진다).
 class GeolocatorPositionSource implements PositionSource {
-  GeolocatorPositionSource() {
+  new() {
     _ready = _init();
   }
 

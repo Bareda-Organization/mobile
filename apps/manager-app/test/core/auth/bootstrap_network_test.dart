@@ -12,7 +12,7 @@ import '../../support/fake_token_storage.dart';
 
 /// `/me` 만 쓰는 가짜 — 첫 호출은 [failure] 로 실패하고 그 뒤로는 동승자 계정을 돌려준다.
 class _MeRepository implements AuthRepository {
-  _MeRepository(this.failure);
+  new(this.failure);
 
   final Failure failure;
   int calls = 0;

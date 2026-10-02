@@ -14,7 +14,7 @@ import 'package:manager_app/features/position/presentation/position_transmitter.
 /// refresh 토큰이 있어도 한 프레임 로그인 화면이 먼저 그려진다
 /// (`parent_app` 과 같은 이유).
 class BaraedaManagerApp extends ConsumerWidget {
-  const BaraedaManagerApp({super.key});
+  const new({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

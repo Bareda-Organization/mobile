@@ -17,14 +17,14 @@ import 'package:manager_app/core/auth/user_role.dart';
 /// 위치 기반으로 자동 발송, NTF-04). 옛 이름은 이 값이 실제로 게이트하는
 /// 동작(운행 시작·도착 처리, 둘 다 기사 전용)과 맞지 않아 바꿨다.
 class RoleCapabilities {
-  const RoleCapabilities._({
+  const new _({
     required this.canOperateRun,
     required this.canSendDelayNotification,
     required this.canDecideBoardingStatus,
     required this.canTransmitPosition,
   });
 
-  factory RoleCapabilities.of(UserRole role) => switch (role) {
+  factory of(UserRole role) => switch (role) {
     UserRole.driver => const RoleCapabilities._(
       canOperateRun: true,
       canSendDelayNotification: false,

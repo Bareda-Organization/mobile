@@ -14,7 +14,7 @@ import 'package:parent_app/features/home/presentation/widgets/run_card.dart';
 /// 승인 대기 카운트다운(A #15, `FEATURE_SPEC P-03`) ·
 /// 용어 통일(B2 #25, 사양 용어 "탑승 취소").
 class _MutableClock implements Clock {
-  _MutableClock(this.value);
+  new(this.value);
 
   DateTime value;
 

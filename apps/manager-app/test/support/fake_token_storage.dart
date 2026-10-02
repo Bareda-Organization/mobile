@@ -10,7 +10,7 @@ import 'package:baraeda_core/baraeda_core.dart';
 /// `seedRefreshToken` 으로 "이미 로그인된 채 앱을 다시 켠 상태"(목표 표
 /// 5항 자동 로그인)도 같은 대역으로 시험한다.
 class FakeTokenStorage extends TokenStorage {
-  FakeTokenStorage({String? seedRefreshToken, String? seedAccessToken})
+  new({String? seedRefreshToken, String? seedAccessToken})
     : _refreshToken = seedRefreshToken,
       _accessToken = seedAccessToken,
       super(

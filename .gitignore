@@ -3,13 +3,12 @@
 .idea/
 *.iml
 
-# Flutter — 빌드 산출물 · 패키지 잠금 · 생성물(2026-10-02 통합 저장소의 frontend/** 규칙을 그대로 옮김)
+# Flutter — 빌드 산출물 · 생성물(2026-10-02 통합 저장소의 frontend/** 규칙을 옮김). pubspec.lock 은 추적한다(Ruling 787)
 **/build/
 **/.dart_tool/
 **/.flutter-plugins
 **/.flutter-plugins-dependencies
 **/.packages
-**/pubspec.lock
 **/*.g.dart
 **/*.freezed.dart
 **/.env

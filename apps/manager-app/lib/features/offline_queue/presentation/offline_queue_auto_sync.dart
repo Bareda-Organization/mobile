@@ -16,7 +16,7 @@ import 'package:manager_app/features/offline_queue/presentation/offline_queue_pr
 /// `OfflineQueueRepository.sendOrQueue` 가 먼저 큐를 흘려보내므로, 이 타이머는
 /// **더 이상 처리할 것이 없을 때**(운행 종료 후 등)를 맡는다.
 class OfflineQueueAutoSync extends ConsumerStatefulWidget {
-  const OfflineQueueAutoSync({required this.child, super.key});
+  const new({required this.child, super.key});
 
   /// 재생 주기. 위치 전송(2초)과 달리 실시간성이 필요 없고, 두절 중에는
   /// 주기마다 타임아웃을 한 번씩 기다리게 되므로 느슨하게 잡았다.

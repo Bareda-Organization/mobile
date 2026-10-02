@@ -28,7 +28,7 @@ import '../../support/manager_run_fixture.dart';
 /// Ruling 482 — 명단의 보호자 번호는 마스킹이라 걸 수 없다. [전화] 를 누르면 그 탑승자 1명의 원번호를 서버에서
 /// 받아 `tel:` 로 연다. 원번호는 화면에 싣지 않고(바로 전화만), 조회가 실패하면 전화를 걸지 않고 이유를 알린다.
 class _FixedRosterRepository implements RosterRepository {
-  const _FixedRosterRepository(this.roster);
+  const new(this.roster);
 
   final RosterResponse roster;
 
@@ -62,7 +62,7 @@ class _FixedRosterRepository implements RosterRepository {
 }
 
 class _FakeGuardianPhones implements GuardianPhoneRepository {
-  _FakeGuardianPhones({this.phone, this.failure});
+  new({this.phone, this.failure});
 
   final String? phone;
   final Failure? failure;
@@ -82,7 +82,7 @@ class _FakeGuardianPhones implements GuardianPhoneRepository {
 }
 
 class _NeverResolvingTokenStorage extends TokenStorage {
-  _NeverResolvingTokenStorage()
+  new()
     : super(
         accessTokenKey: 'test_access_token',
         refreshTokenKey: 'test_refresh_token',

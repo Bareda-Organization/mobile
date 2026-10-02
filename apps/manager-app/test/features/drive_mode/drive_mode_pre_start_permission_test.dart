@@ -20,7 +20,7 @@ import 'package:manager_app/features/route_map/presentation/route_providers.dart
 
 /// 시각을 고정하는 가짜 시계.
 class _FixedClock implements Clock {
-  const _FixedClock(this._now);
+  const new(this._now);
 
   final DateTime _now;
 
@@ -31,7 +31,7 @@ class _FixedClock implements Clock {
 /// 권한·서비스 상태를 시험이 바꿀 수 있는 가짜 위치 소스. [recheck] 를 불러야만 새 값을 반영한다 —
 /// 실제 구현이 플랫폼에 다시 물어야 [availability] 가 바뀌는 것과 같다. 스트림은 켜지 않는다.
 class _SwitchablePositionSource implements PositionSource {
-  _SwitchablePositionSource(this.current);
+  new(this.current);
 
   /// 기기 설정의 현재 상태 — 시험이 바꾼다. [recheck] 가 불려야 [availability] 에 보인다.
   PositionAvailability current;

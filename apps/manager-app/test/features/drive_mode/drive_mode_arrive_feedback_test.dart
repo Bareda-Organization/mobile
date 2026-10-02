@@ -52,7 +52,7 @@ class _ArriveRecorder implements DriveModeRepository {
 
 /// 외부 내비 좌표열 — 호출을 세고 [truncated] 여부를 시험이 정한다.
 class _FakeNavigationRepository implements NavigationRepository {
-  _FakeNavigationRepository({this.truncated = false, this.provider = 'kakao'});
+  new({this.truncated = false, this.provider = 'kakao'});
 
   final bool truncated;
   final String provider;
@@ -80,7 +80,7 @@ class _FakeNavigationRepository implements NavigationRepository {
 
 /// 카카오내비 경계의 가짜 — 넘겨받은 경로를 기록하고 결과는 시험이 정한다. 실제 앱을 열지 않는다.
 class _FakeKakaoNaviLauncher implements KakaoNaviLauncher {
-  _FakeKakaoNaviLauncher(this.result);
+  new(this.result);
 
   final NaviLaunchResult result;
   final launched = <NavigationRoute>[];
@@ -97,7 +97,7 @@ class _FakeKakaoNaviLauncher implements KakaoNaviLauncher {
 
 /// 위치 권한·서비스 상태를 시험이 정하는 가짜 소스 — 좌표는 없다.
 class _FixedAvailabilitySource implements PositionSource {
-  _FixedAvailabilitySource(this.availability);
+  new(this.availability);
 
   @override
   final PositionAvailability availability;
@@ -122,7 +122,7 @@ class _FixedAvailabilitySource implements PositionSource {
 
 /// 토큰을 영원히 기다려 운행 채널 연결이 시작되지 않게 한다 — 이 시험의 대상이 아니다.
 class _NeverResolvingTokenStorage extends TokenStorage {
-  _NeverResolvingTokenStorage()
+  new()
     : super(accessTokenKey: 'a', refreshTokenKey: 'r');
 
   @override

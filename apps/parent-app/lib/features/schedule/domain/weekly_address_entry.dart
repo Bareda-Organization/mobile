@@ -40,7 +40,7 @@ enum Weekday {
 }
 
 class WeeklyAddressEntry {
-  const WeeklyAddressEntry({
+  const new({
     required this.weekday,
     required this.direction,
     required this.address,
@@ -50,7 +50,7 @@ class WeeklyAddressEntry {
     this.verified,
   });
 
-  factory WeeklyAddressEntry.fromJson(Map<String, dynamic> json) =>
+  factory fromJson(Map<String, dynamic> json) =>
       WeeklyAddressEntry(
         weekday: Weekday.fromWireValue(json['weekday'] as String),
         direction: RunDirection.fromWireValue(json['direction'] as String),

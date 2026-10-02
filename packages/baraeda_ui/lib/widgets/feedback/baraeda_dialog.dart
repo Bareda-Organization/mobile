@@ -21,7 +21,7 @@ import 'package:flutter/material.dart';
 /// 본문이 길거나 글자가 커도 넘치지 않고 **본문만 스크롤**된다(버튼은 고정).
 /// 안드로이드 뒤로가기는 [onClose] 로 가고, 뒤 화면은 낭독기에서 가려진다.
 class BaraedaDialog extends StatelessWidget {
-  const BaraedaDialog({
+  const new({
     super.key,
     this.title,
     this.body,

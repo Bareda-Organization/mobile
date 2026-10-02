@@ -4,7 +4,7 @@ import 'package:manager_app/features/roster/data/models/roster_response.dart';
 
 /// `PATCH /runs/{runId}/riders/{riderId}` 응답 — §4.6.
 class RiderUpdateResult {
-  const RiderUpdateResult({
+  const new({
     required this.riderId,
     required this.status,
     required this.changedAt,
@@ -12,7 +12,7 @@ class RiderUpdateResult {
     this.noShowCase,
   });
 
-  factory RiderUpdateResult.fromJson(Map<String, dynamic> json) {
+  factory fromJson(Map<String, dynamic> json) {
     final noShowCaseJson = json['no_show_case'] as Map<String, dynamic>?;
     return RiderUpdateResult(
       // `Ruling 275` — 서버가 rider_id 를 int 로 내려도 흡수한다(직접 캐스트 금지).

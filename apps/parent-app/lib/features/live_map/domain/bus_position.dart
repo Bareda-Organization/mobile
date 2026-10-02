@@ -11,7 +11,7 @@ import 'package:parent_app/core/runs/domain/student_run.dart';
 /// 부재**(§7.1 — 학부모·학생 채널은 ETA 를 절대 받지 않는다, C-08) —
 /// 이 모델에 추가하지 않는다.
 class BusPosition {
-  const BusPosition({
+  const new({
     required this.runId,
     required this.busNo,
     required this.runStatus,
@@ -22,7 +22,7 @@ class BusPosition {
     this.currentStopName,
   });
 
-  factory BusPosition.fromJson(Map<String, dynamic> json) => BusPosition(
+  factory fromJson(Map<String, dynamic> json) => BusPosition(
     runId: asIdString(json['run_id']),
     busNo: json['bus_no'] as String,
     runStatus: RunStatus.fromWireValue(json['run_status'] as String),

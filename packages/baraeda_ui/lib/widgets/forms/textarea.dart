@@ -10,7 +10,7 @@ import 'package:flutter/material.dart';
 
 /// 여러 줄 텍스트 입력.
 class BaraedaTextarea extends StatelessWidget {
-  const BaraedaTextarea({
+  const new({
     super.key,
     this.label,
     this.hint,

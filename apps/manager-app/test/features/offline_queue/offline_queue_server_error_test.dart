@@ -12,7 +12,7 @@ import 'package:manager_app/features/offline_queue/domain/send_outcome.dart';
 /// 경로마다 정해 둔 상태로 응답하는 가짜 어댑터 — 어느 경로가 몇 번 나갔는지 [paths] 에 남는다.
 /// [statusOf] 가 `null` 이면 통신 두절(연결 실패)로 던진다.
 class _PathAdapter implements HttpClientAdapter {
-  _PathAdapter(this.statusOf);
+  new(this.statusOf);
 
   final int? Function(String path) statusOf;
   final List<String> paths = [];
@@ -46,7 +46,7 @@ class _PathAdapter implements HttpClientAdapter {
 
 /// 시험이 시각을 고정하는 가짜 시계 — 큐 행의 나이 상한 판정에 쓴다.
 class _FixedClock implements Clock {
-  _FixedClock(this.current);
+  new(this.current);
 
   DateTime current;
 

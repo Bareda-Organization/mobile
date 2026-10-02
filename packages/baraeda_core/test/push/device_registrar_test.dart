@@ -69,7 +69,7 @@ class _FakeSecureStoragePlatform
 
 /// 지정한 토큰을 돌려주는 가짜 공급자 — `null` 이면 "줄 토큰이 없는" 상태다.
 class _FakeTokenSource implements PushTokenSource {
-  _FakeTokenSource(this.token);
+  new(this.token);
 
   String? token;
 
@@ -81,7 +81,7 @@ class _FakeTokenSource implements PushTokenSource {
 }
 
 class _Call {
-  _Call(this.method, this.path, this.body);
+  new(this.method, this.path, this.body);
 
   final String method;
   final String path;

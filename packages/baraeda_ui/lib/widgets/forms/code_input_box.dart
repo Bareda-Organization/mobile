@@ -11,7 +11,7 @@ import 'package:flutter/services.dart';
 /// `BaraedaCodeInput` 한 칸을 그리는 장식용 박스. 실제 입력은 받지 않는다
 /// (진짜 입력은 투명 `TextField`가 받는다).
 class BaraedaCodeInputBox extends StatelessWidget {
-  const BaraedaCodeInputBox({
+  const new({
     required this.char,
     required this.active,
     required this.hasError,

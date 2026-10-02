@@ -17,7 +17,7 @@ import 'package:manager_app/core/network/failure_messages.dart';
 ///
 /// 임시 비밀번호 강제 변경(Ruling 540) 중이면 라우터가 이 화면에 고정한다 — 뒤로 갈 길을 없애고 로그아웃만 연다.
 class PasswordChangeScreen extends ConsumerStatefulWidget {
-  const PasswordChangeScreen({super.key});
+  const new({super.key});
 
   @override
   ConsumerState<PasswordChangeScreen> createState() =>

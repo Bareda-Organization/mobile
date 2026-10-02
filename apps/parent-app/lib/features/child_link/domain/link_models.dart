@@ -8,9 +8,9 @@ import 'package:parent_app/core/common/json_id.dart';
 
 /// §3.3 — 학생이 생성한 인증 코드. 선행 조건이 없다(Ruling 324).
 class LinkCodeResult {
-  const LinkCodeResult({required this.code, required this.expiresAt});
+  const new({required this.code, required this.expiresAt});
 
-  factory LinkCodeResult.fromJson(Map<String, dynamic> json) => LinkCodeResult(
+  factory fromJson(Map<String, dynamic> json) => LinkCodeResult(
     code: json['code'] as String,
     expiresAt: DateTime.parse(json['expires_at'] as String),
   );
@@ -21,9 +21,9 @@ class LinkCodeResult {
 
 /// §3.4 — 코드 인증으로 연결 완료된 자녀.
 class LinkConfirmResult {
-  const LinkConfirmResult({required this.studentId, required this.name});
+  const new({required this.studentId, required this.name});
 
-  factory LinkConfirmResult.fromJson(Map<String, dynamic> json) =>
+  factory fromJson(Map<String, dynamic> json) =>
       LinkConfirmResult(
         studentId: asIdString(json['student_id']),
         name: json['name'] as String,

@@ -15,7 +15,7 @@ import 'package:go_router/go_router.dart';
 /// 있어, 이 화면은 안내와 로그인 화면 복귀만 제공한다.
 class BlockedScreen extends StatelessWidget {
   /// `/blocked-account`. `LoginScreen` 이 `context.push` 로만 진입시킨다.
-  const BlockedScreen({super.key});
+  const new({super.key});
 
   @override
   Widget build(BuildContext context) {

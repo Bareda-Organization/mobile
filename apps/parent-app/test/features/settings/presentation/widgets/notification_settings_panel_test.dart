@@ -15,7 +15,7 @@ import 'package:parent_app/features/settings/presentation/widgets/notification_s
 /// 돌아온다" 를 봐야 되돌리기 로직 자체를 잡는다.
 class _RejectingNotificationSettingsRepository
     implements NotificationSettingsRepository {
-  _RejectingNotificationSettingsRepository(
+  new(
     this._initial, {
     this.failure = const Failure.api(
       statusCode: 422,

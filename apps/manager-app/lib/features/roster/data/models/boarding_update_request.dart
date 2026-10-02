@@ -8,7 +8,7 @@ enum VerifyMethod {
   photo('photo'),
   manual('manual');
 
-  VerifyMethod(this.wireValue);
+  new(this.wireValue);
 
   final String wireValue;
 }
@@ -20,7 +20,7 @@ enum VerifyMethod {
 /// 버튼)가 그 3종만 넘기도록 보장하고, 여기서 다시 검증하지 않는다(단일
 /// enum 을 새로 만들면 [RiderStatus] 와 값이 갈릴 위험이 더 크다).
 class BoardingUpdateRequest {
-  const BoardingUpdateRequest({
+  const new({
     required this.status,
     required this.clientKey,
     this.verifyMethod = VerifyMethod.manual,

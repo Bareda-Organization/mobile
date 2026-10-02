@@ -5,14 +5,14 @@ import 'package:parent_app/core/common/json_id.dart';
 /// `home`·`schedule` 두 feature 가 함께 쓰므로 `core/` 에 둔다
 /// (CONVENTIONS_FLUTTER.md §2 "features 는 서로 import 하지 않는다").
 class Student {
-  const Student({
+  const new({
     required this.studentId,
     required this.name,
     required this.linkedAt,
     this.className,
   });
 
-  factory Student.fromJson(Map<String, dynamic> json) => Student(
+  factory fromJson(Map<String, dynamic> json) => Student(
     studentId: asIdString(json['student_id']),
     name: json['name'] as String,
     linkedAt: DateTime.parse(json['linked_at'] as String),

@@ -16,7 +16,7 @@ import 'package:manager_app/features/offline_queue/domain/send_outcome.dart';
 /// 클로저가 같은 목록에 적으면 **큐 재생과 새 요청의 선후**를 한 목록에서
 /// 읽을 수 있다.
 class _RecordingAdapter implements HttpClientAdapter {
-  _RecordingAdapter({List<String>? log}) : log = log ?? [];
+  new({List<String>? log}) : log = log ?? [];
 
   final List<RequestOptions> requests = [];
   final List<String> log;
@@ -65,7 +65,7 @@ class _OfflineAdapter implements HttpClientAdapter {
 
 /// 서버가 응답은 했지만 [status] 로 거절·실패한 상태 — 본문은 [body] 그대로.
 class _StatusAdapter implements HttpClientAdapter {
-  _StatusAdapter(this.status, this.body);
+  new(this.status, this.body);
 
   final int status;
   final String body;

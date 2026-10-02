@@ -31,7 +31,7 @@ import 'package:manager_app/features/run_end/data/models/report_result.dart';
 /// 확인이 아니라 확정 후 운행 중 변경 발생 시 확인하는 흐름이라 화면이
 /// 다르다. 이전 판단은 여기를 "범위 밖" 으로 잘못 적었던 것을 정정한다.
 class RunEndScreen extends ConsumerStatefulWidget {
-  const RunEndScreen({super.key});
+  const new({super.key});
 
   @override
   ConsumerState<RunEndScreen> createState() => _RunEndScreenState();

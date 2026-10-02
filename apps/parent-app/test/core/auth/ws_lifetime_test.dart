@@ -27,7 +27,7 @@ import '../../support/fake_token_storage.dart';
 /// 주체로 판정한다). 소켓 없이 "연결을 닫는가 · 새 계정이 새 연결을 여는가"
 /// 만 보는 가짜 클라이언트.
 class _LifetimeWsClient extends BaraedaWebSocketClient {
-  _LifetimeWsClient()
+  new()
     : super(
         url: 'ws://test.invalid/ws/location',
         tokenStorage: TokenStorage(

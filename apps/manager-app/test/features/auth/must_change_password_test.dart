@@ -18,7 +18,7 @@ import '../../support/fake_token_storage.dart';
 /// Ruling 540 — 관리자가 초기화한 임시 비밀번호로 들어온 계정은 비밀번호를 바꾸기 전까지 다른 화면을 쓰지
 /// 못한다. 서버도 그동안 다른 API 를 `403 PASSWORD_CHANGE_REQUIRED` 로 막으므로 앱은 변경 화면으로 보낸다.
 class _FakeAuthRepository implements AuthRepository {
-  _FakeAuthRepository({required this.mustChangePassword});
+  new({required this.mustChangePassword});
 
   final bool mustChangePassword;
   int logoutCalls = 0;

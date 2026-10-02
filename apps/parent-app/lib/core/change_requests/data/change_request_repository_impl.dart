@@ -5,7 +5,7 @@ import 'package:parent_app/core/change_requests/domain/change_request.dart';
 import 'package:parent_app/core/change_requests/domain/change_request_repository.dart';
 
 class ChangeRequestRepositoryImpl implements ChangeRequestRepository {
-  const ChangeRequestRepositoryImpl({required this._changeRequestApi});
+  const new({required this._changeRequestApi});
 
   final ChangeRequestApi _changeRequestApi;
 

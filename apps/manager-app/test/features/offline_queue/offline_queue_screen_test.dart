@@ -18,7 +18,7 @@ import 'package:manager_app/features/roster/presentation/roster_providers.dart';
 /// 전송·재생 경로는 각 기능 화면에서 이미 검증됨) 여기서는 미구현으로 두고,
 /// 화면이 실제로 쓰는 `fetchPending`·`replayPending` 만 결과를 주입한다.
 class _FakeOfflineQueueRepository implements OfflineQueueRepository {
-  _FakeOfflineQueueRepository({
+  new({
     required List<PendingRequestSummary> pending,
     this.replayResult,
     this.replayError,

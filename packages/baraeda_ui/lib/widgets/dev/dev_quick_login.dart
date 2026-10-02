@@ -12,7 +12,7 @@ import 'package:flutter/material.dart';
 
 /// 빠른 로그인 버튼 하나가 가리키는 시드 계정.
 class DevAccount {
-  const DevAccount(this.label, this.loginId);
+  const new(this.label, this.loginId);
 
   /// 버튼에 적히는 이름 — 역할이 한눈에 보이게 적는다.
   final String label;
@@ -24,7 +24,7 @@ class DevAccount {
 /// [onPick] 은 아이디·비밀번호를 받아 **곧바로 로그인까지** 수행한다 — 채워 넣기만 하면
 /// 결국 제출 버튼을 또 눌러야 해서 문제가 반쯤만 풀린다.
 class DevQuickLogin extends StatelessWidget {
-  const DevQuickLogin({
+  const new({
     required this.accounts,
     required this.onPick,
     super.key,

@@ -9,7 +9,7 @@ import 'package:manager_app/features/notifications/presentation/notification_pro
 ///
 /// 운행 중 화면(운전 화면 · 명단)에는 두지 않는다 — 운전 중 시선을 뺏는 요소를 만들지 않는다(R46).
 class NotificationBellButton extends ConsumerWidget {
-  const NotificationBellButton({super.key});
+  const new({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

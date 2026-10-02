@@ -23,7 +23,7 @@ import '../../support/manager_run_fixture.dart';
 /// R46 A — 기사 운행 화면. ① 명단 갱신이 실패해도 마지막 성공 명단과 [도착 처리] 가 남는다
 /// ② 긴 승하차지 이름에도 버튼 동사(`도착 처리`)가 잘리지 않는다.
 class _NeverResolvingTokenStorage extends TokenStorage {
-  _NeverResolvingTokenStorage()
+  new()
     : super(
         accessTokenKey: 'test_access_token',
         refreshTokenKey: 'test_refresh_token',

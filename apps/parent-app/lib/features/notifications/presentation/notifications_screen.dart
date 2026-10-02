@@ -16,7 +16,7 @@ import 'package:parent_app/features/notifications/presentation/notification_prov
 /// 공용 `NotificationListView` 가 맡는다. 이 화면은 받아 둔 목록·걸러 보기를 넣어 주고,
 /// 행을 누르면 읽음 처리한 뒤 종류에 맞는 화면으로 보낸다.
 class NotificationsScreen extends ConsumerWidget {
-  const NotificationsScreen({super.key});
+  const new({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -54,7 +54,7 @@ class NotificationsScreen extends ConsumerWidget {
 }
 
 class _ItemRow extends ConsumerWidget {
-  const _ItemRow({required this.item});
+  const new({required this.item});
 
   final NotificationItem item;
 

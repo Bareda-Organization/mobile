@@ -7,7 +7,7 @@ import 'package:parent_app/core/network/network_status.dart';
 /// 연결이 끊겼을 때 화면 맨 위에 붙는 한 줄 — 홈에서 자녀·회차·알림 카드가 저마다 "불러오지 못했습니다" 를
 /// 나열하던 것을 이 한 줄로 모은다(R46 B2 #22). 연결 중이면 아무것도 그리지 않는다.
 class OfflineBar extends ConsumerWidget {
-  const OfflineBar({super.key});
+  const new({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

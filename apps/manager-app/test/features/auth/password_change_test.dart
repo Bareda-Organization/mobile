@@ -18,7 +18,7 @@ import 'package:manager_app/features/home/presentation/home_screen.dart';
 /// 화면을 본보기로 만들었다. 성공하면 서버가 refresh 토큰을 전량 무효화하므로 이 기기도
 /// 로그아웃해 다시 로그인하게 한다.
 class _RecordingAuthRepository implements AuthRepository {
-  _RecordingAuthRepository({this.failure});
+  new({this.failure});
 
   final Failure? failure;
   final changes = <({String current, String next})>[];

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 
 /// 운행 화면 하단 고정 영역에 띄울 알림 한 건.
 class BottomNotice {
-  const BottomNotice({required this.tone, required this.body, this.action});
+  const new({required this.tone, required this.body, this.action});
 
   final AlertTone tone;
   final String body;
@@ -17,7 +17,7 @@ class BottomNotice {
 /// 알림이 쌓이면 고정 영역이 커져 위쪽 지도가 밀려나고 큰 글자에서는 [도착 처리] 가 화면 밖으로 나간다(R46).
 /// 그래서 묶음 전체의 높이를 화면 높이의 [maxHeightFraction] 로 막고, 넘치면 안에서 스크롤한다.
 class BottomNoticeStack extends StatefulWidget {
-  const BottomNoticeStack({required this.notices, this.leading, super.key});
+  const new({required this.notices, this.leading, super.key});
 
   /// 화면 높이에서 묶음이 차지할 수 있는 최대 비율. 작은 화면(360×640)에서 256px.
   static const maxHeightFraction = 0.4;

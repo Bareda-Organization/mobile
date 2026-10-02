@@ -4,7 +4,7 @@ import 'dart:convert';
 /// R46-LATERRT C-14) — 기본값이 운영 값이고 시험이 줄여 쓴다.
 class TokenRenewalTiming {
   /// 값을 그대로 받는다.
-  const TokenRenewalTiming({
+  const new({
     this.lead = const Duration(seconds: 60),
     this.minDelay = const Duration(seconds: 5),
     this.subscribeSettle = const Duration(milliseconds: 1500),

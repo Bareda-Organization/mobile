@@ -7,7 +7,7 @@ import 'package:parent_app/core/students/domain/student_repository.dart';
 /// [StudentRepository] 의 `data` 계층 구현 — `auth_repository_impl.dart`
 /// 와 같은 `_guard` 패턴(`DioException` → [Failure]).
 class StudentRepositoryImpl implements StudentRepository {
-  const StudentRepositoryImpl({required this._studentApi});
+  const new({required this._studentApi});
 
   final StudentApi _studentApi;
 

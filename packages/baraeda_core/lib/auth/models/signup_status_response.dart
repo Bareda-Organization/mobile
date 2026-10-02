@@ -3,7 +3,7 @@ import 'package:baraeda_core/auth/account_status.dart';
 /// `GET /auth/signup-status` 응답 (API_SPEC §2.3) — 대기 화면이 그리는 값.
 class SignupStatusResponse {
   /// [rejectReason] 만 선택값(§2.3 응답 표 — `rejected` 일 때만 채워짐).
-  const SignupStatusResponse({
+  const new({
     required this.status,
     required this.academyName,
     required this.academyRegion,
@@ -14,7 +14,7 @@ class SignupStatusResponse {
   });
 
   /// 응답 본문의 `academy` 중첩 객체를 펼쳐서 옮긴다.
-  factory SignupStatusResponse.fromJson(Map<String, dynamic> json) {
+  factory fromJson(Map<String, dynamic> json) {
     final academy = json['academy'] as Map<String, dynamic>;
     return SignupStatusResponse(
       status:

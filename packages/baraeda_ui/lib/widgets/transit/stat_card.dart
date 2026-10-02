@@ -12,7 +12,7 @@ enum StatCardTone { neutral, boarded, moving, missed }
 
 /// 관계자 웹 대시보드 지표 카드.
 class StatCard extends StatelessWidget {
-  const StatCard({
+  const new({
     super.key,
     this.label,
     this.value,

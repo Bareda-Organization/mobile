@@ -6,7 +6,7 @@ import 'package:manager_app/app/di.dart';
 import 'package:manager_app/features/position/presentation/position_link.dart';
 
 class _FixedClock implements Clock {
-  const _FixedClock(this._now);
+  const new(this._now);
   final DateTime _now;
   @override
   DateTime now() => _now;
@@ -14,7 +14,7 @@ class _FixedClock implements Clock {
 
 /// 주어진 상태로 고정된 링크 — 칩이 받은 상태를 어떻게 그리는지만 본다.
 class _FixedLink extends PositionLinkNotifier {
-  _FixedLink(this._link);
+  new(this._link);
   final PositionLink _link;
   @override
   PositionLink build() => _link;

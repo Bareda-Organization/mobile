@@ -7,7 +7,7 @@ enum StopChange {
   added('added'),
   skipped('skipped');
 
-  StopChange(this.wireValue);
+  new(this.wireValue);
 
   final String wireValue;
 
@@ -24,7 +24,7 @@ enum RiderChange {
   added('added'),
   removed('removed');
 
-  RiderChange(this.wireValue);
+  new(this.wireValue);
 
   final String wireValue;
 
@@ -40,13 +40,13 @@ enum RiderChange {
 /// 절대 시각으로 표시한다(core/run/run_enums.dart 주석 · Clock 미도입 판단
 /// 근거 참고, 보고서에 기록).
 class NoShowCase {
-  const NoShowCase({
+  const new({
     required this.caseId,
     required this.startedAt,
     required this.expiresAt,
   });
 
-  factory NoShowCase.fromJson(Map<String, dynamic> json) {
+  factory fromJson(Map<String, dynamic> json) {
     return NoShowCase(
       // M2(BR-054, Ruling 332) — 서버가 아직 숫자로 보낸다(`Long caseId`).
       // `rider_id`(rider_update_result.dart)와 같은 방식으로 흡수한다.
@@ -63,7 +63,7 @@ class NoShowCase {
 
 /// `stops[].students[]` 항목 — §4.2.
 class RosterStudent {
-  const RosterStudent({
+  const new({
     required this.riderId,
     required this.studentId,
     required this.name,
@@ -77,7 +77,7 @@ class RosterStudent {
     this.noShowCase,
   });
 
-  factory RosterStudent.fromJson(Map<String, dynamic> json) {
+  factory fromJson(Map<String, dynamic> json) {
     final noShowCaseJson = json['no_show_case'] as Map<String, dynamic>?;
     return RosterStudent(
       // `Ruling 275` — 서버가 rider_id 를 int 로 내려도 흡수한다(직접 캐스트 금지).
@@ -120,7 +120,7 @@ class RosterStudent {
 
 /// `stops[]` 항목 — §4.2.
 class RosterStop {
-  const RosterStop({
+  const new({
     required this.stopId,
     required this.seq,
     required this.name,
@@ -131,7 +131,7 @@ class RosterStop {
     this.arrivedAt,
   });
 
-  factory RosterStop.fromJson(Map<String, dynamic> json) {
+  factory fromJson(Map<String, dynamic> json) {
     final studentsJson = json['students'] as List<dynamic>? ?? [];
     final arrivedAtRaw = json['arrived_at'] as String?;
     return RosterStop(
@@ -162,14 +162,14 @@ class RosterStop {
 
 /// `counts` — §4.2. `absentN` 은 개인 행에서 제외된 결석자 집계(RST-02·04).
 class RosterCounts {
-  const RosterCounts({
+  const new({
     required this.boarded,
     required this.waiting,
     required this.noShow,
     required this.absentN,
   });
 
-  factory RosterCounts.fromJson(Map<String, dynamic> json) {
+  factory fromJson(Map<String, dynamic> json) {
     return RosterCounts(
       boarded: json['boarded'] as int,
       waiting: json['waiting'] as int,
@@ -186,7 +186,7 @@ class RosterCounts {
 
 /// `GET /runs/{runId}/roster` 응답 전체 — §4.2.
 class RosterResponse {
-  const RosterResponse({
+  const new({
     required this.runId,
     required this.busNo,
     required this.direction,
@@ -194,7 +194,7 @@ class RosterResponse {
     required this.stops,
   });
 
-  factory RosterResponse.fromJson(Map<String, dynamic> json) {
+  factory fromJson(Map<String, dynamic> json) {
     final stopsJson = json['stops'] as List<dynamic>? ?? [];
     return RosterResponse(
       runId: json['run_id'] as String,

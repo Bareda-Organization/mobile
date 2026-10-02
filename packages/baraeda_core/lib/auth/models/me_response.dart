@@ -6,7 +6,7 @@ import 'package:baraeda_core/auth/models/academy_ref.dart';
 class MeResponse {
   /// [academy]·[studentId]·[managerId]·[managerRole]·[linkedStudentCount] 는
   /// 전부 역할별 선택값(§2.10 응답 표 참고).
-  const MeResponse({
+  const new({
     required this.accountId,
     required this.loginId,
     required this.name,
@@ -22,7 +22,7 @@ class MeResponse {
   });
 
   /// 응답 본문을 그대로 옮긴다.
-  factory MeResponse.fromJson(Map<String, dynamic> json) {
+  factory fromJson(Map<String, dynamic> json) {
     final academyJson = json['academy'] as Map<String, dynamic>?;
     return MeResponse(
       accountId: json['account_id'] as String,

@@ -4,7 +4,7 @@ import 'package:parent_app/features/live_map/domain/bus_position.dart';
 /// API_SPEC §3.11 — `ApiClient.dio` 를 그대로 받는다(`route_api.dart` 와
 /// 같은 패턴).
 class BusPositionApi {
-  BusPositionApi({required this._dio});
+  new({required this._dio});
 
   final Dio _dio;
 

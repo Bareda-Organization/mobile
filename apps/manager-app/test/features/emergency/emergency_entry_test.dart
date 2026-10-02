@@ -31,7 +31,7 @@ import '../../support/manager_run_fixture.dart';
 const _emergencyMarker = 'EMERGENCY_SCREEN_MARKER';
 
 class _NeverResolvingTokenStorage extends TokenStorage {
-  _NeverResolvingTokenStorage()
+  new()
     : super(
         accessTokenKey: 'test_access_token',
         refreshTokenKey: 'test_refresh_token',

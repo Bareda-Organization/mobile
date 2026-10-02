@@ -16,7 +16,7 @@ import '../../support/fake_token_storage.dart';
 import '../../support/manager_run_fixture.dart';
 
 class _MeAuthRepository implements AuthRepository {
-  _MeAuthRepository(this.role);
+  new(this.role);
 
   final AccountRole role;
 
@@ -35,7 +35,7 @@ class _MeAuthRepository implements AuthRepository {
 }
 
 class _RunsRepository implements ManagerRunRepository {
-  _RunsRepository(this.runs);
+  new(this.runs);
 
   final List<ManagerRun> runs;
 

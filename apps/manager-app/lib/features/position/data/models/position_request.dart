@@ -6,7 +6,7 @@ import 'package:manager_app/core/time/wire_time.dart';
 /// 정확하다. 그래서 이 값은 호출부가 명시적으로 주고, 이 클래스가
 /// 스스로 "지금" 을 채우지 않는다.
 class PositionRequest {
-  const PositionRequest({
+  const new({
     required this.lat,
     required this.lng,
     required this.recordedAt,

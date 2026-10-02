@@ -17,7 +17,7 @@ import 'package:parent_app/core/map/naver/naver_map_init.dart';
 /// 자리다. 이 경계는 `test/architecture/map_port_boundary_test.dart` 가
 /// 자동으로 강제한다.
 class NaverMapAdapter extends StatefulWidget {
-  const NaverMapAdapter({
+  const new({
     required this.camera,
     super.key,
     this.markers = const [],

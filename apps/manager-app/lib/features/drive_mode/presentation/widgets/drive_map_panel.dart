@@ -8,7 +8,7 @@ import 'package:manager_app/features/route_map/presentation/route_providers.dart
 /// 현재 버스 위치를 한 화면에 보인다. 노선은 §4.3 [routeProvider] 를 그대로 쓰고
 /// (노선 지도 화면과 같은 값), 버스 위치는 기사 단말이 스스로 잰 좌표 [busPosition] 이다.
 class DriveMapPanel extends ConsumerWidget {
-  const DriveMapPanel({required this.height, this.busPosition, super.key});
+  const new({required this.height, this.busPosition, super.key});
 
   /// 지도 면 높이의 하한·상한 — 작은 화면이어도 지도가 이보다 낮아지지 않는다(R46-FUMGR).
   static const minHeight = 140.0;
@@ -50,7 +50,7 @@ class DriveMapPanel extends ConsumerWidget {
 
 /// 지도를 그릴 수 없을 때 지도 자리에 넣는 한 줄 안내.
 class _Notice extends StatelessWidget {
-  const _Notice({required this.message, this.action});
+  const new({required this.message, this.action});
 
   final String message;
   final Widget? action;

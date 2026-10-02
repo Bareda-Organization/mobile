@@ -24,7 +24,7 @@ import '../../support/manager_run_fixture.dart';
 /// 학생마다 응답을 붙잡아 둘 수 있는 가짜 명단 저장소 — 약한 신호에서 응답이 늦는 상황을 만든다.
 /// 큐에 쌓인 것으로 답한 처리는 [queue] 에도 적어, 큐 목록 provider 가 같은 내용을 돌려주게 한다.
 class _GatedRosterRepository implements RosterRepository {
-  _GatedRosterRepository(this.roster);
+  new(this.roster);
 
   final RosterResponse roster;
 

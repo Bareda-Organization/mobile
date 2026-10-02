@@ -23,7 +23,7 @@ class AuthApi {
   ///
   /// `deviceRegistrar` 가 있으면 로그인·`/me` 성공 뒤 푸시 단말을 등록하고 로그아웃에 `device_id` 를 싣는다
   /// (NTF-12 · Ruling 510) — 없으면 예전 그대로다.
-  AuthApi({
+  new({
     required this._dio,
     required this._tokenStorage,
     this._deviceRegistrar,

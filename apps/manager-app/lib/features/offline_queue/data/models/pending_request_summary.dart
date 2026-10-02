@@ -8,7 +8,7 @@ import 'package:manager_app/features/emergency/data/models/emergency_type.dart';
 /// presentation 이 drift 를 직접 import 하지 않게 한다(CONVENTIONS_FLUTTER.md
 /// §2 "presentation 이 data 구현 세부를 모른다").
 class PendingRequestSummary {
-  const PendingRequestSummary({
+  const new({
     required this.id,
     required this.endpoint,
     required this.method,
@@ -77,7 +77,7 @@ class PendingRequestSummary {
 /// `OfflineQueueRepository.replayPending` 결과 — 큐 화면이 "N건 처리, M건
 /// 대기 중" 같은 안내에 쓴다.
 class ReplayResult {
-  const ReplayResult({
+  const new({
     required this.succeeded,
     required this.stillPending,
     required this.droppedPermanently,

@@ -21,7 +21,7 @@ abstract interface class NotificationRepository {
 /// `DioException` 은 `Failure` 로 바꿔 던진다.
 class NotificationRepositoryImpl implements NotificationRepository {
   /// [_notificationApi] 를 감싼다.
-  const NotificationRepositoryImpl({required this._notificationApi});
+  const new({required this._notificationApi});
 
   final NotificationApi _notificationApi;
 

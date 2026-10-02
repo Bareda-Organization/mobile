@@ -5,7 +5,7 @@ import 'package:parent_app/core/students/domain/student.dart';
 /// `baraeda_core` 는 건드리지 않는다(이 앱만 쓰는 도메인이라 공유 패키지에
 /// 둘 이유가 없다).
 class StudentApi {
-  StudentApi({required this._dio});
+  new({required this._dio});
 
   final Dio _dio;
 

@@ -77,7 +77,7 @@ class _RecordingLauncher implements KakaoNaviLauncher {
 }
 
 class _NeverResolvingTokenStorage extends TokenStorage {
-  _NeverResolvingTokenStorage()
+  new()
     : super(accessTokenKey: 'a', refreshTokenKey: 'r');
 
   @override

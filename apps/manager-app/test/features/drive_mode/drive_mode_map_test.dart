@@ -28,7 +28,7 @@ import 'package:manager_app/features/route_map/presentation/route_providers.dart
 /// ⚠ 지도가 화면에 실제로 떴는지는 이 시험이 못 본다 — 병합 뒤 시뮬레이터로 확인한다.
 
 class _FixedClock implements Clock {
-  const _FixedClock(this._now);
+  const new(this._now);
 
   final DateTime _now;
 
@@ -37,7 +37,7 @@ class _FixedClock implements Clock {
 }
 
 class _FakePositionSource implements PositionSource {
-  _FakePositionSource(this._sample);
+  new(this._sample);
 
   final PositionSample? _sample;
 
@@ -72,7 +72,7 @@ class _NoopPositionRepository implements PositionRepository {
 
 /// `ManagerChannelBanner` 가 실제 WebSocket 을 열지 않게 연결 중에 고정한다.
 class _NeverResolvingTokenStorage extends TokenStorage {
-  _NeverResolvingTokenStorage()
+  new()
     : super(
         accessTokenKey: 'test_access_token',
         refreshTokenKey: 'test_refresh_token',

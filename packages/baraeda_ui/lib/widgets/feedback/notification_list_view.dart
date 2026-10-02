@@ -21,7 +21,7 @@ const double _loadMoreExtent = 300;
 /// 한 줄 그리기는 [itemBuilder] 가 맡아 앱마다 종류 표·이동 경로가 다를 수 있다.
 class NotificationListView<T> extends StatefulWidget {
   /// 목록 상태와 콜백을 받아 그린다.
-  const NotificationListView({
+  const new({
     required this.items,
     required this.sentAtOf,
     required this.itemBuilder,
@@ -231,7 +231,7 @@ class _NotificationListViewState<T> extends State<NotificationListView<T>> {
 }
 
 class _DayHeader extends StatelessWidget {
-  const _DayHeader({required this.label});
+  const new({required this.label});
 
   final String label;
 

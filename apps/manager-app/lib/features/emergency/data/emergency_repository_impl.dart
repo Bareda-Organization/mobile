@@ -10,7 +10,7 @@ import 'package:manager_app/features/offline_queue/domain/send_outcome.dart';
 class EmergencyRepositoryImpl implements EmergencyRepository {
   // 필드를 private 으로 유지하려고 initializing formal 대신 명시 대입을
   // 쓴다(DelayRepositoryImpl 과 같은 이유).
-  const EmergencyRepositoryImpl({
+  const new({
     required EmergencyApi api,
     required OfflineQueueRepository offlineQueue,
   })

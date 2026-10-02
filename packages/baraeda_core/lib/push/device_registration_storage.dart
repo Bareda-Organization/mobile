@@ -14,7 +14,7 @@ import 'package:uuid/uuid.dart';
 /// 그대로라 이미 설치된 앱의 값이 이어진다.
 class DeviceRegistrationStorage {
   /// [storage] 는 시험에서 가짜를 넣을 때만 준다.
-  DeviceRegistrationStorage({FlutterSecureStorage? storage})
+  new({FlutterSecureStorage? storage})
     : _storage = storage ?? const FlutterSecureStorage();
 
   static const _deviceIdKey = 'device_registration_device_id';

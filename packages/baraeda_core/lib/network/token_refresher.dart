@@ -25,7 +25,7 @@ import 'package:dio/dio.dart';
 class TokenRefresher {
   /// [refreshDio] 는 인터셉터가 붙지 않은 별도 dio 인스턴스여야 한다 —
   /// `ApiClient` 문서의 재귀 방지 근거를 그대로 따른다.
-  TokenRefresher({
+  new({
     required Dio refreshDio,
     required TokenStorage tokenStorage,
     required String clientType,

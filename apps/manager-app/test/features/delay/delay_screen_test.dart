@@ -15,7 +15,7 @@ import 'package:manager_app/features/delay/presentation/delay_screen.dart';
 
 /// 테스트 전용 대역 — 실제 네트워크 대신 호출 여부·인자만 기록한다.
 class _FakeDelayRepository implements DelayRepository {
-  _FakeDelayRepository({this.result, this.failure});
+  new({this.result, this.failure});
 
   final DelayResult? result;
   final Failure? failure;

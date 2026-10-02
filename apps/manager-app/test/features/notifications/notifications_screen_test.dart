@@ -17,7 +17,7 @@ import 'package:manager_app/features/notifications/presentation/widgets/notifica
 import '../../support/fake_notification_repository.dart';
 
 class _FixedClock implements Clock {
-  const _FixedClock(this._value);
+  const new(this._value);
 
   final DateTime _value;
 

@@ -9,7 +9,7 @@ import 'package:parent_app/core/students/presentation/student_switcher.dart';
 
 /// R46 B2 #13 — 다자녀: 고른 자녀를 앱을 다시 켠 뒤에도 기억하고, 전환은 한 번 누름으로 끝난다.
 class _MemoryStorage extends SelectedStudentStorage {
-  _MemoryStorage() : saved = null;
+  new() : saved = null;
 
   String? saved;
 

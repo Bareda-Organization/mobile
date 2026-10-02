@@ -38,7 +38,7 @@ class _RecordingWakelockPort implements WakelockPort {
 }
 
 class _FixedClock implements Clock {
-  const _FixedClock(this._now);
+  const new(this._now);
 
   final DateTime _now;
 
@@ -49,7 +49,7 @@ class _FixedClock implements Clock {
 /// 항상 `null` 을 돌려주는 가짜 위치 소스 — 이 시험은 전송 자체가 아니라
 /// wakelock 켜기·끄기 호출만 본다.
 class _NoopPositionSource implements PositionSource {
-  const _NoopPositionSource();
+  const new();
 
   @override
   Future<void> recheck() async {}

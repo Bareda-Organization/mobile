@@ -8,7 +8,7 @@ import 'package:flutter/foundation.dart';
 @immutable
 class NotificationFeed {
   /// 받아 둔 알림·쪽 상태를 그대로 담는다.
-  const NotificationFeed({
+  const new({
     required this.items,
     required this.page,
     required this.hasNext,
@@ -18,7 +18,7 @@ class NotificationFeed {
   });
 
   /// 첫 쪽만 받은 상태.
-  factory NotificationFeed.first(NotificationPage page) => NotificationFeed(
+  factory first(NotificationPage page) => NotificationFeed(
     items: page.items,
     page: page.page,
     hasNext: page.hasNext,

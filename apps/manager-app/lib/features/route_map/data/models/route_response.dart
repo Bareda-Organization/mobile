@@ -7,7 +7,7 @@ enum RouteStopChange {
   added('added'),
   skipped('skipped');
 
-  RouteStopChange(this.wireValue);
+  new(this.wireValue);
 
   final String wireValue;
 
@@ -28,7 +28,7 @@ enum RouteStopChange {
 /// 정본에 이 셋이 서로 다른 하위 집합을 보낸다는 근거는 없다(확신 없는
 /// 지점, 보고서 2항).
 class RouteStop {
-  const RouteStop({
+  const new({
     required this.stopId,
     required this.seq,
     required this.name,
@@ -40,7 +40,7 @@ class RouteStop {
     this.isWaypoint = false,
   });
 
-  factory RouteStop.fromJson(Map<String, dynamic> json) {
+  factory fromJson(Map<String, dynamic> json) {
     return RouteStop(
       // `Ruling 275` — 서버가 stop_id 를 int 로 내려도 흡수한다(직접 캐스트 금지).
       stopId: asIdString(json['stop_id']),
@@ -77,7 +77,7 @@ class RouteStop {
 /// 않는다(C-05, 정본 문구 그대로) — 이 모델도 좌표를 그대로 옮길 뿐 경로를
 /// 계산하지 않는다.
 class RouteResponse {
-  const RouteResponse({
+  const new({
     required this.stops,
     this.currentStop,
     this.nextStop,
@@ -86,7 +86,7 @@ class RouteResponse {
     this.fallbackUsed = false,
   });
 
-  factory RouteResponse.fromJson(Map<String, dynamic> json) {
+  factory fromJson(Map<String, dynamic> json) {
     final stopsJson = json['stops'] as List<dynamic>? ?? [];
     final currentStopJson = json['current_stop'] as Map<String, dynamic>?;
     final nextStopJson = json['next_stop'] as Map<String, dynamic>?;

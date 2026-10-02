@@ -15,7 +15,7 @@ import 'package:manager_app/core/run/manager_run_channel.dart';
 /// 그 클래스가 이미 `final`이 아니고 각 멤버가 평범한 오버라이드 가능한
 /// getter/메서드라, 상속만으로 시험용 대역을 만들 수 있다.
 class _FakeWebSocketClient extends BaraedaWebSocketClient {
-  _FakeWebSocketClient()
+  new()
     : super(
         url: 'ws://test',
         tokenStorage: TokenStorage(

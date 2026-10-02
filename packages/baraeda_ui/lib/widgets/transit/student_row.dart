@@ -20,7 +20,7 @@ const double _nameMinWidth = 140;
 enum RideStatus { boarded, alighted, absent, missed, waiting }
 
 class _RideMeta {
-  const _RideMeta(this.label, this.status);
+  const new(this.label, this.status);
 
   final String label;
   final BaraedaStatus status;
@@ -38,7 +38,7 @@ class _RideMeta {
 
 /// 탑승자 명단 한 줄.
 class StudentRow extends StatelessWidget {
-  const StudentRow({
+  const new({
     super.key,
     this.name,
     this.photoUrl,
@@ -197,7 +197,7 @@ class StudentRow extends StatelessWidget {
 /// 있으면 이미지를 그리되, **로딩 중이거나 로드에 실패해도 이니셜
 /// 자리를 그대로 유지**한다(깨진 이미지 아이콘·에러 화면을 보여주지 않음).
 class _StudentAvatar extends StatelessWidget {
-  const _StudentAvatar({
+  const new({
     required this.photoUrl,
     required this.photoHeaders,
     required this.initials,
@@ -247,7 +247,7 @@ class _StudentAvatar extends StatelessWidget {
 }
 
 class _CallButton extends StatelessWidget {
-  const _CallButton({required this.onCall});
+  const new({required this.onCall});
 
   final VoidCallback onCall;
 

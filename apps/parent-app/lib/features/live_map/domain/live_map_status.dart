@@ -47,7 +47,7 @@ enum LiveMapConnection {
 /// `run_ended`)를 각자의 최신값으로만 쌓는다. 지도 위젯은 F4-B 몫이라
 /// 좌표를 그리지 않고, 여기서는 값을 들고 있기만 한다.
 class LiveMapState {
-  const LiveMapState({
+  const new({
     this.connection = LiveMapConnection.idle,
     this.position,
     this.lastStopArrived,

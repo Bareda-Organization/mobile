@@ -66,7 +66,7 @@ class _FakeSecureStoragePlatform
 /// 응답을 경로별로 미리 정해 둔 순서대로 돌려주는 가짜 dio 어댑터.
 /// 진짜 네트워크 없이 `ApiClient` 의 인터셉터 동작만 검증한다.
 class _ScriptedAdapter implements HttpClientAdapter {
-  _ScriptedAdapter(this.responsesByPath);
+  new(this.responsesByPath);
 
   final Map<String, List<ResponseBody Function()>> responsesByPath;
   final List<String> calledPaths = [];

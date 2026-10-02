@@ -5,7 +5,7 @@ enum ReportType {
   vehicleIssue('vehicle_issue'),
   etc('etc');
 
-  ReportType(this.wireValue);
+  new(this.wireValue);
 
   final String wireValue;
 }
@@ -14,7 +14,7 @@ enum ReportType {
 /// `type=guardianAbsent` 일 때 서버가 필수로 요구한다(`422
 /// VALIDATION_FAILED`) — 클라이언트는 화면에서 그 경우에만 입력을 받는다.
 class ReportRequest {
-  const ReportRequest({required this.type, required this.memo, this.riderId});
+  const new({required this.type, required this.memo, this.riderId});
 
   Map<String, dynamic> toJson() => {
     'type': type.wireValue,

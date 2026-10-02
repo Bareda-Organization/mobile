@@ -10,7 +10,7 @@ class DelayRepositoryImpl implements DelayRepository {
   // 필드를 private 으로 유지하려고 initializing formal 대신 명시 대입을
   // 쓴다(AuthRepositoryImpl 과 같은 이유).
   // ignore: prefer_initializing_formals
-  const DelayRepositoryImpl({required DelayApi api}) : _api = api;
+  const new({required DelayApi api}) : _api = api;
 
   final DelayApi _api;
 

@@ -6,7 +6,7 @@ import 'package:parent_app/core/runs/domain/run_repository.dart';
 import 'package:parent_app/core/runs/domain/student_run.dart';
 
 class RunRepositoryImpl implements RunRepository {
-  const RunRepositoryImpl({required this._runApi});
+  const new({required this._runApi});
 
   final RunApi _runApi;
 

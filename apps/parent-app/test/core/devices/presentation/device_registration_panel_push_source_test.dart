@@ -59,7 +59,7 @@ class _MemoryStorage extends DeviceRegistrationStorage {
 }
 
 class _FixedTokenSource implements PushTokenSource {
-  _FixedTokenSource(this.token);
+  new(this.token);
 
   final String? token;
 

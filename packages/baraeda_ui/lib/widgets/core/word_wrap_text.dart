@@ -16,7 +16,7 @@ const _wordJoiner = '\u2060';
 /// 낭독과 `find.text` 는 원문을 쓴다(`semanticsLabel`). **한 줄 요소(버튼·라벨·칩)에는 쓰지 않는다** —
 /// 가장 긴 낱말이 최소 폭이 되어 좁은 칸에서 오히려 넘칠 수 있다.
 class WordWrapText extends StatelessWidget {
-  const WordWrapText(
+  const new(
     this.data, {
     super.key,
     this.style,

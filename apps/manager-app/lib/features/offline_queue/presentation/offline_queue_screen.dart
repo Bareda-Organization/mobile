@@ -21,7 +21,7 @@ import 'package:manager_app/features/roster/presentation/roster_providers.dart';
 /// (주기)와 `OfflineQueueRepository.sendOrQueue`(다음 쓰기 직전)가 맡으므로,
 /// 이 화면을 한 번도 열지 않아도 복구 후 큐는 비워진다(M-06).
 class OfflineQueueScreen extends ConsumerStatefulWidget {
-  const OfflineQueueScreen({super.key});
+  const new({super.key});
 
   @override
   ConsumerState<OfflineQueueScreen> createState() => _OfflineQueueScreenState();

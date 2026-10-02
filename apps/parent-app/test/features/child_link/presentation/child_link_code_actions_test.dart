@@ -14,7 +14,7 @@ import 'package:parent_app/features/child_link/presentation/child_link_screen.da
 /// R46 B2 #21 — 학생이 만든 6자리 코드를 손으로 옮겨 적지 않고 복사해 보내고, 만료까지 남은 시간을 본다.
 /// 사양 판단(학생 계정이 없는 어린 자녀는 연결이 막힌다 — Ruling 324)은 바꾸지 않는다.
 class _Link implements LinkRepository {
-  _Link(this.expiresAt);
+  new(this.expiresAt);
 
   final DateTime expiresAt;
 
@@ -28,7 +28,7 @@ class _Link implements LinkRepository {
 }
 
 class _MutableClock implements Clock {
-  _MutableClock(this.value);
+  new(this.value);
 
   DateTime value;
 

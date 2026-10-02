@@ -19,7 +19,7 @@ import 'package:flutter_naver_map/flutter_naver_map.dart';
 /// 튜닝) 몫이라 범위 밖이다 — 이번 라운드는 "한 번 실패하면 그 세션에서는
 /// 계속 실패로 본다"는 가장 단순한 규칙만 둔다.
 class NaverMapInit {
-  NaverMapInit._();
+  new _();
 
   static Future<void>? _future;
 

@@ -31,7 +31,7 @@ enum ChangeRequestStatus {
 
 /// §3.9 목록 항목.
 class ChangeRequest {
-  const ChangeRequest({
+  const new({
     required this.changeRequestId,
     required this.type,
     required this.status,
@@ -41,7 +41,7 @@ class ChangeRequest {
     this.decidedAt,
   });
 
-  factory ChangeRequest.fromJson(Map<String, dynamic> json) => ChangeRequest(
+  factory fromJson(Map<String, dynamic> json) => ChangeRequest(
     changeRequestId: asIdString(json['change_request_id']),
     type: ChangeRequestType.fromWireValue(json['type'] as String),
     status: ChangeRequestStatus.fromWireValue(json['status'] as String),
@@ -68,9 +68,9 @@ class ChangeRequest {
 
 /// §3.9 응답 봉투 — 홈 배지용 `pending_count` 를 함께 담는다.
 class ChangeRequestPage {
-  const ChangeRequestPage({required this.items, required this.pendingCount});
+  const new({required this.items, required this.pendingCount});
 
-  factory ChangeRequestPage.fromJson(Map<String, dynamic> json) {
+  factory fromJson(Map<String, dynamic> json) {
     final items = json['items'] as List<dynamic>? ?? [];
     return ChangeRequestPage(
       items: items
@@ -87,14 +87,14 @@ class ChangeRequestPage {
 
 /// §3.8 생성 응답(`201`).
 class ChangeRequestCreateResult {
-  const ChangeRequestCreateResult({
+  const new({
     required this.changeRequestId,
     required this.status,
     required this.result,
     this.deadlineAt,
   });
 
-  factory ChangeRequestCreateResult.fromJson(Map<String, dynamic> json) =>
+  factory fromJson(Map<String, dynamic> json) =>
       ChangeRequestCreateResult(
         changeRequestId: asIdString(json['change_request_id']),
         status: ChangeRequestStatus.fromWireValue(json['status'] as String),

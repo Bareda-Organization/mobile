@@ -21,7 +21,7 @@ import 'package:parent_app/features/settings/presentation/settings_screen.dart';
 /// 즉시 로그아웃" 이던 지금 동작에 확인 대화를 끼워 넣는 변경만 잡는다
 /// (보고서 §2 — BRIEF 의 "진입점 부재" 전제와 실측이 어긋난 지점).
 class _StubAuthRepository implements AuthRepository {
-  _StubAuthRepository({this.logoutFailure});
+  new({this.logoutFailure});
 
   final Failure? logoutFailure;
   int logoutCallCount = 0;
