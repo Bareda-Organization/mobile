@@ -3,7 +3,7 @@ enum NoShowAttemptType {
   call('call'),
   message('message');
 
-  NoShowAttemptType(this.wireValue);
+  new(this.wireValue);
 
   final String wireValue;
 }
@@ -13,7 +13,7 @@ enum NoShowContactResult {
   answered('answered'),
   noAnswer('no_answer');
 
-  NoShowContactResult(this.wireValue);
+  new(this.wireValue);
 
   final String wireValue;
 }
@@ -23,7 +23,7 @@ enum NoShowDecision {
   depart('depart'),
   retry('retry');
 
-  NoShowDecision(this.wireValue);
+  new(this.wireValue);
 
   final String wireValue;
 }
@@ -32,7 +32,7 @@ enum NoShowDecision {
 /// 응답 필드가 사양에 명시되지 않아(§4.8, 에러 코드만 정의) 요청 성공 여부만
 /// 반환한다(repository 는 `Future<void>`).
 class NoShowContactRequest {
-  const NoShowContactRequest({
+  const new({
     required this.attemptType,
     required this.result,
     this.decision,

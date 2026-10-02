@@ -20,7 +20,7 @@ import 'package:parent_app/app/di.dart';
 /// 그동안의 복구는 관계자가 초기화하는 관리자 경유(§5.22)라 화면이
 /// 처음부터 그 길을 안내한다.
 class AccountRecoveryScreen extends ConsumerStatefulWidget {
-  const AccountRecoveryScreen({super.key});
+  const new({super.key});
 
   @override
   ConsumerState<AccountRecoveryScreen> createState() =>

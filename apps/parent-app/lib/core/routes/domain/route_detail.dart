@@ -27,7 +27,7 @@ enum RouteStopChange {
 /// DB 상 nullable 이다(`V1__init_schema.sql`). API_SPEC §1.13 도 경유
 /// 지점류 항목의 이 필드들이 `null` 일 수 있다고 이미 규정한다.
 class RouteStop {
-  const RouteStop({
+  const new({
     required this.stopId,
     required this.seq,
     required this.name,
@@ -37,7 +37,7 @@ class RouteStop {
     this.change,
   });
 
-  factory RouteStop.fromJson(Map<String, dynamic> json) => RouteStop(
+  factory fromJson(Map<String, dynamic> json) => RouteStop(
     stopId: asIdString(json['stop_id']),
     seq: json['seq'] as int,
     name: json['name'] as String,
@@ -60,9 +60,9 @@ class RouteStop {
 /// 스코프 제외, API_SPEC §3.10 `escort.phone` 설명 참고). 배치 전 회차는
 /// `null`(§3.10 `◐`).
 class RouteDriver {
-  const RouteDriver({required this.name});
+  const new({required this.name});
 
-  factory RouteDriver.fromJson(Map<String, dynamic> json) =>
+  factory fromJson(Map<String, dynamic> json) =>
       RouteDriver(name: json['name'] as String?);
 
   final String? name;
@@ -71,9 +71,9 @@ class RouteDriver {
 /// 동승자 — 연락 버튼은 이 사람만 갖는다. 배치 전 회차는 이름·연락처가
 /// `null`(§3.10 `◐`).
 class RouteEscort {
-  const RouteEscort({required this.name, required this.phone});
+  const new({required this.name, required this.phone});
 
-  factory RouteEscort.fromJson(Map<String, dynamic> json) => RouteEscort(
+  factory fromJson(Map<String, dynamic> json) => RouteEscort(
     name: json['name'] as String?,
     phone: json['phone'] as String?,
   );
@@ -88,7 +88,7 @@ class RouteEscort {
 /// 추가하지 않는다. 서버가 안 주는 값을 클라이언트가 계산해 채우면 규칙을
 /// 우회하는 셈이다(`core/runs/domain/student_run.dart` 와 같은 원칙).
 class RouteDetail {
-  const RouteDetail({
+  const new({
     required this.runId,
     required this.busNo,
     required this.departTime,
@@ -99,7 +99,7 @@ class RouteDetail {
     required this.stops,
   });
 
-  factory RouteDetail.fromJson(Map<String, dynamic> json) => RouteDetail(
+  factory fromJson(Map<String, dynamic> json) => RouteDetail(
     runId: asIdString(json['run_id']),
     busNo: json['bus_no'] as String,
     departTime: DateTime.parse(json['depart_time'] as String),

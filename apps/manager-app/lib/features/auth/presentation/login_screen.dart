@@ -26,7 +26,7 @@ import 'package:manager_app/core/auth/auth_providers.dart';
 /// `parent_app` 의 같은 화면과 로직이 같다(§1.1) — 앱 제목만 다르다.
 class LoginScreen extends ConsumerStatefulWidget {
   /// 앱 시작 · 로그아웃 후 진입 라우트(`/login`).
-  const LoginScreen({super.key});
+  const new({super.key});
 
   @override
   ConsumerState<LoginScreen> createState() => _LoginScreenState();

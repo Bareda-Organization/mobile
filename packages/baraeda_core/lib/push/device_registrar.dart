@@ -9,7 +9,7 @@ import 'package:flutter/foundation.dart';
 class DeviceRegistrar {
   /// [platform] 은 서버 CHECK 값(`android` · `ios` · `web`)이다 — 기본은 실행
   /// 중인 플랫폼에서 정한다.
-  DeviceRegistrar({
+  new({
     required this._tokenSource,
     required this._storage,
     String? platform,

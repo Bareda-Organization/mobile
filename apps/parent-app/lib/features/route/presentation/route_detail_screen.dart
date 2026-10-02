@@ -19,7 +19,7 @@ import 'package:url_launcher/url_launcher.dart';
 /// (`roleCapabilitiesProvider.canToggleAttendance`, §1.1) — 학부모는
 /// 연결된 자녀 중 선택한 한 명, 학생은 본인 `student_id` 하나.
 class RouteDetailScreen extends ConsumerWidget {
-  const RouteDetailScreen({super.key});
+  const new({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -41,7 +41,7 @@ class RouteDetailScreen extends ConsumerWidget {
 /// `selectedStudentIdProvider` 를 공유해, 홈·자리표시에서 고른 자녀가
 /// 이 화면에도 그대로 이어진다.
 class _ParentRouteDetail extends ConsumerWidget {
-  const _ParentRouteDetail();
+  const new();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -82,7 +82,7 @@ class _ParentRouteDetail extends ConsumerWidget {
 
 /// 학생 갈래 — 본인 `student_id` 하나만 쓴다(조회 전용).
 class _StudentRouteDetail extends ConsumerWidget {
-  const _StudentRouteDetail();
+  const new();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -112,7 +112,7 @@ class _StudentRouteDetail extends ConsumerWidget {
 /// `error` 분기가 받아 고정 문구로 안내한다(다른 화면과 같은 관례,
 /// `schedule_screen.dart` 등).
 class _RouteDetailBody extends ConsumerWidget {
-  const _RouteDetailBody({required this.studentId});
+  const new({required this.studentId});
 
   final String studentId;
 
@@ -142,7 +142,7 @@ class _RouteDetailBody extends ConsumerWidget {
 }
 
 class _RouteDetailView extends StatelessWidget {
-  const _RouteDetailView({required this.route, required this.onRefresh});
+  const new({required this.route, required this.onRefresh});
 
   final RouteDetail route;
   final Future<void> Function() onRefresh;
@@ -208,7 +208,7 @@ class _RouteDetailView extends StatelessWidget {
 /// 기사·동승자 — 연락 버튼은 동승자만 갖는다. 기사는 연락처 필드 자체가
 /// 서버 응답에 없다(`RouteDriver` 에 `phone` 이 부재 — API_SPEC §3.10).
 class _DriverEscortSection extends StatelessWidget {
-  const _DriverEscortSection({required this.driver, required this.escort});
+  const new({required this.driver, required this.escort});
 
   final RouteDriver driver;
   final RouteEscort escort;
@@ -249,7 +249,7 @@ class _DriverEscortSection extends StatelessWidget {
 }
 
 class _RouteStopTile extends StatelessWidget {
-  const _RouteStopTile({required this.stop, required this.isMyStop});
+  const new({required this.stop, required this.isMyStop});
 
   final RouteStop stop;
   final bool isMyStop;

@@ -38,7 +38,7 @@ class _RejectRefreshAdapter implements HttpClientAdapter {
 }
 
 class _FakeWsClient extends BaraedaWebSocketClient {
-  _FakeWsClient()
+  new()
     : super(
         url: 'ws://test.invalid/ws/location',
         tokenStorage: TokenStorage(

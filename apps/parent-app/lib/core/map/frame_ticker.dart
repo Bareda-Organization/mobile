@@ -10,7 +10,7 @@ import 'dart:async';
 /// 단위 검사가 가능하므로, "타이머 시작·정지" 책임만 이 작은 클래스로
 /// 분리해 그 부분만이라도 검사 가능하게 만든다.
 class FrameTicker {
-  FrameTicker({this.interval = const Duration(milliseconds: 16)});
+  new({this.interval = const Duration(milliseconds: 16)});
 
   final Duration interval;
   Timer? _timer;

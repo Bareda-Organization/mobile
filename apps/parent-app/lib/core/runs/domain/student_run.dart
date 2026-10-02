@@ -40,9 +40,9 @@ enum RiderStatus {
 
 /// 본인 승하차지 — `stop_id` · `name` · `address`.
 class RunStop {
-  const RunStop({required this.stopId, required this.name, this.address});
+  const new({required this.stopId, required this.name, this.address});
 
-  factory RunStop.fromJson(Map<String, dynamic> json) => RunStop(
+  factory fromJson(Map<String, dynamic> json) => RunStop(
     stopId: asIdString(json['stop_id']),
     name: json['name'] as String,
     address: json['address'] as String?,
@@ -54,7 +54,7 @@ class RunStop {
 }
 
 class StudentRun {
-  const StudentRun({
+  const new({
     required this.runId,
     required this.direction,
     required this.busNo,
@@ -67,7 +67,7 @@ class StudentRun {
     required this.changeQuotaLeft,
   });
 
-  factory StudentRun.fromJson(Map<String, dynamic> json) => StudentRun(
+  factory fromJson(Map<String, dynamic> json) => StudentRun(
     runId: asIdString(json['run_id']),
     direction: RunDirection.fromWireValue(json['direction'] as String),
     busNo: json['bus_no'] as String,

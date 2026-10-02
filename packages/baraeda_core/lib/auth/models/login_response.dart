@@ -10,7 +10,7 @@ import 'package:baraeda_core/auth/models/academy_ref.dart';
 class LoginResponse {
   /// [refreshToken]·[academy] 만 선택값 — 각각 웹 클라이언트 · `system_admin`
   /// 로그인일 때 `null`.
-  const LoginResponse({
+  const new({
     required this.accessToken,
     required this.role,
     required this.status,
@@ -21,7 +21,7 @@ class LoginResponse {
   });
 
   /// 응답 본문을 그대로 옮긴다.
-  factory LoginResponse.fromJson(Map<String, dynamic> json) {
+  factory fromJson(Map<String, dynamic> json) {
     final academyJson = json['academy'] as Map<String, dynamic>?;
     return LoginResponse(
       accessToken: json['access_token'] as String,

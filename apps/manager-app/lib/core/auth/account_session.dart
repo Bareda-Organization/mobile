@@ -173,7 +173,7 @@ void applyRoleAndStatus(
 /// 없으면 화면이 다음 사용자 조작 전까지 대기 화면으로 못 옮겨간다.
 class RouterRefreshNotifier extends ChangeNotifier {
   /// `ref` 로 provider 변화를 구독하고 게이트 스트림을 함께 문다.
-  RouterRefreshNotifier(this._ref) {
+  new(this._ref) {
     _roleSub = _ref.listen<UserRole?>(currentUserRoleProvider, (
       previous,
       next,

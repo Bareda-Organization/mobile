@@ -25,7 +25,7 @@ String runOptionLabel(StudentRun run) =>
 /// §3.8·§3.9 — 일일 변경 신청. 날짜(오늘·내일, 한국 시간)를 고르면 `core/runs` 의
 /// §3.5 조회가 그날 회차를 주고, 그중 하나를 대상으로 신청한다.
 class ChangeRequestPanel extends ConsumerStatefulWidget {
-  const ChangeRequestPanel({required this.studentId, super.key});
+  const new({required this.studentId, super.key});
 
   final String studentId;
 

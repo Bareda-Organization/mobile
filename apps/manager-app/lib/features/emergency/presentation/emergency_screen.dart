@@ -37,7 +37,7 @@ import 'package:manager_app/features/offline_queue/presentation/offline_queue_pr
 /// 들어오면(재진입 시 재조회) 이미 최신 `acked` 상태를 본다 — 별도 WebSocket 클라이언트를
 /// 이 화면에 두지 않는다(보고서 §1).
 class EmergencyScreen extends ConsumerStatefulWidget {
-  const EmergencyScreen({super.key});
+  const new({super.key});
 
   @override
   ConsumerState<EmergencyScreen> createState() => _EmergencyScreenState();

@@ -11,7 +11,7 @@ import 'package:parent_app/features/home/presentation/widgets/pending_change_bad
 /// 반영하는지 확인한다 — 0이면 아무것도 안 보이고, 0보다 크면 그 숫자를
 /// 보여준다.
 class _FixedChangeRequestRepository implements ChangeRequestRepository {
-  _FixedChangeRequestRepository(this.pendingCount);
+  new(this.pendingCount);
 
   final int pendingCount;
 

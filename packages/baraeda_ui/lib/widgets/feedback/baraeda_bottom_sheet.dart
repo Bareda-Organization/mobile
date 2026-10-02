@@ -19,7 +19,7 @@ import 'package:flutter/material.dart';
 /// 안드로이드 뒤로가기는 [onClose] 로 가고, 뒤 화면은 낭독기에서 가려진다.
 /// 라우트로 띄우려면 [showBaraedaBottomSheet] 를 쓴다.
 class BaraedaBottomSheet extends StatelessWidget {
-  const BaraedaBottomSheet({super.key, this.title, this.child, this.onClose});
+  const new({super.key, this.title, this.child, this.onClose});
 
   final String? title;
   final Widget? child;

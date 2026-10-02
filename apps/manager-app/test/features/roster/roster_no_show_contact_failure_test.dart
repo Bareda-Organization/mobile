@@ -26,7 +26,7 @@ import '../../support/manager_run_fixture.dart';
 /// Z-05(BR-254) — 미승차를 되돌려 `waiting` 으로 돌아간 탑승자에게 연락 기록을 보내면 서버가
 /// `404 NO_SHOW_CASE_NOT_FOUND` 를 준다. 화면이 죽지 않고 이유를 알리며, 낡은 명단을 다시 불러온다.
 class _ContactFailingRepository implements RosterRepository {
-  _ContactFailingRepository(this.roster);
+  new(this.roster);
 
   final RosterResponse roster;
   int fetchCount = 0;
@@ -72,7 +72,7 @@ class _ContactFailingRepository implements RosterRepository {
 }
 
 class _NeverResolvingTokenStorage extends TokenStorage {
-  _NeverResolvingTokenStorage()
+  new()
     : super(
         accessTokenKey: 'test_access_token',
         refreshTokenKey: 'test_refresh_token',

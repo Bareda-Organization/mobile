@@ -4,7 +4,7 @@ enum RunDirection {
   toAcademy('to_academy'),
   fromAcademy('from_academy');
 
-  RunDirection(this.wireValue);
+  new(this.wireValue);
 
   final String wireValue;
 

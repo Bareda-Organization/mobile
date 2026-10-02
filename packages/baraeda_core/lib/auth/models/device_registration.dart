@@ -1,7 +1,7 @@
 /// `POST /me/devices` 요청 (API_SPEC §2.11).
 class DeviceRegistrationRequest {
   /// [appVersion] 만 선택값.
-  const DeviceRegistrationRequest({
+  const new({
     required this.token,
     required this.platform,
     required this.deviceId,
@@ -32,13 +32,13 @@ class DeviceRegistrationRequest {
 /// `POST /me/devices` 의 `201` 응답.
 class DeviceRegistrationResponse {
   /// 필드 2개 전부 서버가 채워 보낸다.
-  const DeviceRegistrationResponse({
+  const new({
     required this.deviceId,
     required this.registeredAt,
   });
 
   /// 응답 본문을 그대로 옮긴다.
-  factory DeviceRegistrationResponse.fromJson(Map<String, dynamic> json) =>
+  factory fromJson(Map<String, dynamic> json) =>
       DeviceRegistrationResponse(
         deviceId: json['device_id'] as String,
         registeredAt: DateTime.parse(json['registered_at'] as String),

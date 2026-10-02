@@ -14,7 +14,7 @@ import 'package:parent_app/app/di.dart';
 
 /// 시크릿 스토리지 플랫폼 채널을 타지 않는 메모리 토큰 저장소.
 class _MemoryTokenStorage extends TokenStorage {
-  _MemoryTokenStorage()
+  new()
     : super(accessTokenKey: 'access', refreshTokenKey: 'refresh');
 
   String? _access;

@@ -73,7 +73,7 @@ TokenStorage _buildTokenStorage() {
 /// 재연결 동작이지 서버 프로토콜 정합성이 아니다 — CONNECTED 최소 프레임만
 /// 흉내 내면 충분하다).
 class _FlakyStompServer {
-  _FlakyStompServer(this._acceptFromAttempt);
+  new(this._acceptFromAttempt);
 
   /// 몇 번째(1부터) 연결 시도부터 업그레이드를 받아 줄지. `null` 이면
   /// 영원히 안 받아 준다("서버가 계속 꺼져 있다").

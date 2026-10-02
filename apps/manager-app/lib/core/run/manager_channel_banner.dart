@@ -18,7 +18,7 @@ import 'package:manager_app/core/run/manager_run_channel.dart';
 /// (정상, `data` 분기)와 "연결이 끊겨 아무것도 못 받는다"(비정상, 이
 /// 배너가 다루는 것)가 화면에서 구별되지 않는다(목표 9).
 class ManagerChannelBanner extends ConsumerWidget {
-  const ManagerChannelBanner({required this.runId, super.key});
+  const new({required this.runId, super.key});
 
   final String runId;
 
@@ -78,7 +78,7 @@ ManagerChannelBannerContent? managerChannelBannerContentFor(
 /// 필요한 값만 담는다(위젯을 직접 만들지 않는 이유는 위 함수 문서 참고).
 @immutable
 class ManagerChannelBannerContent {
-  const ManagerChannelBannerContent({
+  const new({
     required this.tone,
     required this.title,
     required this.body,

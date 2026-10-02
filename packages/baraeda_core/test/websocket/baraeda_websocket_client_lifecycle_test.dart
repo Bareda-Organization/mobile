@@ -69,7 +69,7 @@ TokenStorage _buildTokenStorage() {
 /// 매 CONNECT 를 정상 CONNECTED 로 받고, SUBSCRIBE 가 오면 시험이 MESSAGE 를 밀어 넣을 수 있는
 /// 가짜 서버. `expireFirstConnection` 이면 첫 연결만 잠시 뒤 `ERROR TOKEN_EXPIRED` 로 닫는다.
 class _StompServer {
-  _StompServer({this.expireFirstConnection = false});
+  new({this.expireFirstConnection = false});
 
   final bool expireFirstConnection;
   int connectCount = 0;
@@ -124,7 +124,7 @@ class _StompServer {
 
 /// 재연결 대기를 지터 메서드로 계산하는지 세는 감시용 정책.
 class _SpyPolicy extends WsBackoffPolicy {
-  _SpyPolicy()
+  new()
     : super(
         initialDelay: const Duration(milliseconds: 10),
         maxDelay: const Duration(milliseconds: 20),

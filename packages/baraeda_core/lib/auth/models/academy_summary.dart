@@ -6,7 +6,7 @@
 /// 보고서에 남긴다).
 class AcademySummary {
   /// 필드 4개 전부 서버가 항상 채워 보낸다(§2.1 응답 표에 선택값 없음).
-  const AcademySummary({
+  const new({
     required this.id,
     required this.name,
     required this.region,
@@ -14,7 +14,7 @@ class AcademySummary {
   });
 
   /// `items[]` 배열의 원소 하나를 그대로 옮긴다.
-  factory AcademySummary.fromJson(Map<String, dynamic> json) => AcademySummary(
+  factory fromJson(Map<String, dynamic> json) => AcademySummary(
     id: json['id'] as String,
     name: json['name'] as String,
     region: json['region'] as String,

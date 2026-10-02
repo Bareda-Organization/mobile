@@ -37,7 +37,7 @@ import 'package:riverpod/misc.dart' show Override;
 /// "연결 상태·이벤트가 실제 notifier 로직을 거쳐 화면에 반영되는가"라
 /// notifier 자체를 가짜로 두면 그 로직이 시험 대상에서 빠진다.
 class _FakeWsClient extends BaraedaWebSocketClient {
-  _FakeWsClient()
+  new()
     : super(
         url: 'ws://test.invalid/ws/location',
         tokenStorage: TokenStorage(
@@ -132,7 +132,7 @@ class _FakeBusPositionRepository implements BusPositionRepository {
 /// 호출할 때마다 정해 둔 결과를 차례로 돌려주는 가짜 — 마지막 값은 이후에도 계속 쓴다.
 /// 첫 진입 스냅샷과 재연결 뒤 스냅샷이 다른 값을 주는 시험에 쓴다.
 class _ScriptedBusPositionRepository implements BusPositionRepository {
-  _ScriptedBusPositionRepository(this._results);
+  new(this._results);
 
   final List<BusPosition> _results;
   int calls = 0;
@@ -148,7 +148,7 @@ class _ScriptedBusPositionRepository implements BusPositionRepository {
 /// 기본 노선 가짜 — 지도 시험 대부분은 내 승하차지 핀과 무관하므로 항상 실패하게 둔다.
 /// 실 `ApiClient`(Dio)를 거치면 "A Timer is still pending" 으로 시험이 깨진다.
 class _FakeRouteRepository implements RouteRepository {
-  _FakeRouteRepository([this.detail]);
+  new([this.detail]);
 
   final RouteDetail? detail;
 
@@ -205,7 +205,7 @@ WebSocketEnvelope _envelope(WsEventType event, Map<String, dynamic> payload) {
 /// 의 `_FixedClock` 과 달리 한 시험 안에서 시각을 옮겨(`clock.value = ...`) 2분
 /// 경과 전후를 비교해야 해서 값을 바꿀 수 있게 둔다.
 class _MutableClock implements Clock {
-  _MutableClock(this.value);
+  new(this.value);
 
   DateTime value;
 

@@ -17,7 +17,7 @@ class AuthRepositoryImpl implements AuthRepository {
   /// 필드를 private 으로 유지하려고 initializing formal 대신 명시 대입을
   /// 쓴다(필드명과 같은 이름의 public named 파라미터를 두면 캡슐화가 깨진다).
   // ignore: prefer_initializing_formals
-  const AuthRepositoryImpl({required AuthApi authApi}) : _authApi = authApi;
+  const new({required AuthApi authApi}) : _authApi = authApi;
 
   final AuthApi _authApi;
 

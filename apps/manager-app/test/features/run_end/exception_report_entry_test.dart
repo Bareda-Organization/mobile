@@ -25,7 +25,7 @@ import '../../support/manager_run_fixture.dart';
 /// 닿았다. 동승자는 명단 화면에서 보고할 수 있어야 하고, 도착 결과가 없는 그 경로에서는
 /// 대상 학생 목록을 명단에서 만든다(보호자 부재 = 혼자 귀가할 수 없는 탑승 중 학생).
 class _NeverResolvingTokenStorage extends TokenStorage {
-  _NeverResolvingTokenStorage()
+  new()
     : super(
         accessTokenKey: 'test_access_token',
         refreshTokenKey: 'test_refresh_token',

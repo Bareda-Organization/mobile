@@ -25,7 +25,7 @@ import 'package:manager_app/features/route_map/presentation/route_map_screen.dar
 /// 지시했는지**만 확인한다 — "지도가 실제로 떴다" 는 여전히 검증하지
 /// 못한다.
 class _FakeRouteRepository implements RouteRepository {
-  _FakeRouteRepository(this.response);
+  new(this.response);
 
   final RouteResponse response;
 
@@ -38,7 +38,7 @@ class _FakeRouteRepository implements RouteRepository {
 /// 를 `connecting` 상태로 고정해, 시험이 실제 WebSocket 연결을 시도하지
 /// 않게 한다.
 class _NeverResolvingTokenStorage extends TokenStorage {
-  _NeverResolvingTokenStorage()
+  new()
     : super(
         accessTokenKey: 'test_access_token',
         refreshTokenKey: 'test_refresh_token',

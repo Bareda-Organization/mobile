@@ -12,7 +12,7 @@ enum BaraedaBadgeTone { neutral, brand, amber, red, added, removed }
 /// 짧은 라벨·카운트를 보여주는 작은 배지. `BaraedaStatusPill`과 달리
 /// 운행 상태 전용이 아니라 범용(신규·변경·카운트 등)이다.
 class BaraedaBadge extends StatelessWidget {
-  const BaraedaBadge({
+  const new({
     required this.label,
     super.key,
     this.tone = BaraedaBadgeTone.neutral,
@@ -53,7 +53,7 @@ class BaraedaBadge extends StatelessWidget {
 }
 
 class _BadgePalette {
-  const _BadgePalette({required this.background, required this.foreground});
+  const new({required this.background, required this.foreground});
 
   final Color background;
   final Color foreground;

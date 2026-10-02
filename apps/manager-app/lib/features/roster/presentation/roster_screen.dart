@@ -39,7 +39,7 @@ import 'package:manager_app/features/roster/presentation/widgets/change_ack_bann
 /// [ChangeAckBanner] 가 맡고 운행 화면도 같은 띠를 쓴다(R32 M4). 서버 쪽 미확인 표시는
 /// 관계자 대시보드(MON-05)의 몫이라 이 화면이 다시 확인하지 않는다.
 class RosterScreen extends ConsumerStatefulWidget {
-  const RosterScreen({super.key});
+  const new({super.key});
 
   @override
   ConsumerState<RosterScreen> createState() => _RosterScreenState();
@@ -465,7 +465,7 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
 /// 집계까지만 보여준다 — 개인별 행·액션 버튼이 필요한 이 화면에는 맞지
 /// 않아 직접 헤더+`StudentRow` 목록을 조합했다(설계 판단, 보고서 참고).
 class _StopSection extends StatelessWidget {
-  const _StopSection({
+  const new({
     required this.stop,
     required this.order,
     required this.photoHeaders,
@@ -606,7 +606,7 @@ class _StopSection extends StatelessWidget {
 
 /// 명단 화면 본문 위 버튼 줄 — 예외 보고 · 지연 알림 · 대기열. 큰 글자에서는 다음 줄로 넘어간다.
 class _ActionsBar extends StatelessWidget {
-  const _ActionsBar({
+  const new({
     required this.queuedCount,
     required this.onExceptionReport,
     required this.onDelay,
@@ -665,7 +665,7 @@ class _ActionsBar extends StatelessWidget {
 /// 탑승자 한 명의 상태 전환 버튼 — 현재 [RiderStatus] 에 따라 다음 동작만
 /// 보여준다. `busy` 인 동안(요청 진행 중) 전부 비활성화한다.
 class _StudentActions extends StatelessWidget {
-  const _StudentActions({
+  const new({
     required this.student,
     required this.busy,
     required this.onBoard,
@@ -791,7 +791,7 @@ class _StudentActions extends StatelessWidget {
 /// 최종 판단은 대기 시간이 끝난 뒤에만 고를 수 있다 — [waitEndsAt] 까지는 선택지를 끄고 남은 시간을
 /// 세어 보인다(R32 M12). [waitEndsAt] 을 모르면(`null`) 막지 않는다 — 서버가 최종 판정한다.
 class _NoShowContactSheet extends StatefulWidget {
-  const _NoShowContactSheet({required this.waitEndsAt, required this.clock});
+  const new({required this.waitEndsAt, required this.clock});
 
   final DateTime? waitEndsAt;
   final Clock clock;

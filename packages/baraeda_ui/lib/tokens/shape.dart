@@ -107,7 +107,7 @@ abstract final class BaraedaShadows {
 /// 퍼진다. 값은 보존해 두되(향후 `CustomPainter` 또는 `ShaderMask` 로 구현할 때 참조),
 /// `BoxDecoration.boxShadow` 에 바로 꽂아 쓸 수는 없다는 점을 이름으로도 드러낸다.
 class BaraedaInsetShadowSpec {
-  const BaraedaInsetShadowSpec({
+  const new({
     required this.color,
     required this.offset,
     required this.blurRadius,

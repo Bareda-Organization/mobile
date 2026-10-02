@@ -8,7 +8,7 @@ class NavigationRepositoryImpl implements NavigationRepository {
   // 필드를 private 으로 유지하려고 initializing formal 대신 명시 대입을 쓴다
   // (RouteRepositoryImpl 과 같은 이유).
   // ignore: prefer_initializing_formals
-  const NavigationRepositoryImpl({required NavigationApi api}) : _api = api;
+  const new({required NavigationApi api}) : _api = api;
 
   final NavigationApi _api;
 

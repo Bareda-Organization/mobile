@@ -5,7 +5,7 @@ import 'package:parent_app/core/routes/domain/route_repository.dart';
 import 'package:parent_app/features/route/data/route_api.dart';
 
 class RouteRepositoryImpl implements RouteRepository {
-  const RouteRepositoryImpl({required this._routeApi});
+  const new({required this._routeApi});
 
   final RouteApi _routeApi;
 

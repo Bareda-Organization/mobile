@@ -14,7 +14,7 @@ library;
 typedef LatLng = ({double lat, double lng});
 
 class MarkerInterpolator {
-  const MarkerInterpolator._();
+  const new _();
 
   /// [progress] 가 0 이면 [start], 1 이면 [end], 그 사이는 선형 보간한
   /// 중간 지점이다. **0~1 범위를 벗어난 값은 잘라낸다** — 다음 좌표

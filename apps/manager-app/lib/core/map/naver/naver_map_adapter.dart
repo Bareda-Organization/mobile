@@ -32,7 +32,7 @@ bool _sdkInitialized = false;
 /// `NaverMap` 위젯을 그린다 — 초기화 중·실패 상태를 화면에 그대로 노출해
 /// "데이터 없음"과 "지도 인증 실패"를 구분한다.
 class NaverMapAdapter extends StatefulWidget {
-  const NaverMapAdapter({
+  const new({
     required this.camera,
     required this.markers,
     this.polylines = const [],

@@ -7,7 +7,7 @@ import 'package:baraeda_core/id/as_id_string.dart';
 /// §9.7 이 늘 때마다 이 파일도 고쳐야 하는 결합이 생긴다.
 class NotificationItem {
   /// 응답 한 항목을 그대로 담는다.
-  const NotificationItem({
+  const new({
     required this.notificationId,
     required this.type,
     required this.title,
@@ -21,7 +21,7 @@ class NotificationItem {
   });
 
   /// §3.12 응답 항목 JSON 에서 만든다.
-  factory NotificationItem.fromJson(Map<String, dynamic> json) =>
+  factory fromJson(Map<String, dynamic> json) =>
       NotificationItem(
         notificationId: asIdString(json['notification_id']),
         type: json['type'] as String,
@@ -92,7 +92,7 @@ class NotificationItem {
 /// §3.12 페이징 봉투(§1.8) + 봉투 레벨 `unread_count`.
 class NotificationPage {
   /// 봉투 한 쪽을 그대로 담는다.
-  const NotificationPage({
+  const new({
     required this.items,
     required this.page,
     required this.size,
@@ -102,7 +102,7 @@ class NotificationPage {
   });
 
   /// §3.12 응답 JSON 에서 만든다.
-  factory NotificationPage.fromJson(Map<String, dynamic> json) {
+  factory fromJson(Map<String, dynamic> json) {
     final items = json['items'] as List<dynamic>? ?? [];
     return NotificationPage(
       items: items

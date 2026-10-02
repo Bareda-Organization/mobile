@@ -57,7 +57,7 @@ class _FakeGeolocatorPlatform extends GeolocatorPlatform {
 }
 
 class _FixedClock implements Clock {
-  const _FixedClock(this._now);
+  const new(this._now);
 
   final DateTime _now;
 

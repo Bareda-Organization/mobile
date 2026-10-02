@@ -13,7 +13,7 @@ import 'package:flutter/material.dart';
 class AcademyPicker extends StatefulWidget {
   /// [onSearch] 는 검색어를 받아 결과를 돌려주는 콜백, 실패하면 [Failure] 를
   /// 던진다. [onSelected] 는 사용자가 결과 하나를 고르면 불린다.
-  const AcademyPicker({
+  const new({
     required this.onSearch,
     required this.onSelected,
     super.key,

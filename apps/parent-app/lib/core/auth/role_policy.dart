@@ -6,13 +6,13 @@ import 'package:parent_app/core/auth/user_role.dart';
 /// - 학생은 조회 전용(`UF-S-01`) — 등원 여부 변경 · 탑승 위치 변경 진입점을 감춤
 /// - 학생 전용 진입점은 부모 연결 코드 생성(`S-05`) 하나뿐
 class RoleCapabilities {
-  const RoleCapabilities._({
+  const new _({
     required this.canToggleAttendance,
     required this.canChangeBoardingLocation,
     required this.canGenerateLinkCode,
   });
 
-  factory RoleCapabilities.of(UserRole role) => switch (role) {
+  factory of(UserRole role) => switch (role) {
     UserRole.parent => const RoleCapabilities._(
       canToggleAttendance: true,
       canChangeBoardingLocation: true,

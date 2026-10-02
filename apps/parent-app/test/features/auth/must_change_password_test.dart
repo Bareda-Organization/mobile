@@ -21,7 +21,7 @@ import '../../support/fake_token_storage.dart';
 /// 그동안 다른 API 를 `403 PASSWORD_CHANGE_REQUIRED` 로 막으므로 앱은 변경 화면에
 /// 고정한다(매니저 앱 `must_change_password_test.dart` 와 같은 갈래).
 class _FakeAuthRepository implements AuthRepository {
-  _FakeAuthRepository({
+  new({
     required this.mustChangePassword,
     this.role = AccountRole.parent,
   });

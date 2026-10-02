@@ -107,7 +107,7 @@ class _StompServer {
 
 /// 시험이 시각을 옮기는 가짜 시계.
 class _MutableClock implements Clock {
-  _MutableClock(this.value);
+  new(this.value);
 
   DateTime value;
 

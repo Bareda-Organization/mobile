@@ -23,7 +23,7 @@ import 'package:parent_app/features/route/presentation/route_detail_screen.dart'
 /// `student_count`·기사 `phone` 을 **일부러 포함한** 원본 JSON을
 /// `RouteDetail.fromJson` 에 직접 먹여 그 결과를 돌려준다.
 class _FakeRouteRepository implements RouteRepository {
-  _FakeRouteRepository(this.response);
+  new(this.response);
 
   final RouteDetail response;
 

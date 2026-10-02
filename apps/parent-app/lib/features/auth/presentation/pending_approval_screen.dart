@@ -32,7 +32,7 @@ const Duration pendingStatusPollInterval = Duration(seconds: 30);
 /// 불변식을 그대로 둔 채로 접근성만 채운다.
 class PendingApprovalScreen extends ConsumerStatefulWidget {
   /// `/pending-approval`.
-  const PendingApprovalScreen({super.key});
+  const new({super.key});
 
   @override
   ConsumerState<PendingApprovalScreen> createState() =>
@@ -184,7 +184,7 @@ class _PendingApprovalScreenState extends ConsumerState<PendingApprovalScreen> {
 }
 
 class _ErrorBody extends StatelessWidget {
-  const _ErrorBody({required this.onRetry});
+  const new({required this.onRetry});
 
   final VoidCallback onRetry;
 
@@ -205,7 +205,7 @@ class _ErrorBody extends StatelessWidget {
 }
 
 class _StatusBody extends StatelessWidget {
-  const _StatusBody({
+  const new({
     required this.status,
     required this.reapplying,
     required this.newAcademy,
@@ -312,7 +312,7 @@ class _StatusBody extends StatelessWidget {
 }
 
 class _InfoRow extends StatelessWidget {
-  const _InfoRow({required this.label, required this.value});
+  const new({required this.label, required this.value});
 
   final String label;
   final String value;

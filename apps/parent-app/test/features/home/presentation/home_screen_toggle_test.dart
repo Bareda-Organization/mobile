@@ -18,7 +18,7 @@ import 'package:parent_app/features/home/presentation/home_screen.dart';
 
 /// 서버 대역 — ② 구간에서 끄면 접수만 하고 `riding` 은 그대로 둔다(API_SPEC §3.6·§3.9).
 class _ServerRuns implements RunRepository {
-  _ServerRuns(this.onIntent);
+  new(this.onIntent);
 
   final void Function() onIntent;
   int getCalls = 0;

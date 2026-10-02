@@ -16,7 +16,7 @@ import 'package:flutter/services.dart';
 
 /// 인증번호 등 고정 길이 코드 입력. 입력값은 자동으로 대문자로 바뀐다.
 class BaraedaCodeInput extends StatefulWidget {
-  const BaraedaCodeInput({
+  const new({
     required this.value,
     required this.onChanged,
     super.key,

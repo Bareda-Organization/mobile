@@ -3,7 +3,7 @@ import 'package:parent_app/features/settings/domain/notification_settings.dart';
 
 /// API_SPEC §3.14.
 class NotificationSettingsApi {
-  NotificationSettingsApi({required this._dio});
+  new({required this._dio});
 
   final Dio _dio;
 

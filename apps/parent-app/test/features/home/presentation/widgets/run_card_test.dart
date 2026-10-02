@@ -18,7 +18,7 @@ import 'package:parent_app/features/home/presentation/widgets/run_card.dart';
 /// §3.6 토글 실패 시 화면에 실제로 다른 문구로 갈리는지 확인한다
 /// (R1 목표 5 — "그 화면에 걸리는 에러 코드를 실제로 재현").
 class _ThrowingRunRepository implements RunRepository {
-  _ThrowingRunRepository(this.failure);
+  new(this.failure);
 
   final Failure failure;
 
@@ -490,7 +490,7 @@ void main() {
 }
 
 class _FixedClock implements Clock {
-  const _FixedClock(this._value);
+  const new(this._value);
 
   final DateTime _value;
 
@@ -500,7 +500,7 @@ class _FixedClock implements Clock {
 
 /// 호출된 `riding` 값을 순서대로 기록한다.
 class _RecordingRunRepository implements RunRepository {
-  _RecordingRunRepository({this.pending, this.result});
+  new({this.pending, this.result});
 
   /// 주어지면 `updateIntent` 가 이 결과를 돌려준다.
   final RunIntentResult? result;

@@ -30,7 +30,7 @@ import 'package:manager_app/features/notifications/presentation/widgets/notifica
 /// 열려 있는 동안 [todayRunsRefreshInterval] 마다, 앱이 백그라운드에서 돌아올 때 목록을 다시
 /// 받는다 — 확정은 서버 배치가 시각에 맞춰 바꾸므로(F06-13) 한 번 받은 목록은 곧 낡는다.
 class ManagerHomeScreen extends ConsumerStatefulWidget {
-  const ManagerHomeScreen({super.key});
+  const new({super.key});
 
   @override
   ConsumerState<ManagerHomeScreen> createState() => _ManagerHomeScreenState();

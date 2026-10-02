@@ -12,7 +12,7 @@ import 'package:flutter/material.dart';
 
 /// 온/오프 스위치 + 라벨 한 줄.
 class BaraedaSwitch extends StatelessWidget {
-  const BaraedaSwitch({
+  const new({
     required this.checked,
     required this.label,
     super.key,
@@ -80,7 +80,7 @@ class BaraedaSwitch extends StatelessWidget {
 }
 
 class _SwitchTrack extends StatelessWidget {
-  const _SwitchTrack({required this.checked, required this.colors});
+  const new({required this.checked, required this.colors});
 
   final bool checked;
   final BaraedaColors colors;

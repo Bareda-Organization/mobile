@@ -52,7 +52,7 @@ class _RecordingDriveModeRepository implements DriveModeRepository {
 }
 
 class _NeverResolvingTokenStorage extends TokenStorage {
-  _NeverResolvingTokenStorage()
+  new()
     : super(
         accessTokenKey: 'test_access_token',
         refreshTokenKey: 'test_refresh_token',
@@ -85,7 +85,7 @@ class _NoSample implements PositionSource {
 }
 
 class _FixedClock implements Clock {
-  const _FixedClock(this._now);
+  const new(this._now);
 
   final DateTime _now;
 

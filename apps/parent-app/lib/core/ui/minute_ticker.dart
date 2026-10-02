@@ -10,7 +10,7 @@ import 'package:parent_app/app/di.dart';
 /// 시각은 위젯이 직접 재지 않고 `clockProvider` 에서 받아 [builder] 에 넘긴다
 /// (`CONVENTIONS_FLUTTER §9`).
 class MinuteTicker extends ConsumerStatefulWidget {
-  const MinuteTicker({required this.builder, super.key});
+  const new({required this.builder, super.key});
 
   final Widget Function(BuildContext context, DateTime now) builder;
 

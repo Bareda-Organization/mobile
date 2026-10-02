@@ -9,7 +9,7 @@ import 'package:parent_app/core/students/presentation/selected_student.dart';
 /// 2~3명은 이름을 나란히 두고 한 번 눌러 바꾼다(고르는 창을 열고 닫는 두 번 누름이 아침마다 쌓였다).
 /// 4명 이상은 이름이 좁아 [BaraedaSelect] 로 둔다.
 class StudentSwitcher extends ConsumerWidget {
-  const StudentSwitcher({
+  const new({
     required this.students,
     required this.selectedId,
     super.key,

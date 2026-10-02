@@ -3,13 +3,13 @@ import 'package:manager_app/core/run/run_enums.dart';
 
 /// `remaining[]` 항목 — 하원 종료 보류 중 아직 안 내린 탑승자.
 class RemainingRider {
-  const RemainingRider({
+  const new({
     required this.riderId,
     required this.name,
     required this.stopName,
   });
 
-  factory RemainingRider.fromJson(Map<String, dynamic> json) {
+  factory fromJson(Map<String, dynamic> json) {
     return RemainingRider(
       // `Ruling 275` — 서버가 rider_id 를 int 로 내려도 흡수한다(직접 캐스트 금지).
       riderId: asIdString(json['rider_id']),
@@ -25,9 +25,9 @@ class RemainingRider {
 
 /// `next_stop` 요약 — 포인터가 가리키는 다음 승하차지.
 class NextStopRef {
-  const NextStopRef({required this.stopId, required this.name});
+  const new({required this.stopId, required this.name});
 
-  factory NextStopRef.fromJson(Map<String, dynamic> json) {
+  factory fromJson(Map<String, dynamic> json) {
     return NextStopRef(
       // `Ruling 275` — 서버가 stop_id 를 int 로 내려도 흡수한다(직접 캐스트 금지).
       stopId: asIdString(json['stop_id']),
@@ -49,7 +49,7 @@ class NextStopRef {
 /// [isFinal]·[finishPending]·[remaining] 세 값을 조합해 RunEndScreen 이
 /// 종료 상태를 재구성한다.
 class ArriveStopResult {
-  const ArriveStopResult({
+  const new({
     required this.arrivedAt,
     required this.isFinal,
     required this.runStatus,
@@ -59,7 +59,7 @@ class ArriveStopResult {
     this.autoAlightedCount,
   });
 
-  factory ArriveStopResult.fromJson(Map<String, dynamic> json) {
+  factory fromJson(Map<String, dynamic> json) {
     final nextStopJson = json['next_stop'] as Map<String, dynamic>?;
     final remainingJson = json['remaining'] as List<dynamic>? ?? [];
     return ArriveStopResult(

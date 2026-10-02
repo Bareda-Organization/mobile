@@ -66,7 +66,7 @@ class _FakeSecureStoragePlatform
 /// `/auth/refresh` 호출마다 순서대로 응답하는 가짜 어댑터 — 호출 수를 세어
 /// "동시 재발급은 1회만 나간다"(완료 조건 9)를 검증하는 데 쓴다.
 class _ScriptedAdapter implements HttpClientAdapter {
-  _ScriptedAdapter(this.responses, {this.gate});
+  new(this.responses, {this.gate});
 
   final List<ResponseBody Function()> responses;
 

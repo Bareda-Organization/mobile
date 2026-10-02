@@ -17,7 +17,7 @@ enum BaraedaIconButtonTone { plain, soft, inverse }
 /// `Semantics.label`). 텍스트와 함께 쓰는 장식 아이콘은 `BaraedaIcon`을
 /// 직접 쓴다.
 class BaraedaIconButton extends StatelessWidget {
-  const BaraedaIconButton({
+  const new({
     required this.icon,
     required this.label,
     super.key,
@@ -88,7 +88,7 @@ class BaraedaIconButton extends StatelessWidget {
 }
 
 class _IconButtonPalette {
-  const _IconButtonPalette({
+  const new({
     required this.background,
     required this.foreground,
   });

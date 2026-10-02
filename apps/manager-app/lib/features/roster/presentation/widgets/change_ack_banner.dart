@@ -14,7 +14,7 @@ import 'package:manager_app/features/home/presentation/home_providers.dart';
 /// `todayRunsProvider` 를 다시 받아 서버 값으로 바꾼다. 다시 받기 전 깜빡이지
 /// 않도록 성공 즉시 스스로 숨긴다.
 class ChangeAckBanner extends ConsumerStatefulWidget {
-  const ChangeAckBanner({
+  const new({
     required this.runId,
     required this.ackRequired,
     super.key,

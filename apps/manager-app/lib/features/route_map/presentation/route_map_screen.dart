@@ -18,7 +18,7 @@ import 'package:manager_app/features/route_map/presentation/route_providers.dart
 /// `MapSurface` 에 있어 이 화면은 `flutter_naver_map` 의 타입을 하나도
 /// 모른다(F4-B 1단계 공통 규칙 §2).
 class RouteMapScreen extends ConsumerStatefulWidget {
-  const RouteMapScreen({super.key});
+  const new({super.key});
 
   @override
   ConsumerState<RouteMapScreen> createState() => _RouteMapScreenState();

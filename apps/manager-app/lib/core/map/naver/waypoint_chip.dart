@@ -10,7 +10,7 @@ import 'package:flutter/material.dart';
 /// 어댑터가 이 위젯을 이미지로 굳혀 마커 아이콘으로 쓰며, 칩의 **가운데**가
 /// 좌표에 온다(어댑터가 기준점을 가운데로 둔다).
 class WaypointChip extends StatelessWidget {
-  const WaypointChip({super.key});
+  const new({super.key});
 
   /// 폭 40 · 높이 22 — 이미지로 굳힐 때 크기를 고정한다.
   static const size = Size(40, 22);

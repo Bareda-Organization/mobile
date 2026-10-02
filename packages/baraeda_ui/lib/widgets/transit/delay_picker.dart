@@ -15,7 +15,7 @@ const List<int> _defaultDelayOptions = [5, 10, 15, 20, 25, 30];
 /// 지연 시간 선택 — 3열 그리드, 항목 수가 고정([options])이라 [GridView] 대신
 /// [Wrap] 으로 구성한다(항목 수가 적어 셀 크기 계산 오버헤드가 불필요).
 class DelayPicker extends StatelessWidget {
-  const DelayPicker({
+  const new({
     super.key,
     this.value,
     this.onChanged,
@@ -76,7 +76,7 @@ class DelayPicker extends StatelessWidget {
 }
 
 class _DelayOption extends StatelessWidget {
-  const _DelayOption({
+  const new({
     required this.minutes,
     required this.selected,
     required this.onTap,

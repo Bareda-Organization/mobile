@@ -13,7 +13,7 @@ import 'package:flutter/material.dart';
 /// 처럼 테마를 거쳐 참조하게 한다.
 @immutable
 class BaraedaColors extends ThemeExtension<BaraedaColors> {
-  const BaraedaColors({
+  const new({
     required this.bgBase,
     required this.bgSubtle,
     required this.surfaceCard,

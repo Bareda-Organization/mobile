@@ -16,7 +16,7 @@ import 'package:parent_app/features/auth/presentation/signup_screen.dart';
 /// 서버는 가입 응답(§2.2)에 토큰을 주지 않지만, `pending` 계정도 로그인은 성공한다(§2.5) —
 /// 방금 입력한 자격으로 로그인해 라우터가 대기 화면으로 보내게 한다.
 class _Repository implements AuthRepository {
-  _Repository({this.loginFails = false});
+  new({this.loginFails = false});
 
   final bool loginFails;
   SignupRequest? signedUp;

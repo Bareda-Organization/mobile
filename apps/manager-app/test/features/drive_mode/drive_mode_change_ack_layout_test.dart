@@ -24,7 +24,7 @@ import '../../support/manager_run_fixture.dart';
 /// 필수 확인 조작이라 하단 고정 영역(Ruling 571)에 두어, 스크롤과 무관하게
 /// 첫 화면에 온전히 보여야 한다(R46-POLISH Ruling 596).
 class _NeverResolvingTokenStorage extends TokenStorage {
-  _NeverResolvingTokenStorage()
+  new()
     : super(accessTokenKey: 'a', refreshTokenKey: 'r');
 
   @override

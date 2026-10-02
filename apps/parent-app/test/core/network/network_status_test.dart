@@ -13,7 +13,7 @@ import 'package:parent_app/core/network/offline_bar.dart';
 /// 판정은 `connectivity_plus` 가 아니라 요청 결과다 — 기기가 와이파이에 붙어 있어도 서버에 못 닿는 경우
 /// (음영 구간·서버 중단)를 앞의 방식은 잡지 못한다.
 class _Adapter implements HttpClientAdapter {
-  _Adapter(this.respond);
+  new(this.respond);
 
   Future<ResponseBody> Function() respond;
 
@@ -29,7 +29,7 @@ class _Adapter implements HttpClientAdapter {
 }
 
 class _MutableClock implements Clock {
-  _MutableClock(this.value);
+  new(this.value);
 
   DateTime value;
 

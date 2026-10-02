@@ -13,7 +13,7 @@ import 'package:flutter/material.dart';
 
 /// [BaraedaSegmentedControl]의 선택지 하나.
 class BaraedaSegmentedOption {
-  const BaraedaSegmentedOption(this.value, {String? label})
+  const new(this.value, {String? label})
     : label = label ?? value;
 
   final String value;
@@ -22,7 +22,7 @@ class BaraedaSegmentedOption {
 
 /// 탭처럼 동작하는 세그먼트 선택자(예: "전체 · 승차 · 하차").
 class BaraedaSegmentedControl extends StatelessWidget {
-  const BaraedaSegmentedControl({
+  const new({
     required this.options,
     required this.value,
     super.key,
@@ -76,7 +76,7 @@ class BaraedaSegmentedControl extends StatelessWidget {
 }
 
 class _SegmentedButton extends StatelessWidget {
-  const _SegmentedButton({
+  const new({
     required this.option,
     required this.selected,
     required this.expand,

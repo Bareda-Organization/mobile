@@ -19,7 +19,7 @@ enum BaraedaCardTone { base, mist, outline, inverse }
 /// 아니라 위쪽 라인인 것이 브랜드 규칙이다. `missed`는 한 화면에 카드
 /// 하나에만 쓴다(prompt.md).
 class BaraedaCard extends StatelessWidget {
-  const BaraedaCard({
+  const new({
     required this.child,
     super.key,
     this.tone = BaraedaCardTone.base,

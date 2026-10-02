@@ -14,7 +14,7 @@ enum AppHeaderTone { brand, plain }
 
 /// 앱 상단 바.
 class AppHeader extends StatelessWidget implements PreferredSizeWidget {
-  const AppHeader({
+  const new({
     super.key,
     this.title,
     this.subtitle,

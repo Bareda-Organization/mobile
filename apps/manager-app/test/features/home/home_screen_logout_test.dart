@@ -20,7 +20,7 @@ import '../../support/fake_token_storage.dart';
 /// `logout` 만 쓰는 가짜 — `sign_out_test.dart` 의 `_StubAuthRepository` 와
 /// 같은 패턴. 나머지 메서드는 이 시험에서 불리면 안 된다.
 class _StubAuthRepository implements AuthRepository {
-  _StubAuthRepository({this.fail = false});
+  new({this.fail = false});
 
   final bool fail;
   int logoutCalls = 0;
@@ -37,7 +37,7 @@ class _StubAuthRepository implements AuthRepository {
 
 /// 대기 목록만 쓰는 가짜 — 로그아웃 확인 창이 미전송 건수를 세는 데만 쓴다(M2-01).
 class _StubQueueRepository implements OfflineQueueRepository {
-  _StubQueueRepository(this.pendingCount);
+  new(this.pendingCount);
 
   final int pendingCount;
 

@@ -41,7 +41,7 @@ kakaoNaviRequest(NavigationRoute route) {
 
 /// 공식 SDK(`kakao_flutter_sdk_navi`)로 여는 기본 구현.
 class SdkKakaoNaviLauncher implements KakaoNaviLauncher {
-  const SdkKakaoNaviLauncher({required this.appKey});
+  const new({required this.appKey});
 
   /// 카카오 네이티브 앱 키(`--dart-define=KAKAO_NAVI_APP_KEY`).
   final String appKey;

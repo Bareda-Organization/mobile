@@ -15,7 +15,7 @@ import 'package:manager_app/features/delay/data/models/delay_result.dart';
 ///
 /// 사유 입력·전송만 이번 범위다 — 알림 수신 확인·이력 조회는 두지 않는다.
 class DelayScreen extends ConsumerStatefulWidget {
-  const DelayScreen({super.key});
+  const new({super.key});
 
   @override
   ConsumerState<DelayScreen> createState() => _DelayScreenState();

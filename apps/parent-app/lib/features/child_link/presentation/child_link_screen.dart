@@ -21,7 +21,7 @@ import 'package:parent_app/core/ui/minute_ticker.dart';
 /// 없앴다. 학생이 선행 조건 없이 언제든 코드를 만들고(§3.3), 학부모는 그
 /// 코드를 입력하기만 한다(§3.4) — 2단계로 줄었다.
 class ChildLinkScreen extends ConsumerStatefulWidget {
-  const ChildLinkScreen({super.key});
+  const new({super.key});
 
   @override
   ConsumerState<ChildLinkScreen> createState() => _ChildLinkScreenState();
@@ -253,7 +253,7 @@ class _ChildLinkScreenState extends ConsumerState<ChildLinkScreen> {
 
 /// 코드 만료까지 남은 시간 — 1분마다 줄고, 만료되면 새로 만들라고 알린다(코드는 1회용이라 만료 뒤에는 쓸 수 없다).
 class _RemainingTime extends StatelessWidget {
-  const _RemainingTime({required this.expiresAt});
+  const new({required this.expiresAt});
 
   final DateTime expiresAt;
 

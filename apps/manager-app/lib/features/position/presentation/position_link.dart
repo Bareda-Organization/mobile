@@ -14,7 +14,7 @@ import 'package:manager_app/features/position/presentation/position_transmitter.
 /// 전체가 2초마다 다시 그려진다(F06-17).
 @immutable
 class PositionLink {
-  const PositionLink({this.startedAt, this.lastSentAt});
+  const new({this.startedAt, this.lastSentAt});
 
   /// 이 송신이 시작된 시각 — 송신 중이 아니면 `null`(칩을 그리지 않는다).
   final DateTime? startedAt;
@@ -62,7 +62,7 @@ enum PositionLinkKind { normal, delayed, lost }
 /// 칩이 보여줄 판정 — [secondsSinceSent] 는 마지막 성공 전송이 있을 때만 채운다.
 @immutable
 class PositionLinkStatus {
-  const PositionLinkStatus(this.kind, this.secondsSinceSent);
+  const new(this.kind, this.secondsSinceSent);
 
   final PositionLinkKind kind;
   final int? secondsSinceSent;
@@ -91,7 +91,7 @@ PositionLinkStatus? judgePositionLink({
 
 /// 운행 화면의 위치 전송 상태 칩 — 1초마다 시계만 다시 읽는다(전송이 안 오는 동안에도 "N초 전"이 올라가야 한다).
 class PositionLinkChip extends ConsumerStatefulWidget {
-  const PositionLinkChip({super.key});
+  const new({super.key});
 
   @override
   ConsumerState<PositionLinkChip> createState() => _PositionLinkChipState();

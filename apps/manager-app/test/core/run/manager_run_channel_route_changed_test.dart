@@ -19,7 +19,7 @@ import 'package:manager_app/features/route_map/presentation/route_providers.dart
 /// 실제 소켓 없이 구독 콜백만 붙잡아 시험이 봉투를 직접 흘려보내는 가짜 —
 /// `manager_run_channel_session_expired_test.dart` 의 대역과 같은 방식이다.
 class _FakeWebSocketClient extends BaraedaWebSocketClient {
-  _FakeWebSocketClient()
+  new()
     : super(
         url: 'ws://test',
         tokenStorage: TokenStorage(
@@ -55,7 +55,7 @@ class _FakeWebSocketClient extends BaraedaWebSocketClient {
 
 /// 조회 횟수를 세고, 조회할 때마다 다음 응답을 돌려주는 대역.
 class _CountingRouteRepository implements RouteRepository {
-  _CountingRouteRepository(this.responses);
+  new(this.responses);
 
   final List<RouteResponse> responses;
   int fetchCount = 0;
@@ -71,7 +71,7 @@ class _CountingRouteRepository implements RouteRepository {
 }
 
 class _CountingRosterRepository implements RosterRepository {
-  _CountingRosterRepository(this.responses);
+  new(this.responses);
 
   final List<RosterResponse> responses;
   int fetchCount = 0;

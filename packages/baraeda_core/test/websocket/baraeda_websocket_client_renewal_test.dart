@@ -96,7 +96,7 @@ String _envelope(int n) =>
     '"occurred_at":"2026-10-01T00:00:00Z","payload":{}}';
 
 class _Conn {
-  _Conn(this.index, this.socket);
+  new(this.index, this.socket);
   final int index;
   final WebSocket socket;
   String? auth;
@@ -106,7 +106,7 @@ class _Conn {
 
 /// 연결을 여러 개 받는 가짜 서버 — 연결별 `Authorization`·구독·닫힘을 순서대로 [events] 에 남긴다.
 class _RenewalServer {
-  _RenewalServer({this.rejectSubscribeOnConnection});
+  new({this.rejectSubscribeOnConnection});
 
   /// 이 번호의 연결이 `SUBSCRIBE` 를 하면 `ERROR FORBIDDEN` 으로 거부하고 닫는다.
   final int? rejectSubscribeOnConnection;

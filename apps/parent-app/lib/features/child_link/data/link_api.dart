@@ -3,7 +3,7 @@ import 'package:parent_app/features/child_link/domain/link_models.dart';
 
 /// API_SPEC §3.3·§3.4(Ruling 324 — §3.2 연결 요청 단계 폐지).
 class LinkApi {
-  LinkApi({required this._dio});
+  new({required this._dio});
 
   final Dio _dio;
 

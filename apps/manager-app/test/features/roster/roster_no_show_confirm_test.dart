@@ -26,7 +26,7 @@ import '../../support/manager_run_fixture.dart';
 /// R32 M7 — [미승차]는 [탑승] 바로 옆이라 잘못 눌리기 쉽고 누르면 학부모에게 알림이 나간다.
 /// 확인 창을 거치고, 취소하면 요청이 나가지 않는다.
 class _RecordingRosterRepository implements RosterRepository {
-  _RecordingRosterRepository(this.roster);
+  new(this.roster);
 
   final RosterResponse roster;
   final requestedStatuses = <RiderStatus>[];
@@ -67,7 +67,7 @@ class _RecordingRosterRepository implements RosterRepository {
 }
 
 class _NeverResolvingTokenStorage extends TokenStorage {
-  _NeverResolvingTokenStorage()
+  new()
     : super(
         accessTokenKey: 'test_access_token',
         refreshTokenKey: 'test_refresh_token',

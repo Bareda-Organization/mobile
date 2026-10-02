@@ -24,7 +24,7 @@ import 'package:manager_app/features/offline_queue/presentation/offline_queue_pr
 /// 시각을 고정해 취소 가능 창 판정을 결정적으로 만드는 가짜 시계
 /// (`drive_mode_screen_test.dart` 와 같은 패턴, 이월 11 · Ruling 266).
 class _FixedClock implements Clock {
-  const _FixedClock(this._now);
+  const new(this._now);
 
   final DateTime _now;
 
@@ -35,7 +35,7 @@ class _FixedClock implements Clock {
 /// 테스트 전용 대역 — §4.14(발신·취소)·§4.15(목록) 호출 여부·인자·횟수만
 /// 기록한다.
 class _FakeEmergencyRepository implements EmergencyRepository {
-  _FakeEmergencyRepository({
+  new({
     this.raiseOutcome,
     this.raiseFailure,
     this.cancelFailure,
@@ -100,7 +100,7 @@ class _FakeEmergencyRepository implements EmergencyRepository {
 /// 값을 즉시 낼지([onceSample]) 완료를 미룰지([onceCompleter], 중복 발신
 /// 시험용)를 고른다.
 class _FakePositionSource implements PositionSource {
-  _FakePositionSource(this._sample, {this.onceSample, this.onceCompleter});
+  new(this._sample, {this.onceSample, this.onceCompleter});
 
   final PositionSample? _sample;
   final PositionSample? onceSample;

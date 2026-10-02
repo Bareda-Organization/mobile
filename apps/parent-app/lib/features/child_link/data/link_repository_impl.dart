@@ -5,7 +5,7 @@ import 'package:parent_app/features/child_link/domain/link_models.dart';
 import 'package:parent_app/features/child_link/domain/link_repository.dart';
 
 class LinkRepositoryImpl implements LinkRepository {
-  const LinkRepositoryImpl({required this._linkApi});
+  const new({required this._linkApi});
 
   final LinkApi _linkApi;
 

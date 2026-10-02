@@ -39,7 +39,7 @@ List<MapMarker> _stopMarkersOf(List<RouteStop> stops) {
 /// · 근사 경로 안내. 운행 화면 가운데 패널(`DriveMapPanel`)과 노선 지도 화면(`RouteMapScreen`)이
 /// **같은 지도를 두 벌 두지 않고** 이 위젯 하나를 쓴다(F06-11).
 class RouteMapView extends StatelessWidget {
-  const RouteMapView({
+  const new({
     required this.route,
     this.busPosition,
     this.onAuthFailed,

@@ -4,7 +4,7 @@ import 'package:dio/dio.dart';
 /// API_SPEC §3.12·§3.13.
 class NotificationApi {
   /// [_dio] 는 `ApiClient.dio`(인터셉터 부착)를 그대로 받는다.
-  NotificationApi({required this._dio});
+  new({required this._dio});
 
   final Dio _dio;
 

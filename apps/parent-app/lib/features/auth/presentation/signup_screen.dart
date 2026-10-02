@@ -18,7 +18,7 @@ import 'package:parent_app/features/auth/presentation/widgets/academy_picker.dar
 /// 바로 로그인해 승인 대기 화면으로 들어간다(R46 B2 #20). 그 로그인이 실패하면 로그인 화면으로 돌려보낸다.
 class SignupScreen extends ConsumerStatefulWidget {
   /// 이 앱 라우트(`/signup`)로만 진입한다.
-  const SignupScreen({super.key});
+  const new({super.key});
 
   @override
   ConsumerState<SignupScreen> createState() => _SignupScreenState();

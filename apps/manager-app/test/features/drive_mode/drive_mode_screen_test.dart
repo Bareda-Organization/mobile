@@ -24,7 +24,7 @@ import 'package:manager_app/features/route_map/presentation/route_providers.dart
 /// M4 — `_startRun` 이 `Failure` 를 어떻게 다루는지만 보는 시험용 대역.
 /// `arriveStop` 은 이 파일의 시험 대상이 아니다.
 class _FakeDriveModeRepository implements DriveModeRepository {
-  _FakeDriveModeRepository({this.startFailure});
+  new({this.startFailure});
 
   final Failure? startFailure;
 
@@ -50,7 +50,7 @@ class _FakeDriveModeRepository implements DriveModeRepository {
 /// 시각을 고정해 판정을 결정적으로 만드는 가짜 시계
 /// ([clockProvider] override 대상, 이월 11 · Ruling 266).
 class _FixedClock implements Clock {
-  const _FixedClock(this._now);
+  const new(this._now);
 
   final DateTime _now;
 
@@ -65,7 +65,7 @@ class _FixedClock implements Clock {
 /// `TokenStorage.readAccessToken()` 을 영원히 끝나지 않는 대기로 만들어
 /// 실제 컨트롤러를 `ManagerChannelStatus.connecting` 에 고정시킨다.
 class _NeverResolvingTokenStorage extends TokenStorage {
-  _NeverResolvingTokenStorage()
+  new()
     : super(
         accessTokenKey: 'test_access_token',
         refreshTokenKey: 'test_refresh_token',

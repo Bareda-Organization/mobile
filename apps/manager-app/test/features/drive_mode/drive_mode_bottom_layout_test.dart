@@ -93,7 +93,7 @@ class _DeniedSource implements PositionSource {
 }
 
 class _NeverResolvingTokenStorage extends TokenStorage {
-  _NeverResolvingTokenStorage()
+  new()
     : super(accessTokenKey: 'a', refreshTokenKey: 'r');
 
   @override

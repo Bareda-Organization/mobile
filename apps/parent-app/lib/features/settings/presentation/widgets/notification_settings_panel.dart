@@ -12,7 +12,7 @@ import 'package:parent_app/features/settings/presentation/settings_providers.dar
 /// 지연 알림은 설정 항목 자체가 없어(항상 발송, `NotificationSettings`
 /// 문서 참고) 스위치를 두지 않는다.
 class NotificationSettingsPanel extends ConsumerWidget {
-  const NotificationSettingsPanel({super.key});
+  const new({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -30,7 +30,7 @@ class NotificationSettingsPanel extends ConsumerWidget {
 }
 
 class _NotificationSwitches extends ConsumerStatefulWidget {
-  const _NotificationSwitches({required this.settings});
+  const new({required this.settings});
 
   final NotificationSettings settings;
 

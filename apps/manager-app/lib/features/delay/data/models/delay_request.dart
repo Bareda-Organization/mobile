@@ -5,7 +5,7 @@ enum DelayReason {
   vehicleCheck('vehicle_check'),
   prevStopWait('prev_stop_wait');
 
-  DelayReason(this.wireValue);
+  new(this.wireValue);
 
   final String wireValue;
 }
@@ -15,7 +15,7 @@ enum DelayReason {
 /// 의 기본 옵션(`5,10,15,20,25,30`)이 이미 5분 단위라 클라이언트 쪽 추가
 /// 검증은 두지 않는다.
 class DelayRequest {
-  const DelayRequest({
+  const new({
     required this.minutes,
     required this.reason,
     this.message,

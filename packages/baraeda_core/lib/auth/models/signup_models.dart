@@ -1,7 +1,7 @@
 /// `POST /auth/signup` 요청 (API_SPEC §2.2).
 class SignupRequest {
   /// 필드 6개 전부 필수(§2.2 요청 표에 선택값 없음).
-  const SignupRequest({
+  const new({
     required this.role,
     required this.loginId,
     required this.password,
@@ -44,14 +44,14 @@ class SignupRequest {
 /// `POST /auth/signup` 의 `201` 응답.
 class SignupResponse {
   /// 필드 3개 전부 서버가 채워 보낸다.
-  const SignupResponse({
+  const new({
     required this.accountStatus,
     required this.requestedAt,
     required this.approver,
   });
 
   /// 응답 본문을 그대로 옮긴다.
-  factory SignupResponse.fromJson(Map<String, dynamic> json) => SignupResponse(
+  factory fromJson(Map<String, dynamic> json) => SignupResponse(
     accountStatus: json['account_status'] as String,
     requestedAt: DateTime.parse(json['requested_at'] as String),
     approver: json['approver'] as String,

@@ -20,7 +20,7 @@ import 'package:parent_app/features/notifications/presentation/notification_prov
 /// 통지 수단이므로(F05-06), 알림 탭을 열지 않아도 배지가 최신이 되도록
 /// 여기서 [pollInterval] 마다·앱에 돌아올 때 목록을 다시 받는다.
 class AppShell extends ConsumerStatefulWidget {
-  const AppShell({required this.navigationShell, super.key});
+  const new({required this.navigationShell, super.key});
 
   final StatefulNavigationShell navigationShell;
 
@@ -151,7 +151,7 @@ class _AppShellState extends ConsumerState<AppShell>
 
 /// 알림 아이콘 위 건수 배지 — 99건이 넘으면 `99+`. 낭독기에는 건수를 문장으로 싣고 숫자 글자는 가린다.
 class _UnreadBadge extends StatelessWidget {
-  const _UnreadBadge({required this.count, required this.child});
+  const new({required this.count, required this.child});
 
   final int count;
   final Widget child;

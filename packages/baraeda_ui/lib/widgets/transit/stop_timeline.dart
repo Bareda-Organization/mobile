@@ -18,7 +18,7 @@ enum StopState { done, current, next, upcoming }
 /// [StopTimeline] 한 항목.
 @immutable
 class Stop {
-  const Stop({
+  const new({
     required this.name,
     this.address,
     this.time,
@@ -44,7 +44,7 @@ class Stop {
 
 /// 노선 정류장 순서 타임라인 — 세 제품 공통. 현재 정류장에 버스 마커가 붙는다.
 class StopTimeline extends StatelessWidget {
-  const StopTimeline({
+  const new({
     required this.stops,
     super.key,
     this.onSelect,
@@ -78,7 +78,7 @@ class StopTimeline extends StatelessWidget {
 }
 
 class _StopTimelineRow extends StatelessWidget {
-  const _StopTimelineRow({
+  const new({
     required this.stop,
     required this.isLast,
     required this.dense,

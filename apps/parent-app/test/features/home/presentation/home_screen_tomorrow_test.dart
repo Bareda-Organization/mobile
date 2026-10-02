@@ -19,7 +19,7 @@ import 'package:parent_app/features/home/presentation/home_screen.dart';
 
 /// R34 P1 — 홈의 [오늘 · 내일] 전환. 조회 날짜·토글 요청 대상·학생 조회 전용을 본다.
 class _FixedClock implements Clock {
-  const _FixedClock(this._value);
+  const new(this._value);
 
   final DateTime _value;
 
@@ -29,7 +29,7 @@ class _FixedClock implements Clock {
 
 /// 조회한 날짜와 토글 요청을 기록하고, 날짜별로 다른 회차를 돌려주는 가짜.
 class _DatedRunRepository implements RunRepository {
-  _DatedRunRepository({this.tomorrow = const []});
+  new({this.tomorrow = const []});
 
   final List<StudentRun> tomorrow;
   final requestedDates = <DateTime?>[];

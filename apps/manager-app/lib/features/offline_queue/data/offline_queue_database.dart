@@ -40,12 +40,12 @@ class PendingRequests extends Table {
 
 @DriftDatabase(tables: [PendingRequests])
 class OfflineQueueDatabase extends _$OfflineQueueDatabase {
-  OfflineQueueDatabase() : super(_openConnection());
+  new() : super(_openConnection());
 
   /// 시험 전용 — 파일 대신 주입받은 실행기(보통 `NativeDatabase.memory()`)를
   /// 쓴다. `path_provider` 플랫폼 채널이 없는 단위 시험 환경에서 필요하다.
   @visibleForTesting
-  OfflineQueueDatabase.forTesting(super.e);
+  new forTesting(super.e);
 
   @override
   int get schemaVersion => 4;

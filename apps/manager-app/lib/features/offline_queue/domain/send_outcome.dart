@@ -4,12 +4,12 @@
 /// [Sent] 로 오인하면 "처리되었습니다" 를 실제로 처리되지 않은 요청에
 /// 붙이게 된다.
 sealed class SendOutcome<T> {
-  const SendOutcome();
+  const new();
 }
 
 /// 서버가 2xx 로 응답해 즉시 처리됨 — [value] 는 그 응답을 옮긴 결과.
 class Sent<T> extends SendOutcome<T> {
-  const Sent(this.value);
+  const new(this.value);
 
   final T value;
 }
@@ -17,5 +17,5 @@ class Sent<T> extends SendOutcome<T> {
 /// 네트워크 장애로 서버에 닿지 못했거나 서버가 5xx 로 응답해 오프라인 큐에 쌓임 —
 /// 아직 처리되지 않았다. 화면은 "처리되지 않았습니다 · 대기 중" 을 보여준다(§1.9).
 class Queued<T> extends SendOutcome<T> {
-  const Queued();
+  const new();
 }

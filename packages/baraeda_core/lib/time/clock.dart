@@ -13,7 +13,7 @@ abstract interface class Clock {
 /// 실제 벽시계를 그대로 반환하는 기본 구현. 운영 코드의 기본 주입 대상.
 class SystemClock implements Clock {
   /// 상태가 없어 언제나 같은 값이다.
-  const SystemClock();
+  const new();
 
   @override
   DateTime now() => DateTime.now();

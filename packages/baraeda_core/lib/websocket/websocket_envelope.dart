@@ -10,7 +10,7 @@ import 'package:baraeda_core/websocket/ws_event_type.dart';
 /// 파싱한다(그 파싱도 안의 id 필드마다 같은 흡수를 거친다).
 class WebSocketEnvelope {
   /// 값을 그대로 받는다.
-  const WebSocketEnvelope({
+  const new({
     required this.event,
     required this.eventWireValue,
     required this.runId,
@@ -19,7 +19,7 @@ class WebSocketEnvelope {
   });
 
   /// 서버가 보낸 봉투 JSON 을 파싱한다 — `event` 를 모르는 값이어도 던지지 않는다.
-  factory WebSocketEnvelope.fromJson(Map<String, dynamic> json) {
+  factory fromJson(Map<String, dynamic> json) {
     final wireValue = json['event'] as String?;
     return WebSocketEnvelope(
       event: WsEventType.fromWireValueOrNull(wireValue),

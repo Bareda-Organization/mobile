@@ -131,7 +131,7 @@ class ManagerRunChannelController extends StateNotifier<ManagerChannelStatus> {
   /// [client] 가 `null` 일 때만 평가하므로, 시험이 가짜를 넘기면
   /// `tokenStorageProvider`·`apiClientProvider` 를 굳이 override 하지
   /// 않아도 된다.
-  ManagerRunChannelController(
+  new(
     this._ref,
     this._runId, {
     @visibleForTesting BaraedaWebSocketClient? client,

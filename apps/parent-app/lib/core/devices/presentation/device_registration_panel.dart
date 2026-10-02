@@ -29,7 +29,7 @@ import 'package:parent_app/core/ui/failure_message.dart';
 /// 로그인 뒤 자동 등록은 `AuthApi` 가 하므로, 사용자가 여기서 끈 기기는
 /// `saveOptedOut` 으로 기억해 다음 로그인·앱 실행이 다시 켜지 않게 한다.
 class DeviceRegistrationPanel extends ConsumerStatefulWidget {
-  const DeviceRegistrationPanel({super.key});
+  const new({super.key});
 
   @override
   ConsumerState<DeviceRegistrationPanel> createState() =>

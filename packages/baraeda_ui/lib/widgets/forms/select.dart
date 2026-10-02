@@ -17,10 +17,10 @@ import 'package:flutter/material.dart';
 /// [BaraedaSelect]의 선택지 하나. 원본의 `string[] | {value,label}[]` 두
 /// 형태를 이 클래스 하나로 흡수한다 — 문자열만 있으면 `value == label`.
 class BaraedaSelectOption {
-  const BaraedaSelectOption(this.value, {String? label})
+  const new(this.value, {String? label})
     : label = label ?? value;
 
-  factory BaraedaSelectOption.fromLabel(String label) =>
+  factory fromLabel(String label) =>
       BaraedaSelectOption(label);
 
   final String value;
@@ -29,7 +29,7 @@ class BaraedaSelectOption {
 
 /// 드롭다운 선택 필드.
 class BaraedaSelect extends StatelessWidget {
-  const BaraedaSelect({
+  const new({
     required this.options,
     super.key,
     this.label,

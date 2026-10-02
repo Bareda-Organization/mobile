@@ -30,7 +30,7 @@ class _FixedRunRepository implements RunRepository {
 }
 
 class _ThrowingChangeRequestRepository implements ChangeRequestRepository {
-  _ThrowingChangeRequestRepository(this.failure);
+  new(this.failure);
 
   final Failure failure;
 
@@ -63,7 +63,7 @@ StudentRun _fixtureRun() => StudentRun(
 
 /// 요청받은 날짜를 기록하고 날짜별로 다른 회차 목록을 돌려주는 가짜 — R33 P1.
 class _DatedRunRepository implements RunRepository {
-  _DatedRunRepository(this.byDate);
+  new(this.byDate);
 
   /// `YYYY-MM-DD` → 그날 회차. 없는 날짜는 빈 목록.
   final Map<String, List<StudentRun>> byDate;
@@ -113,7 +113,7 @@ class _RecordingChangeRequestRepository implements ChangeRequestRepository {
 }
 
 class _FixedClock implements Clock {
-  const _FixedClock(this._value);
+  const new(this._value);
   final DateTime _value;
 
   @override
@@ -125,7 +125,7 @@ Future<void> _pumpAndSubmit(WidgetTester tester, Failure failure) =>
 
 /// 접수 성공으로 응답하는 가짜 — 성공 안내 문구 시험용.
 class _AcceptingChangeRequestRepository implements ChangeRequestRepository {
-  _AcceptingChangeRequestRepository(this.result);
+  new(this.result);
 
   final ChangeRequestCreateResult result;
 

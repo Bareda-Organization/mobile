@@ -3,7 +3,7 @@ import 'package:manager_app/core/run/run_enums.dart';
 
 /// `GET /manager/runs` 항목 (API_SPEC §4.1, RUN-01 · M-02·M-07).
 class ManagerRun {
-  const ManagerRun({
+  const new({
     required this.runId,
     required this.busNo,
     required this.direction,
@@ -22,7 +22,7 @@ class ManagerRun {
     this.confirmAt,
   });
 
-  factory ManagerRun.fromJson(Map<String, dynamic> json) {
+  factory fromJson(Map<String, dynamic> json) {
     final startWindow = json['start_window'] as Map<String, dynamic>;
     return ManagerRun(
       runId: json['run_id'] as String,

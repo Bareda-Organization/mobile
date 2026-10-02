@@ -23,7 +23,7 @@ import '../../support/manager_run_fixture.dart';
 /// 송신이 멈추지 않는다. R32 M15·M16 이 넣은 "나갈까요?" 확인 창은 이유가 사라져 없앴다 — 운행 중이어도
 /// 뒤로가기는 바로 나간다.
 class _NeverResolvingTokenStorage extends TokenStorage {
-  _NeverResolvingTokenStorage()
+  new()
     : super(
         accessTokenKey: 'test_access_token',
         refreshTokenKey: 'test_refresh_token',

@@ -19,7 +19,7 @@ import 'package:parent_app/core/map/naver/naver_map_adapter.dart';
 
 /// 카메라(지도가 비추는 중심·확대 수준). 좌표계는 위경도(WGS84)를 가정한다.
 class MapCamera {
-  const MapCamera({required this.lat, required this.lng, this.zoom = 15});
+  const new({required this.lat, required this.lng, this.zoom = 15});
 
   final double lat;
   final double lng;
@@ -33,7 +33,7 @@ enum MapMarkerKind { bus, stop, student }
 /// 지도 위에 찍을 점 하나. `id` 는 같은 마커를 다음 갱신에서도 알아보기
 /// 위한 값이라 화면마다 고유해야 한다(예: `'bus-$studentId'`).
 class MapMarker {
-  const MapMarker({
+  const new({
     required this.id,
     required this.lat,
     required this.lng,
@@ -54,7 +54,7 @@ class MapMarker {
 /// `naver/naver_map_adapter.dart` 에 있다 — 이 클래스는 그 위임 하나만
 /// 한다.
 class MapSurface extends StatelessWidget {
-  const MapSurface({
+  const new({
     required this.camera,
     super.key,
     this.markers = const [],

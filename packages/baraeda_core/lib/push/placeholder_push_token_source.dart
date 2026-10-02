@@ -9,7 +9,7 @@ import 'package:baraeda_core/push/push_token_source.dart';
 class PlaceholderPushTokenSource implements PushTokenSource {
   /// 기기 식별자를 만드는 저장소를 받는다 — 토큰이 그 값에서 정해져 앱을 다시
   /// 켜도 같다.
-  PlaceholderPushTokenSource(this._storage);
+  new(this._storage);
 
   final DeviceRegistrationStorage _storage;
 

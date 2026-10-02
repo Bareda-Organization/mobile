@@ -24,7 +24,7 @@ import 'package:parent_app/core/auth/auth_providers.dart';
 ///   없다. [AppRoutes.blockedAccount] 로 직접 `push` 한다(UF-X-04).
 class LoginScreen extends ConsumerStatefulWidget {
   /// 앱 시작 · 로그아웃 후 진입 라우트(`/login`).
-  const LoginScreen({super.key});
+  const new({super.key});
 
   @override
   ConsumerState<LoginScreen> createState() => _LoginScreenState();

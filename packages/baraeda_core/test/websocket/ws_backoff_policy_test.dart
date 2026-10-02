@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 /// `nextDouble()` 을 고정값으로 돌려주는 난수 — 지터 범위를 정확히 재기 위한 가짜.
 class _FixedRandom implements Random {
-  _FixedRandom(this.value);
+  new(this.value);
 
   final double value;
 

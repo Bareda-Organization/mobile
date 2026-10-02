@@ -29,7 +29,7 @@ import '../../support/manager_run_fixture.dart';
 /// R32 M4 — 노선 변경 확인 띠(M-04)는 기사·동승자 공통인데 명단 화면에만 있어, 명단에 가지
 /// 않는 기사는 확인할 길이 없었다. 운행 화면에도 같은 띠가 떠야 한다.
 class _NeverResolvingTokenStorage extends TokenStorage {
-  _NeverResolvingTokenStorage()
+  new()
     : super(
         accessTokenKey: 'test_access_token',
         refreshTokenKey: 'test_refresh_token',
@@ -63,7 +63,7 @@ class _NoSample implements PositionSource {
 
 /// 확인 요청(§4.11)만 기록하는 대역 — 나머지는 이 시험의 대상이 아니다.
 class _AckRecordingRosterRepository implements RosterRepository {
-  _AckRecordingRosterRepository({this.failure});
+  new({this.failure});
 
   final Failure? failure;
   final ackedRunIds = <String>[];

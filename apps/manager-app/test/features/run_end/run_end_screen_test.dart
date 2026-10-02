@@ -21,7 +21,7 @@ import '../../support/manager_run_fixture.dart';
 
 /// 테스트 전용 대역 — 실제 네트워크 대신 호출 여부·인자만 기록한다.
 class _FakeReportsRepository implements ReportsRepository {
-  _FakeReportsRepository({this.result});
+  new({this.result});
 
   final ReportResult? result;
   ReportRequest? lastRequest;

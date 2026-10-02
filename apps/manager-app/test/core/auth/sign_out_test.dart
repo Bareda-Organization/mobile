@@ -10,7 +10,7 @@ import 'package:manager_app/features/auth/domain/auth_repository.dart';
 
 /// 로그아웃만 쓰는 가짜 — 나머지 메서드는 이 시험에서 불리면 안 된다.
 class _StubAuthRepository implements AuthRepository {
-  _StubAuthRepository({this.fail = false});
+  new({this.fail = false});
 
   final bool fail;
   int logoutCalls = 0;

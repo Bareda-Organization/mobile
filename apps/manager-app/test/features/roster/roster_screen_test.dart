@@ -32,7 +32,7 @@ import 'package:manager_app/features/roster/presentation/roster_screen.dart';
 /// 성공·실패를 주입할 수 있다. 미탑승 연락 기록만 이 파일의 시험 대상이
 /// 아니라 호출되면 실패하도록 둔다.
 class _FakeRosterRepository implements RosterRepository {
-  _FakeRosterRepository({
+  new({
     required this.roster,
     this.ackResult,
     this.ackFailure,
@@ -136,7 +136,7 @@ class _FakeRosterRepository implements RosterRepository {
 /// 시작한다)이 고정되고, 실제 컨트롤러 코드를 그대로 쓰면서도 부수효과가
 /// 없는 결정적 시험 상태를 얻는다.
 class _NeverResolvingTokenStorage extends TokenStorage {
-  _NeverResolvingTokenStorage()
+  new()
     : super(
         accessTokenKey: 'test_access_token',
         refreshTokenKey: 'test_refresh_token',
@@ -147,7 +147,7 @@ class _NeverResolvingTokenStorage extends TokenStorage {
 }
 
 class _FixedClock implements Clock {
-  const _FixedClock(this._now);
+  const new(this._now);
 
   final DateTime _now;
 

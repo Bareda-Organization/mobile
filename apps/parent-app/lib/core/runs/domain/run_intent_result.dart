@@ -25,7 +25,7 @@ enum RunIntentApplyResult {
 }
 
 class RunIntentResult {
-  const RunIntentResult({
+  const new({
     required this.result,
     required this.riding,
     required this.riderStatus,
@@ -34,7 +34,7 @@ class RunIntentResult {
     this.deadlineAt,
   });
 
-  factory RunIntentResult.fromJson(Map<String, dynamic> json) =>
+  factory fromJson(Map<String, dynamic> json) =>
       RunIntentResult(
         result: RunIntentApplyResult.fromWireValue(
           json['result'] as String,

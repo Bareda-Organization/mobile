@@ -6,7 +6,7 @@ import 'package:manager_app/features/navigation/data/models/navigation_scope.dar
 /// 운전 중 조작을 줄이려고 시트를 거치지 않고 두 버튼을 바로 둔다(누르면 곧바로 그 범위로 연다).
 /// 큰 글자에서는 [Wrap] 이 두 번째 버튼을 아래 줄로 내린다.
 class NavigationScopeButtons extends StatelessWidget {
-  const NavigationScopeButtons({
+  const new({
     required this.onSelected,
     required this.enabled,
     super.key,

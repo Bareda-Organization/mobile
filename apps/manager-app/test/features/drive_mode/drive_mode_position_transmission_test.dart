@@ -24,7 +24,7 @@ import 'package:manager_app/features/route_map/presentation/route_providers.dart
 
 /// 시각을 고정하는 가짜 시계 — `drive_mode_screen_test.dart` 와 같은 패턴.
 class _FixedClock implements Clock {
-  const _FixedClock(this._now);
+  const new(this._now);
 
   final DateTime _now;
 
@@ -36,7 +36,7 @@ class _FixedClock implements Clock {
 /// 시험이 고정하는 "지금"과 **다른 값**으로 둬서, 화면이 전송 시각을
 /// 새로 채우는 것이 아니라 이 값을 그대로 옮기는지 구별한다(§4.12).
 class _FakePositionSource implements PositionSource {
-  _FakePositionSource(
+  new(
     this._sample, {
     this.availability = PositionAvailability.available,
   });

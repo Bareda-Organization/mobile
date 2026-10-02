@@ -52,7 +52,7 @@ Dio _newDio(String baseUrl) => Dio(
 class ApiClient {
   /// [baseUrl]·[clientType] 은 앱마다 다를 수 있어 주입받는다
   /// (`api_constants.dart` 는 앱에 남아 있다).
-  ApiClient({
+  new({
     required this._tokenStorage,
     required String baseUrl,
     String clientType = 'app',
@@ -152,7 +152,7 @@ class _EnvelopeInterceptor extends Interceptor {
 /// 신호는 [ApiClient.sessionExpired] 가 낸다. 재발급·재시도가 일시 장애로 실패하면 그 오류를
 /// 그대로 던지고 토큰은 지우지 않는다.
 class _AuthInterceptor extends Interceptor {
-  _AuthInterceptor(
+  new(
     this._tokenStorage,
     this._dio,
     this._tokenRefresher, {

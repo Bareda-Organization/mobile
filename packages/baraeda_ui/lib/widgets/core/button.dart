@@ -22,7 +22,7 @@ enum BaraedaButtonSize { sm, md, lg }
 /// [BaraedaButtonVariant.danger]는 미탑승 처리·삭제 확정에만 쓴다.
 /// [onPressed]가 null이면 비활성(opacity 0.42 · not-allowed 커서)이다.
 class BaraedaButton extends StatelessWidget {
-  const BaraedaButton({
+  const new({
     required this.label,
     super.key,
     this.onPressed,
@@ -140,7 +140,7 @@ class BaraedaButton extends StatelessWidget {
 }
 
 class _ButtonPalette {
-  const _ButtonPalette({
+  const new({
     required this.background,
     required this.foreground,
     this.border,
@@ -183,7 +183,7 @@ _ButtonPalette _paletteFor(BaraedaButtonVariant variant, BaraedaColors c) {
 }
 
 class _ButtonMetrics {
-  const _ButtonMetrics({
+  const new({
     required this.height,
     required this.padding,
     required this.gap,

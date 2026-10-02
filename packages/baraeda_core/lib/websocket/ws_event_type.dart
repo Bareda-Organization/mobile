@@ -34,7 +34,7 @@ enum WsEventType {
   /// ②구간 변경 요청 접수 — 관계자 채널 전용.
   approvalRequested('approval_requested');
 
-  WsEventType(this.wireValue);
+  new(this.wireValue);
 
   /// 서버 `event` 필드 원문 값.
   final String wireValue;

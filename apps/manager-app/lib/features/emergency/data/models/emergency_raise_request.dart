@@ -7,7 +7,7 @@ import 'package:manager_app/features/emergency/data/models/emergency_type.dart';
 /// 중복 처리되지 않게). 즉시 전송이 실패해 오프라인 큐에 들어갈 때도 같은
 /// 값을 그대로 재사용한다(`OfflineQueueRepository.sendOrQueue` 참고).
 class EmergencyRaiseRequest {
-  const EmergencyRaiseRequest({
+  const new({
     required this.type,
     required this.clientKey,
     this.memo,

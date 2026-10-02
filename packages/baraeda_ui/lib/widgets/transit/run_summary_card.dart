@@ -12,7 +12,7 @@ import 'package:flutter/material.dart';
 
 /// 오늘 운행 한 장 요약 카드 — 출발지와 도착지를 나란히 둔다.
 class RunSummaryCard extends StatelessWidget {
-  const RunSummaryCard({
+  const new({
     super.key,
     this.bus,
     this.leg,
@@ -162,7 +162,7 @@ class RunSummaryCard extends StatelessWidget {
 }
 
 class _RunStopTile extends StatelessWidget {
-  const _RunStopTile({required this.icon, required this.label, this.value});
+  const new({required this.icon, required this.label, this.value});
 
   final String icon;
   final String label;

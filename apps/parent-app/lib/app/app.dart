@@ -13,7 +13,7 @@ import 'package:parent_app/core/network/offline_bar.dart';
 /// 자동 로그인(목표 표 5항) 판정 전에 `redirect` 가 먼저 돌면 저장된
 /// refresh 토큰이 있어도 한 프레임 로그인 화면이 먼저 그려진다.
 class BaraedaParentApp extends ConsumerWidget {
-  const BaraedaParentApp({super.key});
+  const new({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -73,7 +73,7 @@ class BaraedaParentApp extends ConsumerWidget {
 
 /// 앱 전체를 감싸 끊김 한 줄을 맨 위에 붙이는 틀.
 class _OfflineFrame extends ConsumerWidget {
-  const _OfflineFrame({required this.child});
+  const new({required this.child});
 
   final Widget? child;
 

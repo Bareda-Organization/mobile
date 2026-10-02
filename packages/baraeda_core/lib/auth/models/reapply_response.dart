@@ -4,10 +4,10 @@ import 'package:baraeda_core/auth/account_status.dart';
 /// 항상 `pending` 으로 되돌아간다.
 class ReapplyResponse {
   /// 필드 2개 전부 서버가 채워 보낸다.
-  const ReapplyResponse({required this.status, required this.requestedAt});
+  const new({required this.status, required this.requestedAt});
 
   /// 응답 본문을 그대로 옮긴다.
-  factory ReapplyResponse.fromJson(Map<String, dynamic> json) =>
+  factory fromJson(Map<String, dynamic> json) =>
       ReapplyResponse(
         status:
             AccountStatus.fromWireValueOrNull(json['status'] as String?) ??

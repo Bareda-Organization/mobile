@@ -8,7 +8,7 @@ const freeTextPrivacyNotice = '학생 이름·연락처는 적지 마세요';
 /// 제한하고 넘으면 `422` 를 내므로(API_SPEC §1) 입력칸에서 먼저 멈춘다. 공용 `BaraedaTextarea` 는
 /// 길이 제한 인자가 없어 컨트롤러 쪽에서 막는다.
 class LimitedTextController extends TextEditingController {
-  LimitedTextController({this.maxLength = memoMaxLength});
+  new({this.maxLength = memoMaxLength});
 
   /// 자유 입력 메모·비고의 최대 길이(API_SPEC §1, 2026-09-30 BR-255 · BR-257).
   static const memoMaxLength = 200;

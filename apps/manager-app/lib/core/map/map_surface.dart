@@ -11,7 +11,7 @@ import 'package:manager_app/core/map/naver/naver_map_adapter.dart';
 
 /// 지도 카메라(중심 좌표·확대 수준).
 class MapCamera {
-  const MapCamera({required this.lat, required this.lng, required this.zoom});
+  const new({required this.lat, required this.lng, required this.zoom});
 
   final double lat;
   final double lng;
@@ -36,7 +36,7 @@ enum MapMarkerKind {
 
 /// 지도 위에 놓일 마커 하나.
 class MapMarker {
-  const MapMarker({
+  const new({
     required this.id,
     required this.lat,
     required this.lng,
@@ -63,7 +63,7 @@ class MapMarker {
 
 /// 지도 위에 그릴 선 하나(예: 확정 노선의 도로 경로). 점은 순서대로 이어진다.
 class MapPolyline {
-  const MapPolyline({required this.id, required this.points});
+  const new({required this.id, required this.points});
 
   final String id;
   final List<({double lat, double lng})> points;
@@ -71,7 +71,7 @@ class MapPolyline {
 
 /// 마커·선이 전부 들어오는 최소 사각형 — 카메라를 내용에 맞출 때 쓴다.
 class MapBounds {
-  const MapBounds({
+  const new({
     required this.south,
     required this.west,
     required this.north,
@@ -119,7 +119,7 @@ const double _metersPerDegreeLatitude = 111320;
 
 /// 카메라 맞춤 결과 — 맞출 사각형과 그 안에 넣은 마커 id.
 class MapFit {
-  const MapFit({required this.bounds, required this.markerIds});
+  const new({required this.bounds, required this.markerIds});
 
   final MapBounds bounds;
 
@@ -185,7 +185,7 @@ typedef MapAuthFailedCallback = void Function(Object exception);
 /// 실제 렌더링·마커 배치는 [NaverMapAdapter] 가 맡는다. 이 클래스는 그
 /// 어댑터를 감싸는 얇은 위임일 뿐이며, SDK import 는 이 파일에 없다.
 class MapSurface extends StatelessWidget {
-  const MapSurface({
+  const new({
     required this.camera,
     super.key,
     this.markers = const [],

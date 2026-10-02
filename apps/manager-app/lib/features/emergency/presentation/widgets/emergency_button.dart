@@ -18,7 +18,7 @@ import 'package:manager_app/features/home/presentation/home_providers.dart';
 /// [homeRuns](오늘 배정된 회차 전부)를 받아 신고할 수 있는 회차를 찾는다 — 확정 이후이고
 /// 아직 끝나지 않은 회차([canRaiseEmergency]). 운행 중이 아니어도 된다(출발 전 차량 이상).
 class EmergencyButton extends ConsumerWidget {
-  const EmergencyButton({super.key, this.homeRuns});
+  const new({super.key, this.homeRuns});
 
   /// 홈에서만 넘긴다. `null` 이면 이미 골라진 회차([selectedRunIdProvider])로 간다.
   final List<ManagerRun>? homeRuns;

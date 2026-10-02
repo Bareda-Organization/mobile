@@ -11,7 +11,7 @@ import 'package:parent_app/features/schedule/presentation/widgets/weekly_address
 /// 이월 2-2 — API_SPEC §3.7 `ADDRESS_VERIFICATION_FAILED` 가 이 화면에서
 /// 실제로 안내 문구로 갈리는지 확인한다.
 class _ThrowingWeeklyAddressRepository implements WeeklyAddressRepository {
-  _ThrowingWeeklyAddressRepository(this.failure);
+  new(this.failure);
 
   final Failure failure;
 

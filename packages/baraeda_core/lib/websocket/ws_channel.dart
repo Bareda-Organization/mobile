@@ -6,7 +6,7 @@
 /// 여기 빌더 함수 4개로 고정한다 — 채널은 이 4개뿐이고 앞으로도 늘어나지
 /// 않는다(`/ws/location` 하나가 연결 엔드포인트, 나머지는 그 위의 목적지).
 class WsChannel {
-  const WsChannel._();
+  const new _();
 
   /// 학부모(연결된 자녀)·학생(본인) 전용 — 방송: `position` · `stop_arrived` ·
   /// `run_started` · `run_ended`.

@@ -6,7 +6,7 @@ import 'package:baraeda_ui/widgets/core/baraeda_status.dart';
 /// 그리는 `NotificationTile`·`NotificationListView` 는 두 앱이 함께 쓴다.
 class NotificationKind {
   /// 종류 하나의 모양.
-  const NotificationKind({
+  const new({
     required this.icon,
     required this.status,
     required this.label,

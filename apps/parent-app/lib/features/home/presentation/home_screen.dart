@@ -29,7 +29,7 @@ import 'package:parent_app/features/home/presentation/widgets/run_card.dart';
 /// 토글(UF-P-04, ②구간 승인 대기는 UF-P-05). 학생은
 /// 본인 `student_id` 하나만 쓴다(UF-S-01 조회 전용).
 class HomeScreen extends ConsumerStatefulWidget {
-  const HomeScreen({super.key});
+  const new({super.key});
 
   @override
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
@@ -115,7 +115,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
 /// 학부모 갈래 — §3.1 연결 자녀 목록을 먼저 받아야 회차를 조회할 수 있다.
 class _ParentSection extends ConsumerWidget {
-  const _ParentSection();
+  const new();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -159,7 +159,7 @@ class _ParentSection extends ConsumerWidget {
 
 /// 불러오기 실패 띠 — 띠만 있으면 화면을 나갔다 들어오는 수밖에 없어 [다시 시도] 를 붙인다(R32 P7).
 class _ErrorBanner extends StatelessWidget {
-  const _ErrorBanner({required this.message, required this.onRetry});
+  const new({required this.message, required this.onRetry});
 
   final String message;
   final VoidCallback onRetry;
@@ -181,7 +181,7 @@ class _ErrorBanner extends StatelessWidget {
 
 /// 학부모 홈의 항상 보이는 진입 둘 — 등하원 일정(P-05·P-06)과 자녀 추가(P-02).
 class _ParentShortcuts extends StatelessWidget {
-  const _ParentShortcuts();
+  const new();
 
   @override
   Widget build(BuildContext context) {
@@ -210,7 +210,7 @@ class _ParentShortcuts extends StatelessWidget {
 
 /// 학생 갈래 — 본인 `student_id` 하나만 쓴다(조회 전용, UF-S-01).
 class _StudentSection extends ConsumerWidget {
-  const _StudentSection();
+  const new();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -248,7 +248,7 @@ class _StudentSection extends ConsumerWidget {
 /// 회차 영역 — [오늘 · 내일] 전환(UF-P-04 "전날~당일"). 내일은 한국 시간 내일 날짜로 §3.5 를 조회한다.
 /// 학생(`canToggle` false)도 내일 회차를 볼 수 있으나 토글은 없다.
 class _RunsSection extends ConsumerStatefulWidget {
-  const _RunsSection({required this.studentId, required this.canToggle});
+  const new({required this.studentId, required this.canToggle});
 
   final String studentId;
   final bool canToggle;

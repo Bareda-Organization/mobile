@@ -16,7 +16,7 @@ import 'package:flutter/material.dart';
 /// 왼쪽 막대와 `중요` 글자를 함께 쓴다(색만으로 구분하지 않는다). 행 전체가 낭독기에 한 문장으로
 /// 읽히고 자식 글자는 가려 같은 말을 두 번 읽지 않는다(F07-10).
 class NotificationTile extends StatelessWidget {
-  const NotificationTile({
+  const new({
     required this.icon,
     required this.status,
     required this.kindLabel,
@@ -140,7 +140,7 @@ class NotificationTile extends StatelessWidget {
 
 /// 종류 아이콘 원 — 안 읽음이면 꽉 찬 색에 반전 글리프, 읽음이면 옅은 색에 상태 색 글리프.
 class _Glyph extends StatelessWidget {
-  const _Glyph({
+  const new({
     required this.icon,
     required this.solid,
     required this.soft,
@@ -171,7 +171,7 @@ class _Glyph extends StatelessWidget {
 }
 
 class _Texts extends StatelessWidget {
-  const _Texts(this.tile, this.colors);
+  const new(this.tile, this.colors);
 
   final NotificationTile tile;
   final BaraedaColors colors;
@@ -215,7 +215,7 @@ class _Texts extends StatelessWidget {
 
 /// 오른쪽 열 — 시각 · (중요 글자) · (안 읽음 점).
 class _Meta extends StatelessWidget {
-  const _Meta(this.tile, this.colors, this.solid);
+  const new(this.tile, this.colors, this.solid);
 
   final NotificationTile tile;
   final BaraedaColors colors;

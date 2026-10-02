@@ -9,7 +9,7 @@
 /// `NOverlayImage.makeOverlayImageWithPath`).
 class SerialSync {
   /// [_task] 는 한 번 동기화하는 일 — 겹쳐 불리지 않는다.
-  SerialSync(this._task);
+  new(this._task);
 
   final Future<void> Function() _task;
   Future<void>? _running;
