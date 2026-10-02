@@ -4,7 +4,7 @@ enum RunDirection {
   toAcademy('to_academy'),
   fromAcademy('from_academy');
 
-  const RunDirection(this.wireValue);
+  RunDirection(this.wireValue);
 
   final String wireValue;
 

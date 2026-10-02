@@ -43,7 +43,7 @@ class _Repository implements AuthRepository {
     required String password,
   }) async {
     loggedInWith = (loginId: loginId, password: password);
-    if (loginFails) return Future.error(const Failure.network());
+    if (loginFails) return await Future.error(const Failure.network());
     return const LoginResponse(
       accessToken: 't',
       role: AccountRole.parent,

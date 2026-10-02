@@ -57,7 +57,7 @@ class _RunCardState extends ConsumerState<RunCard> {
   /// 탑승 취소(끄기)만 확인을 거친다(켜기는 바로) — 구간마다 결과가 달라 문구를 가른다(UF-P-04·05).
   /// 구간 판정은 서버가 준 `run_status`·`confirmed` 로만 한다(시각으로 계산하지 않는다).
   Future<void> _onSwitchChanged(bool value) async {
-    if (value) return _toggle(true);
+    if (value) return await _toggle(true);
     final run = widget.run;
     final confirmed = await showConfirmDialog(
       context,

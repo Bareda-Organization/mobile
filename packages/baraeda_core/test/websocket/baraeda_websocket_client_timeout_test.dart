@@ -99,7 +99,7 @@ void main() {
     late _SilentServer server;
 
     setUp(() => server = _SilentServer());
-    tearDown(() async => server.stop());
+    tearDown(() async => await server.stop());
 
     test(
       'CONNECTED 가 한도 안에 안 오면 연결 시도를 끊고 reconnecting 으로 이어서 다시 시도한다',

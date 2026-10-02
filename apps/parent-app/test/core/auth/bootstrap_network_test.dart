@@ -22,7 +22,7 @@ class _MeRepository implements AuthRepository {
   @override
   Future<MeResponse> me() async {
     calls++;
-    if (calls == 1) return Future<MeResponse>.error(failure);
+    if (calls == 1) return await Future<MeResponse>.error(failure);
     return const MeResponse(
       accountId: 'a-1',
       loginId: 'studentA4',

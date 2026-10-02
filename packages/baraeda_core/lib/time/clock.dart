@@ -5,7 +5,6 @@
 /// 시각을 얼리지 않고, 대신 "지금이 몇 시인지 묻는 방법" 하나만 주입 가능하게
 /// 만든다. 테스트에서만 [Clock] 을 가짜 구현으로 바꿔 특정 시각을 고정한다.
 // 공개 API 라 함수로 바꾸지 않는다 — 시험이 이 인터페이스를 구현해 시각을 고정한다.
-// ignore: one_member_abstracts
 abstract interface class Clock {
   /// 판정에 사용할 현재 시각.
   DateTime now();

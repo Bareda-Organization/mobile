@@ -93,7 +93,7 @@ Future<void> _pumpDrive(
     todayRunsProvider.overrideWith(
       (ref) async => [managerRunFixture(status: RunStatus.moving)],
     ),
-    driveModeRosterProvider.overrideWith((ref) async => roster(calls++)),
+    driveModeRosterProvider.overrideWith((ref) async => await roster(calls++)),
   ];
   await tester.pumpWidget(
     ProviderScope(

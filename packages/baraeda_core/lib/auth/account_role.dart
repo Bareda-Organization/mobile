@@ -25,7 +25,7 @@ enum AccountRole {
   /// 플랫폼 관리자 — 관계자 웹, `academy` 가 없는 유일한 역할.
   systemAdmin('system_admin');
 
-  const AccountRole(this.wireValue);
+  AccountRole(this.wireValue);
 
   /// 서버 응답의 `role` 필드 원문 값.
   final String wireValue;

@@ -5,7 +5,7 @@ enum ReportType {
   vehicleIssue('vehicle_issue'),
   etc('etc');
 
-  const ReportType(this.wireValue);
+  ReportType(this.wireValue);
 
   final String wireValue;
 }

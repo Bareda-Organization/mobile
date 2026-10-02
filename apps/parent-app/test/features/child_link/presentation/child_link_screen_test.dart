@@ -23,14 +23,14 @@ class _StubLinkRepository implements LinkRepository {
   @override
   Future<LinkConfirmResult> confirmLink(String code) async {
     final failure = confirmLinkFailure;
-    if (failure != null) return Future.error(failure);
+    if (failure != null) return await Future.error(failure);
     return const LinkConfirmResult(studentId: 's-1', name: '홍길동');
   }
 
   @override
   Future<LinkCodeResult> generateLinkCode() async {
     final failure = generateLinkCodeFailure;
-    if (failure != null) return Future.error(failure);
+    if (failure != null) return await Future.error(failure);
     return LinkCodeResult(code: '123456', expiresAt: DateTime(2026, 9, 12));
   }
 }

@@ -59,7 +59,7 @@ class _GatedRosterRepository implements RosterRepository {
       return const Queued();
     }
     final gate = gates[riderId];
-    if (gate != null) return gate.future;
+    if (gate != null) return await gate.future;
     return Sent(_result(riderId));
   }
 

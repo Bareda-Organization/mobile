@@ -39,7 +39,7 @@ class _StubAuthRepository implements AuthRepository {
   Future<SignupStatusResponse> signupStatus() async {
     signupStatusCalls++;
     if (failFromSecondCall && signupStatusCalls > 1) {
-      return Future.error(const Failure.network());
+      return await Future.error(const Failure.network());
     }
     return SignupStatusResponse(
       status: signupStatusCalls > 1

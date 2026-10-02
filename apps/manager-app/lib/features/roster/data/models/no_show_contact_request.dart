@@ -3,7 +3,7 @@ enum NoShowAttemptType {
   call('call'),
   message('message');
 
-  const NoShowAttemptType(this.wireValue);
+  NoShowAttemptType(this.wireValue);
 
   final String wireValue;
 }
@@ -13,7 +13,7 @@ enum NoShowContactResult {
   answered('answered'),
   noAnswer('no_answer');
 
-  const NoShowContactResult(this.wireValue);
+  NoShowContactResult(this.wireValue);
 
   final String wireValue;
 }
@@ -23,7 +23,7 @@ enum NoShowDecision {
   depart('depart'),
   retry('retry');
 
-  const NoShowDecision(this.wireValue);
+  NoShowDecision(this.wireValue);
 
   final String wireValue;
 }

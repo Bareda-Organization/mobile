@@ -1,6 +1,11 @@
 include: package:very_good_analysis/analysis_options.yaml
 
 # CONVENTIONS_FLUTTER.md §1 — 린트는 very_good_analysis 로 고정한다.
+linter:
+  rules:
+    # Dart 3.13 새 생성자 문법(`new(...)`)이 전제인 규칙 — freezed 코드 생성이 그 문법을
+    # 실험 기능(primary-constructors)으로 거부해 생성 파일이 사라진다 (Ruling 770).
+    unnecessary_type_name_in_constructor: false
 
 analyzer:
   exclude:

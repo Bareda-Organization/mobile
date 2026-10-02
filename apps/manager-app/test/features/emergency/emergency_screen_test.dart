@@ -113,7 +113,7 @@ class _FakePositionSource implements PositionSource {
     Duration timeout = const Duration(seconds: 5),
   }) async {
     sampleOnceCallCount++;
-    if (onceCompleter != null) return onceCompleter!.future;
+    if (onceCompleter != null) return await onceCompleter!.future;
     return onceSample;
   }
 

@@ -12,7 +12,7 @@ enum RunDirection {
   /// 하원.
   fromAcademy('from_academy');
 
-  const RunDirection(this.wireValue);
+  RunDirection(this.wireValue);
 
   final String wireValue;
 
@@ -32,7 +32,7 @@ enum RunStatus {
   moving('moving'),
   finished('finished');
 
-  const RunStatus(this.wireValue);
+  RunStatus(this.wireValue);
 
   final String wireValue;
 
@@ -55,7 +55,7 @@ enum RiderStatus {
   noShow('no_show'),
   absent('absent');
 
-  const RiderStatus(this.wireValue);
+  RiderStatus(this.wireValue);
 
   final String wireValue;
 

@@ -7,7 +7,7 @@ enum RouteStopChange {
   added('added'),
   skipped('skipped');
 
-  const RouteStopChange(this.wireValue);
+  RouteStopChange(this.wireValue);
 
   final String wireValue;
 

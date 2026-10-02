@@ -4,8 +4,6 @@
 // 학부모 앱 홈의 제목 "오늘 운행" 이 상태 표시줄 시계와 **겹쳐 그려졌다.**
 // Material `AppBar` 는 안쪽에서 안전 영역을 처리하지만, 직접 만든
 // `PreferredSizeWidget` 은 그 일을 스스로 해야 한다.
-import 'dart:async';
-
 import 'package:baraeda_ui/theme/baraeda_theme.dart';
 import 'package:baraeda_ui/widgets/navigation/app_header.dart';
 import 'package:flutter/material.dart';
@@ -58,13 +56,11 @@ void main() {
       ),
     );
     final homeContext = tester.element(find.text('오늘 운행'));
-    unawaited(
-      Navigator.of(homeContext).push(
-        MaterialPageRoute<void>(
-          builder: (_) => const Scaffold(
-            appBar: AppHeader(title: '설정'),
-            body: SizedBox(),
-          ),
+    Navigator.of(homeContext).push(
+      MaterialPageRoute<void>(
+        builder: (_) => const Scaffold(
+          appBar: AppHeader(title: '설정'),
+          body: SizedBox(),
         ),
       ),
     );

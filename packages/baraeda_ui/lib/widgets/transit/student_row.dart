@@ -25,7 +25,7 @@ class _RideMeta {
   final String label;
   final BaraedaStatus status;
 
-  static const _table = {
+  static const Map<RideStatus, _RideMeta> _table = {
     RideStatus.boarded: _RideMeta('탑승 완료', BaraedaStatus.boarded),
     RideStatus.alighted: _RideMeta('하차 완료', BaraedaStatus.boarded),
     RideStatus.absent: _RideMeta('미등원', BaraedaStatus.idle),

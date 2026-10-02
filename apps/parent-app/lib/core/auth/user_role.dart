@@ -9,7 +9,7 @@ enum UserRole {
   /// 학생.
   student('student');
 
-  const UserRole(this.wireValue);
+  UserRole(this.wireValue);
 
   /// 서버가 주는 `role` 필드 값.
   final String wireValue;

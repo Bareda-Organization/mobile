@@ -6,7 +6,6 @@ import 'package:manager_app/features/run_end/data/models/report_result.dart';
 // 메서드가 하나뿐이지만 `di.dart` 의 Provider<XRepository> 조립 지점과
 // 맞추려 인터페이스로 둔다(CONVENTIONS_FLUTTER.md §2, RosterRepository 등
 // 여러 메서드짜리와 같은 패턴) — 최상위 함수로 바꾸면 그 조립 방식이 깨진다.
-// ignore: one_member_abstracts
 abstract interface class ReportsRepository {
   Future<ReportResult> submitReport({
     required String runId,

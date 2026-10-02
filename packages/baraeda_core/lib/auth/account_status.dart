@@ -17,7 +17,7 @@ enum AccountStatus {
   /// 승인 거절 — 재신청(§2.4)으로 [pending] 으로 되돌아갈 수 있다.
   rejected('rejected');
 
-  const AccountStatus(this.wireValue);
+  AccountStatus(this.wireValue);
 
   /// 서버 응답의 `status` 필드 원문 값.
   final String wireValue;

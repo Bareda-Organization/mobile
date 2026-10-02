@@ -521,7 +521,7 @@ class _RecordingRunRepository implements RunRepository {
     required bool riding,
   }) async {
     calls.add(riding);
-    if (pending != null) return pending!.future;
+    if (pending != null) return await pending!.future;
     if (result != null) return result!;
     return RunIntentResult(
       result: RunIntentApplyResult.applied,

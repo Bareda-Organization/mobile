@@ -81,13 +81,13 @@ class TokenRefresher {
       );
     } on DioException catch (e) {
       if (e.response?.statusCode != 401) rethrow;
-      return _invalidate(clearCountAtStart);
+      return await _invalidate(clearCountAtStart);
     }
     final body = response.data;
     final newAccessToken = body?['access_token'] as String?;
     final newRefreshToken = body?['refresh_token'] as String?;
     if (newAccessToken == null || newRefreshToken == null) {
-      return _invalidate(clearCountAtStart);
+      return await _invalidate(clearCountAtStart);
     }
     if (_tokenStorage.clearCount != clearCountAtStart) return null;
     await _tokenStorage.saveTokens(

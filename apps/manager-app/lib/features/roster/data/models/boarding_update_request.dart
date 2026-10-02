@@ -8,7 +8,7 @@ enum VerifyMethod {
   photo('photo'),
   manual('manual');
 
-  const VerifyMethod(this.wireValue);
+  VerifyMethod(this.wireValue);
 
   final String wireValue;
 }

@@ -6,7 +6,6 @@ import 'package:parent_app/core/students/domain/student.dart';
 /// repository(§3.2~§3.9)들과 같은 인터페이스+구현체 계층 구조를 유지하기
 /// 위해 최상위 함수로 바꾸지 않는다(DI 조합근인 `di.dart` 의 `Provider`
 /// 배선과도 일관된다).
-// ignore: one_member_abstracts
 abstract interface class StudentRepository {
   /// §3.1. 연결 자녀가 없으면 빈 리스트.
   Future<List<Student>> getMyStudents();

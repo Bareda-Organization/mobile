@@ -7,7 +7,7 @@ enum StopChange {
   added('added'),
   skipped('skipped');
 
-  const StopChange(this.wireValue);
+  StopChange(this.wireValue);
 
   final String wireValue;
 
@@ -24,7 +24,7 @@ enum RiderChange {
   added('added'),
   removed('removed');
 
-  const RiderChange(this.wireValue);
+  RiderChange(this.wireValue);
 
   final String wireValue;
 

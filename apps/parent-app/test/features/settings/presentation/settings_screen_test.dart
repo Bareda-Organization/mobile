@@ -30,7 +30,7 @@ class _StubAuthRepository implements AuthRepository {
   Future<void> logout() async {
     logoutCallCount++;
     final failure = logoutFailure;
-    if (failure != null) return Future.error(failure);
+    if (failure != null) return await Future.error(failure);
   }
 
   // 이 화면이 실제로 부르지 않는 메서드는 미구현으로 둔다 — 범위 밖

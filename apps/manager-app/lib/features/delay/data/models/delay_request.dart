@@ -5,7 +5,7 @@ enum DelayReason {
   vehicleCheck('vehicle_check'),
   prevStopWait('prev_stop_wait');
 
-  const DelayReason(this.wireValue);
+  DelayReason(this.wireValue);
 
   final String wireValue;
 }

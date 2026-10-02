@@ -119,6 +119,6 @@ void main() {
 /// 별칭 — 위젯 쪽 임포트만으로는 `BaraedaColors.light/.dark` 정적 필드가
 /// 바로 안 보여서 짧게 감싼다.
 abstract final class BaraedaColorsFixture {
-  static const light = BaraedaColors.light;
-  static const dark = BaraedaColors.dark;
+  static const BaraedaColors light = BaraedaColors.light;
+  static const BaraedaColors dark = BaraedaColors.dark;
 }
