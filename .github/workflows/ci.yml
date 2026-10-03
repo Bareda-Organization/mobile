@@ -22,12 +22,15 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      # 연결 끊김 문구 대조 시험(ws_connection_notice_test)이 읽는 웹 파일 — web 저장소(같은 조직, 공개)에서 한 파일만 받는다.
+      # 웹 문구 대조 시험(ws_connection_notice_test · signup_status_response_test)이 읽는 웹 파일 — web 저장소(같은 조직, 공개)에서 그 파일만 받는다.
       - uses: actions/checkout@v7
         with:
           repository: ${{ github.repository_owner }}/web
           path: .web-src
-          sparse-checkout: src/shared/lib/ws/wsConnectionNotice.ts
+          # 앱의 웹 문구 대조 시험이 읽는 파일 전부(WEB_REPO_DIR) — 대조 시험을 더하면 여기에도 더한다
+          sparse-checkout: |
+            src/shared/lib/ws/wsConnectionNotice.ts
+            src/features/auth/components/SignupStatusPanel.tsx
           sparse-checkout-cone-mode: false
 
       - uses: subosito/flutter-action@v2
