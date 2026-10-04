@@ -17,7 +17,9 @@ import 'package:parent_app/core/students/domain/student.dart';
 import 'package:parent_app/core/students/presentation/selected_student.dart';
 import 'package:parent_app/core/students/presentation/student_switcher.dart';
 import 'package:parent_app/features/home/presentation/home_providers.dart';
-import 'package:parent_app/features/live_map/domain/bus_position.dart';
+import 'package:parent_app/core/runs/domain/bus_position.dart';
+import 'package:parent_app/core/runs/domain/student_run.dart';
+import 'package:parent_app/core/runs/presentation/run_providers.dart';
 import 'package:parent_app/features/live_map/domain/bus_position_repository.dart';
 import 'package:parent_app/features/live_map/presentation/live_map_screen.dart';
 // `Override` 는 `flutter_riverpod.dart` 배럴이 재노출하지 않는다(3.4.3 확인 —
@@ -470,7 +472,7 @@ void main() {
       await tester.pump();
 
       expect(find.text('아직 위치 정보가 없습니다'), findsNothing);
-      expect(find.textContaining('마지막으로 지난 승하차지: 정문 앞'), findsOneWidget);
+      expect(find.textContaining('마지막으로 지난 곳 · 정문 앞'), findsOneWidget);
 
       // ⚠ 2026-09-21 실측 — 이 줄이 UTC 를 그대로 벽시계로 보여줬다(한국시간
       // 20:03 에 "11:03:23 기준"). 서버가 주는 `received_at` 은 UTC 순간이고
@@ -1188,7 +1190,7 @@ void main() {
           .join('\n');
       // 핀·내 승하차지 문구가 실제로 그려진 상태에서만 "없다" 가 의미가 있다.
       expect(rendered, contains('내 승하차지 · 행복아파트 정문'));
-      expect(rendered, contains('마지막으로 지난 승하차지: 앞 승하차지'));
+      expect(rendered, contains('마지막으로 지난 곳 · 앞 승하차지'));
       expect(
         rendered,
         isNot(matches(RegExp(r'도착 예정|ETA|예상|곳 전|정거장 전|분 후|탑승 인원|\d+\s*명'))),
@@ -1214,6 +1216,110 @@ void main() {
       expect(surface(tester).markers.map((m) => m.kind), [MapMarkerKind.bus]);
       expect(find.textContaining('내 승하차지'), findsNothing);
       expect(find.byType(AlertBanner), findsNothing);
+    });
+  });
+
+  // R48 `Ruling 821` — 전체 지도 화면도 §3.11 의 delay · started_at · finished_at 을 그린다.
+  // WebSocket 이벤트(`run_started` · `run_ended`)를 놓치고 들어와도 시각이 비지 않고, 지연 띠는 delay 에서 온다.
+  group('R48 §3.11 스냅샷의 지연 띠 · 운행 시각', () {
+    final startedAt = DateTime.utc(2026, 9, 13, 3, 5);
+    final finishedAt = DateTime.utc(2026, 9, 13, 3, 52);
+
+    Future<void> pumpWithSnapshot(
+      WidgetTester tester,
+      BusPosition snapshot,
+    ) async {
+      tester.view.physicalSize = const Size(800, 2400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await pumpScreen(
+        tester,
+        busPositionRepository: _ScriptedBusPositionRepository([snapshot]),
+        extraOverrides: [
+          roleCapabilitiesProvider.overrideWithValue(
+            RoleCapabilities.of(UserRole.student),
+          ),
+          myStudentIdProvider.overrideWith((ref) async => 's-1'),
+          // 스냅샷은 당일 결석 대조(`runsForStudentProvider`)까지 끝나야 화면에 반영된다 — 진짜 네트워크를 기다리지 않게 막는다.
+          runsForStudentProvider.overrideWith(
+            (ref, id) async => const <StudentRun>[],
+          ),
+          clockProvider.overrideWithValue(
+            _MutableClock(DateTime.utc(2026, 9, 13, 3, 14)),
+          ),
+        ],
+      );
+      await tester.pump();
+      await tester.pump();
+      client.emit(WsConnectionState.connected);
+      await tester.pumpAndSettle();
+    }
+
+    BusPosition snapshot({
+      RunStatus status = RunStatus.moving,
+      BusDelay? delay,
+      DateTime? started,
+      DateTime? finished,
+    }) => BusPosition(
+      runId: 'r-1',
+      busNo: '2호차',
+      runStatus: status,
+      lat: 37.5,
+      lng: 127.0,
+      receivedAt: DateTime.utc(2026, 9, 13, 3, 14),
+      currentStopName: '정문 앞',
+      currentStopArrivedAt: DateTime(2026, 9, 13, 12, 9),
+      startedAt: started,
+      finishedAt: finished,
+      delay: delay,
+    );
+
+    testWidgets('delay 가 있으면 "버스가 10분 늦어요" 띠와 사유가 나온다', (tester) async {
+      await pumpWithSnapshot(
+        tester,
+        snapshot(
+          delay: BusDelay(
+            minutes: 10,
+            reason: '교통 체증',
+            sentAt: DateTime.utc(2026, 9, 13, 3, 12),
+          ),
+        ),
+      );
+
+      expect(find.text('버스가 10분 늦어요'), findsOneWidget);
+      expect(find.text('교통 체증'), findsOneWidget);
+    });
+
+    testWidgets('delay 가 null 이면 띠가 없다', (tester) async {
+      await pumpWithSnapshot(tester, snapshot());
+
+      expect(find.textContaining('늦어요'), findsNothing);
+    });
+
+    testWidgets('WebSocket 이벤트를 못 받았어도 REST 의 started_at 으로 운행 시작 시각을 그린다', (tester) async {
+      await pumpWithSnapshot(tester, snapshot(started: startedAt));
+
+      // 이벤트(`run_started`)는 한 번도 오지 않았다 — 시각은 스냅샷에서 온다.
+      expect(find.textContaining('운행 시작 ·'), findsOneWidget);
+    });
+
+    testWidgets('finished_at 이 있으면 운행 종료 시각을 그린다', (tester) async {
+      await pumpWithSnapshot(
+        tester,
+        snapshot(
+          status: RunStatus.finished,
+          started: startedAt,
+          finished: finishedAt,
+        ),
+      );
+
+      expect(find.textContaining('운행 종료 ·'), findsOneWidget);
+    });
+
+    testWidgets('마지막으로 지난 곳에는 도착 시각이 붙는다 — 12:09', (tester) async {
+      await pumpWithSnapshot(tester, snapshot());
+
+      expect(find.textContaining('마지막으로 지난 곳 · 12:09'), findsOneWidget);
     });
   });
 }

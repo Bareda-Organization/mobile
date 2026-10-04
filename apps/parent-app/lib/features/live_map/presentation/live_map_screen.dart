@@ -15,7 +15,10 @@ import 'package:parent_app/core/routes/presentation/route_providers.dart';
 import 'package:parent_app/core/students/presentation/selected_student.dart';
 import 'package:parent_app/core/students/presentation/student_providers.dart';
 import 'package:parent_app/core/students/presentation/student_switcher.dart';
-import 'package:parent_app/features/live_map/domain/bus_position.dart';
+import 'package:parent_app/core/runs/domain/student_run.dart';
+import 'package:parent_app/core/runs/presentation/run_display.dart';
+import 'package:parent_app/core/ui/delay_band.dart';
+import 'package:parent_app/core/runs/domain/bus_position.dart';
 import 'package:parent_app/features/live_map/domain/live_map_status.dart';
 import 'package:parent_app/features/live_map/presentation/live_map_providers.dart';
 
@@ -257,6 +260,20 @@ class _LiveMapBodyState extends ConsumerState<_LiveMapBody> {
 
     final now = ref.watch(clockProvider).now();
 
+    // R48 `Ruling 821` — §3.11 스냅샷이 주는 지연 안내 · 운행 시작/종료 시각. WebSocket 이벤트(`run_started` ·
+    // `run_ended`)를 놓치고 들어와도 시각이 비지 않게, 이벤트가 있으면 이벤트를 쓰고 없으면 스냅샷을 쓴다.
+    final delay = restPosition?.runStatus == RunStatus.finished
+        ? null
+        : restPosition?.delay;
+    final startedAt = state.runStarted?.startedAt ?? restPosition?.startedAt;
+    final finishedAt = state.runEnded?.finishedAt ?? restPosition?.finishedAt;
+    // 위치(좌표)·시각·지연 중 하나라도 스냅샷이 줬으면 "정보 없음" 안내로 떨어뜨리지 않는다.
+    final hasRestInfo =
+        delay != null ||
+        startedAt != null ||
+        finishedAt != null ||
+        (restPosition?.lat != null && restPosition?.lng != null);
+
     // 신호 유실(Ruling 208 — 마지막 수신 후 2분) — 서버가 좌표 없이
     // `last_seen_at` 만 돌려준 경우다. `run_status` 가 `moving` 이 아니면서
     // `last_seen_at` 도 없는 것은 유실이 아니라 그냥 운행 전·후 상태이므로
@@ -317,7 +334,7 @@ class _LiveMapBodyState extends ConsumerState<_LiveMapBody> {
       );
     }
 
-    if (state.hasNoData) {
+    if (state.hasNoData && !hasRestInfo) {
       return const EmptyState(
         title: '아직 위치 정보가 없습니다',
         body: '버스가 운행을 시작하면 실시간 위치가 표시됩니다',
@@ -326,6 +343,12 @@ class _LiveMapBodyState extends ConsumerState<_LiveMapBody> {
 
     return ListView(
       children: [
+        // 지연 안내 띠 — ETA 가 아니라 학원이 보낸 지연 알림이다(NTF-07). `null` 이면 그리지 않는다.
+        if (delay != null)
+          Padding(
+            padding: const EdgeInsets.only(bottom: BaraedaSpacing.space4),
+            child: DelayBand(delay: delay),
+          ),
         if (connection == LiveMapConnection.reconnecting)
           const Padding(
             padding: EdgeInsets.only(bottom: BaraedaSpacing.space4),
@@ -347,7 +370,7 @@ class _LiveMapBodyState extends ConsumerState<_LiveMapBody> {
               style: BaraedaTypography.bodySm,
             ),
           )
-        else if (!state.hasNoData)
+        else if (!state.hasNoData || hasRestInfo)
           // 좌표는 아직 없지만(`run_started` 만 온 상태 등) "데이터 없음"도
           // 아닌 좁은 경우 — 지도 자리 대신 짧은 안내만 둔다(위 클래스
           // 문서 판단 근거 참고).
@@ -355,22 +378,18 @@ class _LiveMapBodyState extends ConsumerState<_LiveMapBody> {
             padding: EdgeInsets.only(bottom: BaraedaSpacing.space4),
             child: WordWrapText('위치 신호 대기 중', style: BaraedaTypography.bodySm),
           ),
-        if (state.runStarted != null)
-          _EventTile(
-            label: '운행 시작',
-            time: state.runStarted!.startedAt,
+        if (startedAt != null) _EventTile(label: '운행 시작', time: startedAt),
+        if (hasFreshPosition)
+          _PositionTile(
+            position: effectivePosition,
+            stopArrivedAt: restPosition?.currentStopArrivedAt,
           ),
-        if (hasFreshPosition) _PositionTile(position: effectivePosition),
         if (state.lastStopArrived != null)
           _EventTile(
             label: '${state.lastStopArrived!.name} 도착',
             time: state.lastStopArrived!.arrivedAt,
           ),
-        if (state.runEnded != null)
-          _EventTile(
-            label: '운행 종료',
-            time: state.runEnded!.finishedAt,
-          ),
+        if (finishedAt != null) _EventTile(label: '운행 종료', time: finishedAt),
       ],
     );
   }
@@ -528,24 +547,35 @@ class _BusMapSectionState extends ConsumerState<_BusMapSection> {
 /// 를 조건부로 그리고 있었던 것은 이 화면이 참조하는 채널이 원래 ETA
 /// 를 보내지 않아 드러나지 않았을 뿐인 사양 위반이라 이번에 제거한다.
 class _PositionTile extends StatelessWidget {
-  const new({required this.position});
+  const new({required this.position, this.stopArrivedAt});
 
   final WsPositionPayload position;
+
+  /// 마지막으로 지난 곳의 도착 처리 시각(§3.11 `current_stop_arrived_at`) — 없으면 시각 없이 이름만 쓴다.
+  final DateTime? stopArrivedAt;
 
   @override
   Widget build(BuildContext context) {
     final timeText = DateFormat(
       'HH:mm:ss',
     ).format(position.receivedAt.toLocal());
+    final stop = position.currentStopName;
+    final arrived = stopArrivedAt;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: BaraedaSpacing.space2),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('현재 위치 · $timeText 기준', style: BaraedaTypography.bodySm),
-          if (position.currentStopName != null)
+          if (stop != null && arrived != null) ...[
+            WordWrapText(stop, style: BaraedaTypography.body),
+            Text(
+              '마지막으로 지난 곳 · ${formatClock(arrived)}',
+              style: BaraedaTypography.bodySm,
+            ),
+          ] else if (stop != null)
             WordWrapText(
-              '마지막으로 지난 승하차지: ${position.currentStopName}',
+              '마지막으로 지난 곳 · $stop',
               style: BaraedaTypography.body,
             ),
         ],

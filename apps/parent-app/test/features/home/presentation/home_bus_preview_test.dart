@@ -18,7 +18,7 @@ import 'package:parent_app/core/students/domain/student.dart';
 import 'package:parent_app/core/students/presentation/student_providers.dart';
 import 'package:parent_app/features/home/presentation/home_providers.dart';
 import 'package:parent_app/features/home/presentation/home_screen.dart';
-import 'package:parent_app/features/live_map/domain/bus_position.dart';
+import 'package:parent_app/core/runs/domain/bus_position.dart';
 import 'package:parent_app/features/live_map/domain/bus_position_repository.dart';
 
 /// R48 홈 지도 미리보기(`Ruling 821`) — **WebSocket 을 구독하지 않고** §3.11 을 30초마다 다시 읽는다.

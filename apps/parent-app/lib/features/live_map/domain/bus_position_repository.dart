@@ -1,4 +1,4 @@
-import 'package:parent_app/features/live_map/domain/bus_position.dart';
+import 'package:parent_app/core/runs/domain/bus_position.dart';
 
 /// 화면이 보는 §3.11 계약 — 메서드가 1개뿐이라 `one_member_abstracts` 가
 /// 걸리지만, `route_repository.dart` 와 같은 이유로 최상위 함수로 바꾸지

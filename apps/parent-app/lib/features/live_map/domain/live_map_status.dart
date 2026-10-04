@@ -1,6 +1,6 @@
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:parent_app/features/live_map/domain/bus_position.dart';
+import 'package:parent_app/core/runs/domain/bus_position.dart';
 
 /// 화면이 실제로 그리는 연결 판정 — `WsConnectionState` 를 화면 관점으로
 /// 좁힌 것. "데이터 없음"과 "연결 끊김"을 구별하는 것이 이 화면의 완료

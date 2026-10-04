@@ -11,7 +11,7 @@ import 'package:parent_app/core/auth/account_session.dart';
 import 'package:parent_app/core/auth/auth_providers.dart';
 import 'package:parent_app/core/auth/domain/auth_repository.dart';
 import 'package:parent_app/core/auth/user_role.dart';
-import 'package:parent_app/features/live_map/domain/bus_position.dart';
+import 'package:parent_app/core/runs/domain/bus_position.dart';
 import 'package:parent_app/features/live_map/domain/bus_position_repository.dart';
 import 'package:parent_app/features/live_map/presentation/live_map_providers.dart';
 // `Override` 는 `flutter_riverpod` 배럴이 재노출하지 않는다

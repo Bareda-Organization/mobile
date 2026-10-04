@@ -10,7 +10,8 @@ import 'package:parent_app/core/map/map_surface.dart';
 import 'package:parent_app/core/refresh/visible_poller.dart';
 import 'package:parent_app/core/runs/domain/student_run.dart';
 import 'package:parent_app/core/runs/presentation/run_display.dart';
-import 'package:parent_app/features/live_map/domain/bus_position.dart';
+import 'package:parent_app/core/ui/delay_band.dart';
+import 'package:parent_app/core/runs/domain/bus_position.dart';
 
 /// 홈 지도 미리보기를 다시 읽는 간격 — `API_SPEC §3.11` · `Ruling 821`.
 ///
@@ -308,22 +309,6 @@ class _StopCell extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-/// `버스가 10분 늦어요 · 교통 체증` — 홈과 전체 지도가 같이 쓴다(`delay` 가 원천이고 ETA 가 아니다).
-class DelayBand extends StatelessWidget {
-  const new({required this.delay, super.key});
-
-  final BusDelay delay;
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertBanner(
-      tone: AlertTone.moving,
-      title: '버스가 ${delay.minutes}분 늦어요',
-      body: delay.reason,
     );
   }
 }

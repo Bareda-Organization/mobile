@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:parent_app/features/live_map/domain/bus_position.dart';
+import 'package:parent_app/core/runs/domain/bus_position.dart';
 
 /// §3.11 (`Ruling 821`) — 홈 지도 미리보기와 지도 화면이 REST 스냅샷만으로 시각 · 지연 띠를 그린다.
 void main() {
