@@ -204,6 +204,100 @@ void main() {
     expect(overlay(route(stops: [stop(3)])).isEmpty, isFalse);
   });
 
+  // R49 F1 — §3.10 stops[] 에는 학원 항목(stop_id null · 등원이면 마지막 ·
+  // 하원이면 맨 앞이고 seq 가 0)이 섞여 온다. 서버 응답 모양 그대로(JSON) 읽어,
+  // 학원에는 번호 대신 "학원" 표시만 단다.
+  group('학원 항목(stop_id null) — 번호 없는 학원 표시', () {
+    Map<String, dynamic> academy(int seq) => {
+      'stop_id': null,
+      'seq': seq,
+      'name': '하늘수학학원',
+      'address': null,
+      'lat': 37.51,
+      'lng': 126.71,
+    };
+    Map<String, dynamic> real(int id, int seq, {String? arrivedAt}) => {
+      'stop_id': '$id',
+      'seq': seq,
+      'name': '정류장$seq',
+      'address': null,
+      'lat': 37.5 + seq / 1000,
+      'lng': 126.7 + seq / 1000,
+      'arrived_at': arrivedAt,
+    };
+    RouteDetail detail(
+      List<Map<String, dynamic>> stops, {
+      List<Map<String, double>> roadPath = const [],
+    }) => RouteDetail.fromJson({
+      'run_id': 'r-1',
+      'bus_no': '2호차',
+      'depart_time': '2026-10-05T03:20:00Z',
+      'confirmed': true,
+      'driver': {'name': null},
+      'escort': {'name': null, 'phone': null},
+      'my_stop_id': '12',
+      'stops': stops,
+      'road_path': roadPath,
+    });
+
+    // 하원 — 학원이 맨 앞(seq 0) · 등원 — 학원이 마지막(seq 4).
+    final fromAcademy = [academy(0), real(11, 1), real(12, 2), real(13, 3)];
+    final toAcademy = [real(11, 1), real(12, 2), real(13, 3), academy(4)];
+
+    test('하원 응답에서 번호 0 마커가 없다 — 번호는 실제 승하차지 1·2·3 뿐', () {
+      final result = overlay(detail(fromAcademy));
+
+      expect(result.markers.where((m) => m.seq == 0), isEmpty);
+      expect(result.markers.map((m) => m.seq).whereType<int>(), [1, 2, 3]);
+    });
+
+    test('하원 응답에서 학원 표시가 하나 있다 — 번호 없이 글자 "학원" · 학원 좌표', () {
+      final academyMarks = overlay(
+        detail(fromAcademy),
+      ).markers.where((m) => m.seq == null).toList();
+
+      expect(academyMarks, hasLength(1));
+      expect(academyMarks.single.label, '학원');
+      final mark = academyMarks.single;
+      expect((mark.lat, mark.lng), (37.51, 126.71));
+      expect(academyMarks.single.mine, isFalse);
+    });
+
+    test('등원 응답에서도 학원에 번호가 없다 — 번호 4 마커 없이 학원 표시 하나', () {
+      final result = overlay(detail(toAcademy));
+
+      expect(result.markers.where((m) => m.seq == 4), isEmpty);
+      expect(result.markers.map((m) => m.seq).whereType<int>(), [1, 2, 3]);
+      expect(result.markers.where((m) => m.seq == null), hasLength(1));
+      expect(result.markers.singleWhere((m) => m.seq == null).label, '학원');
+    });
+
+    test('학원은 점선의 끝(등원) · 시작(하원) 꼭짓점으로 그대로 쓴다', () {
+      final from = overlay(detail(fromAcademy)).polylines.single.points;
+      final to = overlay(detail(toAcademy)).polylines.single.points;
+
+      expect(from, hasLength(4));
+      expect(from.first, (lat: 37.51, lng: 126.71));
+      expect(to, hasLength(4));
+      expect(to.last, (lat: 37.51, lng: 126.71));
+    });
+
+    test('운행 중 "다음 곳" 은 학원이 아니라 안 지난 첫 승하차지다 — 하원도 학원이 앞이라고 빼앗지 않는다', () {
+      final result = overlay(detail(fromAcademy), markNext: true);
+
+      expect(
+        result.markers.where((m) => m.seq != null).map((m) => m.stopState),
+        [MapStopState.next, MapStopState.upcoming, MapStopState.upcoming],
+      );
+    });
+
+    test('내 승하차지 표시는 학원이 아니라 my_stop_id 의 승하차지에만 붙는다', () {
+      final result = overlay(detail(fromAcademy));
+
+      expect(result.markers.where((m) => m.mine).map((m) => m.seq), [2]);
+    });
+  });
+
   group('RouteDetail.fromJson — road_path · fallback_used', () {
     Map<String, dynamic> json({Map<String, dynamic> extra = const {}}) => {
       'run_id': 'r-1',

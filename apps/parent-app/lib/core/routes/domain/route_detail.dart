@@ -39,7 +39,7 @@ class RouteStop {
   });
 
   factory fromJson(Map<String, dynamic> json) => RouteStop(
-    stopId: asIdString(json['stop_id']),
+    stopId: json['stop_id'] == null ? null : asIdString(json['stop_id']),
     seq: json['seq'] as int,
     name: json['name'] as String,
     address: json['address'] as String?,
@@ -51,7 +51,9 @@ class RouteStop {
         : DateTime.parse(json['arrived_at'] as String),
   );
 
-  final String stopId;
+  /// 승하차지의 id — **학원 항목은 `null`** 이다(서버가 `Academy` 에서 합성해 붙이는 항목이라 승하차지 행이 없다).
+  /// 지도는 이 값으로 학원을 가려 번호 대신 "학원" 표시를 단다.
+  final String? stopId;
   final int seq;
   final String name;
   final String? address;

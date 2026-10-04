@@ -1,8 +1,10 @@
+import 'package:baraeda_core/baraeda_core.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:parent_app/core/runs/domain/bus_position.dart';
 
 /// `버스가 10분 늦어요 · 교통 체증` — 홈과 전체 지도가 같이 쓴다(`delay` 가 원천이고 ETA 가 아니다).
+/// 사유는 서버 코드(`traffic`)가 아니라 한글이고, 모르는 값이면 사유 줄을 숨긴다.
 class DelayBand extends StatelessWidget {
   const new({required this.delay, this.short = false, super.key});
 
@@ -17,7 +19,7 @@ class DelayBand extends StatelessWidget {
     return AlertBanner(
       tone: AlertTone.moving,
       title: short ? '${delay.minutes}분 늦어요' : '버스가 ${delay.minutes}분 늦어요',
-      body: delay.reason,
+      body: delayReasonLabel(delay.reason),
     );
   }
 }

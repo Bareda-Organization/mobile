@@ -16,6 +16,7 @@ export 'auth/models/me_response.dart';
 export 'auth/models/reapply_response.dart';
 export 'auth/models/signup_models.dart';
 export 'auth/models/signup_status_response.dart';
+export 'delay/delay_reason_label.dart';
 export 'error/failure.dart';
 export 'id/as_id_string.dart';
 export 'network/api_client.dart';

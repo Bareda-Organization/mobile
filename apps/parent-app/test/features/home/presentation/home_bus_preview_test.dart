@@ -239,7 +239,7 @@ void main() {
         position: () async => _position(
           delay: BusDelay(
             minutes: 10,
-            reason: '교통 체증',
+            reason: 'traffic',
             sentAt: DateTime.utc(2026, 10, 3, 3, 12),
           ),
         ),
@@ -247,6 +247,24 @@ void main() {
 
       expect(find.text('버스가 10분 늦어요'), findsOneWidget);
       expect(find.text('교통 체증'), findsOneWidget);
+      // 서버 코드(traffic)는 글자로 나오지 않는다.
+      expect(find.text('traffic'), findsNothing);
+    });
+
+    testWidgets('모르는 사유는 코드를 띄우지 않고 사유 줄만 숨긴다', (tester) async {
+      await _pumpHome(
+        tester,
+        position: () async => _position(
+          delay: BusDelay(
+            minutes: 10,
+            reason: 'flat_tire',
+            sentAt: DateTime.utc(2026, 10, 3, 3, 12),
+          ),
+        ),
+      );
+
+      expect(find.text('버스가 10분 늦어요'), findsOneWidget);
+      expect(find.text('flat_tire'), findsNothing);
     });
 
     testWidgets('사유가 없는 지연은 띠만 나온다', (tester) async {

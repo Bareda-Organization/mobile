@@ -36,7 +36,7 @@ void main() {
         extra: {
           'delay': {
             'minutes': 10,
-            'reason': '교통 체증',
+            'reason': 'traffic',
             'sent_at': '2026-10-03T03:12:00Z',
           },
         },
@@ -44,7 +44,7 @@ void main() {
     );
 
     expect(position.delay?.minutes, 10);
-    expect(position.delay?.reason, '교통 체증');
+    expect(position.delay?.reason, 'traffic');
     expect(position.delay?.sentAt, DateTime.utc(2026, 10, 3, 3, 12));
   });
 

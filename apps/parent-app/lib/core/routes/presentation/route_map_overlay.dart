@@ -11,6 +11,8 @@ class RouteMapOverlay {
   /// [route] 의 승하차지마다 번호 마커 하나, 그 사이를 잇는 선 하나.
   ///
   /// - 번호는 승하차지의 **실제 `seq`** 다 — 목록 순번이 아니다(표시 범위가 3~5번이면 3 · 4 · 5).
+  /// - **학원 항목**(`stopId` 가 `null` — 등원이면 마지막 · 하원이면 맨 앞이고 `seq` 가 0)에는
+  ///   번호를 달지 않고 글자 "학원" 만 단다. 경로선의 끝(등원) · 시작(하원) 점으로는 그대로 쓴다.
   /// - 선은 `road_path` 가 2점 이상이면 그 도로 경로, 아니면 좌표가 있는 표시 승하차지를 이은 **점선**이다
   ///   (확정 전이거나 도로 좌표가 빈 옛 버전 — 실제 도로가 아니라는 표시).
   /// - [ended] 는 운행이 끝난 뒤 — 선을 "지나온 구간" 색으로 그린다.
@@ -29,26 +31,39 @@ class RouteMapOverlay {
       for (final stop in route.stops)
         if (stop.lat != null && stop.lng != null) stop,
     ];
+    // "다음 곳" 은 실제 승하차지 중에서만 고른다 — 하원은 학원이 맨 앞이라 거르지 않으면 학원이 "다음 곳" 을 가로챈다.
     final nextStopId = markNext
-        ? located.where((stop) => stop.arrivedAt == null).firstOrNull?.stopId
+        ? located
+              .where((stop) => stop.stopId != null && stop.arrivedAt == null)
+              .firstOrNull
+              ?.stopId
         : null;
 
     final markers = [
       for (final stop in located)
-        MapMarker(
-          id: '$idPrefix-stop-${stop.stopId}',
-          lat: stop.lat!,
-          lng: stop.lng!,
-          kind: MapMarkerKind.stop,
-          seq: stop.seq,
-          stopState: stop.arrivedAt != null
-              ? MapStopState.passed
-              : (stop.stopId == nextStopId
-                    ? MapStopState.next
-                    : MapStopState.upcoming),
-          mine: stop.stopId == route.myStopId,
-          label: stop.stopId == route.myStopId ? _myStopLabel : null,
-        ),
+        if (stop.stopId == null)
+          MapMarker(
+            id: '$idPrefix-academy',
+            lat: stop.lat!,
+            lng: stop.lng!,
+            kind: MapMarkerKind.stop,
+            label: _academyLabel,
+          )
+        else
+          MapMarker(
+            id: '$idPrefix-stop-${stop.stopId}',
+            lat: stop.lat!,
+            lng: stop.lng!,
+            kind: MapMarkerKind.stop,
+            seq: stop.seq,
+            stopState: stop.arrivedAt != null
+                ? MapStopState.passed
+                : (stop.stopId == nextStopId
+                      ? MapStopState.next
+                      : MapStopState.upcoming),
+            mine: stop.stopId == route.myStopId,
+            label: stop.stopId == route.myStopId ? _myStopLabel : null,
+          ),
     ];
 
     final hasRoad = route.roadPath.length >= 2;
@@ -69,6 +84,9 @@ class RouteMapOverlay {
 
   /// 내 승하차지에 다는 이름표 — 시트의 "내 승하차지" 칸과 같은 말이다.
   static const _myStopLabel = '내 승하차지';
+
+  /// 학원 항목에 다는 글자 — 등원이면 도착 · 하원이면 출발 지점이다.
+  static const _academyLabel = '학원';
 
   final List<MapMarker> markers;
   final List<MapPolyline> polylines;

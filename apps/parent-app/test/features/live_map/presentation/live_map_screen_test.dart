@@ -1318,7 +1318,7 @@ void main() {
         snapshot(
           delay: BusDelay(
             minutes: 10,
-            reason: '교통 체증',
+            reason: 'traffic',
             sentAt: DateTime.utc(2026, 9, 13, 3, 12),
           ),
         ),
@@ -1326,6 +1326,24 @@ void main() {
 
       expect(find.text('10분 늦어요'), findsOneWidget);
       expect(find.text('교통 체증'), findsOneWidget);
+      // 서버 코드(traffic)는 글자로 나오지 않는다.
+      expect(find.text('traffic'), findsNothing);
+    });
+
+    testWidgets('모르는 사유는 코드를 띄우지 않고 사유 줄만 숨긴다', (tester) async {
+      await pumpWithSnapshot(
+        tester,
+        snapshot(
+          delay: BusDelay(
+            minutes: 10,
+            reason: 'flat_tire',
+            sentAt: DateTime.utc(2026, 9, 13, 3, 12),
+          ),
+        ),
+      );
+
+      expect(find.text('10분 늦어요'), findsOneWidget);
+      expect(find.text('flat_tire'), findsNothing);
     });
 
     testWidgets('delay 가 null 이면 띠가 없다', (tester) async {
@@ -1462,7 +1480,7 @@ void main() {
         repository: _ScriptedBusPositionRepository([
           snapshot(
             startedAt: started,
-            delay: BusDelay(minutes: 10, reason: '교통 체증', sentAt: clockNow),
+            delay: BusDelay(minutes: 10, reason: 'traffic', sentAt: clockNow),
           ),
         ]),
         runs: [run()],

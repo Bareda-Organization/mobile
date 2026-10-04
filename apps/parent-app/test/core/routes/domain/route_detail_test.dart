@@ -22,4 +22,11 @@ void main() {
     expect(RouteStop.fromJson(stop('b', arrivedAt: null)).arrivedAt, isNull);
     expect(RouteStop.fromJson(stop('c')).arrivedAt, isNull);
   });
+
+  test('학원 항목의 stop_id 가 null 이면 문자열 "null" 이 아니라 null 로 읽는다', () {
+    final academy = RouteStop.fromJson({...stop('x'), 'stop_id': null});
+
+    expect(academy.stopId, isNull);
+    expect(RouteStop.fromJson(stop('7')).stopId, '7');
+  });
 }

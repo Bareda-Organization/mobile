@@ -59,24 +59,23 @@ class _DelayScreenState extends ConsumerState<DelayScreen> {
   String? _errorMessage;
   _Receipt? _receipt;
 
-  static const List<ChoiceTileOption<DelayReason>> _reasonOptions = [
-    ChoiceTileOption(value: DelayReason.traffic, label: '교통 체증', icon: 'route'),
-    ChoiceTileOption(
-      value: DelayReason.weather,
-      label: '기상 악화',
-      icon: 'triangle-alert',
-    ),
-    ChoiceTileOption(
-      value: DelayReason.vehicleCheck,
-      label: '차량 점검',
-      icon: 'bus',
-    ),
-    ChoiceTileOption(
-      value: DelayReason.prevStopWait,
-      label: '앞 승하차지 대기',
-      icon: 'users-round',
-    ),
+  static final List<ChoiceTileOption<DelayReason>> _reasonOptions = [
+    _reasonOption(DelayReason.traffic, 'route'),
+    _reasonOption(DelayReason.weather, 'triangle-alert'),
+    _reasonOption(DelayReason.vehicleCheck, 'bus'),
+    _reasonOption(DelayReason.prevStopWait, 'users-round'),
   ];
+
+  /// 글자는 학부모 앱의 지연 띠와 같이 읽는 표(`delayReasonLabel`)에서 가져온다 —
+  /// 사유를 더하면 표에도 넣는다(`delay_reason_label_test` 가 빠뜨림을 잡는다).
+  static ChoiceTileOption<DelayReason> _reasonOption(
+    DelayReason reason,
+    String icon,
+  ) => ChoiceTileOption(
+    value: reason,
+    label: delayReasonLabel(reason.wireValue)!,
+    icon: icon,
+  );
 
   @override
   void initState() {
