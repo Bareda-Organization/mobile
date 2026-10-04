@@ -16,6 +16,7 @@ import 'package:parent_app/core/students/domain/student.dart';
 import 'package:parent_app/core/students/presentation/selected_student.dart';
 import 'package:parent_app/features/home/presentation/home_providers.dart';
 import 'package:parent_app/features/home/presentation/home_screen.dart';
+import '../../../support/no_bus_position.dart';
 
 /// R46 B2 #13 — 앱을 다시 켜도 마지막으로 본 자녀의 회차가 홈에 뜬다.
 class _MemoryStorage extends SelectedStudentStorage {
@@ -73,6 +74,7 @@ Future<ProviderContainer> _pumpHome(
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
+          noBusPositionOverride,
         roleCapabilitiesProvider.overrideWithValue(
           RoleCapabilities.of(UserRole.parent),
         ),

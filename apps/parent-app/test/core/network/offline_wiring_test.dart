@@ -18,6 +18,7 @@ import 'package:parent_app/features/home/presentation/home_providers.dart';
 import 'package:parent_app/features/home/presentation/home_screen.dart';
 
 import '../../support/fake_token_storage.dart';
+import '../../support/no_bus_position.dart';
 
 /// R46 B2 #22 배선 — ① 모든 REST 요청이 연결 감시를 지난다 ② 끊기면 앱 맨 위에 한 줄이 뜬다
 /// ③ 끊긴 동안 홈은 카드 위에 "이전 정보입니다" 띠를 또 나열하지 않는다(맨 위 한 줄이 그 말을 한다).
@@ -45,7 +46,8 @@ final _child = Student(
 void main() {
   test('앱의 API 클라이언트로 나간 요청이 연결 실패하면 끊김 상태가 된다', () async {
     final container = ProviderContainer(
-      overrides: [tokenStorageProvider.overrideWithValue(FakeTokenStorage())],
+      overrides: [
+          noBusPositionOverride,tokenStorageProvider.overrideWithValue(FakeTokenStorage())],
     );
     addTearDown(container.dispose);
     final dio = container.read(apiClientProvider).dio
@@ -63,6 +65,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          noBusPositionOverride,
           tokenStorageProvider.overrideWithValue(FakeTokenStorage()),
           networkStatusProvider.overrideWith(
             (ref) => NetworkStatusNotifier(
@@ -90,6 +93,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          noBusPositionOverride,
           tokenStorageProvider.overrideWithValue(FakeTokenStorage()),
           networkStatusProvider.overrideWith(
             (ref) => NetworkStatusNotifier(
@@ -125,6 +129,7 @@ void main() {
         ProviderScope(
           retry: (_, _) => null,
           overrides: [
+          noBusPositionOverride,
             networkStatusProvider.overrideWith(
               (ref) => NetworkStatusNotifier(
                 initial: NetworkStatus(isOffline: isOffline),

@@ -16,6 +16,7 @@ import 'package:parent_app/core/runs/domain/student_run.dart';
 import 'package:parent_app/core/students/domain/student.dart';
 import 'package:parent_app/features/home/presentation/home_providers.dart';
 import 'package:parent_app/features/home/presentation/home_screen.dart';
+import '../../../support/no_bus_position.dart';
 
 /// R34 P1 — 홈의 [오늘 · 내일] 전환. 조회 날짜·토글 요청 대상·학생 조회 전용을 본다.
 class _FixedClock implements Clock {
@@ -87,6 +88,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          noBusPositionOverride,
           clockProvider.overrideWithValue(_FixedClock(now)),
           runRepositoryProvider.overrideWithValue(runs),
           roleCapabilitiesProvider.overrideWithValue(RoleCapabilities.of(role)),

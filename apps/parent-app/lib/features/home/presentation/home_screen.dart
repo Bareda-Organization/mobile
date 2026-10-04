@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:parent_app/app/app_routes.dart';
 import 'package:parent_app/app/di.dart';
-import 'package:parent_app/core/auth/account_session.dart';
+import 'package:parent_app/core/auth/academy_contact.dart';
 import 'package:parent_app/core/auth/auth_providers.dart';
 import 'package:parent_app/core/change_requests/domain/change_request.dart';
 import 'package:parent_app/core/change_requests/presentation/change_request_providers.dart';
@@ -17,8 +17,10 @@ import 'package:parent_app/core/students/presentation/student_switcher.dart';
 import 'package:parent_app/core/time/service_date.dart';
 import 'package:parent_app/core/ui/failure_message.dart';
 import 'package:parent_app/features/home/presentation/home_providers.dart';
+import 'package:parent_app/features/home/presentation/widgets/home_bus_preview.dart';
 import 'package:parent_app/features/home/presentation/widgets/pending_change_badge.dart';
 import 'package:parent_app/features/home/presentation/widgets/run_card.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// P-03·P-04 홈 화면 — 오늘 회차(§3.5) · 등원 여부 토글(§3.6). 운행 정보만 둔다.
 /// 알림 목록(P-09)은 2026-09-30 부터 아래 탭 막대의 `[알림]` 탭이다(`NotificationsScreen`, R44) —
@@ -71,17 +73,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final capabilities = ref.watch(roleCapabilitiesProvider);
     final isParent = capabilities?.canToggleAttendance ?? false;
 
+    final now = ref.watch(clockProvider).now();
+
     return Scaffold(
-      // 로그아웃을 머리말에도 둔다(2026-09-29 사용자 지적 · Ruling 362) — [설정] 맨 아래에만
-      // 있어 찾지 못했다. 매니저 앱 홈과 같은 자리다. 설정 화면의 버튼은 그대로 둔다.
+      // 로그아웃은 설정 탭 맨 아래에만 있다(`Ruling 826`) — 홈 머리말에서 뺐다. 학생은 날짜를 부제로 붙인다.
       appBar: AppHeader(
-        title: '운행',
-        actions: BaraedaButton(
-          label: '로그아웃',
-          size: BaraedaButtonSize.sm,
-          variant: BaraedaButtonVariant.ghost,
-          onPressed: () => confirmLogout(context, ref),
-        ),
+        title: isParent ? '우리 아이 버스' : '내 버스',
+        subtitle: isParent ? null : _dateWithWeekday(now),
       ),
       body: SafeArea(
         // 당겨서 새로고침 — 내용이 화면보다 짧아도 당겨지도록 항상 스크롤 가능하게 둔다.
@@ -122,11 +120,9 @@ class _ParentSection extends ConsumerWidget {
     final studentsAsync = ref.watch(myStudentsProvider);
 
     return studentsAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stack) => _ErrorBanner(
-        message: '자녀 목록을 불러오지 못했습니다',
-        onRetry: () => ref.invalidate(myStudentsProvider),
-      ),
+      loading: () => const BaraedaSkeletonList(),
+      error: (error, stack) =>
+          _LoadFailure(onRetry: () => ref.invalidate(myStudentsProvider)),
       data: (students) {
         if (students.isEmpty) {
           return EmptyState(
@@ -146,8 +142,13 @@ class _ParentSection extends ConsumerWidget {
           children: [
             // §3.1 "자녀 선택 UI 는 2명 이상일 때만 노출."
             StudentSwitcher(students: students, selectedId: selectedId),
-            // P2·P3 — 처리 대기 배지는 0건이면 사라져 일정 화면·둘째 연결로 갈 길이 없었다.
-            const _ParentShortcuts(),
+            _Preview(
+              studentId: selectedId,
+              studentName: students
+                  .firstWhere((s) => s.studentId == selectedId)
+                  .name,
+            ),
+            // 처리 대기 건수 — 0건이면 사라진다. 일정 탭이 이력으로 가는 길이다(UF-P-06).
             PendingChangeBadge(studentId: selectedId),
             _RunsSection(studentId: selectedId, canToggle: true),
           ],
@@ -179,33 +180,77 @@ class _ErrorBanner extends StatelessWidget {
   }
 }
 
-/// 학부모 홈의 항상 보이는 진입 둘 — 등하원 일정(P-05·P-06)과 자녀 추가(P-02).
-class _ParentShortcuts extends StatelessWidget {
-  const new();
+/// 자녀 카드 — 오늘 회차의 방향 · 내 승하차지를 같이 넘긴다(`HomeBusPreview` 가 §3.11 을 30초마다 읽는다).
+class _Preview extends ConsumerWidget {
+  const new({required this.studentId, required this.studentName});
+
+  final String studentId;
+  final String studentName;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final runs = ref.watch(runsForStudentProvider(studentId)).value;
     return Padding(
       padding: const EdgeInsets.only(bottom: BaraedaSpacing.space4),
-      child: Row(
-        children: [
-          BaraedaButton(
-            label: '일정',
-            size: BaraedaButtonSize.sm,
-            variant: BaraedaButtonVariant.secondary,
-            onPressed: () => context.push(AppRoutes.schedule),
-          ),
-          const SizedBox(width: BaraedaSpacing.space2),
-          BaraedaButton(
-            label: '자녀 추가',
-            size: BaraedaButtonSize.sm,
-            variant: BaraedaButtonVariant.ghost,
-            onPressed: () => context.push(AppRoutes.childLink),
-          ),
-        ],
+      child: HomeBusPreview(
+        studentId: studentId,
+        studentName: studentName,
+        runs: runs ?? const [],
       ),
     );
   }
+}
+
+/// 홈을 못 불러왔다 — 다시 시도 + (기기에 남긴 학원 문의처에 번호가 있으면) 급할 때 걸 전화(시안 `home-parent--error`).
+class _LoadFailure extends ConsumerWidget {
+  const new({required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final phone = phoneNumberOf(ref.watch(savedAcademyContactProvider).value);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        EmptyState(
+          icon: 'wifi-off',
+          title: '버스 정보를 불러오지 못했어요',
+          body: '인터넷 연결을 확인하고 다시 시도해 주세요.\n연결되면 자동으로 다시 불러와요.',
+          action: BaraedaButton(
+            label: '다시 시도',
+            variant: BaraedaButtonVariant.secondary,
+            onPressed: onRetry,
+          ),
+        ),
+        if (phone != null) ...[
+          const SizedBox(height: BaraedaSpacing.space4),
+          BaraedaListGroup(
+            children: [
+              BaraedaListRow(
+                leadingIcon: 'phone',
+                title: '버스가 급하게 궁금하면',
+                subtitle: '학원 $phone',
+                trailing: BaraedaButton(
+                  label: '전화',
+                  size: BaraedaButtonSize.sm,
+                  variant: BaraedaButtonVariant.secondary,
+                  onPressed: () => launchUrl(Uri(scheme: 'tel', path: phone)),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+/// `10월 3일 (토)` — 한국 시간 달력 날짜.
+String _dateWithWeekday(DateTime now) {
+  final date = koreaServiceDate(now);
+  const weekdays = ['월', '화', '수', '목', '금', '토', '일'];
+  return '${date.month}월 ${date.day}일 (${weekdays[date.weekday - 1]})';
 }
 
 /// 학생 갈래 — 본인 `student_id` 하나만 쓴다(조회 전용, UF-S-01).
@@ -217,28 +262,28 @@ class _StudentSection extends ConsumerWidget {
     final studentIdAsync = ref.watch(myStudentIdProvider);
 
     return studentIdAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stack) => _ErrorBanner(
-        message: '내 정보를 불러오지 못했습니다',
-        onRetry: () => ref.invalidate(myStudentIdProvider),
-      ),
+      loading: () => const BaraedaSkeletonList(),
+      error: (error, stack) =>
+          _LoadFailure(onRetry: () => ref.invalidate(myStudentIdProvider)),
       data: (studentId) => studentId == null
           ? const EmptyState(title: '학생 계정 정보가 없습니다')
           : Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // P1 — 연결 코드(S-05)는 일정 화면에만 있어 학생은 갈 길이 없었다.
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: BaraedaButton(
-                    label: '부모 연결 코드',
-                    size: BaraedaButtonSize.sm,
-                    variant: BaraedaButtonVariant.secondary,
-                    onPressed: () => context.push(AppRoutes.childLink),
-                  ),
-                ),
-                const SizedBox(height: BaraedaSpacing.space4),
+                _Preview(studentId: studentId, studentName: '내'),
                 _RunsSection(studentId: studentId, canToggle: false),
+                // P1 — 연결 코드(S-05)로 가는 길. 학생은 일정 탭이 없어 홈 맨 아래에 둔다.
+                BaraedaListGroup(
+                  children: [
+                    BaraedaListRow(
+                      leadingIcon: 'link',
+                      title: '부모님과 연결하기',
+                      subtitle: '코드를 만들어 부모님께 알려 주세요',
+                      trailing: const BaraedaIcon('chevron-right', size: 20),
+                      onTap: () => context.push(AppRoutes.childLink),
+                    ),
+                  ],
+                ),
               ],
             ),
     );

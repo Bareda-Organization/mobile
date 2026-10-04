@@ -13,6 +13,7 @@ import 'package:parent_app/core/runs/domain/student_run.dart';
 import 'package:parent_app/features/home/presentation/home_providers.dart';
 import 'package:parent_app/features/home/presentation/home_screen.dart';
 import 'package:parent_app/features/home/presentation/widgets/run_card.dart';
+import '../../../support/no_bus_position.dart';
 
 class _CountingRuns implements RunRepository {
   int calls = 0;
@@ -66,6 +67,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          noBusPositionOverride,
           myStudentIdProvider.overrideWith((ref) async => 's-1'),
           runRepositoryProvider.overrideWithValue(runs),
         ],
@@ -125,6 +127,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          noBusPositionOverride,
           myStudentIdProvider.overrideWith((ref) async => 's-1'),
           runRepositoryProvider.overrideWithValue(runs),
         ],
@@ -150,6 +153,7 @@ void main() {
       ProviderScope(
         retry: (_, _) => null,
         overrides: [
+          noBusPositionOverride,
           myStudentIdProvider.overrideWith((ref) async => 's-1'),
           runRepositoryProvider.overrideWithValue(runs),
         ],

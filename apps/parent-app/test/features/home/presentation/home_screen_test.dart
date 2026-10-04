@@ -1,3 +1,4 @@
+import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -12,31 +13,11 @@ import 'package:parent_app/core/runs/domain/student_run.dart';
 import 'package:parent_app/core/students/domain/student.dart';
 import 'package:parent_app/features/home/presentation/home_providers.dart';
 import 'package:parent_app/features/home/presentation/home_screen.dart';
+import '../../../support/no_bus_position.dart';
 
 void main() {
-  // 2026-09-29 사용자 지적 "한번 로그인 되면 로그아웃이 안 돼" — 로그아웃이 홈 맨 아래 [설정]
-  // 안쪽 맨 아래에만 있어 찾지 못했다. 매니저 앱처럼 홈 머리말에 둔다(학부모·학생 공통).
-  testWidgets('홈 머리말의 [로그아웃] 이 확인 대화를 연다', (tester) async {
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          roleCapabilitiesProvider.overrideWithValue(null),
-          myStudentIdProvider.overrideWith((ref) async => 's-1'),
-          runsForStudentProvider.overrideWith(
-            (ref, studentId) async => const <StudentRun>[],
-          ),
-        ],
-        child: const MaterialApp(home: HomeScreen()),
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.text('로그아웃'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('로그아웃 하시겠습니까?'), findsOneWidget);
-  });
-
+  // R48 `Ruling 826` — 로그아웃은 설정 탭 맨 아래에만 있다. 2026-09-29 에 홈 머리말에 뒀던 것을 뺐다
+  // (홈 머리말 시험은 `home_bus_preview_test.dart` 의 '머리줄').
   // R32 P1~P3 — 홈에서 갈 길이 없던 화면 3곳. 진입점이 눌려서 실제 경로로 가는지까지 본다.
   Future<List<String>> pumpHome(
     WidgetTester tester, {
@@ -64,6 +45,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          noBusPositionOverride,
           roleCapabilitiesProvider.overrideWithValue(RoleCapabilities.of(role)),
           myStudentIdProvider.overrideWith((ref) async => 's-1'),
           myStudentsProvider.overrideWith((ref) async => students),
@@ -86,34 +68,32 @@ void main() {
     Student(studentId: 's-1', name: '첫째', linkedAt: DateTime(2026, 9)),
   ];
 
-  testWidgets('P1 학생 홈에 [부모 연결 코드] 진입이 있고 누르면 연결 화면으로 간다', (tester) async {
+  testWidgets('P1 학생 홈에 [부모님과 연결하기] 진입이 있고 누르면 연결 화면으로 간다', (tester) async {
     final pushed = await pumpHome(tester, role: UserRole.student);
 
-    await tester.tap(find.text('부모 연결 코드'));
+    await tester.tap(find.text('부모님과 연결하기'));
     await tester.pumpAndSettle();
 
     expect(pushed, [AppRoutes.childLink]);
   });
 
-  testWidgets('P1 학부모 홈에는 [부모 연결 코드] 가 없다', (tester) async {
+  testWidgets('P1 학부모 홈에는 [부모님과 연결하기] 가 없다', (tester) async {
     await pumpHome(tester, role: UserRole.parent, students: children);
 
-    expect(find.text('부모 연결 코드'), findsNothing);
+    expect(find.text('부모님과 연결하기'), findsNothing);
   });
 
-  testWidgets('P2 학부모 홈에 처리 대기 0건이어도 [일정] 진입이 보이고 일정 화면으로 간다', (
-    tester,
-  ) async {
+  // R48 — 일정은 아래 탭이 되고(`app_shell_test`), 자녀 추가는 설정 탭으로 옮겼다(`settings_screen_r48_test`).
+  // 홈 본문에 같은 진입이 또 남아 있으면 길이 두 개가 된다.
+  testWidgets('P2 학부모 홈에는 [일정] 단추가 없다 — 일정은 아래 탭이다', (tester) async {
     final pushed = await pumpHome(
       tester,
       role: UserRole.parent,
       students: children,
     );
 
-    await tester.tap(find.text('일정'));
-    await tester.pumpAndSettle();
-
-    expect(pushed, [AppRoutes.schedule]);
+    expect(find.widgetWithText(BaraedaButton, '일정'), findsNothing);
+    expect(pushed, isEmpty);
   });
 
   testWidgets('P2 학생 홈에는 [일정] 진입이 없다 — 조회 전용', (tester) async {
@@ -122,17 +102,10 @@ void main() {
     expect(find.text('일정'), findsNothing);
   });
 
-  testWidgets('P3 자녀가 1명 이상이어도 [자녀 추가] 로 연결 화면에 간다', (tester) async {
-    final pushed = await pumpHome(
-      tester,
-      role: UserRole.parent,
-      students: children,
-    );
+  testWidgets('P3 학부모 홈에는 [자녀 추가] 가 없다 — 설정 탭으로 옮겼다', (tester) async {
+    await pumpHome(tester, role: UserRole.parent, students: children);
 
-    await tester.tap(find.text('자녀 추가'));
-    await tester.pumpAndSettle();
-
-    expect(pushed, [AppRoutes.childLink]);
+    expect(find.text('자녀 추가'), findsNothing);
   });
 
   testWidgets('P3 학생 홈에는 [자녀 추가] 가 없다', (tester) async {

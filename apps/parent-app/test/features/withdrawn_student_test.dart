@@ -11,6 +11,7 @@ import 'package:parent_app/core/routes/presentation/route_providers.dart';
 import 'package:parent_app/features/home/presentation/home_providers.dart';
 import 'package:parent_app/features/home/presentation/home_screen.dart';
 import 'package:parent_app/features/route/presentation/route_detail_screen.dart';
+import '../support/no_bus_position.dart';
 
 /// N-09(BR-212) — 퇴원한 학생 본인 계정의 회차·노선 조회는 `404 STUDENT_NOT_FOUND` 다.
 /// 앱은 죽지 않고, 다시 해도 같은 결과라는 것을 알려야 한다(막연한 "불러오지 못했습니다" + [다시 시도] 가 아니라).
@@ -25,6 +26,7 @@ Future<void> _pumpStudent(WidgetTester tester, Widget home) async {
     ProviderScope(
       retry: (_, _) => null,
       overrides: [
+          noBusPositionOverride,
         roleCapabilitiesProvider.overrideWithValue(
           RoleCapabilities.of(UserRole.student),
         ),

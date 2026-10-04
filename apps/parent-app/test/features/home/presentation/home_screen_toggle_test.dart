@@ -15,6 +15,7 @@ import 'package:parent_app/core/runs/domain/student_run.dart';
 import 'package:parent_app/core/students/domain/student.dart';
 import 'package:parent_app/features/home/presentation/home_providers.dart';
 import 'package:parent_app/features/home/presentation/home_screen.dart';
+import '../../../support/no_bus_position.dart';
 
 /// 서버 대역 — ② 구간에서 끄면 접수만 하고 `riding` 은 그대로 둔다(API_SPEC §3.6·§3.9).
 class _ServerRuns implements RunRepository {
@@ -80,6 +81,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          noBusPositionOverride,
           roleCapabilitiesProvider.overrideWithValue(
             RoleCapabilities.of(UserRole.parent),
           ),
