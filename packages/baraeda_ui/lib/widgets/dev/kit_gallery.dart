@@ -33,10 +33,10 @@ class _KitGalleryState extends State<KitGallery> {
       debugShowCheckedModeBanner: false,
       theme: theme,
       home: Scaffold(
-        appBar: const AppHeader(
+        appBar: AppHeader(
           title: '부품 견본',
           subtitle: '바래다 리디자인판 · 앱 부품',
-          actions: BaraedaSosButton(),
+          actions: BaraedaSosButton(onPressed: () {}),
         ),
         bottomNavigationBar: BaraedaTabBar(
           currentIndex: _tab,
@@ -434,12 +434,12 @@ class _KitGalleryState extends State<KitGallery> {
           label: '노선 보기',
           onPressed: () {},
         ),
-        const BaraedaSosButton(),
-        const BaraedaSosButton(form: BaraedaSosForm.floating),
+        BaraedaSosButton(onPressed: () {}),
+        BaraedaSosButton(form: BaraedaSosForm.floating, onPressed: () {}),
       ],
     ),
     const SizedBox(height: BaraedaSpacing.space2),
-    const BaraedaSosButton(form: BaraedaSosForm.wide),
+    BaraedaSosButton(form: BaraedaSosForm.wide, onPressed: () {}),
     const SizedBox(height: BaraedaSpacing.space6),
   ];
 }
