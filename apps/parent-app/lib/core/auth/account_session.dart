@@ -52,7 +52,7 @@ void endSessionAsExpired(Ref ref) {
   // 계정의 지도가 그 연결에 구독을 얹는다(R46-FIXCONN C-2).
   ref.read(webSocketClientProvider).disconnect();
   ref.read(sessionExpiredNoticeProvider.notifier).state =
-      '로그인이 만료됐습니다. 다시 로그인해 주세요';
+      '오래 쓰지 않아 로그아웃됐어요. 다시 로그인해 주세요.';
   applyRoleAndStatus(
     ref.read(unsupportedRoleProvider.notifier),
     ref.read(currentUserRoleProvider.notifier),

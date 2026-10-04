@@ -85,7 +85,7 @@ Future<void> _loginAs(WidgetTester tester, String password) async {
   final fields = find.byType(TextField);
   await tester.enterText(fields.at(0), 'parentA1');
   await tester.enterText(fields.at(1), password);
-  await tester.tap(find.widgetWithText(BaraedaButton, '로그인하기'));
+  await tester.tap(find.widgetWithText(BaraedaButton, '로그인'));
   await tester.pumpAndSettle();
 }
 

@@ -13,7 +13,7 @@ void main() {
         () => endSessionAsExpired(ref),
   );
 
-  test('로그인이 풀리면 역할을 비우고 "로그인이 만료됐습니다" 안내를 남긴다 (R46)', () {
+  test('로그인이 풀리면 역할을 비우고 "오래 쓰지 않아 로그아웃됐어요" 안내를 남긴다 (R46 · R48 문구)', () {
     final container = ProviderContainer(
       overrides: [
         currentUserRoleProvider.overrideWith((ref) => UserRole.parent),
@@ -26,7 +26,7 @@ void main() {
     expect(container.read(currentUserRoleProvider), isNull);
     expect(
       container.read(sessionExpiredNoticeProvider),
-      '로그인이 만료됐습니다. 다시 로그인해 주세요',
+      '오래 쓰지 않아 로그아웃됐어요. 다시 로그인해 주세요.',
     );
   });
 
@@ -39,10 +39,10 @@ void main() {
       ),
     );
 
-    await pumpLogin('로그인이 만료됐습니다. 다시 로그인해 주세요');
-    expect(find.text('로그인이 만료됐습니다. 다시 로그인해 주세요'), findsOneWidget);
+    await pumpLogin('오래 쓰지 않아 로그아웃됐어요. 다시 로그인해 주세요.');
+    expect(find.text('오래 쓰지 않아 로그아웃됐어요. 다시 로그인해 주세요.'), findsOneWidget);
 
     await pumpLogin(null);
-    expect(find.textContaining('만료'), findsNothing);
+    expect(find.textContaining('로그아웃됐어요'), findsNothing);
   });
 }

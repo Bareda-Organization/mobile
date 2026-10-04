@@ -38,6 +38,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   String? _passwordError;
   String? _formError;
 
+  /// 잔여 시도가 이 값 이하이면 잠금 경고 띠를 보인다(시안 `login--error`).
+  static const _lockWarningThreshold = 2;
+  int? _remainingAttempts;
+
   @override
   void dispose() {
     _loginIdController.dispose();
@@ -54,6 +58,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       _submitting = true;
       _passwordError = null;
       _formError = null;
+      _remainingAttempts = null;
     });
 
     final repository = ref.read(authRepositoryProvider);
@@ -97,6 +102,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         switch (failure) {
           case ApiFailure(code: 'INVALID_CREDENTIALS', :final details):
             final remaining = details?['remaining_attempts'];
+            _remainingAttempts = remaining is int ? remaining : null;
             _passwordError = remaining == null
                 ? '아이디 또는 비밀번호가 올바르지 않습니다'
                 : '아이디 또는 비밀번호가 올바르지 않습니다 (잔여 시도 $remaining회)';
@@ -127,74 +133,131 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget build(BuildContext context) {
     // 로그인이 만료돼 돌아왔다면 이유를 알린다(R46) — 이유 없이 로그인 화면만 나오면 오류인 줄 안다.
     final expiredNotice = ref.watch(sessionExpiredNoticeProvider);
+    final colors = context.colors;
+    final remaining = _remainingAttempts;
     return Scaffold(
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(BaraedaSpacing.gutterMobile),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: BaraedaSpacing.space16),
-              const Text('바래다', style: BaraedaTypography.h1),
-              const SizedBox(height: BaraedaSpacing.space8),
-              if (expiredNotice != null) ...[
-                AlertBanner(tone: AlertTone.moving, body: expiredNotice),
-                const SizedBox(height: BaraedaSpacing.space4),
-              ],
-              BaraedaInput(
-                label: '아이디',
-                required: true,
-                controller: _loginIdController,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(BaraedaSpacing.gutterMobile),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const SizedBox(height: BaraedaSpacing.space12),
+                    // 브랜드 줄 — 한 앱을 학부모 · 학생이 같이 쓰고 로그인 결과의 역할로 갈리므로 입구에서 누구를 위한 앱인지 적는다(P4).
+                    const Text('바래다', style: BaraedaTypography.h1),
+                    Text(
+                      '학부모 · 학생',
+                      style: BaraedaTypography.body.copyWith(
+                        color: colors.textSecondary,
+                        fontWeight: BaraedaFontWeight.medium,
+                      ),
+                    ),
+                    const SizedBox(height: BaraedaSpacing.space2),
+                    Text(
+                      '우리 아이 통학버스,\n지금 어디쯤인지 한눈에 봐요',
+                      style: BaraedaTypography.body.copyWith(
+                        color: colors.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: BaraedaSpacing.space8),
+                    if (expiredNotice != null) ...[
+                      AlertBanner(
+                        tone: AlertTone.moving,
+                        title: '로그인이 만료됐어요',
+                        body: expiredNotice,
+                      ),
+                      const SizedBox(height: BaraedaSpacing.space4),
+                    ],
+                    BaraedaInput(
+                      label: '아이디',
+                      kind: BaraedaInputKind.username,
+                      controller: _loginIdController,
+                    ),
+                    const SizedBox(height: BaraedaSpacing.space4),
+                    BaraedaInput(
+                      label: '비밀번호',
+                      kind: BaraedaInputKind.currentPassword,
+                      obscureText: true,
+                      error: _passwordError,
+                      controller: _passwordController,
+                    ),
+                    if (remaining != null &&
+                        remaining <= _lockWarningThreshold) ...[
+                      const SizedBox(height: BaraedaSpacing.space4),
+                      AlertBanner(
+                        tone: AlertTone.missed,
+                        title: '$remaining번 더 틀리면 계정이 잠겨요',
+                        body: '잠기면 직접 풀 수 없고 학원에 문의해야 해요',
+                      ),
+                    ],
+                    if (_formError != null) ...[
+                      const SizedBox(height: BaraedaSpacing.space4),
+                      AlertBanner(tone: AlertTone.missed, body: _formError),
+                    ],
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: BaraedaButton(
+                        label: '아이디 · 비밀번호를 잊으셨나요?',
+                        size: BaraedaButtonSize.sm,
+                        variant: BaraedaButtonVariant.ghost,
+                        onPressed: () =>
+                            context.push(AppRoutes.accountRecovery),
+                      ),
+                    ),
+                    DevQuickLogin(
+                      accounts: const [
+                        DevAccount('학부모(자녀 2)', 'parentA1'),
+                        DevAccount('학부모', 'parentA2'),
+                        DevAccount('학생', 'studentA4'),
+                        DevAccount('승인 대기', 'parentPending'),
+                        DevAccount('거절됨', 'studentRejected'),
+                        // V14 데모 학원(목동) — 학생 20명 버스가 운행 중인 학부모.
+                        DevAccount('데모 학부모', 'parent01001'),
+                      ],
+                      onPick: (loginId, password) {
+                        _loginIdController.text = loginId;
+                        _passwordController.text = password;
+                        unawaited(_submit());
+                      },
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: BaraedaSpacing.space4),
-              BaraedaInput(
-                label: '비밀번호',
-                required: true,
-                obscureText: true,
-                error: _passwordError,
-                controller: _passwordController,
+            ),
+            // 아래 고정 단추 — 엄지가 닿는 곳에 주 행동, 회원가입은 같은 영역의 보조 단추(시안 `.m-sticky`).
+            DecoratedBox(
+              decoration: BoxDecoration(
+                color: colors.surfaceChrome,
+                border: Border(top: BorderSide(color: colors.borderChrome)),
               ),
-              if (_formError != null) ...[
-                const SizedBox(height: BaraedaSpacing.space4),
-                AlertBanner(tone: AlertTone.missed, body: _formError),
-              ],
-              const SizedBox(height: BaraedaSpacing.space6),
-              BaraedaButton(
-                label: '로그인하기',
-                size: BaraedaButtonSize.lg,
-                onPressed: _submitting ? null : _submit,
+              child: Padding(
+                padding: const EdgeInsets.all(BaraedaSpacing.gutterMobile),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    BaraedaButton(
+                      label: '로그인',
+                      size: BaraedaButtonSize.xl,
+                      block: true,
+                      onPressed: _submitting ? null : _submit,
+                    ),
+                    const SizedBox(height: BaraedaSpacing.space2),
+                    BaraedaButton(
+                      label: '처음이세요? 회원가입',
+                      variant: BaraedaButtonVariant.secondary,
+                      block: true,
+                      onPressed: () => context.push(AppRoutes.signup),
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: BaraedaSpacing.space4),
-              BaraedaButton(
-                label: '회원가입하기',
-                size: BaraedaButtonSize.lg,
-                variant: BaraedaButtonVariant.ghost,
-                onPressed: () => context.push(AppRoutes.signup),
-              ),
-              BaraedaButton(
-                label: '아이디 · 비밀번호를 잊으셨나요?',
-                size: BaraedaButtonSize.sm,
-                variant: BaraedaButtonVariant.ghost,
-                onPressed: () => context.push(AppRoutes.accountRecovery),
-              ),
-              DevQuickLogin(
-                accounts: const [
-                  DevAccount('학부모(자녀 2)', 'parentA1'),
-                  DevAccount('학부모', 'parentA2'),
-                  DevAccount('학생', 'studentA4'),
-                  DevAccount('승인 대기', 'parentPending'),
-                  DevAccount('거절됨', 'studentRejected'),
-                  // V14 데모 학원(목동) — 학생 20명 버스가 운행 중인 학부모.
-                  DevAccount('데모 학부모', 'parent01001'),
-                ],
-                onPick: (loginId, password) {
-                  _loginIdController.text = loginId;
-                  _passwordController.text = password;
-                  unawaited(_submit());
-                },
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
