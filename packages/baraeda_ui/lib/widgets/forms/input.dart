@@ -8,6 +8,7 @@ import 'package:baraeda_ui/tokens/shape.dart';
 import 'package:baraeda_ui/tokens/spacing.dart';
 import 'package:baraeda_ui/tokens/typography.dart';
 import 'package:baraeda_ui/widgets/core/icon.dart';
+import 'package:baraeda_ui/widgets/core/icon_button.dart';
 import 'package:baraeda_ui/widgets/core/word_wrap_text.dart';
 import 'package:flutter/material.dart';
 
@@ -71,7 +72,10 @@ _InputAttributes _attributesOf(BaraedaInputKind kind) => switch (kind) {
 ///
 /// [label]이 있으면 필드 위에, [hint]는 라벨 아래 보조 설명으로, [error]가
 /// 있으면 hint 대신 레드로 노출된다(둘 다 동시에 보이지 않는다).
-class BaraedaInput extends StatelessWidget {
+///
+/// [obscureText] 인 칸(비밀번호)은 오른쪽에 보기 전환 눈 아이콘이 저절로 붙는다(Ruling 834) — 보임 여부는
+/// 칸 안에서 들고 있어 화면이 따로 상태를 두지 않는다. 화면이 [suffix] 를 직접 주면 그쪽이 이긴다.
+class BaraedaInput extends StatefulWidget {
   const new({
     super.key,
     this.label,
@@ -81,6 +85,7 @@ class BaraedaInput extends StatelessWidget {
     this.icon,
     this.suffix,
     this.required = false,
+    this.announceRequired = false,
     this.obscureText = false,
     this.enabled = true,
     this.controller,
@@ -103,8 +108,14 @@ class BaraedaInput extends StatelessWidget {
   /// 필드 오른쪽에 붙는 보조 위젯(단위 텍스트 등).
   final Widget? suffix;
 
-  /// 라벨 옆에 `*`를 붙인다.
+  /// 라벨 옆에 `*`를 눈으로 보이게 붙인다.
   final bool required;
+
+  /// 필수 칸 — 눈에는 아무것도 덧붙이지 않고(시안에 `*` 가 없다) 화면 낭독기만 칸 이름 뒤에 "필수" 를 읽는다
+  /// (Ruling 833). [required] 와 따로다.
+  final bool announceRequired;
+
+  /// 가려진 입력(비밀번호). 눈 아이콘으로 사용자가 잠시 보이게 바꿀 수 있다.
   final bool obscureText;
   final bool enabled;
   final TextEditingController? controller;
@@ -115,36 +126,46 @@ class BaraedaInput extends StatelessWidget {
   final BaraedaInputKind kind;
 
   @override
+  State<BaraedaInput> createState() => _BaraedaInputState();
+}
+
+class _BaraedaInputState extends State<BaraedaInput> {
+  /// 눈 아이콘으로 보이게 바꿨는가 — 칸마다 따로다.
+  bool _revealed = false;
+
+  @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final hasError = error != null && error!.isNotEmpty;
-    final attributes = _attributesOf(kind);
+    final w = widget;
+    final hasError = w.error != null && w.error!.isNotEmpty;
+    final attributes = _attributesOf(w.kind);
+    final eye = w.obscureText && w.suffix == null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (label != null) ...[
-          _InputLabel(label: label!, required: required, error: hasError),
+        if (w.label != null) ...[
+          _InputLabel(label: w.label!, required: w.required, error: hasError),
           const SizedBox(height: 6),
         ],
         Semantics(
           textField: true,
-          label: label,
-          enabled: enabled,
+          label: _readerLabel(w),
+          enabled: w.enabled,
           child: TextField(
-            controller: controller,
-            onChanged: onChanged,
-            enabled: enabled,
-            obscureText: obscureText,
-            keyboardType: keyboardType ?? attributes.keyboardType,
+            controller: w.controller,
+            onChanged: w.onChanged,
+            enabled: w.enabled,
+            obscureText: w.obscureText && !_revealed,
+            keyboardType: w.keyboardType ?? attributes.keyboardType,
             autofillHints: attributes.autofillHints,
             autocorrect: attributes.correct,
             enableSuggestions: attributes.correct,
             style: BaraedaTypography.body.copyWith(color: colors.textPrimary),
             decoration: InputDecoration(
               filled: true,
-              fillColor: enabled ? colors.surfaceCard : colors.bgSubtle,
+              fillColor: w.enabled ? colors.surfaceCard : colors.bgSubtle,
               // 시안 입력 칸 높이 52.
               constraints: const BoxConstraints(
                 minHeight: BaraedaSpacing.inputHeight,
@@ -153,18 +174,24 @@ class BaraedaInput extends StatelessWidget {
                 horizontal: 14,
                 vertical: 13,
               ),
-              hintText: placeholder,
+              hintText: w.placeholder,
               hintStyle: BaraedaTypography.body.copyWith(
                 color: colors.textTertiary,
               ),
-              prefixIcon: icon == null
+              prefixIcon: w.icon == null
                   ? null
                   : Padding(
                       padding: const EdgeInsets.only(left: 12, right: 8),
-                      child: BaraedaIcon(icon!, color: colors.textTertiary),
+                      child: BaraedaIcon(w.icon!, color: colors.textTertiary),
                     ),
               prefixIconConstraints: const BoxConstraints(),
-              suffixIcon: suffix,
+              suffixIcon: eye
+                  ? BaraedaIconButton(
+                      icon: _revealed ? 'eye-off' : 'eye',
+                      label: _revealed ? '비밀번호 숨기기' : '비밀번호 보기',
+                      onPressed: () => setState(() => _revealed = !_revealed),
+                    )
+                  : w.suffix,
               border: _borderFor(colors.borderControl),
               // 오류는 위험 면 색 2px 테두리(시안 `.m-field.err`).
               enabledBorder: hasError
@@ -181,7 +208,7 @@ class BaraedaInput extends StatelessWidget {
             ),
           ),
         ),
-        if (hasError || (hint != null && hint!.isNotEmpty)) ...[
+        if (hasError || (w.hint != null && w.hint!.isNotEmpty)) ...[
           const SizedBox(height: 6),
           if (hasError)
             // 색만으로 오류를 알리지 않는다 — 경고 아이콘을 앞에 둔다(시안 `.m-err`).
@@ -199,7 +226,7 @@ class BaraedaInput extends StatelessWidget {
                 const SizedBox(width: 6),
                 Expanded(
                   child: WordWrapText(
-                    error!,
+                    w.error!,
                     style: BaraedaTypography.caption.copyWith(
                       color: colors.statusMissed,
                       fontWeight: BaraedaFontWeight.medium,
@@ -210,7 +237,7 @@ class BaraedaInput extends StatelessWidget {
             )
           else
             WordWrapText(
-              hint!,
+              w.hint!,
               style: BaraedaTypography.caption.copyWith(
                 color: colors.textSecondary,
               ),
@@ -218,6 +245,13 @@ class BaraedaInput extends StatelessWidget {
         ],
       ],
     );
+  }
+
+  /// 낭독 이름 — 필수 칸이면 칸 이름 뒤에 "필수" 를 붙인다. 눈에 보이는 라벨은 그대로다.
+  String? _readerLabel(BaraedaInput w) {
+    final label = w.label;
+    if (label == null || !w.announceRequired) return label;
+    return '$label 필수';
   }
 }
 
