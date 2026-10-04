@@ -5,6 +5,7 @@
 // Material `AppBar` 는 안쪽에서 안전 영역을 처리하지만, 직접 만든
 // `PreferredSizeWidget` 은 그 일을 스스로 해야 한다.
 import 'package:baraeda_ui/theme/baraeda_theme.dart';
+import 'package:baraeda_ui/widgets/core/map_controls.dart';
 import 'package:baraeda_ui/widgets/navigation/app_header.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -147,5 +148,37 @@ void main() {
     );
     // floating 의 제목은 16 — 흰 알약 안.
     expect(tester.widget<Text>(find.text('실시간 위치')).style!.fontSize, 16);
+  });
+
+  // 지도 위 머리줄(시안 `live-map`) — 흰 사각 뒤로 가기 단추와 제목 알약이 왼쪽에 나란히 선다.
+  testWidgets('floating 은 흰 뒤로 가기 단추 옆에 제목 알약이 왼쪽으로 붙는다', (tester) async {
+    var popped = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: BaraedaTheme.light(),
+        home: Scaffold(
+          appBar: AppHeader(
+            title: '실시간 버스',
+            tone: AppHeaderTone.floating,
+            onBack: () => popped++,
+          ),
+          body: const SizedBox(),
+        ),
+      ),
+    );
+
+    final back = find.byType(BaraedaMapButton);
+    expect(back, findsOneWidget);
+    await tester.tap(back);
+    expect(popped, 1);
+
+    final backBox = tester.getRect(back);
+    final titleBox = tester.getRect(find.text('실시간 버스'));
+    expect(backBox.left, lessThan(24), reason: '가장자리 가까이');
+    expect(
+      titleBox.left - backBox.right,
+      lessThan(40),
+      reason: '제목 알약이 단추 바로 옆에 붙는다 — 가운데로 떨어지지 않는다',
+    );
   });
 }

@@ -9,6 +9,7 @@ import 'package:baraeda_ui/tokens/shape.dart';
 import 'package:baraeda_ui/tokens/spacing.dart';
 import 'package:baraeda_ui/tokens/typography.dart';
 import 'package:baraeda_ui/widgets/core/icon.dart';
+import 'package:baraeda_ui/widgets/core/map_controls.dart';
 import 'package:flutter/material.dart';
 
 /// [AppHeader] 의 배경 톤.
@@ -116,7 +117,10 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
           constraints: BoxConstraints(minHeight: preferredSize.height),
           // 뒤로 버튼이 있으면 왼쪽을 4 로 줄여 쉐브론이 가장자리에 붙는다(시안 `.has-back`).
           padding: EdgeInsets.fromLTRB(
-            back != null ? 6 : BaraedaSpacing.gutterMobile,
+            // 지도 위(floating)는 시안처럼 가장자리에서 12 떨어진 흰 단추 + 제목 알약이 나란히 선다.
+            floating
+                ? BaraedaSpacing.space3
+                : (back != null ? 6 : BaraedaSpacing.gutterMobile),
             BaraedaSpacing.space1,
             BaraedaSpacing.space2,
             BaraedaSpacing.space1,
@@ -129,14 +133,21 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
           ),
           child: Row(
             children: [
-              if (back != null)
+              if (back != null && floating) ...[
+                BaraedaMapButton(
+                  icon: 'chevron-left',
+                  semanticLabel: '뒤로',
+                  onPressed: back,
+                ),
+                const SizedBox(width: BaraedaSpacing.space2),
+              ] else if (back != null)
                 IconButton(
                   onPressed: back,
                   tooltip: '뒤로',
                   icon: BaraedaIcon(
                     'chevron-left',
                     size: 24,
-                    color: floating ? colors.onMapControl : foreground,
+                    color: foreground,
                   ),
                 ),
               Expanded(
@@ -151,9 +162,7 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: floating
-                        ? CrossAxisAlignment.center
-                        : CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       ?titleWidget,
                       if (subtitle != null && !floating)
