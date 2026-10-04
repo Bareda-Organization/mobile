@@ -12,6 +12,9 @@ import 'package:parent_app/core/auth/user_role.dart';
 import 'package:parent_app/core/change_requests/domain/change_request.dart';
 import 'package:parent_app/core/change_requests/presentation/change_request_providers.dart';
 import 'package:parent_app/core/common/run_direction.dart';
+import 'package:parent_app/core/map/map_surface.dart';
+import 'package:parent_app/core/routes/domain/route_detail.dart';
+import 'package:parent_app/core/routes/domain/route_repository.dart';
 import 'package:parent_app/core/runs/domain/bus_position.dart';
 import 'package:parent_app/core/runs/domain/student_run.dart';
 import 'package:parent_app/core/students/domain/student.dart';
@@ -44,17 +47,89 @@ class _CountingPositionRepository implements BusPositionRepository {
   }
 }
 
+/// 노선(§3.10)을 읽는 요청의 `run_id` 를 남기는 가짜 — 값이 없으면 실패한다.
+class _RecordingRouteRepository implements RouteRepository {
+  new(this._detail);
+
+  final RouteDetail? _detail;
+  final List<String?> runIds = [];
+
+  @override
+  Future<RouteDetail> getRoute(
+    String studentId, {
+    DateTime? date,
+    String? runId,
+  }) {
+    runIds.add(runId);
+    final detail = _detail;
+    return detail == null
+        ? Future.error(const Failure.unknown(message: 'test fake — no route'))
+        : Future.value(detail);
+  }
+}
+
+final List<({double lat, double lng})> _road = [
+  (lat: 37.501, lng: 126.701),
+  (lat: 37.502, lng: 126.703),
+  (lat: 37.504, lng: 126.704),
+];
+
+/// 표시 범위만 담은 노선 — 3 · 4(내 승하차지) · 5 번.
+RouteDetail _route({
+  List<({double lat, double lng})>? roadPath,
+  bool arrived = false,
+}) => RouteDetail(
+  runId: 'run-1',
+  busNo: '2호차',
+  departTime: DateTime.utc(2026, 10, 3, 3, 20),
+  confirmed: true,
+  driver: const RouteDriver(name: null),
+  escort: const RouteEscort(name: null, phone: null),
+  myStopId: 'st-1',
+  roadPath: roadPath ?? _road,
+  stops: [
+    RouteStop(
+      stopId: 'st-3',
+      seq: 3,
+      name: '중앙공원 앞',
+      address: null,
+      lat: 37.501,
+      lng: 126.701,
+      arrivedAt: arrived ? DateTime.utc(2026, 10, 3, 3, 9) : null,
+    ),
+    RouteStop(
+      stopId: 'st-1',
+      seq: 4,
+      name: '행복마을 입구',
+      address: null,
+      lat: 37.502,
+      lng: 126.703,
+      arrivedAt: arrived ? DateTime.utc(2026, 10, 3, 3, 15) : null,
+    ),
+    const RouteStop(
+      stopId: 'st-5',
+      seq: 5,
+      name: '하늘수학',
+      address: null,
+      lat: 37.504,
+      lng: 126.704,
+    ),
+  ],
+);
+
 BusPosition _position({
   BusDelay? delay,
   DateTime? receivedAt,
   String? stopName = '중앙공원 앞',
   DateTime? stopArrivedAt,
+  RunStatus status = RunStatus.moving,
+  bool withCoords = true,
 }) => BusPosition(
   runId: 'run-1',
   busNo: '2호차',
-  runStatus: RunStatus.moving,
-  lat: 37.5,
-  lng: 126.7,
+  runStatus: status,
+  lat: withCoords ? 37.5 : null,
+  lng: withCoords ? 126.7 : null,
   receivedAt: receivedAt,
   currentStopName: stopName,
   currentStopArrivedAt: stopArrivedAt,
@@ -78,6 +153,8 @@ Future<_CountingPositionRepository> _pumpHome(
   WidgetTester tester, {
   required Future<BusPosition> Function() position,
   UserRole role = UserRole.parent,
+  RouteDetail? route,
+  _RecordingRouteRepository? routeRepository,
 }) async {
   tester.view.physicalSize = const Size(800, 2600);
   tester.view.devicePixelRatio = 1;
@@ -100,6 +177,9 @@ Future<_CountingPositionRepository> _pumpHome(
       overrides: [
         webSocketClientProvider.overrideWithValue(_ForbiddenWsClient()),
         busPositionRepositoryProvider.overrideWithValue(repository),
+        routeRepositoryProvider.overrideWithValue(
+          routeRepository ?? _RecordingRouteRepository(route),
+        ),
         currentUserRoleProvider.overrideWith((ref) => role),
         roleCapabilitiesProvider.overrideWithValue(RoleCapabilities.of(role)),
         myStudentsProvider.overrideWith(
@@ -265,4 +345,91 @@ void main() {
       expect(find.text('로그아웃'), findsNothing);
     });
   });
+
+  // R49 `Ruling 831` — 홈 지도 미리보기에도 표시 범위 승하차지의 번호 마커와 경로선을 그린다.
+  group('R49 지도 미리보기 — 노선선 · 번호', () {
+    MapSurface previewMap(WidgetTester tester) =>
+        tester.widget<MapSurface>(find.byType(MapSurface));
+
+    testWidgets('road_path 가 있으면 선 1개와 번호 마커(번호는 seq)를 그리고 내 승하차지를 강조한다', (
+      tester,
+    ) async {
+      await _pumpHome(
+        tester,
+        position: () async => _position(),
+        route: _route(),
+      );
+
+      final map = previewMap(tester);
+      final stops = map.markers.where((m) => m.kind == MapMarkerKind.stop);
+      expect(map.polylines, hasLength(1));
+      expect(map.polylines.single.dashed, isFalse);
+      expect(stops.map((m) => m.seq), [3, 4, 5]);
+      expect(map.markers.where((m) => m.mine).map((m) => m.seq), [4]);
+      expect(
+        map.markers.where((m) => m.kind == MapMarkerKind.bus),
+        hasLength(1),
+      );
+    });
+
+    testWidgets('road_path 가 비면 표시 승하차지를 점선으로 잇는다', (tester) async {
+      await _pumpHome(
+        tester,
+        position: () async => _position(),
+        route: _route(roadPath: const []),
+      );
+
+      final line = previewMap(tester).polylines.single;
+      expect(line.dashed, isTrue);
+      expect(line.points, hasLength(3));
+    });
+
+    testWidgets('노선을 못 받으면 버스만 그리고 오류 띠를 더하지 않는다', (tester) async {
+      await _pumpHome(tester, position: () async => _position());
+
+      final map = previewMap(tester);
+      expect(map.polylines, isEmpty);
+      expect(map.markers.map((m) => m.kind), [MapMarkerKind.bus]);
+      expect(find.byType(AlertBanner), findsNothing);
+    });
+
+    testWidgets('노선 요청에 스냅샷의 run_id 를 싣는다', (tester) async {
+      final routes = _RecordingRouteRepository(_route());
+      await _pumpHome(
+        tester,
+        position: () async => _position(),
+        routeRepository: routes,
+      );
+
+      expect(routes.runIds, isNotEmpty);
+      expect(routes.runIds.toSet(), {'run-1'});
+    });
+
+    testWidgets('종료된 회차는 좌표가 없어도 지나온 구간을 그리고 지도를 노선에 맞춘다', (tester) async {
+      await _pumpHome(
+        tester,
+        position: () async =>
+            _position(status: RunStatus.finished, withCoords: false),
+        route: _route(arrived: true),
+      );
+
+      final map = previewMap(tester);
+      expect(map.polylines.single.passed, isTrue);
+      expect(map.markers.where((m) => m.kind == MapMarkerKind.bus), isEmpty);
+      expect(map.markers.map((m) => m.seq), [3, 4, 5]);
+      expect(map.fitToContent, isTrue);
+    });
+
+    testWidgets('좌표도 없고 종료도 아닌 회차(운행 전)는 지도를 그리지 않는다 — 기존 동작', (tester) async {
+      await _pumpHome(
+        tester,
+        position: () async =>
+            _position(status: RunStatus.confirmed, withCoords: false),
+        route: _route(),
+      );
+
+      expect(find.byType(MapSurface), findsNothing);
+    });
+  });
+
 }

@@ -105,6 +105,8 @@ class RouteDetail {
     required this.escort,
     required this.myStopId,
     required this.stops,
+    this.roadPath = const [],
+    this.fallbackUsed = false,
   });
 
   factory fromJson(Map<String, dynamic> json) => RouteDetail(
@@ -119,6 +121,15 @@ class RouteDetail {
         .cast<Map<String, dynamic>>()
         .map(RouteStop.fromJson)
         .toList(),
+    // 서버가 아직 두 필드를 안 주는 동안(R49 백엔드 갈래가 만드는 중)에도 깨지지 않게 빈 경로 · 근사 아님으로 읽는다.
+    roadPath: [
+      for (final point in (json['road_path'] as List<dynamic>? ?? const []))
+        (
+          lat: ((point as Map<String, dynamic>)['lat'] as num).toDouble(),
+          lng: (point['lng'] as num).toDouble(),
+        ),
+    ],
+    fallbackUsed: json['fallback_used'] as bool? ?? false,
   );
 
   final String runId;
@@ -147,4 +158,12 @@ class RouteDetail {
   /// `GET /students/{id}/route` 전용이라(다른 소비자가 재사용하지
   /// 않는다) 서버를 신뢰하는 것이 유일한 소비자에게는 맞는 계약이다.
   final List<RouteStop> stops;
+
+  /// 확정 노선의 도로 경로 중 표시 범위(P-08)만 자른 좌표열
+  /// (§3.10 `road_path`, `Ruling 831`) — 순서가 있다.
+  /// 확정 전이거나 도로 좌표가 빈 옛 버전이면 빈 목록이다. **범위 밖 승하차지의 위치는 실리지 않는다.**
+  final List<({double lat, double lng})> roadPath;
+
+  /// `true` 면 [roadPath] 가 직선거리 근사다(§3.10 `fallback_used`).
+  final bool fallbackUsed;
 }

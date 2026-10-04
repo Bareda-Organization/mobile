@@ -54,6 +54,7 @@ class LiveMapView {
     this.lastStopArrivedAt,
     this.busNo,
     this.run,
+    this.runId,
   });
 
   /// 상태 한 벌로부터 화면 모양을 정한다. [now] 는 `clockProvider` 의 시각 — 유실 판정이 서버와 같은 시계를 쓰게
@@ -138,6 +139,7 @@ class LiveMapView {
       lastStopArrivedAt: lastStopArrivedAt,
       busNo: rest?.busNo ?? state.run?.busNo,
       run: state.run,
+      runId: rest?.runId ?? state.run?.runId,
     );
 
     if (state.isAbsent) return build(LiveMapPhase.absent);
@@ -213,4 +215,8 @@ class LiveMapView {
 
   /// 오늘 회차(방향 · 출발 시각 · 확정 여부). 회차 목록을 못 받았으면 `null`.
   final StudentRun? run;
+
+  /// 지금 보는 회차의 식별자 — 스냅샷이 준 값, 없으면 회차 목록의 값. 노선(§3.10)을 같은 회차로 읽는 데 쓴다.
+  /// 둘 다 없으면 `null`(서버 기본값 — 당일 다음 회차).
+  final String? runId;
 }

@@ -10,6 +10,7 @@ import 'package:parent_app/app/di.dart';
 import 'package:parent_app/core/auth/auth_providers.dart';
 import 'package:parent_app/core/map/map_surface.dart';
 import 'package:parent_app/core/routes/domain/route_detail.dart';
+import 'package:parent_app/core/routes/presentation/route_map_overlay.dart';
 import 'package:parent_app/core/routes/presentation/route_providers.dart';
 import 'package:parent_app/core/runs/presentation/run_display.dart';
 import 'package:parent_app/core/students/presentation/selected_student.dart';
@@ -18,6 +19,7 @@ import 'package:parent_app/core/students/presentation/student_switcher.dart';
 import 'package:parent_app/core/ui/delay_band.dart';
 import 'package:parent_app/features/live_map/presentation/live_map_providers.dart';
 import 'package:parent_app/features/live_map/presentation/live_map_view.dart';
+import 'package:parent_app/features/live_map/presentation/trip_text.dart';
 import 'package:parent_app/features/live_map/presentation/widgets/live_map_before.dart';
 import 'package:parent_app/features/live_map/presentation/widgets/live_map_sheet.dart';
 
@@ -262,9 +264,16 @@ class _MapPageState extends ConsumerState<_MapPage> {
 
   LiveMapView get _view => widget.view;
 
-  /// 내 승하차지 — §3.10 이 준 정류장. 노선을 못 받았으면 `null`(시트는 §3.5 의 이름으로 대신한다).
-  RouteStop? _myStop() {
-    final route = ref.watch(routeDetailProvider(widget.studentId)).value;
+  /// 이 화면의 노선(§3.10) — 지금 보는 회차의 것을 읽는다(종료된 회차도 그 회차의 노선이다, `Ruling 831`).
+  /// 못 받았으면 `null` — 지도는 버스만 그리고 시트는 §3.5 의 이름으로 대신한다.
+  RouteDetail? _route() => ref
+      .watch(
+        routeForRunProvider((studentId: widget.studentId, runId: _view.runId)),
+      )
+      .value;
+
+  /// 내 승하차지 — [route] 가 준 정류장.
+  RouteStop? _myStop(RouteDetail? route) {
     if (route == null) return null;
     for (final stop in route.stops) {
       if (stop.stopId == route.myStopId) return stop;
@@ -276,13 +285,27 @@ class _MapPageState extends ConsumerState<_MapPage> {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final loading = _view.phase == LiveMapPhase.loading;
-    final myStop = loading ? null : _myStop();
+    final ended = _view.phase == LiveMapPhase.ended;
+    final route = loading ? null : _route();
+    final myStop = _myStop(route);
     final myStopPoint = myStop?.lat != null && myStop?.lng != null
         ? myStop
         : null;
+    final overlay = route == null
+        ? null
+        : RouteMapOverlay.of(
+            route,
+            idPrefix: 'live-${widget.studentId}',
+            ended: ended,
+            markNext: _view.phase == LiveMapPhase.tracking,
+          );
+    // 종료 화면은 서버가 끝난 뒤 좌표를 주지 않아 버스가 없다 — 대신 지나온 구간(노선)을 그리고 지도를 거기에 맞춘다.
+    final fitRoute = ended && overlay != null && !overlay.isEmpty;
     final bus = _view.position;
-    final showMap = bus != null && !_authFailed;
-    final camera = bus == null
+    final showMap = !_authFailed && (bus != null || fitRoute);
+    final camera = fitRoute
+        ? overlay.start
+        : bus == null
         ? null
         : (_following ? MapCamera(lat: bus.lat, lng: bus.lng) : _pinned) ??
               MapCamera(lat: bus.lat, lng: bus.lng);
@@ -290,8 +313,14 @@ class _MapPageState extends ConsumerState<_MapPage> {
     // 바퀴 단추는 달리는 중에 있고, 신호가 끊겨도 마지막 좌표가 있으면 남긴다(시안 `live-map--lost`).
     final showFabs =
         showMap &&
+        bus != null &&
         (_view.phase == LiveMapPhase.tracking ||
             _view.phase == LiveMapPhase.noSignal);
+    final destination = tripDestination(
+      direction: _view.run?.direction,
+      academyName: ref.watch(academyNameProvider).value,
+      myStopName: myStop?.name ?? _view.run?.stop.name,
+    );
 
     return Scaffold(
       body: Stack(
@@ -301,21 +330,18 @@ class _MapPageState extends ConsumerState<_MapPage> {
                 ? MapSurface(
                     camera: camera,
                     markers: [
-                      MapMarker(
-                        id: 'bus-${widget.studentId}',
-                        lat: bus.lat,
-                        lng: bus.lng,
-                        kind: MapMarkerKind.bus,
-                      ),
-                      if (myStopPoint != null)
+                      if (bus != null && !fitRoute)
                         MapMarker(
-                          id: 'my-stop-${widget.studentId}',
-                          lat: myStopPoint.lat!,
-                          lng: myStopPoint.lng!,
-                          kind: MapMarkerKind.stop,
-                          label: '내 승하차지',
+                          id: 'bus-${widget.studentId}',
+                          lat: bus.lat,
+                          lng: bus.lng,
+                          kind: MapMarkerKind.bus,
                         ),
+                      ...?overlay?.markers,
                     ],
+                    polylines: overlay?.polylines ?? const [],
+                    fitToContent: fitRoute,
+                    fitPadding: _fitPadding(context),
                     onUserGesture: () {
                       if (!_following) return;
                       setState(() {
@@ -380,6 +406,7 @@ class _MapPageState extends ConsumerState<_MapPage> {
                     view: _view,
                     studentName: widget.studentName,
                     myStopName: myStop?.name ?? _view.run?.stop.name,
+                    destination: destination,
                     onRetry: widget.onRetry,
                   ),
               ],
@@ -389,6 +416,15 @@ class _MapPageState extends ConsumerState<_MapPage> {
       ),
     );
   }
+
+  /// 종료 화면이 노선에 맞출 때 비울 여백 — 위는 머리줄, 아래는 시트(화면의 약 4할), 왼쪽은 "내 승하차지" 이름표
+  /// 폭이다. 이만큼 비우지 않으면 시트가 노선의 끝(학원)을 가린다.
+  EdgeInsets _fitPadding(BuildContext context) => EdgeInsets.fromLTRB(
+    120,
+    140,
+    48,
+    MediaQuery.sizeOf(context).height * 0.42,
+  );
 
   /// 지도 위 오른쪽 이름표 — 달리는 중 "12:14 기준" · 종료 "운행 종료".
   Widget? _topTag() {
@@ -525,12 +561,16 @@ class _Sheet extends StatelessWidget {
     required this.view,
     required this.studentName,
     required this.myStopName,
+    required this.destination,
     required this.onRetry,
   });
 
   final LiveMapView view;
   final String? studentName;
   final String? myStopName;
+
+  /// 이 회차가 가는 곳의 이름(`Ruling 832`) — 이름을 못 얻으면 `null` 이고 문구가 이름 없이 떨어진다.
+  final String? destination;
   final VoidCallback onRetry;
 
   @override
@@ -579,9 +619,11 @@ class _Sheet extends StatelessWidget {
         MapSheetWho(
           initial: studentName?.characters.firstOrNull ?? '나',
           title: _title(),
-          subtitle: view.phase == LiveMapPhase.ended || startedAt == null
-              ? null
-              : '${formatClock(startedAt)} 운행 시작',
+          subtitle: sheetSubtitle(
+            ended: view.phase == LiveMapPhase.ended,
+            destination: destination,
+            startedAt: startedAt,
+          ),
           chipLabel: chipLabel,
           chipStatus: chipStatus,
         ),
@@ -643,9 +685,7 @@ class _Sheet extends StatelessWidget {
         AlertBanner(
           tone: AlertTone.boarded,
           title: '운행이 끝났어요',
-          body: finishedAt == null
-              ? null
-              : '${formatClock(finishedAt)} 에 운행을 마쳤어요.',
+          body: endedBody(finishedAt: finishedAt, destination: destination),
         ),
       if (view.phase == LiveMapPhase.tracking) ...[
         if (view.reconnecting)

@@ -12,11 +12,27 @@ import 'package:parent_app/core/routes/domain/route_detail.dart';
 // 명시할 수 없다(`run_providers.dart` 와 같은 이유).
 // ignore: specify_nonobvious_property_types
 final routeDetailProvider = FutureProvider.autoDispose
-    .family<RouteDetail, String>((
-      ref,
-      studentId,
-    ) {
+    .family<RouteDetail, String>((ref, studentId) {
       // F05-01 — 계정이 바뀌면(로그아웃 = 역할 null) 앞 계정의 캐시를 버린다.
       ref.watch(currentUserRoleProvider);
       return ref.watch(routeRepositoryProvider).getRoute(studentId);
+    });
+
+/// 어느 학생의 어느 회차 노선인가 — `runId` 가 `null` 이면 서버 기본값
+/// (당일 다음 회차).
+typedef RouteRequest = ({String studentId, String? runId});
+
+/// API_SPEC §3.10 을 **회차를 지정해** 읽는다 — 지도(홈 미리보기 · 실시간 위치)가 쓴다. 이미 끝난 회차의 종료 화면이
+/// "지나온 구간"을 그리려면 기본값(다음 회차)이 아니라 그 회차의 노선이어야 한다(`Ruling 831`).
+///
+/// `routeDetailProvider` 는 노선 자세히 화면이 쓴다 — 거기는 지정이 필요 없어 그대로 둔다.
+// 반환형을 명시할 수 없는 사정은 위 `routeDetailProvider` 와 같다.
+// ignore: specify_nonobvious_property_types
+final routeForRunProvider = FutureProvider.autoDispose
+    .family<RouteDetail, RouteRequest>((ref, request) {
+      // F05-01 — 계정이 바뀌면(로그아웃 = 역할 null) 앞 계정의 캐시를 버린다.
+      ref.watch(currentUserRoleProvider);
+      return ref
+          .watch(routeRepositoryProvider)
+          .getRoute(request.studentId, runId: request.runId);
     });
