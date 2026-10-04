@@ -29,7 +29,7 @@ class BaraedaCodeDisplay extends StatelessWidget {
             if (i > 0) const SizedBox(width: 8),
             Expanded(
               child: Container(
-                height: 56,
+                height: 64,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: expired ? colors.disabledSurface : colors.surfaceCard,
@@ -39,6 +39,7 @@ class BaraedaCodeDisplay extends StatelessWidget {
                 child: Text(
                   char,
                   style: BaraedaTypography.numeric.copyWith(
+                    fontSize: 28,
                     color: expired ? colors.disabledText : colors.textPrimary,
                     decoration: expired ? TextDecoration.lineThrough : null,
                   ),

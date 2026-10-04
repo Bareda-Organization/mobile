@@ -65,6 +65,7 @@ Future<({List<String> pushed, ProviderContainer container})> _pump(
   WidgetTester tester,
   FakeNotificationRepository repository, {
   ThemeData? theme,
+  UserRole? role,
 }) async {
   final pushed = <String>[];
   final router = GoRouter(
@@ -87,6 +88,8 @@ Future<({List<String> pushed, ProviderContainer container})> _pump(
       overrides: [
         notificationRepositoryProvider.overrideWithValue(repository),
         clockProvider.overrideWithValue(_FixedClock(_now)),
+        if (role != null)
+          roleCapabilitiesProvider.overrideWithValue(RoleCapabilities.of(role)),
       ],
       child: MaterialApp.router(
         theme: theme ?? BaraedaTheme.light(),
@@ -116,6 +119,9 @@ void main() {
       expect(find.text('오늘'), findsOneWidget);
       expect(find.text('어제'), findsOneWidget);
       expect(find.text('9월 28일(월)'), findsOneWidget);
+      // 머리 오른쪽에 날짜 — 오늘은 요일까지, 어제는 날짜만(시안).
+      expect(find.text('9월 30일 (수)'), findsOneWidget);
+      expect(find.text('9월 29일'), findsOneWidget);
       expect(find.text('8:37'), findsOneWidget);
       expect(find.text('14:05'), findsOneWidget);
       // 위에서 아래로 오늘 → 어제 → 지난 날짜 순서.
@@ -129,7 +135,9 @@ void main() {
       );
     });
 
-    testWidgets('같은 말을 두 번 하지 않는다 — 종류 알약 문구가 화면에 없다', (tester) async {
+    // 시안 `notifications` — 행마다 종류 알약(▶ 지연 · ● 하차 …)이 시각 옆에 있다. 제목과 같은 말이 겹치지 않게
+    // 알림 제목은 서버 문구 그대로 두고 알약만 짧은 종류 이름이다.
+    testWidgets('종류 알약이 제목과 따로 있고 제목은 서버 문구 그대로다', (tester) async {
       final repository = FakeNotificationRepository([
         _item(
           '1',
@@ -141,22 +149,31 @@ void main() {
       await _pump(tester, repository);
 
       expect(find.text('곧 도착합니다'), findsOneWidget);
-      expect(find.text('곧 도착'), findsNothing);
+      expect(find.text('곧 도착'), findsOneWidget, reason: '종류 알약');
     });
 
-    testWidgets('제목·본문에 자녀 이름이 없으면 제목 뒤에 붙인다(ATT-03)', (tester) async {
+    // ATT-03 — 알림에는 자녀 이름이 반드시 보여야 한다. 시안은 제목 뒤가 아니라 종류 · 시각 줄 끝에 둔다.
+    testWidgets('학부모는 자녀 이름이 종류 · 시각 줄 끝에 붙는다 — 이름이 없는 알림은 그 칸이 없다(ATT-03)', (
+      tester,
+    ) async {
       final repository = FakeNotificationRepository([
         _item('1', title: '미승차 안내', body: '버스가 출발했습니다.', studentName: '김철수'),
-        _item(
-          '2',
-          title: '승하차 안내',
-          body: '김영희 학생이 버스에 탑승했습니다.',
-        ),
+        _item('2', title: '승하차 안내', body: '버스에 탑승했습니다.'),
       ]);
-      await _pump(tester, repository);
+      await _pump(tester, repository, role: UserRole.parent);
 
-      expect(find.text('미승차 안내 · 김철수'), findsOneWidget);
-      expect(find.text('승하차 안내'), findsOneWidget); // 본문에 이미 있으면 그대로
+      expect(find.text('미승차 안내'), findsOneWidget, reason: '제목은 그대로');
+      expect(find.text('· 김철수'), findsOneWidget);
+      expect(find.textContaining('· '), findsOneWidget, reason: '이름 없는 행에는 없다');
+    });
+
+    testWidgets('학생은 본인 알림이라 이름을 붙이지 않는다', (tester) async {
+      final repository = FakeNotificationRepository([
+        _item('1', title: '곧 도착', body: '곧 도착합니다.', studentName: '김철수'),
+      ]);
+      await _pump(tester, repository, role: UserRole.student);
+
+      expect(find.text('· 김철수'), findsNothing);
     });
 
     testWidgets('낭독 — 안 읽음 · 중요 · 종류 · 제목 · 본문 · 시각을 한 번에', (tester) async {

@@ -23,6 +23,19 @@ String dayHeader(DateTime sentAt, DateTime now) {
   return sent.year == today.year ? date : '${sent.year}년 $date';
 }
 
+/// 날짜 머리 오른쪽의 날짜(시안 `오늘 · 10월 3일 (토)`) — `오늘` 은 요일까지, `어제` 는 날짜만.
+/// 그 밖의 날은 머리 자체가 날짜라 오른쪽에 덧붙일 것이 없다(`null`).
+String? dayHeaderDate(DateTime sentAt, DateTime now) {
+  final header = dayHeader(sentAt, now);
+  final sent = _kst(sentAt);
+  final date = '${sent.month}월 ${sent.day}일';
+  return switch (header) {
+    '오늘' => '$date (${_weekdays[sent.weekday - 1]})',
+    '어제' => date,
+    _ => null,
+  };
+}
+
 /// 행 오른쪽 시각 — 24시간제, 앞자리 0 없음. 예: `8:37` · `18:05`.
 String clockLabel(DateTime sentAt) {
   final sent = _kst(sentAt);

@@ -32,7 +32,134 @@ Widget _host({
   ),
 );
 
+Widget _cardHost({
+  required List<DateTime> sentAt,
+  bool read = false,
+  VoidCallback? onTap,
+  String? who = '이하준',
+}) => MaterialApp(
+  theme: BaraedaTheme.light(),
+  home: Scaffold(
+    body: NotificationListView<DateTime>(
+      items: sentAt,
+      sentAtOf: (t) => t,
+      itemBuilder: (context, t) => NotificationTile(
+        style: NotificationTileStyle.card,
+        icon: 'clock',
+        status: BaraedaStatus.moving,
+        kindLabel: '지연',
+        title: '버스가 10분 늦어요',
+        body: '교통 체증으로 2호차가 10분 늦어요.',
+        time: clockLabel(t),
+        timeSpoken: spokenClock(t),
+        unread: !read,
+        who: who,
+        onTap: onTap,
+      ),
+      now: DateTime.utc(2026, 10, 3, 4), // 10월 3일 13:00 KST (토)
+      unreadOnly: false,
+      onUnreadOnlyChanged: (_) {},
+      onRefresh: () async {},
+      onLoadMore: () {},
+      style: NotificationListStyle.pills,
+      unreadCount: 2,
+    ),
+  ),
+);
+
 void main() {
+  group('카드형 행 · 날짜 머리 (시안 notifications)', () {
+    final today = DateTime.utc(2026, 10, 3, 3, 12); // 12:12 KST
+    final today2 = DateTime.utc(2026, 10, 3, 3, 10);
+    final yesterday = DateTime.utc(2026, 10, 2, 7, 52);
+
+    testWidgets('날짜 머리 오른쪽에 날짜가 붙는다 — 오늘은 요일까지, 어제는 날짜만', (tester) async {
+      await tester.pumpWidget(_cardHost(sentAt: [today, today2, yesterday]));
+
+      expect(find.text('오늘'), findsOneWidget);
+      expect(find.text('10월 3일 (토)'), findsOneWidget);
+      expect(find.text('어제'), findsOneWidget);
+      expect(find.text('10월 2일'), findsOneWidget);
+    });
+
+    testWidgets('한 날의 행은 카드 하나로 묶인다 — 이틀이면 카드 둘', (tester) async {
+      await tester.pumpWidget(_cardHost(sentAt: [today, today2, yesterday]));
+
+      // 카드 안 행 수: 오늘 2 · 어제 1.
+      expect(find.byType(NotificationTile), findsNWidgets(3));
+      final dividers = find.byType(Divider);
+      expect(dividers, findsNWidgets(1), reason: '오늘 카드의 두 행 사이 선 하나뿐');
+    });
+
+    testWidgets('행에 종류 알약 · 시각 · 자녀 이름이 한 줄로 있고 안 읽음 점이 있다', (tester) async {
+      await tester.pumpWidget(_cardHost(sentAt: [today]));
+
+      expect(find.text('버스가 10분 늦어요'), findsOneWidget);
+      expect(find.text('지연'), findsOneWidget);
+      expect(find.text('12:12'), findsOneWidget);
+      expect(find.text('· 이하준'), findsOneWidget);
+      expect(find.byKey(NotificationTile.unreadDotKey), findsOneWidget);
+    });
+
+    testWidgets('읽은 행은 점이 없고, 누를 수 있으면 쉐브론이 있다', (tester) async {
+      await tester.pumpWidget(
+        _cardHost(sentAt: [today], read: true, onTap: () {}),
+      );
+
+      expect(find.byKey(NotificationTile.unreadDotKey), findsNothing);
+      expect(find.byType(BaraedaIcon), findsWidgets);
+      expect(
+        find.byWidgetPredicate(
+          (w) => w is BaraedaIcon && w.name == 'chevron-right',
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('자녀 이름이 없으면 그 칸이 없다 — 학생 앱', (tester) async {
+      await tester.pumpWidget(_cardHost(sentAt: [today], who: null));
+
+      expect(find.textContaining('· '), findsNothing);
+    });
+
+    testWidgets('낭독은 안 읽음 · 종류 · 제목 · 본문 · 시각 · 자녀 이름을 한 번에 읽는다', (
+      tester,
+    ) async {
+      await tester.pumpWidget(_cardHost(sentAt: [today]));
+
+      expect(
+        find.bySemanticsLabel(
+          RegExp('안 읽음, 지연, 버스가 10분 늦어요, .*, 오후 12시 12분, 이하준'),
+        ),
+        findsOneWidget,
+      );
+    });
+  });
+
+  testWidgets('기본 모양(row)은 카드로 묶이지 않고 날짜 머리에 날짜도 없다', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: BaraedaTheme.light(),
+        home: Scaffold(
+          body: NotificationListView<int>(
+            items: const [1],
+            sentAtOf: (_) => DateTime.utc(2026, 10, 3, 3),
+            itemBuilder: (context, item) => Text('알림 $item'),
+            now: DateTime.utc(2026, 10, 3, 4),
+            unreadOnly: false,
+            onUnreadOnlyChanged: (_) {},
+            onRefresh: () async {},
+            onLoadMore: () {},
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('오늘'), findsOneWidget);
+    expect(find.text('10월 3일 (토)'), findsNothing);
+    expect(find.byType(Divider), findsNothing);
+  });
+
   testWidgets('기본은 두 칸 전환이다 — 알약도 안 읽음 수도 없다', (tester) async {
     await tester.pumpWidget(_host(style: NotificationListStyle.segmented));
 

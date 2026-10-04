@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:baraeda_ui/theme/baraeda_colors.dart';
+import 'package:baraeda_ui/tokens/shape.dart';
 import 'package:baraeda_ui/tokens/spacing.dart';
 import 'package:baraeda_ui/tokens/typography.dart';
 import 'package:baraeda_ui/widgets/core/button.dart';
@@ -258,19 +259,42 @@ class _NotificationListViewState<T> extends State<NotificationListView<T>> {
 
   bool get _hasFooter => widget.loadingMore || widget.loadMoreFailed;
 
-  /// 날짜 머리와 알림 행을 한 줄씩 만드는 빌더 목록.
+  /// 날짜 머리와 알림 행을 한 줄씩 만드는 빌더 목록. [NotificationListStyle.pills] 는 한 날의 행을 흰 카드
+  /// 하나로 묶는다.
   List<Widget Function()> _rows() {
     final w = widget;
+    final pills = w.style == NotificationListStyle.pills;
     final rows = <Widget Function()>[];
     String? lastHeader;
+    var group = <T>[];
+
+    void flushGroup() {
+      if (group.isEmpty) return;
+      final items = group;
+      rows.add(
+        () => _DayCard(
+          children: [for (final item in items) w.itemBuilder(context, item)],
+        ),
+      );
+      group = <T>[];
+    }
+
     for (final item in w.items) {
-      final header = dayHeader(w.sentAtOf(item), w.now);
+      final sentAt = w.sentAtOf(item);
+      final header = dayHeader(sentAt, w.now);
       if (header != lastHeader) {
-        rows.add(() => _DayHeader(label: header));
+        flushGroup();
+        final date = pills ? dayHeaderDate(sentAt, w.now) : null;
+        rows.add(() => _DayHeader(label: header, date: date));
         lastHeader = header;
       }
-      rows.add(() => w.itemBuilder(context, item));
+      if (pills) {
+        group.add(item);
+      } else {
+        rows.add(() => w.itemBuilder(context, item));
+      }
     }
+    flushGroup();
     return rows;
   }
 
@@ -306,9 +330,12 @@ class _NotificationListViewState<T> extends State<NotificationListView<T>> {
 }
 
 class _DayHeader extends StatelessWidget {
-  const new({required this.label});
+  const new({required this.label, this.date});
 
   final String label;
+
+  /// 머리 오른쪽의 날짜(`10월 3일 (토)`) — 없으면 머리만.
+  final String? date;
 
   @override
   Widget build(BuildContext context) {
@@ -321,10 +348,60 @@ class _DayHeader extends StatelessWidget {
           BaraedaSpacing.gutterMobile,
           BaraedaSpacing.space2,
         ),
-        child: Text(
-          label,
-          style: BaraedaTypography.label.copyWith(
-            color: context.colors.textSecondary,
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                style: BaraedaTypography.label.copyWith(
+                  color: context.colors.textSecondary,
+                ),
+              ),
+            ),
+            if (date != null)
+              Text(
+                date!,
+                style: BaraedaTypography.caption.copyWith(
+                  color: context.colors.textSecondary,
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// 한 날의 알림 행을 묶는 흰 카드 — 행 사이에 가는 선.
+class _DayCard extends StatelessWidget {
+  const new({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final radius = BorderRadius.circular(BaraedaRadius.card);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: BaraedaSpacing.gutterMobile,
+      ),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: colors.surfaceCard,
+          borderRadius: radius,
+          border: Border.all(color: colors.borderSubtle),
+        ),
+        child: ClipRRect(
+          borderRadius: radius,
+          child: Column(
+            children: [
+              for (var i = 0; i < children.length; i++) ...[
+                if (i > 0) Divider(height: 1, color: colors.borderSubtle),
+                children[i],
+              ],
+            ],
           ),
         ),
       ),
