@@ -154,7 +154,6 @@ class NotificationTile extends StatelessWidget {
 
   /// 카드형 한 줄(시안) — 안 읽은 행은 연두 면이고, 누를 수 있는 읽은 행은 오른쪽에 쉐브론이 있다.
   Widget _buildCard(BaraedaColors colors) {
-    final (solid, soft) = _tone(colors, status);
     final name = who;
 
     return Semantics(
@@ -187,14 +186,12 @@ class NotificationTile extends StatelessWidget {
                     width: 40,
                     height: 40,
                     alignment: Alignment.center,
+                    // 종류 색은 알약이 맡는다 — 아이콘 칸은 종류 · 읽음과 상관없이 옅은 면 + 진한 아이콘(시안).
                     decoration: BoxDecoration(
-                      color: unread ? solid : soft,
+                      color: colors.statusIdleSoft,
                       borderRadius: BorderRadius.circular(BaraedaRadius.md),
                     ),
-                    child: BaraedaIcon(
-                      icon,
-                      color: unread ? colors.textInverse : solid,
-                    ),
+                    child: BaraedaIcon(icon, color: colors.textPrimary),
                   ),
                   const SizedBox(width: BaraedaSpacing.space3),
                   Expanded(
