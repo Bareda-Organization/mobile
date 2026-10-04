@@ -52,8 +52,15 @@ void main() {
     ).allMatches(router).map((m) => m.group(1)!).toSet();
     final reached = referencedTargets()
       // 첫 화면과 계정 상태 리다이렉트는 `router.dart` 의 redirect 가 보낸다 —
-      // `context.push` 로 가지 않으므로 여기서 면제한다.
-      ..addAll({'home', 'pendingApproval', 'blockedAccount'});
+      // `context.push` 로 가지 않으므로 여기서 면제한다. `me` · `notifications` 는 아래 탭 막대
+      // (`ManagerShell`)가 `goBranch` 로 간다 — 경로 문자열이 아니라 탭 번호로 닿는다.
+      ..addAll({
+        'home',
+        'pendingApproval',
+        'blockedAccount',
+        'me',
+        'notifications',
+      });
 
     expect(
       registered.difference(reached),

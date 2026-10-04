@@ -119,7 +119,7 @@ void main() {
       tester,
       statusFromSecondCall: AccountStatus.rejected,
     );
-    expect(find.text('가입 승인을 기다리고 있습니다'), findsOneWidget);
+    expect(find.text('가입 승인을 기다리고 있어요'), findsOneWidget);
 
     await tester.tap(find.text('상태 다시 확인'));
     await tester.pumpAndSettle();
@@ -150,7 +150,7 @@ void main() {
 
     expect(repository.signupStatusCalls, 2);
     expect(find.byType(PendingApprovalScreen), findsOneWidget);
-    expect(find.text('가입 승인을 기다리고 있습니다'), findsOneWidget);
+    expect(find.text('가입 승인을 기다리고 있어요'), findsOneWidget);
   });
 
   testWidgets('다시 확인이 실패하면 다시 시도 안내를 보여준다', (tester) async {

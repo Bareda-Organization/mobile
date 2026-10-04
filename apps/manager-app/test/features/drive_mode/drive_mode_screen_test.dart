@@ -10,42 +10,12 @@ import 'package:manager_app/app/app_routes.dart';
 import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
-import 'package:manager_app/features/drive_mode/data/models/arrive_stop_result.dart';
-import 'package:manager_app/features/drive_mode/data/models/start_run_result.dart';
-import 'package:manager_app/features/drive_mode/domain/drive_mode_repository.dart';
 import 'package:manager_app/features/drive_mode/presentation/drive_mode_providers.dart';
 import 'package:manager_app/features/drive_mode/presentation/drive_mode_screen.dart';
 import 'package:manager_app/features/home/data/models/manager_run.dart';
-import 'package:manager_app/features/home/presentation/home_providers.dart';
 import 'package:manager_app/features/roster/data/models/roster_response.dart';
 import 'package:manager_app/features/route_map/data/models/route_response.dart';
 import 'package:manager_app/features/route_map/presentation/route_providers.dart';
-
-/// M4 — `_startRun` 이 `Failure` 를 어떻게 다루는지만 보는 시험용 대역.
-/// `arriveStop` 은 이 파일의 시험 대상이 아니다.
-class _FakeDriveModeRepository implements DriveModeRepository {
-  new({this.startFailure});
-
-  final Failure? startFailure;
-
-  @override
-  Future<StartRunResult> startRun(String runId) async {
-    // Failure 는 의도적으로 Exception/Error 를 상속하지 않는다
-    // (roster_screen_test.dart 의 같은 패턴 주석 참고).
-    // ignore: only_throw_errors
-    if (startFailure != null) throw startFailure!;
-    return StartRunResult(
-      runStatus: RunStatus.moving,
-      startedAt: DateTime(2026, 9, 12, 8),
-    );
-  }
-
-  @override
-  Future<ArriveStopResult> arriveStop({
-    required String runId,
-    required String stopId,
-  }) => throw UnimplementedError('이 파일의 시험 대상이 아니다');
-}
 
 /// 시각을 고정해 판정을 결정적으로 만드는 가짜 시계
 /// ([clockProvider] override 대상, 이월 11 · Ruling 266).
@@ -122,137 +92,12 @@ ManagerRun _managerRun({
 void main() {
   const runId = 'run-1';
 
-  testWidgets('출발 시간 창 안이면 운행 시작 버튼을 보여준다', (tester) async {
-    final now = DateTime(2026, 9, 12, 8);
-    await tester.pumpWidget(
-      _wrap(const DriveModeScreen(), [
-        clockProvider.overrideWithValue(_FixedClock(now)),
-        selectedRunIdProvider.overrideWith((ref) => runId),
-        driveModeRunProvider.overrideWithValue(
-          _managerRun(
-            startWindowFrom: now.subtract(const Duration(minutes: 5)),
-            startWindowTo: now.add(const Duration(minutes: 5)),
-          ),
-        ),
-        // R32 M1 — 운행 화면이 노선을 조회한다. 실제 서버로 나가지 않게 빈 노선으로 막는다.
-        routeProvider.overrideWith(
-          (ref) async => const RouteResponse(stops: []),
-        ),
-        driveModeRosterProvider.overrideWith((ref) async => _emptyRoster),
-      ]),
-    );
-    await tester.pumpAndSettle();
-
-    expect(find.text('운행 시작'), findsOneWidget);
-    expect(find.text('운행 시작 가능 시간(출발 ±10분)이 아닙니다'), findsNothing);
-  });
-
-  testWidgets('출발 시간 창 밖이면 운행 시작 버튼 대신 안내 문구를 보여준다', (tester) async {
-    final now = DateTime(2026, 9, 12, 8);
-    await tester.pumpWidget(
-      _wrap(const DriveModeScreen(), [
-        clockProvider.overrideWithValue(_FixedClock(now)),
-        selectedRunIdProvider.overrideWith((ref) => runId),
-        driveModeRunProvider.overrideWithValue(
-          _managerRun(
-            startWindowFrom: now.add(const Duration(minutes: 20)),
-            startWindowTo: now.add(const Duration(minutes: 40)),
-          ),
-        ),
-        // R32 M1 — 운행 화면이 노선을 조회한다. 실제 서버로 나가지 않게 빈 노선으로 막는다.
-        routeProvider.overrideWith(
-          (ref) async => const RouteResponse(stops: []),
-        ),
-        driveModeRosterProvider.overrideWith((ref) async => _emptyRoster),
-      ]),
-    );
-    await tester.pumpAndSettle();
-
-    expect(find.text('운행 시작'), findsNothing);
-    // R32 M10 — 언제부터 되는지를 알려 준다(now = 08:00, 창 시작 = 08:20).
-    expect(find.text('08:20 부터 시작할 수 있습니다 (출발 ±10분)'), findsOneWidget);
-  });
-
-  testWidgets('출발 시간 창이 이미 지났으면 지났다고 알린다', (tester) async {
-    final now = DateTime(2026, 9, 12, 8);
-    await tester.pumpWidget(
-      _wrap(const DriveModeScreen(), [
-        clockProvider.overrideWithValue(_FixedClock(now)),
-        selectedRunIdProvider.overrideWith((ref) => runId),
-        driveModeRunProvider.overrideWithValue(
-          _managerRun(
-            startWindowFrom: now.subtract(const Duration(minutes: 40)),
-            startWindowTo: now.subtract(const Duration(minutes: 20)),
-          ),
-        ),
-        // R32 M1 — 운행 화면이 노선을 조회한다. 실제 서버로 나가지 않게 빈 노선으로 막는다.
-        routeProvider.overrideWith(
-          (ref) async => const RouteResponse(stops: []),
-        ),
-        driveModeRosterProvider.overrideWith((ref) async => _emptyRoster),
-      ]),
-    );
-    await tester.pumpAndSettle();
-
-    expect(find.text('운행 시작'), findsNothing);
-    expect(find.text('운행 시작 가능 시간(출발 ±10분)이 지났습니다'), findsOneWidget);
-  });
-
-  // M4(Ruling 340) — 취소된 회차(§4.1 목록에서도 제외)에 운행 시작을
-  // 시도하면 서버가 409 RUN_CANCELED 로 거절한다. 문구를 보여주는 것에서
-  // 그치지 않고 §4.1 오늘 회차 목록을 다시 불러와야 취소된 카드가 화면에
-  // 남지 않는다.
-  testWidgets('409 RUN_CANCELED 면 문구 + 오늘 회차 목록을 다시 불러온다', (tester) async {
-    final now = DateTime(2026, 9, 12, 8);
-    var todayRunsFetchCount = 0;
-    final fakeRepo = _FakeDriveModeRepository(
-      startFailure: const ApiFailure(
-        statusCode: 409,
-        code: 'RUN_CANCELED',
-        message: '취소된 회차입니다',
-      ),
-    );
-
-    await tester.pumpWidget(
-      _wrap(const DriveModeScreen(), [
-        clockProvider.overrideWithValue(_FixedClock(now)),
-        selectedRunIdProvider.overrideWith((ref) => runId),
-        // `driveModeRunProvider` 를 직접 override 하지 않는다 — 실제
-        // 구현이 `todayRunsProvider` 를 읽어 유도하는 provider라, 여기서
-        // 직접 값을 박으면 무효화가 이 provider 에 닿는지 확인할 수 없다.
-        // R32 M1 — 운행 화면이 노선을 조회한다. 실제 서버로 나가지 않게 빈 노선으로 막는다.
-        routeProvider.overrideWith(
-          (ref) async => const RouteResponse(stops: []),
-        ),
-        driveModeRosterProvider.overrideWith((ref) async => _emptyRoster),
-        driveModeRepositoryProvider.overrideWithValue(fakeRepo),
-        todayRunsProvider.overrideWith((ref) async {
-          todayRunsFetchCount++;
-          return [
-            _managerRun(
-              startWindowFrom: now.subtract(const Duration(minutes: 5)),
-              startWindowTo: now.add(const Duration(minutes: 5)),
-            ),
-          ];
-        }),
-      ]),
-    );
-    await tester.pumpAndSettle();
-    expect(todayRunsFetchCount, 1);
-
-    await tester.tap(find.text('운행 시작'));
-    await tester.pumpAndSettle();
-    // R32 M6 — 시작은 확인 창을 거친다.
-    await tester.tap(find.text('시작하기'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('취소된 회차입니다'), findsOneWidget);
-    expect(todayRunsFetchCount, 2);
-  });
+  // 운행 시작은 운행 준비 화면으로 옮겼다(`Ruling 799`) — 시작 가능 시간 판정 · 확인 창 · RUN_CANCELED 처리는
+  // `run_ready_screen_test.dart` 가 같은 조건으로 문다.
 
   // 2026-09-23 — 노선 지도(M-04·M-09)는 기사 전용인데, 버튼이 동승자만 들어가는 명단 화면에만 있어서
   // 기사도 동승자도 닿지 못했다. 기사가 홈에서 들어오는 유일한 화면이 여기라 여기서 연다.
-  testWidgets('노선 지도 버튼을 누르면 노선 지도 화면으로 간다', (tester) async {
+  testWidgets('지도의 [크게 보기] 를 누르면 노선 지도 화면으로 간다', (tester) async {
     final now = DateTime(2026, 9, 12, 8);
     final router = GoRouter(
       routes: [
@@ -286,7 +131,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('노선 지도'));
+    await tester.tap(find.bySemanticsLabel('노선 크게 보기'));
     await tester.pumpAndSettle();
 
     expect(find.text('노선 지도 화면'), findsOneWidget);

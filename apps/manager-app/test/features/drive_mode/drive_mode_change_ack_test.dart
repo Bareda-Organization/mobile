@@ -147,7 +147,7 @@ void main() {
       repository: _AckRecordingRosterRepository(),
     );
 
-    expect(find.text('변경 목록 확인'), findsNothing);
+    expect(find.text('변경 확인'), findsNothing);
   });
 
   testWidgets('확인이 필요한 변경이 있으면 운행 화면에도 띠가 뜨고, 누르면 확인 요청을 보낸다', (
@@ -156,8 +156,8 @@ void main() {
     final repository = _AckRecordingRosterRepository();
     await pumpDrive(tester, ackRequired: true, repository: repository);
 
-    expect(find.textContaining('변경됐습니다'), findsOneWidget);
-    await tester.tap(find.text('변경 목록 확인'));
+    expect(find.text('노선이 바뀌었어요'), findsOneWidget);
+    await tester.tap(find.text('변경 확인'));
     await tester.pump();
     await tester.pump();
 
@@ -170,11 +170,11 @@ void main() {
     );
     await pumpDrive(tester, ackRequired: true, repository: repository);
 
-    await tester.tap(find.text('변경 목록 확인'));
+    await tester.tap(find.text('변경 확인'));
     await tester.pump();
     await tester.pump();
 
-    expect(find.text('변경 목록 확인'), findsOneWidget);
+    expect(find.text('변경 확인'), findsOneWidget);
     expect(find.textContaining('네트워크'), findsOneWidget);
   });
 }

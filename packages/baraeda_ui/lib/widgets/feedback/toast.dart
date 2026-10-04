@@ -168,7 +168,8 @@ Timer? _timer;
 /// 화면 아래(탭 막대 위)에 토스트를 띄운다. 이미 떠 있던 토스트는 바로 걷어낸다.
 ///
 /// 가벼운 성공 햅틱을 한 번 울리고, [duration] 뒤에 저절로 사라진다.
-/// [aboveTabBar] 가 false 면 탭 막대가 없는 화면(운행 중)용 낮은 자리에 뜬다.
+/// [aboveTabBar] 가 false 면 탭 막대가 없는 화면(운행 중)용 낮은 자리에 뜬다. 화면 아래에 큰 단추 줄이 있어
+/// 그 위로 띄워야 하면 [bottomOffset](안전 영역 위 기준 거리)을 준다.
 void showBaraedaToast(
   BuildContext context, {
   required String message,
@@ -176,6 +177,7 @@ void showBaraedaToast(
   VoidCallback? onAction,
   Duration duration = const Duration(seconds: 4),
   bool aboveTabBar = true,
+  double? bottomOffset,
 }) {
   final overlay = Overlay.of(context, rootOverlay: true);
   final motion = BaraedaOpenMotion.of(context);
@@ -183,7 +185,10 @@ void showBaraedaToast(
   final zone = BaraedaDriveZone.capture(context);
   final bottom =
       MediaQuery.paddingOf(context).bottom +
-      (aboveTabBar ? BaraedaSpacing.tabBarHeight + BaraedaSpacing.space4 : 16);
+      (bottomOffset ??
+          (aboveTabBar
+              ? BaraedaSpacing.tabBarHeight + BaraedaSpacing.space4
+              : 16));
   final key = GlobalKey<BaraedaToastState>();
 
   _timer?.cancel();

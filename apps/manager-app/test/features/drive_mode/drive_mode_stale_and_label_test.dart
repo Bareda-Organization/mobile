@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
@@ -136,7 +137,7 @@ void main() {
     await tester.pump();
 
     expect(find.text('도착 처리'), findsOneWidget);
-    expect(find.textContaining('불러오지 못했습니다'), findsOneWidget);
+    expect(find.textContaining('불러오지 못했어요'), findsOneWidget);
     expect(find.text('다시 시도'), findsOneWidget);
   });
 
@@ -150,21 +151,31 @@ void main() {
       },
     );
 
-    expect(find.textContaining('불러오지 못했습니다'), findsOneWidget);
+    expect(find.textContaining('불러오지 못했어요'), findsOneWidget);
     expect(find.text('다시 시도'), findsOneWidget);
     expect(find.text('도착 처리'), findsNothing);
   });
 
-  testWidgets('R46 긴 승하차지 이름·큰 글자에도 버튼 라벨은 도착 처리 그대로다', (tester) async {
+  testWidgets('M5 긴 승하차지 이름·큰 글자에도 도착 처리 단추의 동사는 잘리지 않는다', (tester) async {
     tester.view.physicalSize = const Size(375 * 3, 812 * 3);
     tester.view.devicePixelRatio = 3;
     addTearDown(tester.view.reset);
     await _pumpDrive(tester, roster: (_) => _roster(_longName), textScale: 1.3);
 
+    // M5 — 단추에 승하차지 이름이 들어가고, 이름만 `…` 로 줄어든다. 동사(`도착 처리`)는 잘리지 않는다.
     expect(find.text('도착 처리'), findsOneWidget);
-    // 이름은 버튼 밖 줄이다 — 두 줄까지 보이고 그 뒤만 줄인다.
-    final name = tester.widget<Text>(find.textContaining('다음 승하차지'));
-    expect(name.maxLines, 2);
+    final button = tester.widget<BaraedaButton>(
+      find.widgetWithText(BaraedaButton, '도착 처리'),
+    );
+    expect(button.name, _longName);
+    // 이름 칸은 한 줄 `…` — 단추 밖 큰 카드가 이름을 두 줄까지 따로 보인다.
+    final nameText = tester.widget<Text>(
+      find.descendant(
+        of: find.widgetWithText(BaraedaButton, '도착 처리'),
+        matching: find.text(_longName),
+      ),
+    );
+    expect(nameText.overflow, TextOverflow.ellipsis);
     expect(tester.takeException(), isNull);
   });
 }

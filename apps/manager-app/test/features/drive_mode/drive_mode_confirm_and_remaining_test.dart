@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
@@ -161,26 +162,7 @@ void main() {
   }
 
   group('M6 확인 창', () {
-    testWidgets('운행 시작 — 취소하면 요청이 나가지 않고, 확인해야 나간다', (tester) async {
-      final repository = await pumpDrive(
-        tester,
-        status: RunStatus.confirmed,
-        stops: [_stop(1)],
-      );
-
-      await tester.tap(find.text('운행 시작'));
-      await tester.pumpAndSettle();
-      expect(find.text('운행을 시작할까요?'), findsOneWidget);
-      await tester.tap(find.text('취소'));
-      await tester.pumpAndSettle();
-      expect(repository.startCalls, 0);
-
-      await tester.tap(find.text('운행 시작'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('시작하기'));
-      await tester.pumpAndSettle();
-      expect(repository.startCalls, 1);
-    });
+    // 운행 시작 확인 창은 운행 준비 화면으로 옮겼다 — `run_ready_screen_test.dart` 가 문다.
 
     testWidgets('마지막 승하차지 도착 — 취소하면 요청이 나가지 않고, 확인해야 나간다', (tester) async {
       final repository = await pumpDrive(
@@ -191,14 +173,14 @@ void main() {
 
       await tester.tap(find.text('도착 처리'));
       await tester.pumpAndSettle();
-      expect(find.text('마지막 승하차지입니다'), findsOneWidget);
-      await tester.tap(find.text('취소'));
+      expect(find.text('마지막 승하차지예요'), findsOneWidget);
+      await tester.tap(find.text('닫기'));
       await tester.pumpAndSettle();
       expect(repository.arrivedStopIds, isEmpty);
 
       await tester.tap(find.text('도착 처리'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('도착했습니다'));
+      await tester.tap(find.text('도착했어요 · 운행 종료'));
       await tester.pumpAndSettle();
       expect(repository.arrivedStopIds, ['s2']);
     });
@@ -213,7 +195,7 @@ void main() {
       await tester.tap(find.text('도착 처리'));
       await tester.pumpAndSettle();
 
-      expect(find.text('마지막 승하차지입니다'), findsNothing);
+      expect(find.text('마지막 승하차지예요'), findsNothing);
       expect(repository.arrivedStopIds, ['s1']);
     });
 
@@ -230,13 +212,13 @@ void main() {
       await tester.tap(find.text('도착 처리'));
       await tester.pumpAndSettle();
 
-      expect(find.text('마지막 승하차지입니다'), findsOneWidget);
+      expect(find.text('마지막 승하차지예요'), findsOneWidget);
       expect(repository.arrivedStopIds, isEmpty);
     });
   });
 
   group('M5 남은 승하차지', () {
-    testWidgets('도착한 곳과 미경유는 빼고 남은 곳만 순서대로, 학생 이름과 함께 보인다', (tester) async {
+    testWidgets('도착한 곳은 빼고 남은 곳을 순서대로, 미경유는 건너뜀 표시와 함께 보인다', (tester) async {
       await pumpDrive(
         tester,
         status: RunStatus.moving,
@@ -250,8 +232,13 @@ void main() {
 
       final list = find.byKey(const Key('remaining-stops'));
       expect(list, findsOneWidget);
+      // 남은 곳 수에는 미경유가 들어가지 않는다 — 2곳 + "미경유 1곳은 건너뛰어요".
       expect(
         find.descendant(of: list, matching: find.text('남은 승하차지 2곳')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: list, matching: find.text('미경유 1곳은 건너뛰어요')),
         findsOneWidget,
       );
       expect(
@@ -265,21 +252,16 @@ void main() {
       expect(
         find.descendant(of: list, matching: find.text('1번 승하차지')),
         findsNothing,
+        reason: '이미 도착한 곳은 남은 목록에 없다',
       );
+      // 미경유는 목록에 남되 정차 안 함으로 표시된다.
       expect(
-        find.descendant(of: list, matching: find.text('3번 승하차지')),
-        findsNothing,
+        find.descendant(of: list, matching: find.text('정차 안 함')),
+        findsOneWidget,
       );
-
-      await tester.ensureVisible(
-        find.descendant(of: list, matching: find.text('2번 승하차지')),
-      );
-      await tester.tap(
-        find.descendant(of: list, matching: find.text('2번 승하차지')),
-      );
-      await tester.pumpAndSettle();
-      expect(find.text('김바래'), findsOneWidget);
-      expect(find.text('이다솜'), findsOneWidget);
+      // 다음 도착지 카드에 이름이 크게 나오고 학생 수가 부제로 붙는다.
+      expect(find.text('다음 승하차지 · 2번'), findsOneWidget);
+      expect(find.text('탑승 예정 2명'), findsOneWidget);
     });
 
     testWidgets('조회 전용 — 승하차 처리 버튼이 없다(M-12)', (tester) async {
@@ -292,16 +274,13 @@ void main() {
       );
 
       final list = find.byKey(const Key('remaining-stops'));
-      await tester.tap(
-        find.descendant(of: list, matching: find.text('1번 승하차지')),
-      );
-      await tester.pumpAndSettle();
 
       for (final type in [
         TextButton,
         ElevatedButton,
         FilledButton,
         OutlinedButton,
+        BaraedaButton,
         Switch,
       ]) {
         expect(

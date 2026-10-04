@@ -56,7 +56,7 @@ void main() {
 
     await tester.enterText(find.byType(TextField).at(0), 'escortA1');
     await tester.enterText(find.byType(TextField).at(1), 'password');
-    await tester.tap(find.text('로그인하기'));
+    await tester.tap(find.text('로그인'));
     await tester.pumpAndSettle();
 
     expect(container.read(academyContactProvider), '02-1234-5678');

@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/auth/auth_providers.dart';
+import 'package:manager_app/core/auth/me_provider.dart';
 import 'package:manager_app/core/auth/user_role.dart';
 import 'package:manager_app/core/location/position_source.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
@@ -20,7 +21,6 @@ import 'package:manager_app/features/roster/presentation/roster_providers.dart';
 import 'package:manager_app/features/roster/presentation/roster_screen.dart';
 import 'package:manager_app/features/route_map/presentation/route_map_screen.dart';
 import 'package:manager_app/features/route_map/presentation/route_providers.dart';
-
 import '../support/fake_notification_repository.dart';
 import '../support/manager_run_fixture.dart';
 
@@ -74,6 +74,8 @@ void main() {
     positionSourceProvider.overrideWithValue(_NoSample()),
     selectedRunIdProvider.overrideWith((ref) => 'run-1'),
     currentUserRoleProvider.overrideWith((ref) => UserRole.driver),
+    // 머리줄 부제가 `/me` 를 읽는다 — 실제 서버로 나가지 않게 막는다.
+    meProvider.overrideWith((ref) async => throw StateError('내 정보 미사용')),
     // 머리말 알림 배지가 실제 서버를 부르지 않게 한다(R46).
     notificationRepositoryProvider.overrideWithValue(
       FakeNotificationRepository(const []),
@@ -128,21 +130,21 @@ void main() {
       await tester.pump();
 
       expect(find.textContaining(_rawDetail), findsNothing);
-      expect(find.textContaining('불러오지 못했습니다'), findsWidgets);
+      expect(find.textContaining('불러오지 못했'), findsWidgets);
     });
   }
 
+  // 홈은 시안대로 고정 문장("인터넷 연결을 확인하고…")을 보이므로 실패 문구 사상은 명단으로 문다.
   testWidgets('Failure 는 describeFailure 와 같은 문구로 보인다', (tester) async {
     await tester.pumpWidget(
       ProviderScope(
         retry: (_, _) => null,
         overrides: [
           ...common,
-          todayRunsProvider.overrideWith(
-            (ref) => _fail(const NetworkFailure()),
-          ),
+          okRuns,
+          rosterProvider.overrideWith((ref) => _fail(const NetworkFailure())),
         ],
-        child: const MaterialApp(home: ManagerHomeScreen()),
+        child: const MaterialApp(home: RosterScreen()),
       ),
     );
     await tester.pump();

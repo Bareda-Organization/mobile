@@ -20,7 +20,7 @@ import 'package:manager_app/features/route_map/presentation/route_providers.dart
 
 import '../../support/manager_run_fixture.dart';
 
-/// 화면 확인(R46-SCREEN)에서 운행 화면의 `[변경 목록 확인]` 이 위쪽 스크롤 영역 경계에 반쯤 잘려 보였다.
+/// 화면 확인(R46-SCREEN)에서 운행 화면의 `[변경 확인]` 이 위쪽 스크롤 영역 경계에 반쯤 잘려 보였다.
 /// 필수 확인 조작이라 하단 고정 영역(Ruling 571)에 두어, 스크롤과 무관하게
 /// 첫 화면에 온전히 보여야 한다(R46-POLISH Ruling 596).
 class _NeverResolvingTokenStorage extends TokenStorage {
@@ -114,14 +114,14 @@ void main() {
 
   for (final size in const [Size(402, 874), Size(375, 750), Size(360, 640)]) {
     for (final scale in const [1.0, 1.3]) {
-      testWidgets('확인 띠가 떠도 [변경 목록 확인] 이 첫 화면에 온전히 보인다 '
+      testWidgets('확인 띠가 떠도 [변경 확인] 이 첫 화면에 온전히 보인다 '
           '(${size.width.toInt()}×${size.height.toInt()} · 글자 $scale배)', (
         tester,
       ) async {
         await pumpAckRequired(tester, size: size, textScale: scale);
 
         final button = tester.getRect(
-          find.widgetWithText(BaraedaButton, '변경 목록 확인'),
+          find.widgetWithText(BaraedaButton, '변경 확인'),
         );
 
         // 화면 안에 있다.
@@ -131,7 +131,7 @@ void main() {
         for (final scrollable
             in find
                 .ancestor(
-                  of: find.widgetWithText(BaraedaButton, '변경 목록 확인'),
+                  of: find.widgetWithText(BaraedaButton, '변경 확인'),
                   matching: find.byType(Scrollable),
                 )
                 .evaluate()) {

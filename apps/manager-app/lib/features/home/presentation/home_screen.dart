@@ -75,8 +75,9 @@ class _ManagerHomeScreenState extends ConsumerState<ManagerHomeScreen>
   @override
   Widget build(BuildContext context) {
     final runsAsync = ref.watch(todayRunsProvider);
-    final forEscort =
-        ref.watch(roleCapabilitiesProvider)?.canOperateRun == false;
+    // 운행을 조작하는 역할(기사)만 `운행 준비하기` 가 보인다 — 역할을 모르면 닫힌 쪽(동승자 화면)이 기본값이다.
+    final canOperate = ref.watch(roleCapabilitiesProvider)?.canOperateRun;
+    final forEscort = !(canOperate ?? false);
     final noun = forEscort ? '회차' : '운행';
 
     return Scaffold(
@@ -92,7 +93,7 @@ class _ManagerHomeScreenState extends ConsumerState<ManagerHomeScreen>
         skipError: true,
         loading: () => const _HomeSkeleton(),
         error: (error, _) => _HomeError(
-          noun: noun,
+          nounObject: forEscort ? '회차를' : '운행을',
           urgent: forEscort ? '명단이 급하면' : '운행 시작이 급하면',
           onRetry: () => ref.invalidate(todayRunsProvider),
         ),
@@ -339,9 +340,14 @@ class _HomeSkeleton extends StatelessWidget {
 
 /// 오늘 목록을 못 받았다 — 다시 시도 + 학원에 바로 전화(번호가 있을 때).
 class _HomeError extends StatelessWidget {
-  const new({required this.noun, required this.urgent, required this.onRetry});
+  const new({
+    required this.nounObject,
+    required this.urgent,
+    required this.onRetry,
+  });
 
-  final String noun;
+  /// 조사까지 붙인 말 — `운행을` · `회차를`.
+  final String nounObject;
   final String urgent;
   final VoidCallback onRetry;
 
@@ -353,7 +359,7 @@ class _HomeError extends StatelessWidget {
         const SizedBox(height: 40),
         EmptyState(
           icon: 'wifi-off',
-          title: '오늘 $noun를 불러오지 못했어요',
+          title: '오늘 $nounObject 불러오지 못했어요',
           body: '인터넷 연결을 확인하고 다시 시도해 주세요. 연결되면 자동으로 다시 불러와요.',
           action: BaraedaButton(
             label: '다시 시도',

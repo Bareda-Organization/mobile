@@ -101,9 +101,10 @@ class MeScreen extends ConsumerWidget {
     );
   }
 
-  /// 로그아웃 확인(AUTH-09) — 운행 중이면 명단·위치 송신이 멈춘다는 경고를, 못 보낸 처리가 있으면 건수를 알리고
-  /// **대기열 먼저 보기**를 맨 위에 둔다(`M8` — 로그아웃하면 대기열을 비운다). 확인해야만 [signOut] 을 부른다 —
-  /// 그 함수는 서버 성패와 무관하게 토큰을 지우고, 라우터가 역할 소실을 보고 로그인 화면으로 보낸다.
+  /// 로그아웃 확인(AUTH-09) — 운행 중이면 명단·위치 송신이 멈춘다는 경고를 붙이고, 못 보낸 처리가 있으면 건수를
+  /// 알리며 **대기열 먼저 보기**를 맨 위에 둔다(M8 — 로그아웃하면 대기열을 비운다). 창은 바로 띄우고 건수는 읽히는
+  /// 대로 채운다 — 대기열 읽기가 로그아웃 확인을 막지 않게. 확인해야만 [signOut] 을 부른다 — 그 함수는 서버 성패와
+  /// 무관하게 토큰을 지우고, 라우터가 역할 소실을 보고 로그인 화면으로 보낸다.
   Future<void> _confirmSignOut(BuildContext context, WidgetRef ref) async {
     final hasMovingRun =
         ref
@@ -111,58 +112,68 @@ class MeScreen extends ConsumerWidget {
             .value
             ?.any((run) => run.runStatus == RunStatus.moving) ??
         false;
-    final pendingCount = await _pendingCount(ref);
-    if (!context.mounted) return;
-    final warning = [
-      if (hasMovingRun)
-        '운행 중에 로그아웃하면 명단·위치 송신이 멈춥니다'
-      else
-        '다시 로그인해야 이 앱을 계속 쓸 수 있습니다',
-      if (pendingCount > 0) '아직 보내지 못한 처리 $pendingCount건은 버려집니다',
-    ].join('\n');
-
-    if (pendingCount > 0) {
-      final choice = await showBaraedaActionDialog<_SignOutChoice>(
-        context: context,
-        title: '로그아웃하시겠습니까?',
-        body: warning,
-        actions: [
-          BaraedaDialogAction(
-            label: '대기열 $pendingCount건 먼저 보기',
-            value: _SignOutChoice.viewQueue,
-          ),
-          const BaraedaDialogAction(
-            label: '그래도 로그아웃',
-            value: _SignOutChoice.signOut,
-            variant: BaraedaButtonVariant.dangerOutline,
-          ),
-          const BaraedaDialogAction(
-            label: '닫기',
-            value: _SignOutChoice.close,
-            variant: BaraedaButtonVariant.ghost,
-          ),
-        ],
-      );
-      if (!context.mounted) return;
-      switch (choice) {
-        case _SignOutChoice.viewQueue:
-          unawaited(context.push(AppRoutes.offlineQueue));
-        case _SignOutChoice.signOut:
-          await _signOut(ref);
-        case _SignOutChoice.close || null:
-          break;
-      }
-      return;
-    }
-
-    final confirmed = await showBaraedaConfirmDialog(
+    final pendingCount = _pendingCount(ref);
+    final choice = await showBaraedaActionDialog<_SignOutChoice>(
       context: context,
       title: '로그아웃하시겠습니까?',
-      body: warning,
-      confirmLabel: '로그아웃',
-      danger: true,
+      content: FutureBuilder<int>(
+        future: pendingCount,
+        initialData: 0,
+        builder: (dialogContext, snapshot) {
+          final count = snapshot.data ?? 0;
+          final colors = dialogContext.colors;
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                [
+                  if (hasMovingRun)
+                    '운행 중에 로그아웃하면 명단·위치 송신이 멈춥니다'
+                  else
+                    '다시 로그인해야 이 앱을 계속 쓸 수 있습니다',
+                  // M2-01 — 큐에는 계정 열이 없어 로그아웃하면 비운다(F06-02). 있을 때만 알린다.
+                  if (count > 0) '아직 보내지 못한 처리 $count건은 버려집니다',
+                ].join('\n'),
+                style: BaraedaTypography.body.copyWith(
+                  color: colors.textSecondary,
+                ),
+              ),
+              if (count > 0) ...[
+                const SizedBox(height: 12),
+                BaraedaButton(
+                  label: '대기열 $count건 먼저 보기',
+                  block: true,
+                  onPressed: () =>
+                      Navigator.of(dialogContext).pop(_SignOutChoice.viewQueue),
+                ),
+              ],
+            ],
+          );
+        },
+      ),
+      actions: const [
+        BaraedaDialogAction(
+          label: '로그아웃',
+          value: _SignOutChoice.signOut,
+          variant: BaraedaButtonVariant.danger,
+        ),
+        BaraedaDialogAction(
+          label: '닫기',
+          value: _SignOutChoice.close,
+          variant: BaraedaButtonVariant.secondary,
+        ),
+      ],
     );
-    if (confirmed) await _signOut(ref);
+    if (!context.mounted) return;
+    switch (choice) {
+      case _SignOutChoice.viewQueue:
+        unawaited(context.push(AppRoutes.offlineQueue));
+      case _SignOutChoice.signOut:
+        await _signOut(ref);
+      case _SignOutChoice.close || null:
+        break;
+    }
   }
 
   /// 아직 서버에 보내지 못한 오프라인 대기 요청 수. 읽지 못하면 0 으로 보고 로그아웃을 막지 않는다.

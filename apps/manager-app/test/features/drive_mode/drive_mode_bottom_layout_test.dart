@@ -116,7 +116,7 @@ void main() {
     }
   }
 
-  /// 알림이 세 건 쌓인 가장 나쁜 운행 화면 — 위치 권한 · 카카오내비 미설치 · 도착 처리됨.
+  /// 알림이 쌓인 가장 나쁜 운행 화면 — 위치 권한 · 카카오내비 미설치.
   Future<void> pumpCrowded(
     WidgetTester tester, {
     required Size size,
@@ -183,31 +183,35 @@ void main() {
       );
       await tester.pump();
       await tester.pump(const Duration(seconds: 2));
-      // 큰 글자에서는 길안내 버튼이 스크롤 밖에 있다 — 보이게 한 뒤 누른다.
-      await tester.ensureVisible(find.text('다음 목적지'));
+      // `내비 열기` → 시트에서 범위를 고른다. 큰 글자에서는 지도 위 단추가 스크롤 밖에 있을 수 있어 보이게 한다.
+      await tester.ensureVisible(find.text('내비 열기'));
       await tester.pump();
+      await tester.tap(find.text('내비 열기'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('다음 목적지'));
       await tester.pump();
       await tester.pump();
       await tester.tap(find.text('도착 처리'));
       await tester.pump();
       await tester.pump();
+      // 도착 처리 토스트가 4초 뒤 사라지는 타이머와 사라지는 움직임까지 흘려 보낸다.
+      await tester.pump(const Duration(seconds: 5));
+      await tester.pumpAndSettle();
     });
   }
 
   testWidgets('알림이 여럿이면 가장 중요한 한 건만 보이고 나머지는 눌러야 펼쳐진다', (tester) async {
     await pumpCrowded(tester, size: const Size(375, 750), textScale: 1);
 
-    // 위치 송신 불가(조작이 막힌 것)가 먼저, 카카오내비 미설치·도착 처리됨은 접혀 있다.
-    expect(find.textContaining('위치 권한이 없어'), findsOneWidget);
+    // 위치 송신 불가(조작이 막힌 것)가 먼저, 카카오내비 미설치는 접혀 있다.
+    // 도착 처리 결과는 알림이 아니라 토스트라 묶음에 들어오지 않는다(M6).
+    expect(find.textContaining('위치 권한이 꺼져'), findsOneWidget);
     expect(find.textContaining('카카오내비가 설치돼'), findsNothing);
-    expect(find.textContaining('도착 처리됨'), findsNothing);
 
-    await tester.tap(find.text('알림 2건 더 보기'));
+    await tester.tap(find.text('알림 1건 더 보기'));
     await tester.pump();
 
     expect(find.textContaining('카카오내비가 설치돼'), findsOneWidget);
-    expect(find.textContaining('도착 처리됨'), findsOneWidget);
     expect(find.text('알림 접기'), findsOneWidget);
   });
 
@@ -242,7 +246,10 @@ void main() {
         // 어떤 넘침도 없다 — 공용 `RunSummaryCard` 의 큰 글자 가로 넘침
         // (R46-FUMGR `Ruling 573`)을 고친 뒤로 이 시험이 허용하던 예외를
         // 걷었다(R46-LAST `Ruling 582`).
-        expect(errors, isEmpty);
+        expect(
+          errors.map((e) => e.toString()).toList(),
+          isEmpty,
+        );
       });
     }
   }

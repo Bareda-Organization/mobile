@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:manager_app/app/app_routes.dart';
 import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/auth/auth_providers.dart';
+import 'package:manager_app/core/constants/position_constants.dart';
 import 'package:manager_app/core/launcher/device_launchers.dart';
 import 'package:manager_app/core/location/position_source.dart';
 import 'package:manager_app/core/network/failure_messages.dart';
@@ -51,6 +52,9 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
   /// 도착 처리에 성공한 직후 버튼을 잠그는 시간 — 신호 대기 중 더블탭이 다음 승하차지까지 처리하는 것을 막는다.
   /// 되돌리는 API 가 없어 한 번 나간 도착은 취소할 수 없다(R46).
   static const _arriveLockDuration = Duration(seconds: 2);
+
+  /// 토스트가 도착 처리 단추 줄 위에 뜨는 높이 — 위 여백 12 + 단추 64 + 아래 여백 12 + 간격 8.
+  static const _toastAboveActionBar = 96.0;
   bool _arriveLocked = false;
   Timer? _arriveLockTimer;
 
@@ -66,6 +70,11 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
   /// 이 `StateError` 를 던진다). 필드에 저장해 두면 dispose 에서 이 값만
   /// 쓰면 되고 `ref` 를 다시 묻지 않는다.
   late final WakelockPort _wakelockPort;
+
+  /// 송신기가 아직 안 도는 동안(막 열렸거나 송신이 멈췄을 때) 화면이 직접 재확인한 위치 권한·서비스 상태(M2-02).
+  /// 송신 중에는 송신기의 상태(`PositionTransmission.availability`)가 우선한다.
+  PositionAvailability? _recheckedAvailability;
+  Timer? _availabilityTimer;
 
   /// 위치 송신 상태의 [PositionAvailability] 를 화면 문구로 옮긴다 — 정상(`available`)이거나
   /// 아직 모르면(`null`) 아무것도 보여주지 않는다.
@@ -88,10 +97,26 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
     // 것이 지금 GPS 송신을 지키는 유일한 수단이다(M-B 2항).
     _wakelockPort = ref.read(wakelockPortProvider);
     unawaited(_wakelockPort.enable());
+    // 권한을 중간에 끄거나 위치 서비스가 꺼져도 주기마다 다시 본다. 스트림은 켜지 않는다.
+    if (ref.read(roleCapabilitiesProvider)?.canTransmitPosition ?? false) {
+      final source = ref.read(positionSourceProvider);
+      unawaited(_recheck(source));
+      _availabilityTimer = Timer.periodic(
+        PositionConstants.transmissionInterval,
+        (_) => unawaited(_recheck(source)),
+      );
+    }
+  }
+
+  Future<void> _recheck(PositionSource source) async {
+    await source.recheck();
+    if (!mounted || source.availability == _recheckedAvailability) return;
+    setState(() => _recheckedAvailability = source.availability);
   }
 
   @override
   void dispose() {
+    _availabilityTimer?.cancel();
     _arriveLockTimer?.cancel();
     unawaited(_wakelockPort.disable());
     super.dispose();
@@ -148,6 +173,8 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
           context,
           message: '$name 도착 처리했어요 · ${hhmm(result.arrivedAt)}',
           aboveTabBar: false,
+          // 도착 처리 단추 줄(여백 + 단추 64 + 여백) 바로 위 — 토스트가 단추를 가리면 다음 누름을 가로챈다.
+          bottomOffset: _toastAboveActionBar,
         );
       }
     } on Failure catch (failure) {
@@ -202,6 +229,7 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
     final runId = ref.watch(selectedRunIdProvider);
     final run = ref.watch(driveModeRunProvider);
     final transmission = ref.watch(positionTransmitterProvider);
+    final availability = transmission.availability ?? _recheckedAvailability;
 
     return Scaffold(
       appBar: ManagerHeader(
@@ -213,7 +241,7 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
       ),
       body: runId == null
           ? const Center(child: WordWrapText('선택된 운행이 없어요 — 운행에서 회차를 골라 주세요'))
-          : _buildBody(context, runId, run, transmission),
+          : _buildBody(context, runId, run, transmission, availability),
     );
   }
 
@@ -222,6 +250,7 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
     String runId,
     ManagerRun? run,
     PositionTransmission transmission,
+    PositionAvailability? availability,
   ) {
     final rosterAsync = ref.watch(driveModeRosterProvider);
     final colors = context.colors;
@@ -256,7 +285,7 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
                       label: moving ? '운행 중' : '운행 전',
                       size: BaraedaStatusPillSize.lg,
                     ),
-                    if (_positionGuidance(transmission.availability) != null)
+                    if (_positionGuidance(availability) != null)
                       const BaraedaStatusPill(
                         status: BaraedaStatus.missed,
                         label: '전송 안 됨',
@@ -283,7 +312,7 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
                           removedCount: run?.removedCount ?? 0,
                         )
                       : null,
-                  notices: _notices(rosterAsync, transmission.availability),
+                  notices: _notices(rosterAsync, availability),
                 ),
                 if (run != null && roster != null && moving) ...[
                   if (nextStop != null) ...[
@@ -297,42 +326,29 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
                     ),
                   ],
                   const SizedBox(height: 12),
-                  Stack(
-                    children: [
-                      DriveMapPanel(
-                        height: mapHeight,
-                        busPosition: transmission.busPosition,
-                      ),
-                      if (navigationEnabled || _navigating)
-                        Positioned(
-                          left: 8,
-                          top: 8,
-                          child: BaraedaMapButton(
-                            icon: 'navigation',
-                            label: '내비 열기',
-                            semanticLabel: '카카오내비',
-                            onPressed: navigationEnabled
-                                ? () => unawaited(
-                                    _chooseNavigation(
-                                      runId,
-                                      nextLabel:
-                                          '${_orderOf(roster, nextStop)} '
-                                          '${nextStop.name} 1곳',
-                                    ),
-                                  )
-                                : null,
-                          ),
-                        ),
-                    ],
+                  _mapWithControls(
+                    context,
+                    mapHeight,
+                    transmission,
+                    navigationLabel: navigationEnabled || _navigating
+                        ? '내비 열기'
+                        : null,
+                    onNavigation: navigationEnabled
+                        ? () => unawaited(
+                            _chooseNavigation(
+                              runId,
+                              nextLabel:
+                                  '${_orderOf(roster, nextStop)} '
+                                  '${nextStop.name} 1곳',
+                            ),
+                          )
+                        : null,
                   ),
                   const SizedBox(height: 16),
                   _RemainingStops(roster: roster, colors: colors),
                 ] else ...[
                   const SizedBox(height: 12),
-                  DriveMapPanel(
-                    height: mapHeight,
-                    busPosition: transmission.busPosition,
-                  ),
+                  _mapWithControls(context, mapHeight, transmission),
                 ],
               ],
             ),
@@ -357,6 +373,41 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
                 data: (roster) => _buildActionArea(runId, run, roster),
               ),
             ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// 지도 + 왼쪽 위 `내비 열기` · 오른쪽 아래 `크게 보기`(노선 지도 화면, `Ruling 829`).
+  Widget _mapWithControls(
+    BuildContext context,
+    double height,
+    PositionTransmission transmission, {
+    String? navigationLabel,
+    VoidCallback? onNavigation,
+  }) {
+    return Stack(
+      children: [
+        DriveMapPanel(height: height, busPosition: transmission.busPosition),
+        if (navigationLabel != null)
+          Positioned(
+            left: 8,
+            top: 8,
+            child: BaraedaMapButton(
+              icon: 'navigation',
+              label: navigationLabel,
+              semanticLabel: '카카오내비',
+              onPressed: onNavigation,
+            ),
+          ),
+        Positioned(
+          right: 8,
+          bottom: 8,
+          child: BaraedaMapButton(
+            icon: 'map',
+            semanticLabel: '노선 크게 보기',
+            onPressed: () => unawaited(context.push(AppRoutes.routeMap)),
           ),
         ),
       ],

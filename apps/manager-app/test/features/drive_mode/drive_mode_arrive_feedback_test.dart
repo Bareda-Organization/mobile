@@ -137,6 +137,15 @@ RosterStop _stop(int seq, {bool arrived = false}) => RosterStop(
   students: const [],
 );
 
+/// `내비 열기` → 시트에서 범위를 고른다(Ruling 570).
+Future<void> _openNavigation(WidgetTester tester, String scopeLabel) async {
+  await tester.tap(find.text('내비 열기'));
+  await tester.pumpAndSettle();
+  await tester.tap(find.text(scopeLabel));
+  await tester.pump();
+  await tester.pump();
+}
+
 void main() {
   Future<
     ({
@@ -221,14 +230,17 @@ void main() {
   }
 
   group('B2 #15 중간 승하차지 도착 처리 피드백', () {
-    testWidgets('도착 처리에 성공하면 "N번 … 도착 처리됨" 을 알린다 (R46)', (tester) async {
+    // M6 — 같은 자리 단추의 이름만 바뀌면 처리된 줄 모른다. 서버가 적은 도착 시각(§4.5 `arrived_at`)을 토스트로 알린다.
+    testWidgets('도착 처리에 성공하면 "<이름> 도착 처리했어요 · 시각" 토스트가 뜬다', (tester) async {
       await pumpDrive(tester);
 
       await tester.tap(find.text('도착 처리'));
       await tester.pump();
       await tester.pump();
 
-      expect(find.text('1번 1번 승하차지 도착 처리됨'), findsOneWidget);
+      expect(find.text('1번 승하차지 도착 처리했어요 · 08:05'), findsOneWidget);
+      // 토스트는 4초 뒤 저절로 사라진다 — 그 타이머를 흘려 보낸다.
+      await tester.pump(const Duration(seconds: 5));
     });
 
     testWidgets('성공 직후 2초 안의 두 번째 누름은 다음 승하차지를 처리하지 않는다 (R46)', (tester) async {
@@ -247,31 +259,28 @@ void main() {
       await tester.tap(find.text('도착 처리'));
       await tester.pump();
       expect(harness.repository.arrivedStopIds, ['s1', 's1']);
+      await tester.pump(const Duration(seconds: 5));
     });
   });
 
-  testWidgets('운행 화면 카드에도 출발 시각이 있다 (R46, B2 #25)', (tester) async {
+  testWidgets('운행 화면 머리줄 부제에도 출발 시각이 있다 (R46, B2 #25)', (tester) async {
     await pumpDrive(tester);
 
     // managerRunFixture 의 출발 시각은 2026-09-30 08:00.
-    expect(find.text('출발 08:00'), findsOneWidget);
+    expect(find.text('3호차 · 등원 · 08:00 출발'), findsOneWidget);
   });
 
   group('A #5 외부 내비(RUN-08)', () {
     testWidgets('카카오 앱 키가 없으면 길안내 버튼을 그리지 않는다 (R46)', (tester) async {
       await pumpDrive(tester);
 
-      expect(find.text('카카오내비 길안내'), findsNothing);
-      expect(find.text('다음 목적지'), findsNothing);
-      expect(find.text('남은 전 구간'), findsNothing);
+      expect(find.text('내비 열기'), findsNothing);
     });
 
     testWidgets('키가 있으면 서버 경로를 받아 카카오내비 경계에 넘긴다 (R46)', (tester) async {
       final harness = await pumpDrive(tester, naviAppKey: 'KEY-1');
 
-      await tester.tap(find.text('남은 전 구간'));
-      await tester.pump();
-      await tester.pump();
+      await _openNavigation(tester, '남은 전 구간');
 
       expect(harness.navigation.calls, 1);
       final route = harness.launcher.launched.single;
@@ -289,11 +298,9 @@ void main() {
         naviResult: NaviLaunchResult.notInstalled,
       );
 
-      await tester.tap(find.text('남은 전 구간'));
-      await tester.pump();
-      await tester.pump();
+      await _openNavigation(tester, '남은 전 구간');
 
-      expect(find.textContaining('카카오내비가 설치돼 있지 않습니다'), findsOneWidget);
+      expect(find.textContaining('카카오내비가 설치돼 있지 않아요'), findsOneWidget);
       expect(harness.opened, isEmpty, reason: '누르기 전에는 스토어를 열지 않는다');
 
       await tester.tap(find.text('설치하기'));
@@ -309,11 +316,9 @@ void main() {
         naviResult: NaviLaunchResult.failed,
       );
 
-      await tester.tap(find.text('남은 전 구간'));
-      await tester.pump();
-      await tester.pump();
+      await _openNavigation(tester, '남은 전 구간');
 
-      expect(find.textContaining('카카오내비를 열지 못했습니다'), findsOneWidget);
+      expect(find.textContaining('카카오내비를 열지 못했어요'), findsOneWidget);
       expect(find.text('설치하기'), findsNothing);
     });
 
@@ -324,24 +329,20 @@ void main() {
         navProvider: 'tmap',
       );
 
-      await tester.tap(find.text('남은 전 구간'));
-      await tester.pump();
-      await tester.pump();
+      await _openNavigation(tester, '남은 전 구간');
 
       expect(
         harness.launcher.launched,
         isEmpty,
         reason: '카카오 경계로 다른 내비를 열 수 없다',
       );
-      expect(find.textContaining('카카오내비를 열지 못했습니다'), findsOneWidget);
+      expect(find.textContaining('카카오내비를 열지 못했어요'), findsOneWidget);
     });
 
     testWidgets('상한 때문에 잘렸으면 서버가 준 안내 문구를 보인다 (R46)', (tester) async {
       await pumpDrive(tester, naviAppKey: 'KEY-1', truncated: true);
 
-      await tester.tap(find.text('남은 전 구간'));
-      await tester.pump();
-      await tester.pump();
+      await _openNavigation(tester, '남은 전 구간');
 
       expect(find.text('남은 승하차지가 많아 앞 2곳만 넘겼습니다'), findsOneWidget);
     });
