@@ -385,6 +385,7 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
                 if (caps?.canSendDelayNotification ?? false)
                   BaraedaButton(
                     label: '지연 알림',
+                    size: BaraedaButtonSize.sm,
                     icon: 'clock',
                     variant: BaraedaButtonVariant.secondary,
                     onPressed: () => unawaited(context.push(AppRoutes.delay)),
@@ -393,6 +394,7 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
                 // 동승자는 여기서 보고한다.
                 BaraedaButton(
                   label: '예외 보고',
+                  size: BaraedaButtonSize.sm,
                   icon: 'triangle-alert',
                   variant: BaraedaButtonVariant.secondary,
                   onPressed: () => unawaited(context.push(AppRoutes.report)),
@@ -406,6 +408,7 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
                         ? '대기열'
                         : '대기열 ${allQueued.length}건',
                     icon: 'inbox',
+                    size: BaraedaButtonSize.sm,
                     variant: BaraedaButtonVariant.secondary,
                     onPressed: () =>
                         unawaited(context.push(AppRoutes.offlineQueue)),

@@ -161,13 +161,17 @@ class _StatsRow extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      stats[i].value,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: BaraedaTypography.body.copyWith(
-                        fontWeight: BaraedaFontWeight.bold,
-                        color: colors.textPrimary,
+                    // 시작 가능 시간대처럼 긴 값은 줄이지 말고 글자를 줄여 한 줄에 담는다.
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        stats[i].value,
+                        maxLines: 1,
+                        style: BaraedaTypography.body.copyWith(
+                          fontWeight: BaraedaFontWeight.bold,
+                          color: colors.textPrimary,
+                        ),
                       ),
                     ),
                     Text(

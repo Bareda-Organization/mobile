@@ -10,6 +10,7 @@ import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/core/launcher/device_launchers.dart';
 import 'package:manager_app/core/network/failure_messages.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
+import 'package:manager_app/core/ui/academy_call_card.dart';
 import 'package:manager_app/core/ui/limited_text_controller.dart';
 import 'package:manager_app/core/ui/manager_header.dart';
 import 'package:manager_app/features/emergency/data/models/emergency_item.dart';
@@ -198,6 +199,9 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          // 급하면 먼저 전화(M2) — 번호는 저장된 학원 연락처이고, 번호 모양이 아니면 그리지 않는다.
+          const AcademyCallCard(lead: '급하면 먼저 전화하세요'),
+          const SizedBox(height: 12),
           if (_errorMessage != null) ...[
             AlertBanner(tone: AlertTone.missed, body: _errorMessage),
             const SizedBox(height: 12),
