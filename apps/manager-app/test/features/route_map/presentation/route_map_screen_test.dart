@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
@@ -328,10 +329,57 @@ void main() {
     final surface = tester.widget<MapSurface>(find.byType(MapSurface));
     expect(
       {for (final m in surface.markers) m.id: m.skipped},
-      {
-        's1': true,
-        's2': false,
-      },
+      {'s1': true, 's2': false},
+    );
+  });
+
+  // 시안 `route-map` — 지도가 화면 전체를 쓰고 머리줄은 그 위에 뜬다. 아래에는 범례 카드가 있다.
+  testWidgets('지도는 화면 맨 위부터 그려지고 머리줄이 그 위에 뜬다', (tester) async {
+    final response = RouteResponse(stops: [_stop(stopId: 's1', seq: 1)]);
+
+    await tester.pumpWidget(_wrap(overridesFor(response)));
+    await tester.pump();
+    await tester.pump();
+
+    expect(tester.getTopLeft(find.byType(MapSurface)).dy, 0);
+    expect(find.text('노선 지도'), findsOneWidget);
+  });
+
+  testWidgets('아래 범례 카드가 지난 곳 · 다음 · 추가 · 정차 안 함과 안내용 선이라는 문구를 알린다', (
+    tester,
+  ) async {
+    final response = RouteResponse(stops: [_stop(stopId: 's1', seq: 1)]);
+
+    await tester.pumpWidget(_wrap(overridesFor(response)));
+    await tester.pump();
+    await tester.pump();
+
+    for (final label in ['지난 곳', '다음', '추가', '정차 안 함']) {
+      expect(find.text(label), findsOneWidget, reason: label);
+    }
+    expect(find.text('지도 선은 안내용이고, 실제 길은 기사 판단이에요.'), findsOneWidget);
+  });
+
+  testWidgets('범례 카드에 skipped_notice 가 함께 들어간다', (tester) async {
+    final response = RouteResponse(
+      stops: [_stop(stopId: 's1', seq: 1)],
+      skippedNotice: '5 한빛빌라 — 오늘 탑승 학생이 없어 정차하지 않아요.',
+    );
+
+    await tester.pumpWidget(_wrap(overridesFor(response)));
+    await tester.pump();
+    await tester.pump();
+
+    final legendCard = find.ancestor(
+      of: find.text('정차 안 함'),
+      matching: find.byType(BaraedaCard),
+    );
+    expect(
+      find.descendant(
+        of: legendCard,
+        matching: find.text('5 한빛빌라 — 오늘 탑승 학생이 없어 정차하지 않아요.'),
+      ),
+      findsOneWidget,
     );
   });
 }

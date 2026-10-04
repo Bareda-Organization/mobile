@@ -43,6 +43,7 @@ class RouteMapView extends StatelessWidget {
     required this.route,
     this.busPosition,
     this.onAuthFailed,
+    this.showFallbackNotice = true,
     super.key,
   });
 
@@ -53,6 +54,9 @@ class RouteMapView extends StatelessWidget {
 
   /// 지도 SDK 인증 실패 콜백 — 호출부가 안내 문구를 정한다.
   final MapAuthFailedCallback? onAuthFailed;
+
+  /// 근사 경로 안내를 지도 위에 직접 띄울지. 호출부가 같은 안내를 자기 카드 안에 그리면 끈다.
+  final bool showFallbackNotice;
 
   @override
   Widget build(BuildContext context) {
@@ -83,7 +87,7 @@ class RouteMapView extends StatelessWidget {
           ),
         ),
         // 직선 근사를 실제 도로로 오인하지 않게 알린다(Ruling 309).
-        if (hasPath && route.fallbackUsed)
+        if (showFallbackNotice && hasPath && route.fallbackUsed)
           const Positioned(
             left: 8,
             right: 8,

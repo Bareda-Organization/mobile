@@ -19,6 +19,7 @@ import 'package:manager_app/core/time/run_time_labels.dart';
 import 'package:manager_app/core/ui/academy_call_card.dart';
 import 'package:manager_app/core/ui/confirm_dialog.dart';
 import 'package:manager_app/core/ui/manager_header.dart';
+import 'package:manager_app/core/ui/map_legend.dart';
 import 'package:manager_app/features/drive_mode/presentation/drive_mode_providers.dart';
 import 'package:manager_app/features/home/data/models/manager_run.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
@@ -355,18 +356,21 @@ class _MapCard extends StatelessWidget {
               spacing: 16,
               runSpacing: 4,
               children: [
-                _LegendItem(
-                  swatch: _Swatch(color: colors.accentPrimary),
+                MapLegendItem(
+                  swatch: MapLegendSwatch(color: colors.accentPrimary),
                   label: '오늘 추가',
                   style: legend,
                 ),
-                _LegendItem(
-                  swatch: _Swatch(color: colors.statusMissed, ring: true),
+                MapLegendItem(
+                  swatch: MapLegendSwatch(
+                    color: colors.statusMissed,
+                    ring: true,
+                  ),
                   label: '정차 안 함',
                   style: legend,
                 ),
-                _LegendItem(
-                  swatch: _Swatch(color: colors.textPrimary),
+                MapLegendItem(
+                  swatch: MapLegendSwatch(color: colors.textPrimary),
                   label: '지나갈 곳',
                   style: legend,
                 ),
@@ -377,42 +381,6 @@ class _MapCard extends StatelessWidget {
       ),
     );
   }
-}
-
-class _LegendItem extends StatelessWidget {
-  const new({required this.swatch, required this.label, required this.style});
-
-  final Widget swatch;
-  final String label;
-  final TextStyle style;
-
-  @override
-  Widget build(BuildContext context) => Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      swatch,
-      const SizedBox(width: 6),
-      Text(label, style: style),
-    ],
-  );
-}
-
-class _Swatch extends StatelessWidget {
-  const new({required this.color, this.ring = false});
-
-  final Color color;
-  final bool ring;
-
-  @override
-  Widget build(BuildContext context) => Container(
-    width: 12,
-    height: 12,
-    decoration: BoxDecoration(
-      shape: BoxShape.circle,
-      color: ring ? Colors.transparent : color,
-      border: ring ? Border.all(color: color, width: 2) : null,
-    ),
-  );
 }
 
 /// "승하차지 6곳 · 학생 14명 · 미등원 2명" + 번호 타임라인(추가 · 미경유 표시).
