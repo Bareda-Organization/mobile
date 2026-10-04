@@ -259,8 +259,8 @@ class _NotificationListViewState<T> extends State<NotificationListView<T>> {
 
   bool get _hasFooter => widget.loadingMore || widget.loadMoreFailed;
 
-  /// 날짜 머리와 알림 행을 한 줄씩 만드는 빌더 목록. [NotificationListStyle.pills] 는 한 날의 행을 흰 카드
-  /// 하나로 묶는다.
+  /// 날짜 머리와 한 날의 행을 묶은 카드를 한 줄씩 만드는 빌더 목록(Ruling 835 — 걸러 보기 모양과 무관하게
+  /// 한 날의 알림은 카드 하나다).
   List<Widget Function()> _rows() {
     final w = widget;
     final pills = w.style == NotificationListStyle.pills;
@@ -288,11 +288,7 @@ class _NotificationListViewState<T> extends State<NotificationListView<T>> {
         rows.add(() => _DayHeader(label: header, date: date));
         lastHeader = header;
       }
-      if (pills) {
-        group.add(item);
-      } else {
-        rows.add(() => w.itemBuilder(context, item));
-      }
+      group.add(item);
     }
     flushGroup();
     return rows;

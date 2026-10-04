@@ -123,7 +123,8 @@ void main() {
       expect(find.text('9월 30일 (수)'), findsOneWidget);
       expect(find.text('9월 29일'), findsOneWidget);
       expect(find.text('8:37'), findsOneWidget);
-      expect(find.text('14:05'), findsOneWidget);
+      // 오늘이 아닌 알림은 시각 앞에 날짜가 붙는다(Ruling 835).
+      expect(find.text('9월 29일 14:05'), findsOneWidget);
       // 위에서 아래로 오늘 → 어제 → 지난 날짜 순서.
       expect(
         tester.getTopLeft(find.text('오늘')).dy,

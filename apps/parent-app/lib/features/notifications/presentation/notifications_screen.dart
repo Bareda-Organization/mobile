@@ -76,6 +76,7 @@ class _ItemRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final kind = kindOf(item.type);
+    final now = ref.watch(clockProvider).now();
     // 자녀 이름(ATT-03)은 제목이 아니라 종류 · 시각 줄 끝에 붙는다 — 학생은 본인뿐이라 붙이지 않는다.
     final isParent =
         ref.watch(roleCapabilitiesProvider)?.canToggleAttendance ?? false;
@@ -86,8 +87,8 @@ class _ItemRow extends ConsumerWidget {
       kindLabel: kind.label,
       title: item.title,
       body: item.body.isEmpty ? null : item.body,
-      time: clockLabel(item.sentAt),
-      timeSpoken: spokenClock(item.sentAt),
+      time: timeLabel(item.sentAt, now),
+      timeSpoken: spokenTime(item.sentAt, now),
       who: isParent ? item.studentName : null,
       unread: item.isUnread,
       important: kind.important,

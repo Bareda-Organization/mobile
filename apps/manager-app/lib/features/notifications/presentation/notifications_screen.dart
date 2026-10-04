@@ -67,13 +67,14 @@ class _ItemRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final kind = kindOf(item.type);
+    final now = ref.watch(clockProvider).now();
     return ManagerNotificationRow(
       icon: kind.icon,
       kindLabel: kind.label,
       title: item.title,
       body: item.body.isEmpty ? null : item.body,
-      time: clockLabel(item.sentAt),
-      timeSpoken: spokenClock(item.sentAt),
+      time: timeLabel(item.sentAt, now),
+      timeSpoken: spokenTime(item.sentAt, now),
       unread: item.isUnread,
       important: kind.important,
       onTap: _tapHandler(context, ref),

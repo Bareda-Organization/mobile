@@ -136,16 +136,52 @@ void main() {
     });
   });
 
-  testWidgets('기본 모양(row)은 카드로 묶이지 않고 날짜 머리에 날짜도 없다', (tester) async {
+  // Ruling 835 — 묶음은 알약 모양만의 것이 아니다. 기본(segmented · 매니저 앱)도 같은 규칙이다.
+  Widget segmentedHost(List<DateTime> sentAt) => MaterialApp(
+    theme: BaraedaTheme.light(),
+    home: Scaffold(
+      body: NotificationListView<DateTime>(
+        items: sentAt,
+        sentAtOf: (t) => t,
+        itemBuilder: (context, t) => Text('알림 ${t.toIso8601String()}'),
+        now: DateTime.utc(2026, 10, 3, 4),
+        unreadOnly: false,
+        onUnreadOnlyChanged: (_) {},
+        onRefresh: () async {},
+        onLoadMore: () {},
+      ),
+    ),
+  );
+
+  testWidgets('기본 모양(row)도 한 날의 행을 카드 하나로 묶고 날짜 머리에 날짜는 없다', (tester) async {
+    final today = DateTime.utc(2026, 10, 3, 3, 12);
+    final today2 = DateTime.utc(2026, 10, 3, 3, 10);
+    final yesterday = DateTime.utc(2026, 10, 2, 7, 52);
+    await tester.pumpWidget(segmentedHost([today, today2, yesterday]));
+
+    expect(find.text('오늘'), findsOneWidget);
+    expect(find.text('어제'), findsOneWidget);
+    expect(find.text('10월 3일 (토)'), findsNothing);
+    expect(find.text('10월 2일'), findsNothing);
+    // 카드 안 행 수: 오늘 2 · 어제 1 → 카드 둘, 사이 선은 오늘 카드의 한 줄뿐.
+    expect(find.byType(Divider), findsNWidgets(1));
+  });
+
+  testWidgets('기본 모양에서 서울 자정~오전 9시 알림도 서울 날짜로 묶인다', (tester) async {
+    // 지금 10-04 08:30 KST. 10-03 23:50 KST(= 14:50 UTC)는 어제,
+    // 10-04 07:00 KST(= 10-03 22:00 UTC)는 오늘.
     await tester.pumpWidget(
       MaterialApp(
         theme: BaraedaTheme.light(),
         home: Scaffold(
-          body: NotificationListView<int>(
-            items: const [1],
-            sentAtOf: (_) => DateTime.utc(2026, 10, 3, 3),
-            itemBuilder: (context, item) => Text('알림 $item'),
-            now: DateTime.utc(2026, 10, 3, 4),
+          body: NotificationListView<DateTime>(
+            items: [
+              DateTime.utc(2026, 10, 3, 22),
+              DateTime.utc(2026, 10, 3, 14, 50),
+            ],
+            sentAtOf: (t) => t,
+            itemBuilder: (context, t) => Text('알림 ${t.hour}'),
+            now: DateTime.utc(2026, 10, 3, 23, 30),
             unreadOnly: false,
             onUnreadOnlyChanged: (_) {},
             onRefresh: () async {},
@@ -156,8 +192,8 @@ void main() {
     );
 
     expect(find.text('오늘'), findsOneWidget);
-    expect(find.text('10월 3일 (토)'), findsNothing);
-    expect(find.byType(Divider), findsNothing);
+    expect(find.text('어제'), findsOneWidget);
+    expect(find.byType(Divider), findsNothing, reason: '각 카드에 행이 하나씩');
   });
 
   testWidgets('기본은 두 칸 전환이다 — 알약도 안 읽음 수도 없다', (tester) async {
