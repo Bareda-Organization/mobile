@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:baraeda_core/baraeda_core.dart';
-import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -22,6 +21,7 @@ import 'package:manager_app/features/roster/data/models/roster_response.dart';
 import 'package:manager_app/features/roster/domain/guardian_phone_repository.dart';
 import 'package:manager_app/features/roster/domain/roster_repository.dart';
 import 'package:manager_app/features/roster/presentation/roster_screen.dart';
+import 'package:manager_app/features/roster/presentation/widgets/roster_widgets.dart';
 
 import '../../support/manager_run_fixture.dart';
 
@@ -164,7 +164,7 @@ void main() {
     );
     expect(find.textContaining('010-2XXX-8814'), findsOneWidget);
 
-    await tester.tap(find.widgetWithText(BaraedaButton, '전화'));
+    await tester.tap(find.byType(RosterCallButton));
     await tester.pumpAndSettle();
 
     expect(phones.requested, [('run-1', 'r1')]);
@@ -182,7 +182,7 @@ void main() {
       phones: _FakeGuardianPhones(phone: _rawPhone),
     );
 
-    expect(find.widgetWithText(BaraedaButton, '전화'), findsOneWidget);
+    expect(find.byType(RosterCallButton), findsOneWidget);
   });
 
   testWidgets('조회가 거부되면 전화를 걸지 않고 이유를 알린다', (tester) async {
@@ -202,11 +202,11 @@ void main() {
       phones: phones,
     );
 
-    await tester.tap(find.widgetWithText(BaraedaButton, '전화'));
+    await tester.tap(find.byType(RosterCallButton));
     await tester.pumpAndSettle();
 
     expect(opened, isEmpty);
-    expect(find.textContaining('보호자 번호를 가져오지 못했습니다'), findsOneWidget);
+    expect(find.textContaining('보호자 번호를 가져오지 못했어요'), findsOneWidget);
     expect(find.textContaining('이 회차를 이용할 권한이 없습니다'), findsOneWidget);
   });
 
@@ -221,7 +221,7 @@ void main() {
       phones: phones,
     );
 
-    await tester.tap(find.widgetWithText(BaraedaButton, '전화'));
+    await tester.tap(find.byType(RosterCallButton));
     await tester.pumpAndSettle();
 
     expect(opened, isEmpty);
@@ -238,11 +238,11 @@ void main() {
       phones: _FakeGuardianPhones(),
     );
 
-    await tester.tap(find.widgetWithText(BaraedaButton, '전화'));
+    await tester.tap(find.byType(RosterCallButton));
     await tester.pumpAndSettle();
 
     expect(opened, isEmpty);
-    expect(find.text('등록된 보호자 연락처가 없습니다'), findsOneWidget);
+    expect(find.text('등록된 보호자 연락처가 없어요'), findsOneWidget);
   });
 
   testWidgets('전화 앱을 열지 못하면 그 사실을 알린다', (tester) async {
@@ -256,10 +256,10 @@ void main() {
       openerSucceeds: false,
     );
 
-    await tester.tap(find.widgetWithText(BaraedaButton, '전화'));
+    await tester.tap(find.byType(RosterCallButton));
     await tester.pumpAndSettle();
 
-    expect(find.text('전화 앱을 열지 못했습니다'), findsOneWidget);
+    expect(find.text('전화 앱을 열지 못했어요'), findsOneWidget);
   });
 
   testWidgets('연결된 보호자가 없는 학생 행에는 [전화] 가 없다', (tester) async {
@@ -269,6 +269,6 @@ void main() {
       phones: _FakeGuardianPhones(phone: _rawPhone),
     );
 
-    expect(find.widgetWithText(BaraedaButton, '전화'), findsNothing);
+    expect(find.byType(RosterCallButton), findsNothing);
   });
 }

@@ -32,7 +32,8 @@ ManagerRun managerRunFixture({
     estDurationMin: 30,
     runStatus: status,
     confirmed: confirmed,
-    startWindowFrom: startWindowFrom ?? depart.subtract(const Duration(minutes: 10)),
+    startWindowFrom:
+        startWindowFrom ?? depart.subtract(const Duration(minutes: 10)),
     startWindowTo: startWindowTo ?? depart.add(const Duration(minutes: 10)),
     addedCount: addedCount,
     removedCount: removedCount,

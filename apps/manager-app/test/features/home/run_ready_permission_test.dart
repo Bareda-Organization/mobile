@@ -85,7 +85,8 @@ ManagerRun _confirmedRun(DateTime now) => ManagerRun(
   roleInRun: UserRole.driver,
 );
 
-/// M2-02(F06-03 나머지) — 운행 준비 화면에서도(운행 시작 전, `confirmed`) 위치 권한·서비스가 꺼져 있으면 기사에게 알린다.
+/// M2-02(F06-03 나머지) — 운행 준비 화면에서도(운행 시작 전, `confirmed`)
+/// 위치 권한·서비스가 꺼져 있으면 기사에게 알린다.
 /// 출발 뒤에야 송신 실패를 아는 것을 막는다. 알리려고 스트림(포그라운드 서비스 알림)을 켜지는 않는다.
 void main() {
   const permissionMessage = '위치 권한이 없어 위치를 보낼 수 없어요';

@@ -17,8 +17,7 @@ import 'package:manager_app/features/home/presentation/home_providers.dart';
 import 'package:manager_app/features/roster/data/models/roster_response.dart';
 import 'package:manager_app/features/roster/presentation/roster_providers.dart';
 import 'package:manager_app/features/roster/presentation/roster_screen.dart';
-import 'package:manager_app/features/run_end/presentation/run_end_screen.dart';
-
+import 'package:manager_app/features/run_end/presentation/report_screen.dart';
 import '../../support/manager_run_fixture.dart';
 
 /// R32 M3 — 예외 보고(§4.13 · M-14)는 기사·동승자 공통인데 지금까지 기사 운행 화면에서만
@@ -61,7 +60,7 @@ RosterResponse _roster(List<RosterStudent> students) => RosterResponse(
 );
 
 void main() {
-  testWidgets('명단 화면 — 동승자 머리말의 예외 보고 버튼이 보고 화면으로 간다', (tester) async {
+  testWidgets('명단 화면 — 동승자의 [예외 보고] 가 현장 보고 화면으로 간다', (tester) async {
     final router = GoRouter(
       initialLocation: AppRoutes.roster,
       routes: [
@@ -70,8 +69,8 @@ void main() {
           builder: (_, _) => const RosterScreen(),
         ),
         GoRoute(
-          path: AppRoutes.runEnd,
-          builder: (_, _) => const Text('RUN_END_MARKER'),
+          path: AppRoutes.report,
+          builder: (_, _) => const Text('REPORT_MARKER'),
         ),
       ],
     );
@@ -92,10 +91,10 @@ void main() {
     await tester.tap(find.text('예외 보고'));
     await tester.pumpAndSettle();
 
-    expect(find.text('RUN_END_MARKER'), findsOneWidget);
+    expect(find.text('REPORT_MARKER'), findsOneWidget);
   });
 
-  testWidgets('도착 결과 없이 들어오면 종료 안내 대신 예외 보고 화면이고, 대상은 명단에서 만든다', (
+  testWidgets('보호자 부재 보고는 도착 결과 없이도 대상을 명단에서 만든다(혼자 귀가할 수 없는 탑승 학생만)', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -126,14 +125,13 @@ void main() {
             ]),
           ),
         ],
-        child: const MaterialApp(home: RunEndScreen()),
+        child: const MaterialApp(home: ReportScreen(guardianAbsent: true)),
       ),
     );
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('종료 정보가 없습니다'), findsNothing);
-    expect(find.text('예외 보고'), findsWidgets);
-    final select = tester.widget<BaraedaSelect>(find.byType(BaraedaSelect));
-    expect(select.options.map((o) => o.label), ['김바래']);
+    // 혼자 귀가할 수 있는 학생(이혼자) · 아직 타지 않은 학생(박대기)은 대상이 아니다.
+    expect(find.byType(BaraedaListRow), findsOneWidget);
+    expect(find.widgetWithText(BaraedaListRow, '김바래'), findsOneWidget);
   });
 }

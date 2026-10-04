@@ -127,7 +127,7 @@ void main() {
     await tester.tap(find.widgetWithText(BaraedaButton, '미승차'));
     await tester.pumpAndSettle();
     expect(find.text('김바래 학생을 미승차로 처리할까요?'), findsOneWidget);
-    await tester.tap(find.text('취소'));
+    await tester.tap(find.text('닫기'));
     await tester.pumpAndSettle();
     expect(repository.requestedStatuses, isEmpty);
 

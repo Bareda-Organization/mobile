@@ -175,6 +175,11 @@ class _NoShowScreenState extends ConsumerState<NoShowScreen> {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
             children: [
+              // 실패 이유는 맨 위에 둔다 — 아래 이력 · 단추 줄 때문에 화면 밖에 있으면 못 본다.
+              if (_error != null) ...[
+                AlertBanner(tone: AlertTone.missed, body: _error),
+                const SizedBox(height: 12),
+              ],
               BaraedaCard(
                 highlight: true,
                 child: Column(
@@ -332,10 +337,6 @@ class _NoShowScreenState extends ConsumerState<NoShowScreen> {
                       ),
                   ],
                 ),
-              if (_error != null) ...[
-                const SizedBox(height: 12),
-                AlertBanner(tone: AlertTone.missed, body: _error),
-              ],
               const SizedBox(height: 8),
               Center(
                 child: BaraedaButton(

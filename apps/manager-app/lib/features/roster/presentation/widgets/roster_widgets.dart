@@ -391,7 +391,24 @@ class RosterStudentTile extends StatelessWidget {
                 badge ?? _chip(ride),
               ],
             ),
-            if (actions != null) ...[const SizedBox(height: 12), actions!],
+            if (actions != null) ...[
+              const SizedBox(height: 12),
+              // 응답을 기다리는 동안 흐려지기만 하면 눌렸는지 알 수 없다 — 단추 옆에 진행 표시를 돌린다(R46).
+              if (busy)
+                Row(
+                  children: [
+                    const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(child: actions!),
+                  ],
+                )
+              else
+                actions!,
+            ],
           ],
         ),
       ),

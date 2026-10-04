@@ -18,6 +18,7 @@ import 'package:manager_app/features/roster/data/models/rider_update_result.dart
 import 'package:manager_app/features/roster/data/models/roster_response.dart';
 import 'package:manager_app/features/roster/domain/roster_repository.dart';
 import 'package:manager_app/features/roster/presentation/roster_screen.dart';
+import 'package:manager_app/features/roster/presentation/widgets/roster_widgets.dart';
 
 import '../../support/manager_run_fixture.dart';
 
@@ -107,6 +108,11 @@ void main() {
     WidgetTester tester, {
     List<PendingRequestSummary> seededQueue = const [],
   }) async {
+    // 학생 행이 단추 줄까지 있어 기본 시험 화면(600 높이)에는 두 번째 학생이 안 들어온다 — 화면을 키운다.
+    tester.view
+      ..physicalSize = const Size(800, 1600)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
     repository = _GatedRosterRepository(_roster)..queue.addAll(seededQueue);
     await tester.pumpWidget(
       ProviderScope(
@@ -127,10 +133,10 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  /// 그 학생 행의 버튼 — 행은 `StudentRow` 하나가 한 학생이다.
+  /// 그 학생 행의 버튼 — 행은 `RosterStudentTile` 하나가 한 학생이다.
   Finder rowOf(String name) => find.ancestor(
     of: find.text(name),
-    matching: find.byType(StudentRow),
+    matching: find.byType(RosterStudentTile),
   );
   Finder buttonIn(String name, String label) => find.descendant(
     of: rowOf(name),
@@ -255,14 +261,14 @@ void main() {
 
     await tester.tap(buttonIn('김바래', '탑승'));
     await tester.pumpAndSettle();
-    expect(find.text('처리되지 않았습니다 · 대기 중 1건'), findsOneWidget);
+    expect(find.text('처리되지 않았어요 · 대기 중 1건'), findsOneWidget);
     expect(find.text('대기열 1건'), findsOneWidget);
 
     await tester.tap(buttonIn('이바래', '탑승'));
     await tester.pumpAndSettle();
 
     expect(
-      find.text('처리되지 않았습니다 · 대기 중 1건'),
+      find.text('처리되지 않았어요 · 대기 중 1건'),
       findsOneWidget,
       reason: '다음 조작이 배너를 지우면 기사가 큐에 쌓인 처리를 잊는다',
     );

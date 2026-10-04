@@ -12,6 +12,7 @@ import 'package:manager_app/core/auth/user_role.dart';
 import 'package:manager_app/core/constants/api_constants.dart';
 import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
+import 'package:manager_app/core/ui/manager_header.dart';
 import 'package:manager_app/features/home/data/models/manager_run.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
 import 'package:manager_app/features/offline_queue/data/models/pending_request_summary.dart';
@@ -245,7 +246,7 @@ void main() {
   }
 
   // Ruling 377 — 사진이 상대 경로면 호스트에 붙이고 저장된 토큰을 헤더로 넘긴다.
-  testWidgets('상대 경로 photo_url 은 호스트에 붙여 토큰 헤더와 함께 StudentRow 에 넘긴다', (
+  testWidgets('상대 경로 photo_url 은 호스트에 붙여 토큰 헤더와 함께 학생 사진으로 그린다', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -261,12 +262,13 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final row = tester.widget<StudentRow>(find.byType(StudentRow));
+    final image = tester.widget<Image>(find.byType(Image));
+    final provider = image.image as NetworkImage;
     expect(
-      row.photoUrl,
+      provider.url,
       '${Uri.parse(ApiConstants.baseUrl).origin}/api/v1/files/photos/a.jpg',
     );
-    expect(row.photoHeaders, {'Authorization': 'Bearer tok-1'});
+    expect(provider.headers, {'Authorization': 'Bearer tok-1'});
   });
 
   // R39 Ruling 400 — 서버 seq 는 경유 지점 자리(2)를 비운 채 1·3 으로 온다. 명단 머리가 그 값을 그대로 쓰면
@@ -290,9 +292,12 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('1. A정류장'), findsOneWidget);
-    expect(find.text('2. B정류장'), findsOneWidget);
-    expect(find.text('3. B정류장'), findsNothing);
+    expect(find.text('A정류장'), findsOneWidget);
+    expect(find.text('B정류장'), findsOneWidget);
+    // 번호 원은 이 목록의 순번 1 · 2 다 — 서버 seq(3)가 아니다.
+    expect(find.text('1'), findsOneWidget);
+    expect(find.text('2'), findsOneWidget);
+    expect(find.text('3'), findsNothing);
   });
 
   testWidgets('ack_required 가 false 면 변경 확인 배너를 보여주지 않는다', (tester) async {
@@ -304,7 +309,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('변경 목록 확인'), findsNothing);
+    expect(find.text('변경 확인'), findsNothing);
   });
 
   testWidgets('ack_required 가 true 면 변경 확인 배너·버튼을 보여준다', (tester) async {
@@ -319,8 +324,8 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('승하차지·명단이 변경됐습니다'), findsOneWidget);
-    expect(find.text('변경 목록 확인'), findsOneWidget);
+    expect(find.text('노선이 바뀌었어요'), findsOneWidget);
+    expect(find.text('변경 확인'), findsOneWidget);
   });
 
   testWidgets('변경 목록 확인을 누르면 ack-changes 를 호출하고 배너를 닫는다', (tester) async {
@@ -333,10 +338,10 @@ void main() {
     await tester.pumpWidget(_wrap(const RosterScreen(), overrides));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('변경 목록 확인'));
+    await tester.tap(find.text('변경 확인'));
     await tester.pumpAndSettle();
 
-    expect(find.text('변경 목록 확인'), findsNothing);
+    expect(find.text('변경 확인'), findsNothing);
   });
 
   testWidgets('변경 목록 확인 호출 시 요청 본문 없이 전건 확인을 호출한다(Ruling 344)', (tester) async {
@@ -356,7 +361,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('변경 목록 확인'));
+    await tester.tap(find.text('변경 확인'));
     await tester.pumpAndSettle();
 
     expect(fakeRepo.lastAckRunId, runId);
@@ -383,11 +388,11 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('변경 목록 확인'));
+    await tester.tap(find.text('변경 확인'));
     await tester.pumpAndSettle();
 
     expect(find.text('아직 확정되지 않은 운행입니다'), findsOneWidget);
-    expect(find.text('변경 목록 확인'), findsOneWidget);
+    expect(find.text('변경 확인'), findsOneWidget);
   });
 
   testWidgets('되돌리기(§4.7)가 실패하면 실패 사유를 보여준다', (tester) async {
@@ -455,7 +460,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // 큐에 이미 쌓인 학생 행은 [탑승] 대신 "전송 대기" 다(R46) — 이 시험은 안내 문구만 본다.
-    expect(find.text('처리되지 않았습니다 · 대기 중 1건'), findsOneWidget);
+    expect(find.text('처리되지 않았어요 · 대기 중 1건'), findsOneWidget);
   });
 
   testWidgets('승하차 상태 갱신이 즉시 성공하면 대기 안내를 보여주지 않는다', (tester) async {
@@ -486,7 +491,7 @@ void main() {
     await tester.tap(find.widgetWithText(BaraedaButton, '탑승'));
     await tester.pumpAndSettle();
 
-    expect(find.text('처리되지 않았습니다 · 대기 중'), findsNothing);
+    expect(find.text('처리되지 않았어요 · 대기 중'), findsNothing);
     expect(fakeRepo.lastUpdateClientKey, isNotNull);
   });
 
@@ -555,7 +560,7 @@ void main() {
     await tester.tap(find.widgetWithText(BaraedaButton, '탑승'));
     await tester.pumpAndSettle();
 
-    expect(find.text('처리되지 않았습니다 · 대기 중'), findsNothing);
+    expect(find.text('처리되지 않았어요 · 대기 중'), findsNothing);
     expect(find.textContaining('운행 중'), findsWidgets);
   });
 
@@ -670,7 +675,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byType(BaraedaSkeleton), findsWidgets);
       expect(find.text('실시간 연결 중'), findsOneWidget);
     });
 
@@ -743,12 +748,12 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('김바래'), findsOneWidget);
-    expect(find.textContaining('최신 명단을 불러오지 못했습니다'), findsOneWidget);
+    expect(find.textContaining('최신 명단을 불러오지 못했어요'), findsOneWidget);
     expect(find.text('다시 시도'), findsOneWidget);
   });
 
   // R46 A — 글자 버튼 4개가 제목을 밀어내 제목이 사라졌다. 앱바에는 비상만 남긴다.
-  testWidgets('R46 앱바에는 제목과 비상만 있고 나머지 버튼은 본문 위 줄에 있다', (tester) async {
+  testWidgets('R46 머리줄에는 제목과 비상만 있고 나머지 단추는 본문 위 줄에 있다', (tester) async {
     tester.view.physicalSize = const Size(375 * 3, 812 * 3);
     tester.view.devicePixelRatio = 3;
     addTearDown(tester.view.reset);
@@ -765,9 +770,9 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final appBar = find.byType(AppBar);
+    final appBar = find.byType(ManagerHeader);
     expect(
-      find.descendant(of: appBar, matching: find.text('승하차 명단')),
+      find.descendant(of: appBar, matching: find.text('명단')),
       findsOneWidget,
     );
     for (final label in ['예외 보고', '지연 알림', '대기열']) {
