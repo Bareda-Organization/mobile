@@ -336,7 +336,7 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
         BaraedaTextarea(
           label: _type == EmergencyType.etc ? '상황 메모 (필수)' : '상황 메모 (선택)',
           hint: '무슨 일이 있었는지 적어 주세요 · $freeTextPrivacyNotice',
-          rows: 3,
+          rows: 2,
           enabled: !_submitting,
           controller: _memoController,
         ),

@@ -193,7 +193,7 @@ class _DelayScreenState extends ConsumerState<DelayScreen> {
                 BaraedaTextarea(
                   label: '안내 문구 (선택)',
                   hint: '비워두면 사유로 자동 문구가 만들어져요 · $freeTextPrivacyNotice',
-                  rows: 3,
+                  rows: 2,
                   enabled: !_submitting,
                   controller: _messageController,
                 ),

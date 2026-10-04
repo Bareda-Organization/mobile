@@ -83,7 +83,6 @@ class _AcademyPickerState extends State<AcademyPicker> {
               child: BaraedaInput(
                 label: '학원',
                 hint: '학원명 또는 학원 코드로 검색',
-                required: true,
                 controller: _queryController,
                 onChanged: (_) {
                   if (_searched) setState(() => _searched = false);
