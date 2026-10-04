@@ -128,7 +128,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('대기 중인 요청이 없습니다'), findsOneWidget);
+    expect(find.text('대기 중인 처리가 없어요'), findsOneWidget);
   });
 
   testWidgets('대기 중인 요청이 있으면 각 항목의 메서드·경로·대기 문구를 보여준다', (tester) async {
@@ -153,7 +153,8 @@ void main() {
     // F06-15 — 개발용 문자열(PATCH /runs/…)이 아니라 무슨 처리인지 알아볼 수 있어야 한다.
     expect(find.text('미승차 처리'), findsOneWidget);
     expect(find.textContaining('PATCH'), findsNothing);
-    expect(find.text('처리되지 않았습니다 · 대기 중'), findsOneWidget);
+    expect(find.text('10:00:00 · 대기 중'), findsOneWidget);
+    expect(find.text('전송 대기'), findsOneWidget);
   });
 
   // R46-FIXRT S-9 — 서버가 5xx 를 되풀이해 재생에서 뺀 행은 "대기 중" 이 아니다. 사용자가 보내지지 않았음을 알고
@@ -185,9 +186,10 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('전송 실패 · 서버가 계속 받지 못했습니다'), findsOneWidget);
+    expect(find.textContaining('서버가 계속 받지 못했어요'), findsOneWidget);
+    expect(find.text('전송 실패'), findsOneWidget);
     expect(
-      find.text('처리되지 않았습니다 · 대기 중'),
+      find.textContaining(' · 대기 중'),
       findsOneWidget,
       reason: '대기 중 문구는 아직 재생 대상인 두 번째 행에만 남는다',
     );
@@ -223,12 +225,18 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    final rows = find.byWidgetPredicate(
+      (widget) =>
+          widget.key is ValueKey<String> &&
+          (widget.key! as ValueKey<String>).value.startsWith('queue-row-'),
+    );
+    expect(rows, findsNWidgets(2));
     final widths = tester
-        .widgetList<BaraedaCard>(find.byType(BaraedaCard))
-        .map((card) => tester.getSize(find.byWidget(card)).width)
+        .widgetList(rows)
+        .map((row) => tester.getSize(find.byWidget(row)).width)
         .toSet();
 
-    expect(widths, hasLength(1), reason: '카드 폭이 제각각이다: $widths');
+    expect(widths, hasLength(1), reason: '행 폭이 제각각이다: $widths');
   });
 
   testWidgets('영구 실패로 뺀 건수는 재시도 결과 요약에 보인다', (tester) async {
@@ -247,7 +255,7 @@ void main() {
       ]),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('재시도'));
+    await tester.tap(find.text('지금 다시 보내기'));
     await tester.pumpAndSettle();
 
     expect(find.text('1건 처리됨 · 2건 전송 실패(서버가 계속 받지 못함)'), findsOneWidget);
@@ -277,7 +285,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('재시도'));
+    await tester.tap(find.text('지금 다시 보내기'));
     await tester.pumpAndSettle();
 
     expect(find.text('2건 처리됨 · 1건 대기 중'), findsOneWidget);
@@ -309,17 +317,17 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('비상 신고 · 사고'), findsOneWidget);
 
-    await tester.tap(find.text('재시도'));
+    await tester.tap(find.text('지금 다시 보내기'));
     await tester.pumpAndSettle();
 
     expect(find.text('비상 신고 · 사고'), findsNothing);
-    expect(find.text('대기 중인 요청이 없습니다'), findsOneWidget);
+    expect(find.text('대기 중인 처리가 없어요'), findsOneWidget);
     expect(fakeRepo.fetchCallCount, greaterThanOrEqualTo(2));
   });
 
   testWidgets('재시도 결과가 전부 0건이면 대기 요청 없음 안내를 보여준다', (tester) async {
     final fakeRepo = _FakeOfflineQueueRepository(
-      pending: const [],
+      pending: [_riderRequest()],
       replayResult: const ReplayResult(
         succeeded: 0,
         stillPending: 0,
@@ -333,12 +341,12 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('재시도'));
+    await tester.tap(find.text('지금 다시 보내기'));
     await tester.pumpAndSettle();
 
     // 빈 상태(EmptyState) 제목과 배너 문구가 같은 문자열을 쓰므로 두 곳에서
     // 발견돼야 한다 — 배너가 새로 나타났다는 뜻이다.
-    expect(find.text('대기 중인 요청이 없습니다'), findsNWidgets(2));
+    expect(find.text('대기 중인 처리가 없어요'), findsNWidgets(2));
   });
 
   // F06-15 — 잘못 눌러 쌓인 건을 지울 수단이 없었다.
@@ -389,7 +397,7 @@ void main() {
   // F06-15 — 재시도가 예외로 끝나면 버튼이 영구히 잠겼다.
   testWidgets('재시도가 예외로 끝나도 버튼이 다시 눌린다', (tester) async {
     final fakeRepo = _FakeOfflineQueueRepository(
-      pending: const [],
+      pending: [_riderRequest()],
       replayError: Exception('저장소 오류'),
     );
     await tester.pumpWidget(
@@ -399,12 +407,12 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('재시도'));
+    await tester.tap(find.text('지금 다시 보내기'));
     await tester.pumpAndSettle();
 
     expect(find.text('재시도를 완료하지 못했습니다'), findsOneWidget);
     final button = tester.widget<BaraedaButton>(
-      find.widgetWithText(BaraedaButton, '재시도'),
+      find.widgetWithText(BaraedaButton, '지금 다시 보내기'),
     );
     expect(button.onPressed, isNotNull);
   });
@@ -448,6 +456,87 @@ void main() {
     container.invalidate(pendingRequestsProvider);
     await tester.pumpAndSettle();
 
+    expect(find.text('미승차 처리'), findsOneWidget);
+  });
+
+  // 시안 `offline-queue` — 위에 못 보낸 건수를 알리는 앰버 띠, 목록은 한 카드 안의 행들이다.
+  testWidgets('못 보낸 건수를 위 띠로 알리고 아래 단추 이름은 [지금 다시 보내기] 다', (tester) async {
+    final fakeRepo = _FakeOfflineQueueRepository(
+      pending: [
+        _riderRequest(),
+        PendingRequestSummary(
+          id: 2,
+          endpoint: '/runs/run-1/riders/rider-2',
+          method: 'PATCH',
+          payload: '{"status":"boarded"}',
+          createdAt: DateTime(2026, 9, 12, 10, 1),
+        ),
+      ],
+    );
+    await tester.pumpWidget(
+      _wrap(const OfflineQueueScreen(), [
+        offlineQueueRepositoryProvider.overrideWithValue(fakeRepo),
+      ]),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('못 보낸 처리 2건'), findsOneWidget);
+    expect(find.text('서버가 받기 전까지는 학부모에게 알림이 가지 않아요.'), findsOneWidget);
+    final button = tester.widget<BaraedaButton>(
+      find.widgetWithText(BaraedaButton, '지금 다시 보내기'),
+    );
+    expect(button.onPressed, isNotNull);
+  });
+
+  testWidgets('보낼 것이 없으면 [지금 다시 보내기] 가 꺼져 있고 빈 상태를 안내한다', (tester) async {
+    final fakeRepo = _FakeOfflineQueueRepository(pending: const []);
+    await tester.pumpWidget(
+      _wrap(const OfflineQueueScreen(), [
+        offlineQueueRepositoryProvider.overrideWithValue(fakeRepo),
+      ]),
+    );
+    await tester.pumpAndSettle();
+
+    final button = tester.widget<BaraedaButton>(
+      find.widgetWithText(BaraedaButton, '지금 다시 보내기'),
+    );
+    expect(button.onPressed, isNull);
+    expect(find.text('대기 중인 처리가 없어요'), findsOneWidget);
+    expect(find.textContaining('연결되면 자동으로 보내요'), findsOneWidget);
+    expect(find.byType(AlertBanner), findsNothing, reason: '못 보낸 건수 띠가 없다');
+  });
+
+  // M10 — 삭제는 되돌릴 수 없고 학부모 알림도 영영 가지 않는다. 확인 창이 그 결과를 문장으로 알리고 삭제는 빨간 단추다.
+  testWidgets('삭제 확인 창은 무엇이 사라지는지 알리고 삭제는 위험 단추, 닫기는 아무것도 지우지 않는다', (
+    tester,
+  ) async {
+    final fakeRepo = _FakeOfflineQueueRepository(pending: [_riderRequest()]);
+    await tester.pumpWidget(
+      _wrap(const OfflineQueueScreen(), [
+        offlineQueueRepositoryProvider.overrideWithValue(fakeRepo),
+      ]),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('삭제'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('미승차 처리를 삭제할까요?'), findsOneWidget);
+    expect(find.textContaining('서버가 받지 못한 처리라 삭제하면 사라져요.'), findsOneWidget);
+    expect(find.textContaining('학부모에게 미승차 알림도 가지 않아요.'), findsOneWidget);
+    expect(find.textContaining('명단에서 다시 처리'), findsOneWidget);
+    final confirm = tester.widget<BaraedaButton>(
+      find.descendant(
+        of: find.byType(BaraedaDialog),
+        matching: find.widgetWithText(BaraedaButton, '삭제'),
+      ),
+    );
+    expect(confirm.variant, BaraedaButtonVariant.danger);
+
+    await tester.tap(find.text('닫기'));
+    await tester.pumpAndSettle();
+
+    expect(fakeRepo.canceledIds, isEmpty);
     expect(find.text('미승차 처리'), findsOneWidget);
   });
 }
