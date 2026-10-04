@@ -254,4 +254,15 @@ class RosterResponse {
   final RunDirection direction;
   final RosterCounts counts;
   final List<RosterStop> stops;
+
+  /// 지금까지 하차한 학생 수 — 학생 행의 `alighted` 를 센다. `counts` 에는 하차 칸이 없고
+  /// `counts.boarded` 는 **지금 타고 있는** 학생 수라, 운행이 끝나(전원 자동 하차) 0 이 된 뒤에는 쓸 수 없다.
+  int get alightedCount => stops.fold(
+    0,
+    (sum, stop) =>
+        sum +
+        stop.students
+            .where((student) => student.status == RiderStatus.alighted)
+            .length,
+  );
 }

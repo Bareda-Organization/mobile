@@ -217,7 +217,7 @@ class _Done extends ConsumerWidget {
                       if (roster == null)
                         const BaraedaSkeleton(height: 48)
                       else
-                        _CountsRow(counts: roster.counts),
+                        _CountsRow(roster: roster),
                     ],
                   ),
                 ),
@@ -272,9 +272,9 @@ class _Done extends ConsumerWidget {
 }
 
 class _CountsRow extends StatelessWidget {
-  const new({required this.counts});
+  const new({required this.roster});
 
-  final RosterCounts counts;
+  final RosterResponse roster;
 
   @override
   Widget build(BuildContext context) {
@@ -303,9 +303,10 @@ class _CountsRow extends StatelessWidget {
     );
     return Row(
       children: [
-        cell(counts.boarded, '하차'),
-        cell(counts.noShow, '미승차'),
-        cell(counts.absentN, '미등원'),
+        // `counts.boarded` 는 지금 타고 있는 학생 수 — 종료 뒤엔 0 이라 하차는 학생 행에서 센다.
+        cell(roster.alightedCount, '하차'),
+        cell(roster.counts.noShow, '미승차'),
+        cell(roster.counts.absentN, '미등원'),
       ],
     );
   }

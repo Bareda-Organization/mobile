@@ -12,6 +12,7 @@ import 'package:manager_app/features/position/presentation/position_transmitter.
 import 'package:manager_app/features/roster/data/models/roster_response.dart';
 import 'package:manager_app/features/roster/presentation/roster_providers.dart';
 import 'package:manager_app/features/run_end/presentation/run_end_screen.dart';
+
 import '../../support/manager_run_fixture.dart';
 
 Widget _wrap(
@@ -86,6 +87,82 @@ Override _boardedRoster(List<({String id, String name})> riders) =>
       ),
     );
 
+/// 운행이 끝난 명단 — 서버 `counts.boarded` 는 **지금 탑승 중인** 학생 수라 전원이 하차한 종료 뒤에는 0 이다
+/// (`RosterQueryService.countsOf`). 하차 학생은 `stops[].students[].status == alighted` 행으로만 보인다.
+RosterResponse _finishedResponse({
+  required int alighted,
+  int noShow = 0,
+  int absentN = 0,
+}) => RosterResponse(
+  runId: 'run-1',
+  busNo: '3호차',
+  direction: RunDirection.toAcademy,
+  counts: RosterCounts(
+    boarded: 0,
+    waiting: 0,
+    noShow: noShow,
+    absentN: absentN,
+  ),
+  stops: [
+    RosterStop(
+      stopId: 's1',
+      seq: 1,
+      name: 'A정류장',
+      students: [
+        // 하차 학생을 두 정류장에 나눠 담는다 — 합계는 정류장을 가리지 않는다.
+        for (var i = 0; i < alighted; i++)
+          if (i.isEven)
+            RosterStudent(
+              riderId: 'r$i',
+              studentId: 'st-$i',
+              name: '학생$i',
+              photoUrl: null,
+              guardianPhone: null,
+              canGoAlone: false,
+              status: RiderStatus.alighted,
+            ),
+      ],
+    ),
+    RosterStop(
+      stopId: 's2',
+      seq: 2,
+      name: 'B정류장',
+      students: [
+        for (var i = 0; i < alighted; i++)
+          if (i.isOdd)
+            RosterStudent(
+              riderId: 'r$i',
+              studentId: 'st-$i',
+              name: '학생$i',
+              photoUrl: null,
+              guardianPhone: null,
+              canGoAlone: false,
+              status: RiderStatus.alighted,
+            ),
+        for (var i = 0; i < noShow; i++)
+          RosterStudent(
+            riderId: 'n$i',
+            studentId: 'st-n$i',
+            name: '미승차$i',
+            photoUrl: null,
+            guardianPhone: null,
+            canGoAlone: false,
+            status: RiderStatus.noShow,
+          ),
+      ],
+    ),
+  ],
+);
+
+Override _finishedRoster({
+  required int alighted,
+  int noShow = 0,
+  int absentN = 0,
+}) => rosterProvider.overrideWith(
+  (ref) async =>
+      _finishedResponse(alighted: alighted, noShow: noShow, absentN: absentN),
+);
+
 ArriveStopResult _terminationWith({
   required bool finishPending,
   List<RemainingRider> remaining = const [],
@@ -140,10 +217,7 @@ void main() {
 
     expect(find.text('운행 종료 보류'), findsOneWidget);
     expect(find.text('08:30 마지막 승하차지에 도착했어요'), findsOneWidget);
-    expect(
-      find.textContaining('하차 대기 2명 · 전원이 내려야 운행이 끝나요'),
-      findsOneWidget,
-    );
+    expect(find.textContaining('하차 대기 2명 · 전원이 내려야 운행이 끝나요'), findsOneWidget);
     expect(find.widgetWithText(BaraedaListRow, '김바래'), findsOneWidget);
     expect(find.widgetWithText(BaraedaButton, '보호자 부재 보고'), findsOneWidget);
   });
@@ -152,23 +226,19 @@ void main() {
   // 인원·종료 여부·다른 회차 구분은 지금의 명단·회차 목록·회차 표식으로 정한다.
   testWidgets('동승자가 하차를 처리해 명단이 줄면 하차 대기 인원도 따라 준다', (tester) async {
     await tester.pumpWidget(
-      _wrap(
-        const RunEndScreen(),
-        [
-          selectedRunIdProvider.overrideWith((ref) => runId),
-          lastArriveResultProvider.overrideWith(
-            (ref) => _terminationWith(
-              finishPending: true,
-              remaining: const [
-                RemainingRider(riderId: 'r1', name: '김바래', stopName: 'A정류장'),
-                RemainingRider(riderId: 'r2', name: '이다솜', stopName: 'B정류장'),
-              ],
-            ),
+      _wrap(const RunEndScreen(), [
+        selectedRunIdProvider.overrideWith((ref) => runId),
+        lastArriveResultProvider.overrideWith(
+          (ref) => _terminationWith(
+            finishPending: true,
+            remaining: const [
+              RemainingRider(riderId: 'r1', name: '김바래', stopName: 'A정류장'),
+              RemainingRider(riderId: 'r2', name: '이다솜', stopName: 'B정류장'),
+            ],
           ),
-          // 도착 응답 뒤 r2 가 하차해 지금 탑승 중인 학생은 r1 하나다.
-        ],
-        roster: _boardedRoster([(id: 'r1', name: '김바래')]),
-      ),
+        ),
+        // 도착 응답 뒤 r2 가 하차해 지금 탑승 중인 학생은 r1 하나다.
+      ], roster: _boardedRoster([(id: 'r1', name: '김바래')])),
     );
     await tester.pumpAndSettle();
 
@@ -176,7 +246,7 @@ void main() {
     expect(find.textContaining('하차 대기 2명'), findsNothing);
   });
 
-  // Ruling 827 — 합계는 종료 뒤 §4.2 명단의 counts 를 다시 받아 그린다(도착 응답의 낡은 값이 아니다).
+  // Ruling 827 — 합계는 종료 뒤 §4.2 명단을 다시 받아 그린다(도착 응답의 낡은 값이 아니다).
   testWidgets('종료되면 명단을 다시 받아 하차 · 미승차 · 미등원 합계를 그린다', (tester) async {
     var fetches = 0;
     await tester.pumpWidget(
@@ -190,18 +260,7 @@ void main() {
         ],
         roster: rosterProvider.overrideWith((ref) async {
           fetches++;
-          return const RosterResponse(
-            runId: 'run-1',
-            busNo: '3호차',
-            direction: RunDirection.toAcademy,
-            counts: RosterCounts(
-              boarded: 13,
-              waiting: 0,
-              noShow: 1,
-              absentN: 2,
-            ),
-            stops: [],
-          );
+          return _finishedResponse(alighted: 13, noShow: 1, absentN: 2);
         }),
         runs: todayRunsProvider.overrideWith(
           (ref) async => [managerRunFixture(status: RunStatus.finished)],
@@ -215,7 +274,49 @@ void main() {
     expect(find.text('하차'), findsOneWidget);
     expect(find.text('미승차'), findsOneWidget);
     expect(find.text('미등원'), findsOneWidget);
-    expect(find.textContaining('13'), findsWidgets);
+    expect(find.text('13명'), findsOneWidget);
+  });
+
+  // R48 1순위 결함 — 하차 합계를 `counts.boarded` 로 그리면 운행이 끝난 뒤(전원 alighted) 항상 0 이 나왔다.
+  testWidgets('전원이 하차한 종료 명단은 하차를 alighted 학생 수로 센다(counts.boarded 는 0)', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _wrap(
+        const RunEndScreen(),
+        [
+          selectedRunIdProvider.overrideWith((ref) => runId),
+          lastArriveResultProvider.overrideWith(
+            (ref) => _terminationWith(finishPending: false),
+          ),
+        ],
+        roster: _finishedRoster(alighted: 7, noShow: 1, absentN: 2),
+        runs: todayRunsProvider.overrideWith(
+          (ref) async => [managerRunFixture(status: RunStatus.finished)],
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // 칸 하나 = 값 + 이름. 이름 칸의 부모 열에서 값을 읽어 "어느 칸이 몇 명인지" 를 묶어 본다.
+    String valueOf(String label) {
+      final column = find.ancestor(
+        of: find.text(label),
+        matching: find.byType(Column),
+      );
+      return tester
+          .widget<Text>(
+            find
+                .descendant(of: column.first, matching: find.byType(Text))
+                .first,
+          )
+          .textSpan!
+          .toPlainText();
+    }
+
+    expect(valueOf('하차'), '7명');
+    expect(valueOf('미승차'), '1명');
+    expect(valueOf('미등원'), '2명');
   });
 
   testWidgets('회차가 종료됐으면 하차 대기 문구 대신 종료 안내를 보여준다', (tester) async {
