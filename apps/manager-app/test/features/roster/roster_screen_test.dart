@@ -63,6 +63,9 @@ class _FakeRosterRepository implements RosterRepository {
   /// M3 — 실패 시 명단이 **다시 조회됐는지**(재조회 1회) 확인하는 시험이 읽는다.
   int fetchRosterCallCount = 0;
 
+  /// 되돌리기 요청이 서버로 나간 횟수 — 확인 창 앞에서는 0 이어야 한다.
+  int revertCallCount = 0;
+
   @override
   Future<RosterResponse> fetchRoster(String runId) async {
     fetchRosterCallCount++;
@@ -107,6 +110,7 @@ class _FakeRosterRepository implements RosterRepository {
     required String riderId,
     String? reason,
   }) async {
+    revertCallCount++;
     // Failure 는 의도적으로 Exception/Error 를 상속하지 않는다(위 ackChanges
     // 주석과 같은 이유).
     // ignore: only_throw_errors
@@ -423,8 +427,94 @@ void main() {
 
     await tester.tap(find.text('되돌리기'));
     await tester.pumpAndSettle();
+    // 되돌리기는 확인 창을 거친다 — 창의 [되돌리기] 를 눌러야 요청이 나가고 실패 사유가 보인다.
+    await tester.tap(
+      find.descendant(
+        of: find.byType(BaraedaBottomSheet),
+        matching: find.widgetWithText(BaraedaButton, '되돌리기'),
+      ),
+    );
+    await tester.pumpAndSettle();
 
     expect(find.text('되돌리기 가능 시간이 지났습니다'), findsOneWidget);
+  });
+
+  group('되돌리기 확인 창 (시안 undo)', () {
+    Future<_FakeRosterRepository> pumpRoster(
+      WidgetTester tester,
+      RiderStatus status,
+    ) async {
+      final fakeRepo = _FakeRosterRepository(
+        roster: _roster(studentStatus: status),
+      );
+      await tester.pumpWidget(
+        _wrap(const RosterScreen(), [
+          selectedRunIdProvider.overrideWith((ref) => runId),
+          rosterRepositoryProvider.overrideWithValue(fakeRepo),
+          currentUserRoleProvider.overrideWith((ref) => UserRole.escort),
+          todayRunsProvider.overrideWith(
+            (ref) async => [_managerRun(ackRequired: false)],
+          ),
+        ]),
+      );
+      await tester.pumpAndSettle();
+      return fakeRepo;
+    }
+
+    Finder sheetButton(String label) => find.descendant(
+      of: find.byType(BaraedaBottomSheet),
+      matching: find.widgetWithText(BaraedaButton, label),
+    );
+
+    testWidgets('[되돌리기] 를 누르면 무엇이 어떻게 바뀌는지 묻고 요청은 아직 나가지 않는다', (tester) async {
+      final fakeRepo = await pumpRoster(tester, RiderStatus.boarded);
+
+      await tester.tap(find.text('되돌리기'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('승차 처리를 되돌릴까요?'), findsOneWidget);
+      expect(find.text('김바래'), findsWidgets);
+      expect(find.text('처리 기록은 지워지지 않고 남아요'), findsOneWidget);
+      expect(find.textContaining('승차 취소'), findsOneWidget);
+      expect(fakeRepo.revertCallCount, 0, reason: '확인 전에는 요청이 없다');
+    });
+
+    testWidgets('창의 [되돌리기] 를 눌러야 요청이 한 번 나간다', (tester) async {
+      final fakeRepo = await pumpRoster(tester, RiderStatus.boarded);
+
+      await tester.tap(find.text('되돌리기'));
+      await tester.pumpAndSettle();
+      await tester.tap(sheetButton('되돌리기'));
+      await tester.pumpAndSettle();
+
+      expect(fakeRepo.revertCallCount, 1);
+    });
+
+    testWidgets('[닫기] 는 요청을 보내지 않고 창만 닫는다', (tester) async {
+      final fakeRepo = await pumpRoster(tester, RiderStatus.boarded);
+
+      await tester.tap(find.text('되돌리기'));
+      await tester.pumpAndSettle();
+      await tester.tap(sheetButton('닫기'));
+      await tester.pumpAndSettle();
+
+      expect(fakeRepo.revertCallCount, 0);
+      expect(find.byType(BaraedaBottomSheet), findsNothing);
+    });
+
+    testWidgets('하차 처리는 하차 → 탑승, 미승차 처리는 미승차 → 대기로 되돌린다고 알린다', (tester) async {
+      await pumpRoster(tester, RiderStatus.alighted);
+      await tester.tap(find.text('되돌리기'));
+      await tester.pumpAndSettle();
+      expect(find.text('하차 처리를 되돌릴까요?'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(BaraedaBottomSheet),
+          matching: find.text('탑승'),
+        ),
+        findsOneWidget,
+      );
+    });
   });
 
   testWidgets('승하차 상태 갱신이 통신 두절로 큐에 쌓이면 대기 안내를 보여준다', (tester) async {
@@ -567,38 +657,37 @@ void main() {
   // M3(Ruling 345) — 같은 상태 재요청 포함, 서버가 409
   // RIDER_TRANSITION_NOT_ALLOWED 로 거절하면 전용 문구를 보여주고 명단을
   // 다시 불러와야 한다(재요청 사이 다른 사람이 이미 처리했을 수 있어서).
-  testWidgets(
-    '409 RIDER_TRANSITION_NOT_ALLOWED 면 전용 문구 + 명단을 다시 불러온다',
-    (tester) async {
-      final fakeRepo = _FakeRosterRepository(
-        roster: _roster(),
-        updateFailure: const ApiFailure(
-          statusCode: 409,
-          code: 'RIDER_TRANSITION_NOT_ALLOWED',
-          message: '허용되지 않는 상태 전이입니다',
+  testWidgets('409 RIDER_TRANSITION_NOT_ALLOWED 면 전용 문구 + 명단을 다시 불러온다', (
+    tester,
+  ) async {
+    final fakeRepo = _FakeRosterRepository(
+      roster: _roster(),
+      updateFailure: const ApiFailure(
+        statusCode: 409,
+        code: 'RIDER_TRANSITION_NOT_ALLOWED',
+        message: '허용되지 않는 상태 전이입니다',
+      ),
+    );
+
+    await tester.pumpWidget(
+      _wrap(const RosterScreen(), [
+        selectedRunIdProvider.overrideWith((ref) => runId),
+        rosterRepositoryProvider.overrideWithValue(fakeRepo),
+        currentUserRoleProvider.overrideWith((ref) => UserRole.escort),
+        todayRunsProvider.overrideWith(
+          (ref) async => [_managerRun(ackRequired: false)],
         ),
-      );
+      ]),
+    );
+    await tester.pumpAndSettle();
+    expect(fakeRepo.fetchRosterCallCount, 1);
 
-      await tester.pumpWidget(
-        _wrap(const RosterScreen(), [
-          selectedRunIdProvider.overrideWith((ref) => runId),
-          rosterRepositoryProvider.overrideWithValue(fakeRepo),
-          currentUserRoleProvider.overrideWith((ref) => UserRole.escort),
-          todayRunsProvider.overrideWith(
-            (ref) async => [_managerRun(ackRequired: false)],
-          ),
-        ]),
-      );
-      await tester.pumpAndSettle();
-      expect(fakeRepo.fetchRosterCallCount, 1);
+    await tester.tap(find.widgetWithText(BaraedaButton, '탑승'));
+    await tester.pumpAndSettle();
 
-      await tester.tap(find.widgetWithText(BaraedaButton, '탑승'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('이미 처리된 학생입니다 — 명단을 새로 불러왔습니다'), findsOneWidget);
-      expect(fakeRepo.fetchRosterCallCount, 2);
-    },
-  );
+    expect(find.text('이미 처리된 학생입니다 — 명단을 새로 불러왔습니다'), findsOneWidget);
+    expect(fakeRepo.fetchRosterCallCount, 2);
+  });
 
   // M1(Ruling 341, BR-016) — 버스 간 이동으로 빠진 학생은 `status: absent` ·
   // `change: removed` 로 명단에 남는다(§4.2). 다른 버스로 옮긴 학생에게
@@ -700,12 +789,7 @@ void main() {
         runId: runId,
         busNo: '3호차',
         direction: RunDirection.toAcademy,
-        counts: RosterCounts(
-          boarded: 0,
-          waiting: 0,
-          noShow: 0,
-          absentN: 0,
-        ),
+        counts: RosterCounts(boarded: 0, waiting: 0, noShow: 0, absentN: 0),
         stops: [],
       );
 
@@ -742,9 +826,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('김바래'), findsOneWidget);
 
-    ProviderScope.containerOf(
-      tester.element(find.byType(RosterScreen)),
-    ).invalidate(rosterProvider);
+    ProviderScope.containerOf(tester.element(find.byType(RosterScreen)))
+        .invalidate(rosterProvider);
     await tester.pumpAndSettle();
 
     expect(find.text('김바래'), findsOneWidget);

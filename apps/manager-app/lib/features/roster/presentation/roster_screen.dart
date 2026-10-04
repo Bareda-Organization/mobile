@@ -23,6 +23,7 @@ import 'package:manager_app/features/roster/data/models/roster_response.dart';
 import 'package:manager_app/features/roster/presentation/roster_actions.dart';
 import 'package:manager_app/features/roster/presentation/roster_providers.dart';
 import 'package:manager_app/features/roster/presentation/widgets/change_ack_banner.dart';
+import 'package:manager_app/features/roster/presentation/widgets/revert_confirm_sheet.dart';
 import 'package:manager_app/features/roster/presentation/widgets/roster_widgets.dart';
 
 /// 명단(§4.2 M-03 · §4.6 M-12 · §4.7 M-13 · §4.8 M-14 · §4.11 M-04 변경 확인).
@@ -121,6 +122,16 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
     } finally {
       if (mounted) setState(() => _pendingRiderIds.remove(riderId));
     }
+  }
+
+  /// 되돌리기는 처리 기록은 남기되 학부모 알림이 새로 나가는 일이라 한 번 묻는다(시안 `undo`). 닫으면 요청이 없다.
+  Future<void> _confirmRevert({
+    required String runId,
+    required RosterStudent student,
+  }) async {
+    final confirmed = await showRevertConfirmSheet(context, student: student);
+    if (!confirmed || !mounted) return;
+    await _revertStatus(runId: runId, riderId: student.riderId);
   }
 
   Future<void> _revertStatus({
@@ -538,7 +549,7 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
         variant: BaraedaButtonVariant.ghost,
         onPressed: busy
             ? null
-            : () => unawaited(_revertStatus(runId: runId, riderId: riderId)),
+            : () => unawaited(_confirmRevert(runId: runId, student: student)),
       ),
     );
     // 처리 단추가 [미승차] 보다 넓다(C1) — 자주 누르는 쪽이 크다.
