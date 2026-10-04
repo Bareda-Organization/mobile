@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:parent_app/app/di.dart';
+import 'package:parent_app/core/auth/auth_providers.dart';
+import 'package:parent_app/core/students/presentation/student_providers.dart';
 import 'package:parent_app/core/ui/failure_message.dart';
 import 'package:parent_app/features/notifications/presentation/notification_kind.dart';
 import 'package:parent_app/features/notifications/presentation/notification_providers.dart';
@@ -26,9 +28,11 @@ class NotificationsScreen extends ConsumerWidget {
     final feed = feedAsync.value;
 
     return Scaffold(
-      appBar: const AppHeader(title: '알림'),
+      appBar: AppHeader(title: '알림', subtitle: _subtitle(ref)),
       body: SafeArea(
         child: NotificationListView<NotificationItem>(
+          style: NotificationListStyle.pills,
+          unreadCount: feed?.unreadCount ?? 0,
           items: feed?.items ?? const [],
           sentAtOf: (item) => item.sentAt,
           now: ref.watch(clockProvider).now(),
@@ -51,6 +55,17 @@ class NotificationsScreen extends ConsumerWidget {
       ),
     );
   }
+}
+
+/// 머리 아래 한 줄 — 서버가 보관하는 14일(§3.12)과, 학부모는 연결된 자녀 이름(알림이 누구 것인지 한눈에).
+/// 학생은 본인뿐이라 이름을 덧붙이지 않는다. 자녀 목록은 못 받아도 이 줄에서 이름만 빠질 뿐이다.
+String _subtitle(WidgetRef ref) {
+  const base = '최근 14일';
+  final isParent =
+      ref.watch(roleCapabilitiesProvider)?.canToggleAttendance ?? false;
+  if (!isParent) return base;
+  final names = ref.watch(myStudentsProvider).value?.map((s) => s.name) ?? [];
+  return [base, ...names].join(' · ');
 }
 
 class _ItemRow extends ConsumerWidget {
