@@ -106,15 +106,21 @@ class _BaraedaCodeInputState extends State<BaraedaCodeInput> {
             height: 52,
             child: Stack(
               children: [
+                // 칸이 폭을 채우고 사이는 8 — 시안 `.m-code` 가 한 줄을 꽉 채운다.
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    for (var i = 0; i < widget.length; i++)
-                      BaraedaCodeInputBox(
-                        char: i < widget.value.length ? widget.value[i] : '',
-                        active: _focusNode.hasFocus && i == widget.value.length,
-                        hasError: hasError,
+                    for (var i = 0; i < widget.length; i++) ...[
+                      if (i > 0) const SizedBox(width: 8),
+                      Expanded(
+                        child: BaraedaCodeInputBox(
+                          char: i < widget.value.length ? widget.value[i] : '',
+                          active:
+                              _focusNode.hasFocus && i == widget.value.length,
+                          hasError: hasError,
+                          width: double.infinity,
+                        ),
                       ),
+                    ],
                   ],
                 ),
                 Positioned.fill(

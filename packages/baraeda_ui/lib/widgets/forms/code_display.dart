@@ -24,26 +24,28 @@ class BaraedaCodeDisplay extends StatelessWidget {
       label: expired ? '만료된 연결 코드 $spoken' : '연결 코드 $spoken',
       excludeSemantics: true,
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          for (final char in code.characters)
-            Container(
-              width: 44,
-              height: 52,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: expired ? colors.disabledSurface : colors.surfaceCard,
-                border: Border.all(color: colors.borderControl),
-                borderRadius: BorderRadius.circular(BaraedaRadius.md),
-              ),
-              child: Text(
-                char,
-                style: BaraedaTypography.numeric.copyWith(
-                  color: expired ? colors.disabledText : colors.textPrimary,
-                  decoration: expired ? TextDecoration.lineThrough : null,
+          for (final (i, char) in code.characters.indexed) ...[
+            if (i > 0) const SizedBox(width: 8),
+            Expanded(
+              child: Container(
+                height: 56,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: expired ? colors.disabledSurface : colors.surfaceCard,
+                  border: Border.all(color: colors.borderControl),
+                  borderRadius: BorderRadius.circular(BaraedaRadius.md),
+                ),
+                child: Text(
+                  char,
+                  style: BaraedaTypography.numeric.copyWith(
+                    color: expired ? colors.disabledText : colors.textPrimary,
+                    decoration: expired ? TextDecoration.lineThrough : null,
+                  ),
                 ),
               ),
             ),
+          ],
         ],
       ),
     );

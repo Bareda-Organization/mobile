@@ -50,4 +50,24 @@ void main() {
 
     expect(find.bySemanticsLabel('만료된 연결 코드 6 1 4 3 0 8'), findsOneWidget);
   });
+
+  // 시안 `.m-code` — 6칸이 한 줄을 채우고 칸 사이는 8. 칸이 44 로 고정이면 좁은 폰에서 성기게 흩어진다.
+  testWidgets('6칸이 줄을 채우고 칸 사이는 8 이다', (tester) async {
+    tester.view.physicalSize = const Size(390, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(_host(const BaraedaCodeDisplay(code: '614308')));
+
+    final boxes = find.byType(Container);
+    final rects = [
+      for (final e in tester.widgetList<Container>(boxes).toList().asMap().keys)
+        tester.getRect(boxes.at(e)),
+    ];
+    expect(rects, hasLength(6));
+    expect(rects.first.left, 16, reason: '왼쪽 여백에서 시작');
+    expect(rects.last.right, 390 - 16, reason: '오른쪽 여백까지 채운다');
+    for (var i = 1; i < rects.length; i++) {
+      expect(rects[i].left - rects[i - 1].right, 8);
+    }
+  });
 }
