@@ -24,8 +24,9 @@ void main() {
         await tester.pump(const Duration(seconds: 2));
         expect(tester.takeException(), isNull);
         // 위쪽 절 · 중간 · 아래쪽 절을 지나가며 넘침이 없는지 본다.
-        final list = find.byType(ListView);
-        for (var i = 0; i < 6; i++) {
+        // 타임라인이 안쪽에 자기 ListView(스크롤 안 함)를 가져 첫 번째(바깥) 것만 민다.
+        final list = find.byType(ListView).first;
+        for (var i = 0; i < 12; i++) {
           await tester.drag(list, const Offset(0, -600));
           await tester.pump(const Duration(milliseconds: 100));
           expect(tester.takeException(), isNull);

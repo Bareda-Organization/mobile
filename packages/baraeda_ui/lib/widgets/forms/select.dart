@@ -17,9 +17,11 @@ import 'package:flutter/material.dart';
 /// [BaraedaSelect]의 선택지 하나. 원본의 `string[] | {value,label}[]` 두
 /// 형태를 이 클래스 하나로 흡수한다 — 문자열만 있으면 `value == label`.
 class BaraedaSelectOption {
-  const new(this.value, {String? label}) : label = label ?? value;
+  const new(this.value, {String? label})
+    : label = label ?? value;
 
-  factory fromLabel(String label) => BaraedaSelectOption(label);
+  factory fromLabel(String label) =>
+      BaraedaSelectOption(label);
 
   final String value;
   final String label;

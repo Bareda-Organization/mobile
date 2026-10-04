@@ -88,7 +88,10 @@ class BaraedaIconButton extends StatelessWidget {
 }
 
 class _IconButtonPalette {
-  const new({required this.background, required this.foreground});
+  const new({
+    required this.background,
+    required this.foreground,
+  });
 
   final Color background;
   final Color foreground;

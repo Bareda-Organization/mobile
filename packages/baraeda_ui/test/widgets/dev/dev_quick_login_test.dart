@@ -41,8 +41,9 @@ void main() {
   });
 
   test('디버그가 아닌 빌드(릴리스·프로파일)를 막는 분기가 소스에 실재한다', () {
-    final source = File('lib/widgets/dev/dev_quick_login.dart')
-        .readAsStringSync();
+    final source = File(
+      'lib/widgets/dev/dev_quick_login.dart',
+    ).readAsStringSync();
     expect(
       source.contains('if (!kDebugMode) return const SizedBox.shrink();'),
       isTrue,
