@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:manager_app/app/di.dart';
+import 'package:manager_app/core/auth/academy_contact_store.dart';
 import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/core/auth/user_role.dart';
 import 'package:manager_app/core/run/run_termination_provider.dart';
@@ -96,6 +97,10 @@ final authBootstrapProvider = FutureProvider<void>(retry: (_, _) => null, (
     );
     ref.read(mustChangePasswordProvider.notifier).state = me.mustChangePassword;
     ref.read(academyContactProvider.notifier).state = me.academy?.contact;
+    // 계정이 잠기면 서버에서 번호를 못 받는다 — 성공한 로그인의 번호를 기기에 남겨 둔다(`Ruling 825`).
+    unawaited(
+      ref.read(academyContactStoreProvider).save(me.academy?.contact),
+    );
     if (me.status == AccountStatus.active && me.role == AccountRole.driver) {
       await _resumeMovingRun(ref);
     }

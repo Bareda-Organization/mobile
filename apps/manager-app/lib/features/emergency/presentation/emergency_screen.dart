@@ -11,6 +11,7 @@ import 'package:manager_app/core/launcher/device_launchers.dart';
 import 'package:manager_app/core/network/failure_messages.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/core/ui/limited_text_controller.dart';
+import 'package:manager_app/core/ui/manager_header.dart';
 import 'package:manager_app/features/emergency/data/models/emergency_item.dart';
 import 'package:manager_app/features/emergency/data/models/emergency_raise_request.dart';
 import 'package:manager_app/features/emergency/data/models/emergency_raise_result.dart';
@@ -172,7 +173,7 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
   Widget build(BuildContext context) {
     final runId = ref.watch(selectedRunIdProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('비상 알림')),
+      appBar: const ManagerHeader(title: '비상 알림', showSos: false),
       body: runId == null
           ? const Center(child: WordWrapText('선택된 운행이 없습니다 — 홈에서 운행을 선택하세요'))
           : _buildBody(runId),

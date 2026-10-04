@@ -34,12 +34,11 @@ NotificationKind kindOf(String type) => switch (type) {
 
 /// 알림을 눌렀을 때 갈 화면 경로 — 가리킬 화면이 없는 종류는 `null`(읽음 처리만 한다).
 ///
-/// 노선 변경은 새 노선을 보는 노선 화면이다. 배치 변경은 홈에서 회차를 고를 때와 같은 판정이다 —
-/// 운행을 조작하는 역할(기사)은 운전 화면, 그 밖(동승자)은 명단 화면(`home_screen.dart` 의 `_openRun`).
+/// 노선 변경 · 배치 변경 모두 기사는 **운행 준비**로 간다(`Ruling 799` — 바뀐 노선을 확인하고 시작하는 자리),
+/// 동승자는 명단 탭으로 간다.
 String? destinationOf(String type, {required bool canOperateRun}) =>
     switch (type) {
-      'route_changed' => AppRoutes.routeMap,
-      'assignment_changed' =>
-        canOperateRun ? AppRoutes.driveMode : AppRoutes.roster,
+      'route_changed' || 'assignment_changed' =>
+        canOperateRun ? AppRoutes.runReady : AppRoutes.roster,
       _ => null,
     };

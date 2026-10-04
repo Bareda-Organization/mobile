@@ -5,6 +5,7 @@ import 'package:manager_app/core/map/route_map_view.dart';
 import 'package:manager_app/core/network/failure_messages.dart';
 import 'package:manager_app/core/run/manager_channel_banner.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
+import 'package:manager_app/core/ui/manager_header.dart';
 import 'package:manager_app/features/position/presentation/position_transmitter.dart';
 import 'package:manager_app/features/route_map/data/models/route_response.dart';
 import 'package:manager_app/features/route_map/presentation/route_providers.dart';
@@ -36,7 +37,7 @@ class _RouteMapScreenState extends ConsumerState<RouteMapScreen> {
   Widget build(BuildContext context) {
     final runId = ref.watch(selectedRunIdProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('노선 지도')),
+      appBar: const ManagerHeader(title: '노선 지도'),
       body: runId == null
           ? const Center(child: WordWrapText('선택된 운행이 없습니다 — 홈에서 운행을 선택하세요'))
           : _buildBody(context, runId),

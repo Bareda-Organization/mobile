@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
@@ -5,6 +7,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/auth/account_session.dart';
+import 'package:manager_app/core/launcher/device_launchers.dart';
+import 'package:manager_app/core/ui/academy_call_card.dart';
+import 'package:manager_app/core/ui/manager_header.dart';
 import 'package:manager_app/features/auth/presentation/widgets/academy_picker.dart';
 
 /// UF-X-02 — 승인 대기 · 거절 안내.
@@ -25,6 +30,12 @@ class PendingApprovalScreen extends ConsumerStatefulWidget {
 
 class _PendingApprovalScreenState extends ConsumerState<PendingApprovalScreen> {
   Future<SignupStatusResponse>? _statusFuture;
+  SignupStatusResponse? _lastStatus;
+  DateTime? _checkedAt;
+
+  /// 승인은 관계자가 따로 하므로 이 화면이 스스로 상태를 다시 본다(M11, 시안 "30초마다").
+  static const _autoRefreshInterval = Duration(seconds: 30);
+  Timer? _autoRefresh;
   bool _reapplying = false;
   AcademySummary? _newAcademy;
   bool _submittingReapply = false;
@@ -34,6 +45,15 @@ class _PendingApprovalScreenState extends ConsumerState<PendingApprovalScreen> {
   void initState() {
     super.initState();
     _statusFuture = ref.read(authRepositoryProvider).signupStatus();
+    _autoRefresh = Timer.periodic(_autoRefreshInterval, (_) {
+      if (mounted && !_reapplying) unawaited(_refreshStatus());
+    });
+  }
+
+  @override
+  void dispose() {
+    _autoRefresh?.cancel();
+    super.dispose();
   }
 
   Future<void> _logout() => signOut(ref);
@@ -48,6 +68,12 @@ class _PendingApprovalScreenState extends ConsumerState<PendingApprovalScreen> {
     });
     try {
       final status = await future;
+      if (mounted) {
+        setState(() {
+          _lastStatus = status;
+          _checkedAt = ref.read(clockProvider).now();
+        });
+      }
       if (mounted && status.status == AccountStatus.active) {
         ref.read(currentAccountStatusProvider.notifier).state =
             AccountStatus.active;
@@ -89,13 +115,11 @@ class _PendingApprovalScreenState extends ConsumerState<PendingApprovalScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('가입 승인'),
-        automaticallyImplyLeading: false,
-      ),
+      appBar: const ManagerHeader(title: '가입 승인', showSos: false),
       body: SafeArea(
         child: FutureBuilder<SignupStatusResponse>(
           future: _statusFuture,
+          initialData: _lastStatus,
           builder: (context, snapshot) {
             if (!snapshot.hasData && !snapshot.hasError) {
               return const Center(child: CircularProgressIndicator());
@@ -114,6 +138,7 @@ class _PendingApprovalScreenState extends ConsumerState<PendingApprovalScreen> {
             final status = snapshot.data!;
             return _StatusBody(
               status: status,
+              checkedAt: _checkedAt,
               reapplying: _reapplying,
               newAcademy: _newAcademy,
               submittingReapply: _submittingReapply,
@@ -157,6 +182,7 @@ class _ErrorBody extends StatelessWidget {
 class _StatusBody extends StatelessWidget {
   const new({
     required this.status,
+    required this.checkedAt,
     required this.reapplying,
     required this.newAcademy,
     required this.submittingReapply,
@@ -170,6 +196,7 @@ class _StatusBody extends StatelessWidget {
   });
 
   final SignupStatusResponse status;
+  final DateTime? checkedAt;
   final bool reapplying;
   final AcademySummary? newAcademy;
   final bool submittingReapply;
@@ -185,6 +212,14 @@ class _StatusBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (!_isRejected) {
+      return _PendingBody(
+        status: status,
+        checkedAt: checkedAt,
+        onRefresh: onRefresh,
+        onLogout: onLogout,
+      );
+    }
     final dateFormat = DateFormat('yyyy.MM.dd HH:mm');
 
     return SingleChildScrollView(
@@ -282,13 +317,163 @@ class _InfoRow extends StatelessWidget {
           Expanded(
             child: Text(
               value,
-              style: BaraedaTypography.body.copyWith(
-                color: colors.textPrimary,
-              ),
+              style: BaraedaTypography.body.copyWith(color: colors.textPrimary),
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+/// 승인 대기(시안 `pending`) — 머리글 · `승인 대기` 칩 · 3단계 · 신청 학원 · 학원 문의처(번호 모양일 때만 전화).
+class _PendingBody extends ConsumerWidget {
+  const new({
+    required this.status,
+    required this.checkedAt,
+    required this.onRefresh,
+    required this.onLogout,
+  });
+
+  final SignupStatusResponse status;
+  final DateTime? checkedAt;
+  final VoidCallback onRefresh;
+  final VoidCallback onLogout;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final colors = context.colors;
+    final contact = status.academyContact;
+    final requested = DateFormat('M월 d일 HH:mm')
+        .format(status.requestedAt.toLocal());
+    final checked = checkedAt == null
+        ? null
+        : DateFormat('HH:mm').format(checkedAt!.toLocal());
+    return Column(
+      children: [
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              const SizedBox(height: 8),
+              Text(
+                '가입 승인을 기다리고 있어요',
+                textAlign: TextAlign.center,
+                style: BaraedaTypography.h3.copyWith(color: colors.textPrimary),
+              ),
+              const SizedBox(height: 12),
+              const Center(
+                child: BaraedaStatusPill(
+                  status: BaraedaStatus.waiting,
+                  label: '승인 대기',
+                  size: BaraedaStatusPillSize.lg,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                [
+                  if (checked != null) '$checked 확인',
+                  '이 화면은 30초마다 저절로 확인해요',
+                ].join(' · '),
+                textAlign: TextAlign.center,
+                style: BaraedaTypography.body.copyWith(
+                  color: colors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 16),
+              BaraedaCard(
+                child: StopTimeline(
+                  stops: [
+                    Stop(
+                      name: '신청 접수',
+                      address: requested,
+                      state: StopState.done,
+                    ),
+                    const Stop(
+                      name: '학원 관계자 승인',
+                      address: '보통 학원이 확인하는 대로 승인돼요',
+                      state: StopState.current,
+                    ),
+                    const Stop(name: '이용 시작', address: '승인되면 홈으로 이동해요'),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              BaraedaCard(
+                child: Column(
+                  children: [
+                    _InfoRow(label: '신청 학원', value: status.academyName),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 88),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          '${status.academyRegion} · 코드 ${status.academyCode}',
+                          style: BaraedaTypography.caption.copyWith(
+                            color: colors.textSecondary,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Divider(height: 24, color: colors.borderSubtle),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _InfoRow(
+                            label: '학원 문의처',
+                            value: status.academyContactText,
+                          ),
+                        ),
+                        // 번호 모양이 아닌 문의처(문장)는 걸 곳이 없다 — 전화 단추를 만들지 않는다(`Ruling
+                        // 827`).
+                        if (looksLikePhoneNumber(contact))
+                          BaraedaButton(
+                            label: '전화',
+                            icon: 'phone',
+                            variant: BaraedaButtonVariant.secondary,
+                            onPressed: () => unawaited(
+                              ref.read(uriOpenerProvider)(
+                                Uri(scheme: 'tel', path: contact!.trim()),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        DecoratedBox(
+          decoration: BoxDecoration(
+            color: colors.bgBase,
+            border: Border(top: BorderSide(color: colors.borderSubtle)),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                BaraedaButton(
+                  label: '상태 다시 확인',
+                  variant: BaraedaButtonVariant.secondary,
+                  block: true,
+                  onPressed: onRefresh,
+                ),
+                const SizedBox(height: 4),
+                BaraedaButton(
+                  label: '로그아웃',
+                  variant: BaraedaButtonVariant.ghost,
+                  block: true,
+                  onPressed: onLogout,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

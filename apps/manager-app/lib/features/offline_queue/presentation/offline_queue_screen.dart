@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/network/failure_messages.dart';
 import 'package:manager_app/core/ui/confirm_dialog.dart';
+import 'package:manager_app/core/ui/manager_header.dart';
 import 'package:manager_app/features/offline_queue/data/models/pending_request_summary.dart';
 import 'package:manager_app/features/offline_queue/presentation/offline_queue_providers.dart';
 import 'package:manager_app/features/roster/presentation/roster_providers.dart';
@@ -87,7 +88,7 @@ class _OfflineQueueScreenState extends ConsumerState<OfflineQueueScreen> {
   Widget build(BuildContext context) {
     final pendingAsync = ref.watch(pendingRequestsProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('오프라인 대기열')),
+      appBar: const ManagerHeader(title: '대기열'),
       body: RefreshIndicator(
         onRefresh: () => ref.refresh(pendingRequestsProvider.future),
         child: ListView(
