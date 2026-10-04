@@ -28,10 +28,14 @@ enum NotificationListStyle {
   /// 날짜 머리가 오른쪽에 날짜(`10월 3일 (토)`)를 그리는가 — 알약 모양만 그린다.
   bool get headerShowsDate => this == pills;
 
-  /// 알림 행 오른쪽의 시각(Ruling 835) — 머리에 날짜가 있으면 시각만(날짜를 두 번 쓰지 않는다), 없으면 오늘이
-  /// 아닌 알림에 날짜를 붙인다. 화면은 목록에 준 모양으로 행 시각도 이 메서드로 그린다.
-  String rowTime(DateTime sentAt, DateTime now) =>
-      headerShowsDate ? clockLabel(sentAt) : timeLabel(sentAt, now);
+  /// 알림 행 오른쪽의 시각(Ruling 835) — 날짜는 **그 날의 머리에 날짜가 없을 때만** 붙인다(날짜를 두 번 쓰지
+  /// 않는다). 알약 모양은 머리 오른쪽에 날짜가 있고, 머리 글자 자체가 날짜(`9월 28일(월)`)인 날도 머리가 이미
+  /// 날짜를 말한다 — 날짜 없는 머리는 두 칸 전환 모양의 `어제` 뿐이다. 화면은 목록에 준 모양으로 행 시각도 이
+  /// 메서드로 그린다.
+  String rowTime(DateTime sentAt, DateTime now) {
+    final headerHasNoDate = !headerShowsDate && dayHeader(sentAt, now) == '어제';
+    return headerHasNoDate ? timeLabel(sentAt, now) : clockLabel(sentAt);
+  }
 }
 
 /// 알림 목록 화면의 본문 — `[전체]` `[안 읽음]` 걸러 보기 · 날짜 머리 · 스크롤 끝에서 다음 쪽 자동 받기 ·

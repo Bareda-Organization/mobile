@@ -282,6 +282,15 @@ void main() {
       );
     });
 
+    // 머리 글자 자체가 날짜(`9월 28일(월)`)인 날은 어느 모양이든 머리가 이미 날짜를
+    // 말한다 — 날짜 없는 머리는 `어제` 뿐이다.
+    test('두 칸 전환 모양도 머리 글자가 날짜인 날의 행은 시각만이다', () {
+      final older = DateTime.utc(2026, 9, 28, 5, 5); // 9-28 14:05 KST
+
+      expect(dayHeader(older, now), '9월 28일(월)');
+      expect(NotificationListStyle.segmented.rowTime(older, now), '14:05');
+    });
+
     test('오늘 행은 어느 모양이든 시각만이다', () {
       for (final style in NotificationListStyle.values) {
         expect(style.rowTime(today, now), '12:12', reason: '$style');

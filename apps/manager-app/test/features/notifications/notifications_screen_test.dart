@@ -124,6 +124,15 @@ void main() {
     expect(find.text('9월 29일 14:05'), findsOneWidget);
   });
 
+  // 머리 글자가 날짜(`9월 28일(월)`)인 날은 머리가 이미 날짜를 말한다 — 행에 날짜를 또 쓰지 않는다(Ruling 835).
+  testWidgets('머리 글자가 날짜인 날의 행은 시각만이다', (tester) async {
+    await _pump(tester, [_item('1', sentAt: _kst(9, 28, 14, 5))]);
+
+    expect(find.text('9월 28일(월)'), findsOneWidget);
+    expect(find.text('14:05'), findsOneWidget);
+    expect(find.text('9월 28일 14:05'), findsNothing);
+  });
+
   testWidgets('안 읽은 행에만 초록 점이 있고 읽은 행에는 없다', (tester) async {
     await _pump(tester, [
       _item('1', type: 'route_changed'),
