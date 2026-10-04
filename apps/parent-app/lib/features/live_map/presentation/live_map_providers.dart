@@ -4,9 +4,21 @@ import 'package:baraeda_core/baraeda_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:parent_app/app/di.dart';
+import 'package:parent_app/core/auth/auth_providers.dart';
 import 'package:parent_app/core/runs/domain/student_run.dart';
 import 'package:parent_app/core/runs/presentation/run_providers.dart';
 import 'package:parent_app/features/live_map/domain/live_map_status.dart';
+
+/// 내가 다니는 학원 이름(`GET /me` 의 `academy.name`, §2.10) — 등원 회차의 도착지 문구에 쓴다(`Ruling 832`).
+/// 못 받으면(오류 · 학원 소속 없음) `null` 이고, 문구는 이름 없는 모양으로 떨어진다 — 이 값이 화면을 막지 않는다.
+final FutureProvider<String?> academyNameProvider = FutureProvider<String?>((
+  ref,
+) async {
+  // F05-01 — 계정이 바뀌면(로그아웃 = 역할 null) 앞 계정의 캐시를 버린다.
+  ref.watch(currentUserRoleProvider);
+  final me = await ref.watch(authRepositoryProvider).me();
+  return me.academy?.name;
+});
 
 /// `studentId` 별 실시간 위치 화면 상태 — `/topic/students/{studentId}/run`
 /// 하나만 구독한다(공용 `webSocketClientProvider`, §1 판단 근거: 학부모는

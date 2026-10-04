@@ -21,6 +21,7 @@ import 'package:parent_app/core/students/presentation/selected_student.dart';
 import 'package:parent_app/core/students/presentation/student_switcher.dart';
 import 'package:parent_app/features/home/presentation/home_providers.dart';
 import 'package:parent_app/features/live_map/domain/bus_position_repository.dart';
+import 'package:parent_app/features/live_map/presentation/live_map_providers.dart';
 import 'package:parent_app/features/live_map/presentation/live_map_screen.dart';
 import 'package:parent_app/features/live_map/presentation/widgets/live_map_sheet.dart';
 // `Override` 는 `flutter_riverpod.dart` 배럴이 재노출하지 않는다(3.4.3 확인 —
@@ -162,14 +163,20 @@ class _FakeRouteRepository implements RouteRepository {
 
   final RouteDetail? detail;
 
+  /// 지금까지 노선을 요청한 `run_id` — R49: 종료된 회차도 그 회차의 노선을 읽는지 본다.
+  static final List<String?> requestedRunIds = [];
+
   @override
   Future<RouteDetail> getRoute(
     String studentId, {
     DateTime? date,
     String? runId,
-  }) => detail == null
-      ? Future.error(const Failure.unknown(message: 'test fake — no route'))
-      : Future.value(detail);
+  }) {
+    requestedRunIds.add(runId);
+    return detail == null
+        ? Future.error(const Failure.unknown(message: 'test fake — no route'))
+        : Future.value(detail);
+  }
 }
 
 RouteDetail _routeWithMyStop({double? lat = 37.51, double? lng = 127.02}) =>
@@ -240,10 +247,12 @@ void main() {
     required List<Override> extraOverrides,
     RouteDetail? route,
     BusPositionRepository? busPositionRepository,
+    String? academyName,
   }) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          academyNameProvider.overrideWith((ref) async => academyName),
           webSocketClientProvider.overrideWithValue(client),
           busPositionRepositoryProvider.overrideWithValue(
             busPositionRepository ?? _FakeBusPositionRepository(),
@@ -1172,12 +1181,14 @@ void main() {
       await tester.pump();
       await tester.pump();
 
+      // R49 — 응답의 승하차지 둘 다 번호 핀으로 그리고, 그중 내 승하차지만 강조 · 이름표를 단다.
       final stops = surface(
         tester,
       ).markers.where((m) => m.kind == MapMarkerKind.stop).toList();
-      expect(stops, hasLength(1));
-      expect((stops.single.lat, stops.single.lng), (37.51, 127.02));
-      expect(stops.single.label, '내 승하차지');
+      expect(stops, hasLength(2));
+      final mine = stops.singleWhere((m) => m.mine);
+      expect((mine.lat, mine.lng), (37.51, 127.02));
+      expect(mine.label, '내 승하차지');
       expect(find.text('행복아파트 정문'), findsOneWidget);
       expect(find.text('내 승하차지'), findsOneWidget);
     });
@@ -1599,4 +1610,310 @@ void main() {
       expect(find.text('버스가 아직 출발 전이에요'), findsNothing);
     });
   });
+
+  // R49 `Ruling 831` · `832` — 지도에 표시 범위 승하차지의 번호 마커와 경로선, 문구에 도착지 이름.
+  group('R49 지도 — 노선선 · 번호 · 도착지 이름', () {
+    final started = DateTime.utc(2026, 10, 5, 3, 5);
+    final finished = DateTime.utc(2026, 10, 5, 3, 52);
+    final clockNow = DateTime.utc(2026, 10, 5, 3, 14);
+    final road = [
+      (lat: 37.501, lng: 126.701),
+      (lat: 37.502, lng: 126.703),
+      (lat: 37.504, lng: 126.704),
+      (lat: 37.505, lng: 126.706),
+    ];
+
+    // 응답이 표시 범위(승차지 이전 2개 · 승차지 · 하차지)만 줬다고 가정한 3·4·5 번. 4번이 내 승하차지다.
+    RouteDetail route({
+      List<({double lat, double lng})>? roadPath,
+      bool arrived = false,
+    }) => RouteDetail(
+      runId: 'r-1',
+      busNo: '2호차',
+      departTime: started,
+      confirmed: true,
+      driver: const RouteDriver(name: null),
+      escort: const RouteEscort(name: null, phone: null),
+      myStopId: 'st-mine',
+      roadPath: roadPath ?? road,
+      stops: [
+        RouteStop(
+          stopId: 'st-3',
+          seq: 3,
+          name: '중앙공원 앞',
+          address: null,
+          lat: 37.501,
+          lng: 126.701,
+          arrivedAt: arrived ? DateTime.utc(2026, 10, 5, 3, 9) : null,
+        ),
+        RouteStop(
+          stopId: 'st-mine',
+          seq: 4,
+          name: '행복마을 입구',
+          address: null,
+          lat: 37.504,
+          lng: 126.704,
+          arrivedAt: arrived ? DateTime.utc(2026, 10, 5, 3, 20) : null,
+        ),
+        const RouteStop(
+          stopId: 'st-5',
+          seq: 5,
+          name: '하늘수학',
+          address: null,
+          lat: 37.505,
+          lng: 126.706,
+        ),
+      ],
+    );
+
+    StudentRun run({RunDirection direction = RunDirection.toAcademy}) =>
+        StudentRun(
+          runId: 'r-1',
+          direction: direction,
+          busNo: '2호차',
+          departTime: started,
+          runStatus: RunStatus.moving,
+          confirmed: true,
+          riding: true,
+          riderStatus: RiderStatus.waiting,
+          stop: const RunStop(stopId: 'st-mine', name: '행복마을 입구'),
+          changeQuotaLeft: 1,
+        );
+
+    BusPosition snapshot({
+      RunStatus status = RunStatus.moving,
+      bool withPosition = true,
+    }) => BusPosition(
+      runId: 'r-1',
+      busNo: '2호차',
+      runStatus: status,
+      lat: withPosition ? 37.5025 : null,
+      lng: withPosition ? 126.7035 : null,
+      receivedAt: withPosition ? clockNow : null,
+      startedAt: started,
+      finishedAt: status == RunStatus.finished ? finished : null,
+    );
+
+    Future<void> pumpMap(
+      WidgetTester tester, {
+      required BusPosition position,
+      RouteDetail? routeDetail,
+      String? academyName,
+      RunDirection direction = RunDirection.toAcademy,
+    }) async {
+      tester.view.physicalSize = const Size(800, 2400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      _FakeRouteRepository.requestedRunIds.clear();
+      await pumpScreen(
+        tester,
+        busPositionRepository: _ScriptedBusPositionRepository([position]),
+        route: routeDetail,
+        academyName: academyName,
+        extraOverrides: [
+          roleCapabilitiesProvider.overrideWithValue(
+            RoleCapabilities.of(UserRole.parent),
+          ),
+          myStudentsProvider.overrideWith(
+            (ref) async => [
+              Student(studentId: 's-1', name: '이하준', linkedAt: _linkedAt),
+            ],
+          ),
+          runsForStudentProvider.overrideWith(
+            (ref, id) async => [run(direction: direction)],
+          ),
+          clockProvider.overrideWithValue(_MutableClock(clockNow)),
+        ],
+      );
+      await tester.pump();
+      await tester.pump();
+      client.emit(WsConnectionState.connected);
+      await tester.pumpAndSettle();
+    }
+
+    MapSurface surface(WidgetTester tester) =>
+        tester.widget<MapSurface>(find.byType(MapSurface));
+
+    testWidgets('달리는 중 — road_path 선 1개와 표시 승하차지 수만큼 번호 마커(번호는 seq)를 그린다', (
+      tester,
+    ) async {
+      await pumpMap(
+        tester,
+        position: snapshot(),
+        routeDetail: route(),
+      );
+
+      final map = surface(tester);
+      expect(map.polylines, hasLength(1));
+      expect(map.polylines.single.dashed, isFalse);
+      expect(map.polylines.single.points, road);
+      final stops = map.markers
+          .where((m) => m.kind == MapMarkerKind.stop)
+          .toList();
+      expect(stops.map((m) => m.seq), [3, 4, 5]);
+      expect(
+        map.markers.where((m) => m.kind == MapMarkerKind.bus),
+        hasLength(1),
+      );
+    });
+
+    testWidgets('달리는 중 — 내 승하차지만 강조하고 "내 승하차지" 이름표를 단다', (tester) async {
+      await pumpMap(tester, position: snapshot(), routeDetail: route());
+
+      final mine = surface(tester).markers.where((m) => m.mine).toList();
+      expect(mine.map((m) => m.seq), [4]);
+      expect(mine.single.label, '내 승하차지');
+    });
+
+    testWidgets('달리는 중 — road_path 가 비면 표시 승하차지를 점선으로 잇는다', (tester) async {
+      await pumpMap(
+        tester,
+        position: snapshot(),
+        routeDetail: route(roadPath: const []),
+      );
+
+      final line = surface(tester).polylines.single;
+      expect(line.dashed, isTrue);
+      expect(line.points, hasLength(3));
+    });
+
+    testWidgets('응답에 없는 승하차지는 그리지 않는다 — 번호 3·4·5 만 있다', (tester) async {
+      await pumpMap(tester, position: snapshot(), routeDetail: route());
+
+      final seqs = surface(tester).markers.map((m) => m.seq).nonNulls.toList();
+      expect(seqs, [3, 4, 5]);
+    });
+
+    testWidgets('노선을 못 받으면 선도 번호도 없이 버스만 그린다', (tester) async {
+      await pumpMap(tester, position: snapshot());
+
+      final map = surface(tester);
+      expect(map.polylines, isEmpty);
+      expect(map.markers.map((m) => m.kind), [MapMarkerKind.bus]);
+    });
+
+    testWidgets('종료 — 좌표가 없어도 지나온 구간(선)과 번호 마커를 그리고 노선에 맞춘다', (
+      tester,
+    ) async {
+      await pumpMap(
+        tester,
+        position: snapshot(status: RunStatus.finished, withPosition: false),
+        routeDetail: route(arrived: true),
+        academyName: '하늘수학',
+      );
+
+      final map = surface(tester);
+      expect(map.polylines, hasLength(1));
+      expect(map.polylines.single.passed, isTrue);
+      final stops = map.markers.where((m) => m.kind == MapMarkerKind.stop);
+      expect(stops.map((m) => m.seq), [3, 4, 5]);
+      expect(map.markers.where((m) => m.kind == MapMarkerKind.bus), isEmpty);
+      expect(map.fitToContent, isTrue);
+    });
+
+    testWidgets('종료 — 지나간 승하차지(arrived_at 있음)만 지나간 모양이다', (tester) async {
+      await pumpMap(
+        tester,
+        position: snapshot(status: RunStatus.finished, withPosition: false),
+        routeDetail: route(arrived: true),
+      );
+
+      final byStop = {
+        for (final m in surface(tester).markers.where((m) => m.seq != null))
+          m.seq: m.stopState,
+      };
+      expect(byStop, {
+        3: MapStopState.passed,
+        4: MapStopState.passed,
+        5: MapStopState.upcoming,
+      });
+    });
+
+    testWidgets('종료 + 노선을 못 받으면 지도 없이 회색 면이다(기존 동작)', (tester) async {
+      await pumpMap(
+        tester,
+        position: snapshot(status: RunStatus.finished, withPosition: false),
+      );
+
+      expect(find.byType(MapSurface), findsNothing);
+      expect(find.text('운행이 끝났어요'), findsOneWidget);
+    });
+
+    testWidgets('종료된 회차도 그 회차의 노선을 읽는다 — 요청에 run_id 가 실린다', (tester) async {
+      await pumpMap(
+        tester,
+        position: snapshot(status: RunStatus.finished, withPosition: false),
+        routeDetail: route(arrived: true),
+      );
+
+      expect(_FakeRouteRepository.requestedRunIds, isNotEmpty);
+      expect(_FakeRouteRepository.requestedRunIds.toSet(), {'r-1'});
+    });
+
+    testWidgets('등원 종료 — 학원 이름이 "도착" 줄과 종료 띠에 들어간다', (tester) async {
+      await pumpMap(
+        tester,
+        position: snapshot(status: RunStatus.finished, withPosition: false),
+        routeDetail: route(arrived: true),
+        academyName: '하늘수학',
+      );
+
+      expect(find.text('하늘수학 도착'), findsOneWidget);
+      expect(
+        find.text('${formatClock(finished)} 하늘수학에 도착했어요.'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('하원 종료 — 내 승하차지 이름이 들어간다', (tester) async {
+      await pumpMap(
+        tester,
+        position: snapshot(status: RunStatus.finished, withPosition: false),
+        routeDetail: route(arrived: true),
+        academyName: '하늘수학',
+        direction: RunDirection.fromAcademy,
+      );
+
+      expect(find.text('행복마을 입구 도착'), findsOneWidget);
+      expect(
+        find.text('${formatClock(finished)} 행복마을 입구에 도착했어요.'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('하늘수학'), findsNothing);
+    });
+
+    testWidgets('종료 — 이름을 못 얻으면 이름 없는 R48 문구로 떨어진다', (tester) async {
+      await pumpMap(
+        tester,
+        position: snapshot(status: RunStatus.finished, withPosition: false),
+        routeDetail: route(arrived: true),
+      );
+
+      expect(find.text('${formatClock(finished)} 에 운행을 마쳤어요.'), findsOneWidget);
+      expect(find.textContaining('도착했어요'), findsNothing);
+      expect(find.textContaining(' 도착'), findsNothing);
+    });
+
+    testWidgets('달리는 중 — 시트 부제가 "도착지 가는 길 · 시각 운행 시작" 이다', (tester) async {
+      await pumpMap(
+        tester,
+        position: snapshot(),
+        routeDetail: route(),
+        academyName: '하늘수학',
+      );
+
+      expect(
+        find.text('하늘수학 가는 길 · ${formatClock(started)} 운행 시작'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('달리는 중 — 이름을 못 얻으면 "시각 운행 시작" 만 남는다', (tester) async {
+      await pumpMap(tester, position: snapshot(), routeDetail: route());
+
+      expect(find.text('${formatClock(started)} 운행 시작'), findsOneWidget);
+      expect(find.textContaining('가는 길'), findsNothing);
+    });
+  });
+
 }

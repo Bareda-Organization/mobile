@@ -8,6 +8,8 @@ import 'package:parent_app/app/di.dart';
 import 'package:parent_app/core/auth/auth_providers.dart';
 import 'package:parent_app/core/map/map_surface.dart';
 import 'package:parent_app/core/refresh/visible_poller.dart';
+import 'package:parent_app/core/routes/presentation/route_map_overlay.dart';
+import 'package:parent_app/core/routes/presentation/route_providers.dart';
 import 'package:parent_app/core/runs/domain/bus_position.dart';
 import 'package:parent_app/core/runs/domain/student_run.dart';
 import 'package:parent_app/core/runs/presentation/run_display.dart';
@@ -134,7 +136,7 @@ class _NoRunToday extends StatelessWidget {
   Widget build(BuildContext context) => const SizedBox.shrink();
 }
 
-class _PreviewBody extends StatelessWidget {
+class _PreviewBody extends ConsumerWidget {
   const new({
     required this.studentId,
     required this.studentName,
@@ -148,7 +150,7 @@ class _PreviewBody extends StatelessWidget {
   final StudentRun? run;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final colors = context.colors;
     final delay = position.delay;
     final lat = position.lat;
@@ -158,6 +160,26 @@ class _PreviewBody extends StatelessWidget {
     final stop = position.currentStopName;
     final arrived = position.currentStopArrivedAt;
     final chip = _chip(position.runStatus);
+
+    // 지금 보는 회차의 노선(§3.10)에서 표시 범위 승하차지 번호와 경로선을 얹는다(`Ruling 831`). 못 받으면 버스만
+    // 그린다 — 미리보기에 오류 띠를 더하지 않는다.
+    final route = ref
+        .watch(
+          routeForRunProvider((studentId: studentId, runId: position.runId)),
+        )
+        .value;
+    final ended = position.runStatus == RunStatus.finished;
+    final overlay = route == null
+        ? null
+        : RouteMapOverlay.of(
+            route,
+            idPrefix: 'preview-$studentId',
+            ended: ended,
+            markNext: position.runStatus == RunStatus.moving,
+          );
+    // 끝난 회차는 서버가 좌표를 주지 않아 버스가 없다 — 지나온 구간(노선)에 맞춰 그린다.
+    final fitRoute = ended && overlay != null && !overlay.isEmpty;
+    final routeCamera = fitRoute ? overlay.start : null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -201,17 +223,23 @@ class _PreviewBody extends StatelessWidget {
                 child: Stack(
                   children: [
                     Positioned.fill(
-                      child: lat != null && lng != null
+                      child: routeCamera != null || (lat != null && lng != null)
                           ? MapSurface(
-                              camera: MapCamera(lat: lat, lng: lng),
+                              camera:
+                                  routeCamera ??
+                                  MapCamera(lat: lat!, lng: lng!),
                               markers: [
-                                MapMarker(
-                                  id: 'preview-bus-$studentId',
-                                  lat: lat,
-                                  lng: lng,
-                                  kind: MapMarkerKind.bus,
-                                ),
+                                if (lat != null && lng != null && !fitRoute)
+                                  MapMarker(
+                                    id: 'preview-bus-$studentId',
+                                    lat: lat,
+                                    lng: lng,
+                                    kind: MapMarkerKind.bus,
+                                  ),
+                                ...?overlay?.markers,
                               ],
+                              polylines: overlay?.polylines ?? const [],
+                              fitToContent: fitRoute,
                             )
                           : ColoredBox(color: colors.statusIdleSoft),
                     ),

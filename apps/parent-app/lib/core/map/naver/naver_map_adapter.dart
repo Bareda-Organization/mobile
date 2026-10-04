@@ -8,6 +8,7 @@ import 'package:parent_app/core/map/frame_ticker.dart';
 import 'package:parent_app/core/map/map_surface.dart';
 import 'package:parent_app/core/map/marker_motion_controller.dart';
 import 'package:parent_app/core/map/naver/naver_map_init.dart';
+import 'package:parent_app/core/map/naver/stop_number_pin.dart';
 
 /// `MapSurface` 계약을 실제 네이버 지도 SDK 로 구현하는 어댑터.
 ///
@@ -21,6 +22,8 @@ class NaverMapAdapter extends StatefulWidget {
     required this.camera,
     super.key,
     this.markers = const [],
+    this.polylines = const [],
+    this.fitToContent = false,
     this.onReady,
     this.onAuthFailed,
     this.onUserGesture,
@@ -28,6 +31,8 @@ class NaverMapAdapter extends StatefulWidget {
 
   final MapCamera camera;
   final List<MapMarker> markers;
+  final List<MapPolyline> polylines;
+  final bool fitToContent;
   final VoidCallback? onReady;
   final void Function(Object exception)? onAuthFailed;
   final VoidCallback? onUserGesture;
@@ -58,6 +63,15 @@ class _NaverMapAdapterState extends State<NaverMapAdapter> {
     if (controller != null && mounted) await _syncMarkers(controller);
   });
   final Map<String, NMarker> _markersById = {};
+
+  /// 올라가 있는 마커의 모양 키(id 별) — 번호 · 지나감 · 내 승하차지가 바뀌면 아이콘을 다시 만든다.
+  final Map<String, String> _looksById = {};
+
+  /// 지금 지도 위에 올라가 있는 선의 모양 키(id 별) — 바뀌면 지우고 다시 그린다.
+  final Map<String, String> _linesById = {};
+
+  /// 마지막으로 카메라를 맞출 때의 대상 서명 — 이 값이 바뀔 때만 다시 맞춘다.
+  String? _fittedSignature;
 
   /// 마커 id 별 보간 상태 — 계산 자체는 `MarkerMotionController`(순수)에
   /// 맡기고, 이 클래스는 "언제 부를지"만 담당한다.
@@ -182,7 +196,7 @@ class _NaverMapAdapterState extends State<NaverMapAdapter> {
     );
   }
 
-  /// 마커 목록을 이전 상태와 비교해 추가·갱신·삭제만 반영한다 — 매번
+  /// 마커·선 목록을 이전 상태와 비교해 추가·갱신·삭제만 반영한다 — 매번
   /// `clearOverlays` 로 통째로 다시 그리면 깜빡임이 생긴다.
   ///
   /// **보간은 여기서 즉시 좌표를 대입하지 않는다** — 새 목표 좌표를
@@ -194,11 +208,17 @@ class _NaverMapAdapterState extends State<NaverMapAdapter> {
   Future<void> _syncMarkers(NaverMapController controller) async {
     final incoming = {for (final m in widget.markers) m.id: m};
 
+    // 없어졌거나 모양이 달라진 마커를 지운다 — 모양이 달라진 것은 아래에서 새로 만들어 올린다.
     final toRemove = _markersById.keys
-        .where((id) => !incoming.containsKey(id))
+        .where(
+          (id) =>
+              !incoming.containsKey(id) ||
+              incoming[id]!.lookKey != _looksById[id],
+        )
         .toList();
     for (final id in toRemove) {
       final marker = _markersById.remove(id);
+      _looksById.remove(id);
       _motionById.remove(id);
       if (marker != null) {
         await controller.deleteOverlay(marker.info);
@@ -206,7 +226,7 @@ class _NaverMapAdapterState extends State<NaverMapAdapter> {
     }
 
     final now = DateTime.now();
-    final toAdd = <NMarker>{};
+    final toAdd = <NAddableOverlay>{};
     for (final entry in incoming.entries) {
       final existing = _markersById[entry.key];
       final target = (lat: entry.value.lat, lng: entry.value.lng);
@@ -215,33 +235,135 @@ class _NaverMapAdapterState extends State<NaverMapAdapter> {
           .onCoordinateReceived(target, now);
 
       if (existing == null) {
-        // 아이콘 이미지·색상 커스터마이즈는 이번 라운드 범위 밖이다(성능·
-        // 표현 튜닝은 2단계) — 종류 구분은 캡션 텍스트로만 한다.
-        // 첫 좌표는 `motion.onCoordinateReceived` 가 보간 없이 그 자리에
-        // 바로 두므로(위 클래스 문서), 여기서도 target 을 그대로 쓴다.
-        final marker = NMarker(
-          id: entry.key,
-          position: NLatLng(target.lat, target.lng),
-          caption: NOverlayCaption(
-            text: entry.value.label ?? _captionFor(entry.value.kind),
-          ),
-          // 기본 핀이 전부 같은 초록이라 버스와 내 승하차지가 글자 없이는 안 갈렸다(R46 B2 #10).
-          // 생성할 때 한 번만 지정한다 — 만든 뒤 바꾸지 않아 네이티브 호출이 늘지 않는다.
-          iconTintColor: entry.value.kind == MapMarkerKind.stop
-              ? _stopMarkerTint
-              : Colors.transparent,
-        );
+        // 아이콘을 굳히는 사이 화면이 닫힐 수 있다 — 닫힌 뒤의 context 는 쓰지 않는다.
+        if (!mounted) return;
+        final marker = await _toNMarker(entry.value);
         _markersById[entry.key] = marker;
+        _looksById[entry.key] = entry.value.lookKey;
         toAdd.add(marker);
       }
       // existing != null 인 경우는 `_onFrameTick` 이 보간해 가며 옮긴다 —
       // 여기서 `setPosition` 을 바로 부르면 이어붙이기 없이 순간이동한다.
     }
+    await _syncPolylines(controller, toAdd);
+    if (!mounted) return;
     if (toAdd.isNotEmpty) {
       await controller.addOverlayAll(toAdd);
     }
+    await _fitCameraIfNeeded(controller);
 
     _syncFrameTicker(now);
+  }
+
+  /// 마커 한 개를 SDK 마커로 만든다. 번호가 있으면(`seq`) 번호 핀 이미지를, 없으면 기본 핀을 쓴다.
+  Future<NMarker> _toNMarker(MapMarker marker) async {
+    final position = NLatLng(marker.lat, marker.lng);
+    final seq = marker.seq;
+    if (seq != null) {
+      // 동그라미 핀의 기준점은 가운데다 — 핀 끝이 좌표에 오는 물방울과 다르다. 번호 핀이 종류를 말하므로
+      // 글자는 이름표(내 승하차지)가 있을 때만 붙인다.
+      final icon = await NOverlayImage.fromWidget(
+        widget: StopNumberPin(
+          seq: seq,
+          state: marker.stopState,
+          mine: marker.mine,
+        ),
+        size: StopNumberPin.sizeOf(state: marker.stopState, mine: marker.mine),
+        context: context,
+      );
+      return NMarker(
+        id: marker.id,
+        position: position,
+        icon: icon,
+        anchor: NPoint.relativeCenter,
+        caption: marker.label == null
+            ? null
+            : NOverlayCaption(text: marker.label!),
+        captionAligns: const [NAlign.left],
+      );
+    }
+    return NMarker(
+      id: marker.id,
+      position: position,
+      caption: NOverlayCaption(text: marker.label ?? _captionFor(marker.kind)),
+      // 기본 핀이 전부 같은 초록이라 버스와 내 승하차지가 글자 없이는 안 갈렸다(R46 B2 #10).
+      // 생성할 때 한 번만 지정한다 — 만든 뒤 바꾸지 않아 네이티브 호출이 늘지 않는다.
+      iconTintColor: marker.kind == MapMarkerKind.stop
+          ? _stopMarkerTint
+          : Colors.transparent,
+    );
+  }
+
+  /// 선을 지도에 맞춘다 — 없어진 것은 지우고, 모양이 달라진 것은 지우고 다시 그리고, 새것은 더한다.
+  /// 선마다 아래에 흰 테두리 선을 한 겹 더 깐다(시안 — 지도 길 위에서도 선이 보이게). 화면은 선 1개만 안다.
+  Future<void> _syncPolylines(
+    NaverMapController controller,
+    Set<NAddableOverlay> toAdd,
+  ) async {
+    final incoming = {for (final line in widget.polylines) line.id: line};
+    for (final id in _linesById.keys.toList()) {
+      if (incoming[id]?.lookKey == _linesById[id]) continue;
+      _linesById.remove(id);
+      await controller.deleteOverlay(_polylineInfo('$id#halo'));
+      await controller.deleteOverlay(_polylineInfo(id));
+    }
+    for (final line in incoming.values) {
+      if (_linesById.containsKey(line.id)) continue;
+      _linesById[line.id] = line.lookKey;
+      toAdd
+        ..add(_toNPolyline(line, halo: true))
+        ..add(_toNPolyline(line, halo: false));
+    }
+  }
+
+  NOverlayInfo _polylineInfo(String id) =>
+      NOverlayInfo(type: NOverlayType.polylineOverlay, id: id);
+
+  /// 시안의 색 — 앞으로 갈 길은 초록(`#1F5C4D`), 지나온 길은 회색(`#8F9995`), 아래 테두리는 흰색.
+  NPolylineOverlay _toNPolyline(MapPolyline line, {required bool halo}) =>
+      NPolylineOverlay(
+        id: halo ? '${line.id}#halo' : line.id,
+        coords: [for (final p in line.points) NLatLng(p.lat, p.lng)],
+        color: halo
+            ? Colors.white
+            : (line.passed ? const Color(0xFF8F9995) : const Color(0xFF1F5C4D)),
+        width: halo ? 9 : 5,
+        lineCap: NLineCap.round,
+        lineJoin: NLineJoin.round,
+        // 점선은 도로가 아니라 승하차지끼리 곧게 이은 선이다 — 테두리는 실선으로 둬 길 위에서 끊겨 보이지 않게 한다.
+        pattern: line.dashed && !halo ? const [8, 8] : const [],
+      );
+
+  /// [MapSurface.fitToContent] — 맞출 대상(버스가 아닌 마커와 선)이 바뀐 때만 다시 맞춘다.
+  Future<void> _fitCameraIfNeeded(NaverMapController controller) async {
+    if (!widget.fitToContent) return;
+    final bounds = contentBounds(widget.markers, widget.polylines);
+    if (bounds == null) return;
+    final signature = [
+      for (final m in widget.markers)
+        if (m.kind != MapMarkerKind.bus) m.id,
+      for (final line in widget.polylines) line.lookKey,
+    ].join(',');
+    if (signature == _fittedSignature) return;
+    _fittedSignature = signature;
+    if (bounds.isPoint) {
+      await controller.updateCamera(
+        NCameraUpdate.scrollAndZoomTo(
+          target: NLatLng(bounds.south, bounds.west),
+          zoom: widget.camera.zoom,
+        ),
+      );
+      return;
+    }
+    await controller.updateCamera(
+      NCameraUpdate.fitBounds(
+        NLatLngBounds(
+          southWest: NLatLng(bounds.south, bounds.west),
+          northEast: NLatLng(bounds.north, bounds.east),
+        ),
+        padding: const EdgeInsets.all(48),
+      ),
+    );
   }
 
   /// 보간 중인 마커가 하나라도 있으면 타이머를 돌리고, 없으면 멈춘다.
