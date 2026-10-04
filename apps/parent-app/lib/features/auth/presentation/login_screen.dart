@@ -42,6 +42,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   static const _lockWarningThreshold = 2;
   int? _remainingAttempts;
 
+  /// 비밀번호 보기 단추(시안 `비밀번호 보기`) — 평소엔 가린다.
+  bool _showPassword = false;
+
   @override
   void dispose() {
     _loginIdController.dispose();
@@ -182,7 +185,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     BaraedaInput(
                       label: '비밀번호',
                       kind: BaraedaInputKind.currentPassword,
-                      obscureText: true,
+                      obscureText: !_showPassword,
+                      suffix: BaraedaIconButton(
+                        icon: _showPassword ? 'eye-off' : 'eye',
+                        label: _showPassword ? '비밀번호 가리기' : '비밀번호 보기',
+                        onPressed: () =>
+                            setState(() => _showPassword = !_showPassword),
+                      ),
                       error: _passwordError,
                       controller: _passwordController,
                     ),

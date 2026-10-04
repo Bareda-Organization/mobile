@@ -88,4 +88,22 @@ void main() {
 
     expect(find.textContaining('계정이 잠겨요'), findsNothing);
   });
+
+  // 시안 `login` 의 `비밀번호 보기` — 입력한 비밀번호가 맞는지 눈으로 확인할 수 있어야 틀려서 잠기는 일이 준다.
+  testWidgets('비밀번호는 가려지고, 보기 단추를 누르면 보이며 다시 누르면 가려진다', (tester) async {
+    await _pump(tester);
+    // 입력 칸은 아이디 · 비밀번호 순이다(라벨은 RichText 라 글자로 못 찾는다).
+    final password = find.byType(BaraedaInput).at(1);
+    bool obscured() => tester.widget<BaraedaInput>(password).obscureText;
+
+    expect(obscured(), isTrue);
+
+    await tester.tap(find.bySemanticsLabel('비밀번호 보기'));
+    await tester.pump();
+    expect(obscured(), isFalse);
+
+    await tester.tap(find.bySemanticsLabel('비밀번호 가리기'));
+    await tester.pump();
+    expect(obscured(), isTrue);
+  });
 }
