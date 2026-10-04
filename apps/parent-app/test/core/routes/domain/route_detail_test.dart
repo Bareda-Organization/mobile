@@ -15,7 +15,8 @@ void main() {
 
   test('지난 승하차지는 arrived_at 을 읽고, 아직이면 null 이다', () {
     expect(
-      RouteStop.fromJson(stop('a', arrivedAt: '2026-10-03T03:09:00Z')).arrivedAt,
+      RouteStop.fromJson(stop('a', arrivedAt: '2026-10-03T03:09:00Z'))
+          .arrivedAt,
       DateTime.utc(2026, 10, 3, 3, 9),
     );
     expect(RouteStop.fromJson(stop('b', arrivedAt: null)).arrivedAt, isNull);

@@ -12,14 +12,12 @@ import 'package:parent_app/core/auth/user_role.dart';
 import 'package:parent_app/core/map/map_surface.dart';
 import 'package:parent_app/core/routes/domain/route_detail.dart';
 import 'package:parent_app/core/routes/domain/route_repository.dart';
+import 'package:parent_app/core/runs/domain/bus_position.dart';
 import 'package:parent_app/core/runs/domain/student_run.dart';
 import 'package:parent_app/core/students/domain/student.dart';
 import 'package:parent_app/core/students/presentation/selected_student.dart';
 import 'package:parent_app/core/students/presentation/student_switcher.dart';
 import 'package:parent_app/features/home/presentation/home_providers.dart';
-import 'package:parent_app/core/runs/domain/bus_position.dart';
-import 'package:parent_app/core/runs/domain/student_run.dart';
-import 'package:parent_app/core/runs/presentation/run_providers.dart';
 import 'package:parent_app/features/live_map/domain/bus_position_repository.dart';
 import 'package:parent_app/features/live_map/presentation/live_map_screen.dart';
 // `Override` 는 `flutter_riverpod.dart` 배럴이 재노출하지 않는다(3.4.3 확인 —
@@ -1219,8 +1217,10 @@ void main() {
     });
   });
 
-  // R48 `Ruling 821` — 전체 지도 화면도 §3.11 의 delay · started_at · finished_at 을 그린다.
-  // WebSocket 이벤트(`run_started` · `run_ended`)를 놓치고 들어와도 시각이 비지 않고, 지연 띠는 delay 에서 온다.
+  // R48 `Ruling 821` — 전체 지도 화면도 §3.11 의 delay · started_at · finished_at 을
+  // 그린다.
+  // WebSocket 이벤트(`run_started` · `run_ended`)를 놓치고 들어와도 시각이 비지 않고, 지연 띠는 delay
+  // 에서 온다.
   group('R48 §3.11 스냅샷의 지연 띠 · 운행 시각', () {
     final startedAt = DateTime.utc(2026, 9, 13, 3, 5);
     final finishedAt = DateTime.utc(2026, 9, 13, 3, 52);
@@ -1240,7 +1240,8 @@ void main() {
             RoleCapabilities.of(UserRole.student),
           ),
           myStudentIdProvider.overrideWith((ref) async => 's-1'),
-          // 스냅샷은 당일 결석 대조(`runsForStudentProvider`)까지 끝나야 화면에 반영된다 — 진짜 네트워크를 기다리지 않게 막는다.
+          // 스냅샷은 당일 결석 대조(`runsForStudentProvider`)까지 끝나야 화면에 반영된다 — 진짜 네트워크를
+          // 기다리지 않게 막는다.
           runsForStudentProvider.overrideWith(
             (ref, id) async => const <StudentRun>[],
           ),
@@ -1265,7 +1266,7 @@ void main() {
       busNo: '2호차',
       runStatus: status,
       lat: 37.5,
-      lng: 127.0,
+      lng: 127,
       receivedAt: DateTime.utc(2026, 9, 13, 3, 14),
       currentStopName: '정문 앞',
       currentStopArrivedAt: DateTime(2026, 9, 13, 12, 9),
@@ -1296,7 +1297,9 @@ void main() {
       expect(find.textContaining('늦어요'), findsNothing);
     });
 
-    testWidgets('WebSocket 이벤트를 못 받았어도 REST 의 started_at 으로 운행 시작 시각을 그린다', (tester) async {
+    testWidgets('WebSocket 이벤트를 못 받았어도 REST 의 started_at 으로 운행 시작 시각을 그린다', (
+      tester,
+    ) async {
       await pumpWithSnapshot(tester, snapshot(started: startedAt));
 
       // 이벤트(`run_started`)는 한 번도 오지 않았다 — 시각은 스냅샷에서 온다.

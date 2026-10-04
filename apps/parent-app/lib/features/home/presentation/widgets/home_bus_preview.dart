@@ -8,10 +8,10 @@ import 'package:parent_app/app/di.dart';
 import 'package:parent_app/core/auth/auth_providers.dart';
 import 'package:parent_app/core/map/map_surface.dart';
 import 'package:parent_app/core/refresh/visible_poller.dart';
+import 'package:parent_app/core/runs/domain/bus_position.dart';
 import 'package:parent_app/core/runs/domain/student_run.dart';
 import 'package:parent_app/core/runs/presentation/run_display.dart';
 import 'package:parent_app/core/ui/delay_band.dart';
-import 'package:parent_app/core/runs/domain/bus_position.dart';
 
 /// 홈 지도 미리보기를 다시 읽는 간격 — `API_SPEC §3.11` · `Ruling 821`.
 ///
@@ -222,7 +222,6 @@ class _PreviewBody extends StatelessWidget {
                         right: BaraedaSpacing.space2,
                         child: BaraedaMapTag(
                           label: '${formatClock(received)} 기준',
-                          live: true,
                         ),
                       ),
                     Positioned(

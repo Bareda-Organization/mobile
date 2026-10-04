@@ -98,7 +98,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const BlockedScreen(),
       ),
       // 로그인 뒤 탭 — 학부모 홈 · 일정 · 알림 · 설정 / 학생 내 버스 · 알림 · 설정(R48). 탭마다 화면 상태를 따로 붙든다(R44).
-      // 아래 나머지 화면(지도·노선 자세히·요일별 주소·일일 변경·비밀번호 변경 …)은 탭 밖 경로라 그 위에 얹히고 탭 막대를 가린다.
+      // 아래 나머지 화면(지도·노선 자세히·요일별 주소·일일 변경·비밀번호 변경 …)은 탭 밖 경로라 그 위에 얹히고 탭 막대를
+      // 가린다.
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>
             AppShell(navigationShell: navigationShell),

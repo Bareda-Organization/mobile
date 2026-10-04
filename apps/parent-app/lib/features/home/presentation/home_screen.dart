@@ -201,7 +201,8 @@ class _Preview extends ConsumerWidget {
   }
 }
 
-/// 홈을 못 불러왔다 — 다시 시도 + (기기에 남긴 학원 문의처에 번호가 있으면) 급할 때 걸 전화(시안 `home-parent--error`).
+/// 홈을 못 불러왔다 — 다시 시도 + (기기에 남긴 학원 문의처에 번호가 있으면) 급할 때 걸 전화(시안
+/// `home-parent--error`).
 class _LoadFailure extends ConsumerWidget {
   const new({required this.onRetry});
 
@@ -279,7 +280,7 @@ class _StudentSection extends ConsumerWidget {
                       leadingIcon: 'link',
                       title: '부모님과 연결하기',
                       subtitle: '코드를 만들어 부모님께 알려 주세요',
-                      trailing: const BaraedaIcon('chevron-right', size: 20),
+                      trailing: const BaraedaIcon('chevron-right'),
                       onTap: () => context.push(AppRoutes.childLink),
                     ),
                   ],

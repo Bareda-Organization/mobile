@@ -12,7 +12,8 @@ import 'package:parent_app/features/home/presentation/home_providers.dart';
 import 'package:parent_app/features/home/presentation/home_screen.dart';
 import '../../../support/no_bus_position.dart';
 
-/// R32 P7 — 홈의 오류 상태 4곳에 [다시 시도] 가 있고(자녀 · 내 정보는 R48 부터 한 화면 `버스 정보를 불러오지 못했어요`), 화면을 당겨서 새로고침할 수 있다.
+/// R32 P7 — 홈의 오류 상태 4곳에 [다시 시도] 가 있고(자녀 · 내 정보는 R48 부터 한 화면 `버스 정보를 불러오지
+/// 못했어요`), 화면을 당겨서 새로고침할 수 있다.
 /// 첫 호출은 실패하고 다음 호출부터 성공하는 provider 로, 버튼이 실제로 다시 불러오는지 본다.
 final _child = Student(
   studentId: 's-1',

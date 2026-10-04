@@ -195,7 +195,9 @@ void main() {
       expect(find.text('월요일 · 등원', findRichText: true), findsNothing);
     });
 
-    testWidgets('고친 요일에만 ● 가 붙고 "저장하지 않은 변경" 띠가 나온다 — 되돌리면 사라진다', (tester) async {
+    testWidgets('고친 요일에만 ● 가 붙고 "저장하지 않은 변경" 띠가 나온다 — 되돌리면 사라진다', (
+      tester,
+    ) async {
       await pumpFour(tester);
       expect(find.text('저장하지 않은 변경이 있어요'), findsNothing);
 

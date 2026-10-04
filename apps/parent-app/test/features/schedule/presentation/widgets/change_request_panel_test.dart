@@ -166,9 +166,9 @@ Future<void> _pumpAndSubmitWith(
       // 실제 화면(schedule_screen.dart)도 `ListView` 안에 이 패널을 두므로
       // 여기서도 스크롤 가능한 조상을 둔다 — 그렇지 않으면 폼 높이가
       // 테스트 뷰포트를 넘겨 무관한 RenderFlex overflow 로 실패한다.
-      child: MaterialApp(
+      child: const MaterialApp(
         home: Scaffold(
-          body: const ChangeRequestPanel(studentId: 's-1'),
+          body: ChangeRequestPanel(studentId: 's-1'),
         ),
       ),
     ),
@@ -260,9 +260,9 @@ void main() {
               ),
             ),
           ],
-          child: MaterialApp(
+          child: const MaterialApp(
             home: Scaffold(
-              body: const ChangeRequestPanel(studentId: 's-1'),
+              body: ChangeRequestPanel(studentId: 's-1'),
             ),
           ),
         ),
@@ -349,9 +349,9 @@ void main() {
             runRepositoryProvider.overrideWithValue(runs),
             changeRequestRepositoryProvider.overrideWithValue(changes),
           ],
-          child: MaterialApp(
+          child: const MaterialApp(
             home: Scaffold(
-              body: const ChangeRequestPanel(studentId: 's-1'),
+              body: ChangeRequestPanel(studentId: 's-1'),
             ),
           ),
         ),
@@ -562,9 +562,10 @@ void main() {
       expect(find.text('변경 신청하기'), findsOneWidget);
     });
 
-    testWidgets('② 구간(확정 뒤)은 "학원 승인이 필요해요" 와 승인 요청 보내기 단추다 — 취소가 즉시 되는 줄 아는 오해 방지', (
+    testWidgets('② 구간(확정 뒤)은 "학원 승인이 필요해요" 와 승인 요청 보내기 단추다', (
       tester,
     ) async {
+      // 취소가 즉시 되는 줄 아는 오해를 막는다.
       await pump(tester, [run('a', confirmed: true)]);
       await tester.tap(find.text('등원 · 08:00 출발'));
       await tester.pumpAndSettle();

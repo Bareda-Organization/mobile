@@ -59,8 +59,8 @@ Map<String, dynamic> _stopJson({
   String? change,
 }) => {
   'stop_id': stopId,
-  if (arrivedAt != null) 'arrived_at': arrivedAt,
-  if (change != null) 'change': change,
+  'arrived_at': ?arrivedAt,
+  'change': ?change,
   'seq': seq,
   'name': name,
   'address': identical(address, _unset) ? '$name 주소' : address,
@@ -299,7 +299,9 @@ void main() {
       expect(find.textContaining('지남'), findsOneWidget);
     });
 
-    testWidgets('서버가 arrived_at 을 안 주면 "지남" 이 하나도 없다 — 짐작해 채우지 않는다', (tester) async {
+    testWidgets('서버가 arrived_at 을 안 주면 "지남" 이 하나도 없다 — 짐작해 채우지 않는다', (
+      tester,
+    ) async {
       final route = RouteDetail.fromJson(
         _routeJson(
           stops: [_stopJson(stopId: 's-1', seq: 1, name: '중앙공원 앞')],

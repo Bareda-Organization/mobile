@@ -14,8 +14,8 @@ import 'package:parent_app/core/students/domain/student.dart';
 import 'package:parent_app/core/students/presentation/selected_student.dart';
 import 'package:parent_app/core/students/presentation/student_providers.dart';
 import 'package:parent_app/features/schedule/domain/weekly_address_entry.dart';
-import 'package:parent_app/features/schedule/presentation/schedule_providers.dart';
 import 'package:parent_app/features/schedule/presentation/daily_change_screen.dart';
+import 'package:parent_app/features/schedule/presentation/schedule_providers.dart';
 import 'package:parent_app/features/schedule/presentation/weekly_address_screen.dart';
 
 /// R32 P5 — 자녀를 바꿔도 주소 입력칸·고른 회차가 이전 자녀 값으로 남으면, 다른 아이의 이름으로

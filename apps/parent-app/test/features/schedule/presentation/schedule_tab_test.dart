@@ -16,9 +16,10 @@ import 'package:parent_app/features/schedule/domain/weekly_address_entry.dart';
 import 'package:parent_app/features/schedule/presentation/schedule_providers.dart';
 import 'package:parent_app/features/schedule/presentation/schedule_screen.dart';
 
-/// R48 일정 탭(시안 `schedule` · `--pending` · `--no-child`) — 날짜 알약 · 회차 · 처리 대기 띠 · 이력의 방향 · 날짜.
+/// R48 일정 탭(시안 `schedule` · `--pending` · `--no-child`) — 날짜 알약 · 회차 · 처리 대기 띠
+/// · 이력의 방향 · 날짜.
 class _FixedClock implements Clock {
-  const _FixedClock(this._value);
+  const new(this._value);
   final DateTime _value;
 
   @override
@@ -76,8 +77,7 @@ Future<void> _pump(
         runsForStudentProvider.overrideWith((ref, id) async => [_run()]),
         weeklyAddressProvider.overrideWith(
           (ref, id) async =>
-              weekly ??
-              [for (final d in Weekday.values.take(6)) _entry(d)],
+              weekly ?? [for (final d in Weekday.values.take(6)) _entry(d)],
         ),
         changeRequestsProvider.overrideWith((ref, id) async => page),
       ],
@@ -89,15 +89,23 @@ Future<void> _pump(
 
 void main() {
   testWidgets('머리줄에 오늘 날짜가, 날짜 알약에 오늘 · 내일 날짜가 한국 시간으로 보인다', (tester) async {
-    await _pump(tester, page: const ChangeRequestPage(items: [], pendingCount: 0));
+    await _pump(
+      tester,
+      page: const ChangeRequestPage(items: [], pendingCount: 0),
+    );
 
     expect(find.text('10월 3일 (토)'), findsOneWidget);
     expect(find.text('오늘 · 10월 3일'), findsOneWidget);
     expect(find.text('내일 · 10월 4일'), findsOneWidget);
   });
 
-  testWidgets('오늘 회차 칸 — 등원 · 출발 시각 · 승하차지 · 호차 · 탑승 여부 · 상태 칩', (tester) async {
-    await _pump(tester, page: const ChangeRequestPage(items: [], pendingCount: 0));
+  testWidgets('오늘 회차 칸 — 등원 · 출발 시각 · 승하차지 · 호차 · 탑승 여부 · 상태 칩', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      page: const ChangeRequestPage(items: [], pendingCount: 0),
+    );
 
     expect(find.textContaining('등원 · '), findsWidgets);
     expect(find.text('행복마을 입구 · 2호차 · 탑승'), findsOneWidget);
@@ -105,15 +113,20 @@ void main() {
   });
 
   testWidgets('처리 대기가 없으면 맨 위 띠가 없다', (tester) async {
-    await _pump(tester, page: const ChangeRequestPage(items: [], pendingCount: 0));
+    await _pump(
+      tester,
+      page: const ChangeRequestPage(items: [], pendingCount: 0),
+    );
 
     expect(find.textContaining('처리 대기'), findsNothing);
   });
 
-  testWidgets('처리 대기가 1건이면 "처리 대기 1건 · 학원이 확인하고 있어요" 띠가 사라지지 않는다(UF-P-06)', (tester) async {
+  testWidgets('처리 대기가 1건이면 "처리 대기 1건 · 학원이 확인하고 있어요" 띠가 사라지지 않는다(UF-P-06)', (
+    tester,
+  ) async {
     await _pump(
       tester,
-      page: ChangeRequestPage(
+      page: const ChangeRequestPage(
         items: [
           ChangeRequest(
             changeRequestId: 'c1',
@@ -134,7 +147,9 @@ void main() {
     ChangeRequestPage page(ChangeRequest item) =>
         ChangeRequestPage(items: [item], pendingCount: 0);
 
-    testWidgets('서버가 service_date · direction 을 주면 "탑승 취소 · 오늘 하원" 이다', (tester) async {
+    testWidgets('서버가 service_date · direction 을 주면 "탑승 취소 · 오늘 하원" 이다', (
+      tester,
+    ) async {
       await _pump(
         tester,
         page: page(
@@ -183,7 +198,7 @@ void main() {
       await _pump(
         tester,
         page: page(
-          ChangeRequest(
+          const ChangeRequest(
             changeRequestId: 'c1',
             type: ChangeRequestType.cancel,
             status: ChangeRequestStatus.approved,
@@ -219,7 +234,10 @@ void main() {
   });
 
   testWidgets('요일별 주소 행은 등록된 요일 구간을 요약한다 — 월 ~ 토 등록', (tester) async {
-    await _pump(tester, page: const ChangeRequestPage(items: [], pendingCount: 0));
+    await _pump(
+      tester,
+      page: const ChangeRequestPage(items: [], pendingCount: 0),
+    );
 
     expect(find.text('월 ~ 토 등록 · 매주 같은 주소로 와요'), findsOneWidget);
     expect(find.text('일일 변경 신청'), findsOneWidget);

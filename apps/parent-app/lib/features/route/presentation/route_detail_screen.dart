@@ -7,10 +7,10 @@ import 'package:parent_app/app/app_routes.dart';
 import 'package:parent_app/core/auth/auth_providers.dart';
 import 'package:parent_app/core/routes/domain/route_detail.dart';
 import 'package:parent_app/core/routes/presentation/route_providers.dart';
+import 'package:parent_app/core/runs/presentation/run_display.dart';
 import 'package:parent_app/core/students/presentation/selected_student.dart';
 import 'package:parent_app/core/students/presentation/student_providers.dart';
 import 'package:parent_app/core/students/presentation/student_switcher.dart';
-import 'package:parent_app/core/runs/presentation/run_display.dart';
 import 'package:parent_app/core/ui/failure_message.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -181,7 +181,8 @@ class _RouteDetailView extends StatelessWidget {
                   ],
                 ),
               ),
-              // 배차가 아직 안 됐어도(P-08) 에러가 아니라 이 칩만 얹고 고정 노선을 그대로 보여준다(위 클래스 문서 참고).
+              // 배차가 아직 안 됐어도(P-08) 에러가 아니라 이 칩만 얹고 고정 노선을 그대로 보여준다(위 클래스 문서
+              // 참고).
               if (!route.confirmed)
                 const BaraedaStatusPill(
                   status: BaraedaStatus.waiting,
@@ -200,8 +201,10 @@ class _RouteDetailView extends StatelessWidget {
           ],
           const Text('내 승하차지 앞 2곳과 도착지', style: BaraedaTypography.h3),
           const SizedBox(height: BaraedaSpacing.space2),
-          // 서버가 이미 §3.10 범위로 좁혀 보낸 stops 를 그대로 그린다(route_detail.dart 의 `RouteDetail.stops` 문서 참고).
-          // 지난 곳은 `arrived_at` 으로 "12:09 지남" 을 단다 — 지난 사실이라 ETA 비노출(C-08)과 무관하다.
+          // 서버가 이미 §3.10 범위로 좁혀 보낸 stops 를 그대로 그린다(route_detail.dart 의
+          // `RouteDetail.stops` 문서 참고).
+          // 지난 곳은 `arrived_at` 으로 "12:09 지남" 을 단다 — 지난 사실이라 ETA 비노출(C-08)과
+          // 무관하다.
           StopTimeline(
             stops: [
               for (final stop in route.stops)

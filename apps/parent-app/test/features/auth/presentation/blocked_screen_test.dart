@@ -6,7 +6,7 @@ import 'package:parent_app/core/auth/academy_contact.dart';
 import 'package:parent_app/features/auth/presentation/blocked_screen.dart';
 
 class _MemoryContactStorage extends AcademyContactStorage {
-  _MemoryContactStorage(this.value);
+  new(this.value);
 
   final String? value;
 
@@ -58,7 +58,9 @@ void main() {
     expect(find.textContaining('다니는 학원에 문의해 주세요'), findsOneWidget);
   });
 
-  testWidgets('문의처가 번호 모양이 아닌 글자뿐이면 전화 단추를 그리지 않는다(Ruling 827)', (tester) async {
+  testWidgets('문의처가 번호 모양이 아닌 글자뿐이면 전화 단추를 그리지 않는다(Ruling 827)', (
+    tester,
+  ) async {
     await _pump(tester, saved: '방문 문의 환영');
 
     expect(find.textContaining('학원에 전화'), findsNothing);

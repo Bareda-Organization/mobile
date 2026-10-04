@@ -11,8 +11,8 @@ import 'package:parent_app/core/common/run_direction.dart';
 import 'package:parent_app/core/ui/failure_message.dart';
 import 'package:parent_app/features/schedule/domain/weekly_address_entry.dart';
 import 'package:parent_app/features/schedule/presentation/schedule_providers.dart';
-import 'package:parent_app/features/schedule/presentation/widgets/sticky_action_bar.dart';
 import 'package:parent_app/features/schedule/presentation/unsaved_edits.dart';
+import 'package:parent_app/features/schedule/presentation/widgets/sticky_action_bar.dart';
 
 /// §3.7 요일×방향 주소 편집기 — 요일 알약(월~일) 하나를 고르면 그 요일의 등원 · 하원 두 칸이 나온다(R48).
 ///
@@ -255,7 +255,7 @@ class _WeeklyAddressEditorState extends ConsumerState<WeeklyAddressEditor> {
                     leadingIcon: 'pencil',
                     title: '하루만 바꾸고 싶어요',
                     subtitle: '일일 변경을 쓰면 그날만 바뀌어요',
-                    trailing: const BaraedaIcon('chevron-right', size: 20),
+                    trailing: const BaraedaIcon('chevron-right'),
                     onTap: () => context.push(AppRoutes.dailyChange),
                   ),
                 ],

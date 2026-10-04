@@ -7,9 +7,10 @@ import 'package:parent_app/app/di.dart';
 import 'package:parent_app/core/auth/domain/auth_repository.dart';
 import 'package:parent_app/features/auth/presentation/login_screen.dart';
 
-/// R48 로그인(시안 `login` · `--error`) — 브랜드 줄 `학부모 · 학생`(P4) · 입력 칸 라벨에 `*` 없음 · 잔여 시도가 적으면 잠금 경고.
+/// R48 로그인(시안 `login` · `--error`) — 브랜드 줄 `학부모 · 학생`(P4) · 입력 칸 라벨에 `*` 없음 ·
+/// 잔여 시도가 적으면 잠금 경고.
 class _FailingLoginRepository implements AuthRepository {
-  _FailingLoginRepository(this.remaining);
+  new(this.remaining);
 
   final int remaining;
 

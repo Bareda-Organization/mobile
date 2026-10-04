@@ -32,7 +32,10 @@ class SettingsScreen extends ConsumerWidget {
           children: [
             _AccountCard(isParent: isParent),
             const SizedBox(height: BaraedaSpacing.sectionGap),
-            if (isParent) const _ChildrenSection() else const _ParentLinkSection(),
+            if (isParent)
+              const _ChildrenSection()
+            else
+              const _ParentLinkSection(),
             const SizedBox(height: BaraedaSpacing.sectionGap),
             const _SectionTitle('알림'),
             NotificationSettingsPanel(isParent: isParent),
@@ -47,13 +50,14 @@ class SettingsScreen extends ConsumerWidget {
                   leadingIcon: 'lock',
                   title: '비밀번호 변경',
                   subtitle: '바꾸면 모든 기기에서 로그아웃돼요',
-                  trailing: const BaraedaIcon('chevron-right', size: 20),
+                  trailing: const BaraedaIcon('chevron-right'),
                   onTap: () => context.push(AppRoutes.passwordChange),
                 ),
               ],
             ),
             const SizedBox(height: BaraedaSpacing.sectionGap),
-            // 로그아웃 — 역할이 비면 라우터가 로그인 화면으로 보낸다. 같은 확인 대화를 `pending_approval_screen.dart` 도
+            // 로그아웃 — 역할이 비면 라우터가 로그인 화면으로 보낸다. 같은 확인 대화를
+            // `pending_approval_screen.dart` 도
             // 재사용한다(`core/auth/account_session.dart` 의 [confirmLogout]).
             BaraedaButton(
               label: '로그아웃',
@@ -97,10 +101,7 @@ class _AccountCard extends ConsumerWidget {
     final me = ref.watch(myProfileProvider).value;
     if (me == null) return const SizedBox.shrink();
     final colors = context.colors;
-    final subtitle = [
-      ?me.academy?.name,
-      me.loginId,
-    ].join(' · ');
+    final subtitle = [?me.academy?.name, me.loginId].join(' · ');
 
     return BaraedaCard(
       child: Row(
@@ -207,7 +208,7 @@ class _ChildrenSection extends ConsumerWidget {
               leadingIcon: 'user-plus',
               title: '자녀 추가',
               subtitle: '자녀 앱에서 만든 연결 코드를 입력해요',
-              trailing: const BaraedaIcon('chevron-right', size: 20),
+              trailing: const BaraedaIcon('chevron-right'),
               onTap: () => context.push(AppRoutes.childLink),
             ),
           ],
@@ -243,7 +244,7 @@ class _ParentLinkSection extends StatelessWidget {
               leadingIcon: 'link',
               title: '부모님과 연결하기',
               subtitle: '연결 코드를 만들어 부모님께 알려 주세요',
-              trailing: const BaraedaIcon('chevron-right', size: 20),
+              trailing: const BaraedaIcon('chevron-right'),
               onTap: () => context.push(AppRoutes.childLink),
             ),
           ],

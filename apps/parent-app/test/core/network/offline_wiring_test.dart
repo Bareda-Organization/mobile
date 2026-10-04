@@ -47,7 +47,9 @@ void main() {
   test('앱의 API 클라이언트로 나간 요청이 연결 실패하면 끊김 상태가 된다', () async {
     final container = ProviderContainer(
       overrides: [
-          noBusPositionOverride,tokenStorageProvider.overrideWithValue(FakeTokenStorage())],
+        noBusPositionOverride,
+        tokenStorageProvider.overrideWithValue(FakeTokenStorage()),
+      ],
     );
     addTearDown(container.dispose);
     final dio = container.read(apiClientProvider).dio

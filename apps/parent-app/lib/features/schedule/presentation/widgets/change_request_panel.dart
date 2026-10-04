@@ -29,7 +29,8 @@ String runOptionLabel(StudentRun run) =>
 /// §3.8 — 일일 변경 신청. 날짜(오늘·내일, 한국 시간)를 고르면 `core/runs` 의
 /// §3.5 조회가 그날 회차를 주고, 그중 하나를 대상으로 신청한다(R48 시안 `daily-change`).
 ///
-/// 신청 이력(§3.9)은 일정 탭 맨 아래로 옮겼다. 제출하면 신청 내용 영수증이 이 화면을 대신한다(`daily-change--done`).
+/// 신청 이력(§3.9)은 일정 탭 맨 아래로 옮겼다. 제출하면 신청 내용 영수증이 이 화면을
+/// 대신한다(`daily-change--done`).
 class ChangeRequestPanel extends ConsumerStatefulWidget {
   const new({required this.studentId, super.key});
 

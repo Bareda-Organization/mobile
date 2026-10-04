@@ -5,9 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:parent_app/app/di.dart';
 import 'package:parent_app/core/auth/auth_providers.dart';
-import 'package:parent_app/core/auth/domain/auth_repository.dart';
 import 'package:parent_app/core/auth/user_role.dart';
-import 'package:parent_app/core/devices/presentation/device_registration_panel.dart';
 import 'package:parent_app/core/students/domain/student.dart';
 import 'package:parent_app/core/students/presentation/student_providers.dart';
 import 'package:parent_app/features/settings/domain/notification_settings.dart';
@@ -15,7 +13,8 @@ import 'package:parent_app/features/settings/presentation/settings_providers.dar
 import 'package:parent_app/features/settings/presentation/settings_screen.dart';
 import 'package:parent_app/features/settings/presentation/widgets/notification_settings_panel.dart';
 
-/// R48 설정 탭(시안 `settings` · `settings-student`) — 계정 카드 · 자녀 목록의 학년 · 학생 알림 스위치 2개 · 로그아웃 맨 아래.
+/// R48 설정 탭(시안 `settings` · `settings-student`) — 계정 카드 · 자녀 목록의 학년 · 학생 알림 스위치
+/// 2개 · 로그아웃 맨 아래.
 class _FakeDeviceStorage extends DeviceRegistrationStorage {
   @override
   Future<String> readOrCreateDeviceId() async => 'device-1';
@@ -133,7 +132,9 @@ void main() {
   testWidgets('로그아웃이 맨 아래에 있다 — 보안(비밀번호 변경)보다 아래(Ruling 826)', (tester) async {
     await _pump(tester, role: UserRole.parent);
 
-    final logout = tester.getTopLeft(find.widgetWithText(BaraedaButton, '로그아웃'));
+    final logout = tester.getTopLeft(
+      find.widgetWithText(BaraedaButton, '로그아웃'),
+    );
     final password = tester.getTopLeft(find.text('비밀번호 변경'));
     expect(logout.dy, greaterThan(password.dy));
     expect(find.text('바꾸면 모든 기기에서 로그아웃돼요'), findsOneWidget);

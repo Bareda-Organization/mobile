@@ -89,7 +89,7 @@ class _LoadingBody extends StatelessWidget {
       label: '일정을 불러오는 중',
       child: const Padding(
         padding: EdgeInsets.all(BaraedaSpacing.gutterMobile),
-        child: BaraedaSkeletonList(count: 3),
+        child: BaraedaSkeletonList(),
       ),
     );
   }
@@ -130,7 +130,7 @@ class _ScheduleBody extends ConsumerStatefulWidget {
 class _ScheduleBodyState extends ConsumerState<_ScheduleBody> {
   /// 0 = 오늘, 1 = 내일 (한국 시간).
   int _dayOffset = 0;
-  final _historyKey = GlobalKey();
+  final GlobalKey<State<StatefulWidget>> _historyKey = GlobalKey();
 
   void _showHistory() {
     final target = _historyKey.currentContext;
@@ -208,14 +208,14 @@ class _ScheduleBodyState extends ConsumerState<_ScheduleBody> {
               subtitle: _weeklySummary(
                 ref.watch(weeklyAddressProvider(studentId)).value,
               ),
-              trailing: const BaraedaIcon('chevron-right', size: 20),
+              trailing: const BaraedaIcon('chevron-right'),
               onTap: () => context.push(AppRoutes.weeklyAddress),
             ),
             BaraedaListRow(
               leadingIcon: 'pencil',
               title: '일일 변경 신청',
               subtitle: '오늘이나 내일 하루만 바꾸거나 취소해요',
-              trailing: const BaraedaIcon('chevron-right', size: 20),
+              trailing: const BaraedaIcon('chevron-right'),
               onTap: () => context.push(AppRoutes.dailyChange),
             ),
           ],
@@ -314,7 +314,7 @@ Widget _runRow(StudentRun run, DateTime now, {required bool showCountdown}) {
   final parts = [
     run.stop.name,
     run.busNo,
-    run.riding ? '탑승' : '탑승 안 함',
+    if (run.riding) '탑승' else '탑승 안 함',
     ?(left == null ? null : '확정까지 $left'),
   ];
   return BaraedaListRow(

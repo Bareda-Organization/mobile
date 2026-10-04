@@ -147,7 +147,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     const SizedBox(height: BaraedaSpacing.space12),
-                    // 브랜드 줄 — 한 앱을 학부모 · 학생이 같이 쓰고 로그인 결과의 역할로 갈리므로 입구에서 누구를 위한 앱인지 적는다(P4).
+                    // 브랜드 줄 — 한 앱을 학부모 · 학생이 같이 쓰고 로그인 결과의 역할로 갈리므로 입구에서 누구를 위한
+                    // 앱인지 적는다(P4).
                     const Text('바래다', style: BaraedaTypography.h1),
                     Text(
                       '학부모 · 학생',

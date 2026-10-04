@@ -7,7 +7,8 @@ import 'package:parent_app/features/schedule/presentation/schedule_screen.dart';
 
 /// 게이트 판정 🔴-2 — 학생 role 로는 등하원 일정 편집 진입점
 /// (`요일별 등하원 주소` · `일일 변경 신청` 행)이 노출되지 않는다는 것을
-/// 고정하는 화면 단위 테스트. R48 에서 편집기 둘은 하위 화면이 되어 일정 탭에는 그 진입 행만 남는다. `canEdit` 삼항을 `true` 로 심는 변형과
+/// 고정하는 화면 단위 테스트. R48 에서 편집기 둘은 하위 화면이 되어 일정 탭에는 그 진입 행만 남는다. `canEdit` 삼항을
+/// `true` 로 심는 변형과
 /// `?? false` 를 `?? true` 로 심는 변형(role 판정 미상 시 개방) 둘 다
 /// 이 테스트로 잡혀야 한다.
 Future<void> _pumpWith(WidgetTester tester, {UserRole? role}) async {

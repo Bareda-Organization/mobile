@@ -12,13 +12,11 @@ import 'package:parent_app/core/auth/user_role.dart';
 import 'package:parent_app/core/change_requests/domain/change_request.dart';
 import 'package:parent_app/core/change_requests/presentation/change_request_providers.dart';
 import 'package:parent_app/core/common/run_direction.dart';
+import 'package:parent_app/core/runs/domain/bus_position.dart';
 import 'package:parent_app/core/runs/domain/student_run.dart';
-import 'package:parent_app/core/runs/presentation/run_providers.dart';
 import 'package:parent_app/core/students/domain/student.dart';
-import 'package:parent_app/core/students/presentation/student_providers.dart';
 import 'package:parent_app/features/home/presentation/home_providers.dart';
 import 'package:parent_app/features/home/presentation/home_screen.dart';
-import 'package:parent_app/core/runs/domain/bus_position.dart';
 import 'package:parent_app/features/live_map/domain/bus_position_repository.dart';
 
 /// R48 홈 지도 미리보기(`Ruling 821`) — **WebSocket 을 구독하지 않고** §3.11 을 30초마다 다시 읽는다.
@@ -27,15 +25,14 @@ import 'package:parent_app/features/live_map/domain/bus_position_repository.dart
 /// 어떤 메서드든 부르면 시험이 죽는 WebSocket 대역 — 홈이 이것을 건드리면 그 자리에서 실패한다.
 class _ForbiddenWsClient implements BaraedaWebSocketClient {
   @override
-  dynamic noSuchMethod(Invocation invocation) => throw StateError(
-    '홈 지도 미리보기가 WebSocket 을 건드렸다: ${invocation.memberName}',
-  );
+  dynamic noSuchMethod(Invocation invocation) =>
+      throw StateError('홈 지도 미리보기가 WebSocket 을 건드렸다: ${invocation.memberName}');
 }
 
 class _CountingPositionRepository implements BusPositionRepository {
-  _CountingPositionRepository(this._response);
+  new(this._response);
 
-  Future<BusPosition> Function() _response;
+  final Future<BusPosition> Function() _response;
   int calls = 0;
   final List<String> studentIds = [];
 
@@ -107,11 +104,7 @@ Future<_CountingPositionRepository> _pumpHome(
         roleCapabilitiesProvider.overrideWithValue(RoleCapabilities.of(role)),
         myStudentsProvider.overrideWith(
           (ref) async => [
-            Student(
-              studentId: 's-1',
-              name: '이하준',
-              linkedAt: DateTime(2026, 9),
-            ),
+            Student(studentId: 's-1', name: '이하준', linkedAt: DateTime(2026, 9)),
           ],
         ),
         myStudentIdProvider.overrideWith((ref) async => 's-1'),
@@ -137,8 +130,13 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('§3.11 을 처음 한 번 읽고, 30초가 지나면 다시 읽는다 — 29초에는 안 읽는다', (tester) async {
-    final repository = await _pumpHome(tester, position: () async => _position());
+  testWidgets('§3.11 을 처음 한 번 읽고, 30초가 지나면 다시 읽는다 — 29초에는 안 읽는다', (
+    tester,
+  ) async {
+    final repository = await _pumpHome(
+      tester,
+      position: () async => _position(),
+    );
     expect(repository.calls, 1);
     expect(repository.studentIds, ['s-1']);
 
@@ -226,7 +224,9 @@ void main() {
     expect(find.text('전체 지도'), findsOneWidget);
   });
 
-  testWidgets('오늘 회차가 없으면(404 RUN_NOT_FOUND) 미리보기 카드 대신 안내가 나온다', (tester) async {
+  testWidgets('오늘 회차가 없으면(404 RUN_NOT_FOUND) 미리보기 카드 대신 안내가 나온다', (
+    tester,
+  ) async {
     await _pumpHome(
       tester,
       position: () => Future.error(
@@ -244,7 +244,9 @@ void main() {
   });
 
   group('머리줄', () {
-    testWidgets('학부모 홈 제목은 "우리 아이 버스" 이고 로그아웃 단추가 없다(Ruling 826)', (tester) async {
+    testWidgets('학부모 홈 제목은 "우리 아이 버스" 이고 로그아웃 단추가 없다(Ruling 826)', (
+      tester,
+    ) async {
       await _pumpHome(tester, position: () async => _position());
 
       expect(find.text('우리 아이 버스'), findsOneWidget);

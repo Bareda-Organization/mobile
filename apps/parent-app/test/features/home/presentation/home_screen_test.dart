@@ -83,7 +83,8 @@ void main() {
     expect(find.text('부모님과 연결하기'), findsNothing);
   });
 
-  // R48 — 일정은 아래 탭이 되고(`app_shell_test`), 자녀 추가는 설정 탭으로 옮겼다(`settings_screen_r48_test`).
+  // R48 — 일정은 아래 탭이 되고(`app_shell_test`), 자녀 추가는 설정 탭으로
+  // 옮겼다(`settings_screen_r48_test`).
   // 홈 본문에 같은 진입이 또 남아 있으면 길이 두 개가 된다.
   testWidgets('P2 학부모 홈에는 [일정] 단추가 없다 — 일정은 아래 탭이다', (tester) async {
     final pushed = await pumpHome(

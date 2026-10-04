@@ -44,9 +44,10 @@ final academyContactStorageProvider = Provider<AcademyContactStorage>(
 );
 
 /// 차단 화면이 읽는 마지막 학원 문의처. 저장된 것이 없으면 `null`.
-final savedAcademyContactProvider = FutureProvider.autoDispose<String?>(
-  (ref) => ref.watch(academyContactStorageProvider).read(),
-);
+final FutureProvider<String?> savedAcademyContactProvider =
+    FutureProvider.autoDispose<String?>(
+      (ref) => ref.watch(academyContactStorageProvider).read(),
+    );
 
 /// 문의처 글자(`academy_contact` 는 자유 글자다)에서 전화번호 모양만 뽑는다 — 없으면 `null`.
 /// 번호 모양이 없으면 전화 단추를 그리지 않는다(`Ruling 827`).

@@ -14,8 +14,8 @@ import 'package:parent_app/core/students/domain/student.dart';
 import 'package:parent_app/core/students/presentation/student_providers.dart';
 import 'package:parent_app/features/schedule/domain/weekly_address_entry.dart';
 import 'package:parent_app/features/schedule/domain/weekly_address_repository.dart';
-import 'package:parent_app/features/schedule/presentation/schedule_providers.dart';
 import 'package:parent_app/features/schedule/presentation/daily_change_screen.dart';
+import 'package:parent_app/features/schedule/presentation/schedule_providers.dart';
 import 'package:parent_app/features/schedule/presentation/weekly_address_screen.dart';
 
 /// R32 P14 — 주소·변경 요청을 적다가 뒤로 가면 확인 없이 입력이 사라졌다. R48 에서 일정 화면이 탭이 되고

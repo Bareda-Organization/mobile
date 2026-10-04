@@ -11,7 +11,8 @@ import 'package:parent_app/core/network/network_status.dart';
 import 'package:parent_app/core/refresh/visible_poller.dart';
 import 'package:parent_app/features/notifications/presentation/notification_providers.dart';
 
-/// 로그인 뒤 화면 아래의 탭 막대 — 학부모 `[홈]` `[일정]` `[알림]` `[설정]` · 학생 `[내 버스]` `[알림]` `[설정]` (R44 · R48).
+/// 로그인 뒤 화면 아래의 탭 막대 — 학부모 `[홈]` `[일정]` `[알림]` `[설정]` · 학생 `[내 버스]` `[알림]`
+/// `[설정]` (R44 · R48).
 ///
 /// `router.dart` 의 `StatefulShellRoute` 가 탭마다 화면 상태(스크롤 위치·받아 둔 목록)를
 /// 따로 붙들어 두고,
@@ -124,7 +125,7 @@ const _notificationsBranch = 2;
 const _settingsBranch = 3;
 
 class _Tab {
-  const _Tab(this.branch, this.icon, this.label);
+  const new(this.branch, this.icon, this.label);
 
   final int branch;
   final String icon;

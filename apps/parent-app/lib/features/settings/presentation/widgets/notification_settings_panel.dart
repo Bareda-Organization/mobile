@@ -12,7 +12,8 @@ import 'package:parent_app/features/settings/presentation/settings_providers.dar
 /// 학생이 받는 알림은 도착 · 지연 · 운행 시작뿐이라(`Ruling 411`) 의미 없는 미승차 스위치를 뺀다. 학생의 `운행 시작`은
 /// API 에 별도 필드가 없어 `boarding` 에 귀속한다(`Ruling 829`, `UF-P-08`).
 ///
-/// 지연 알림은 설정 항목 자체가 없어(항상 발송, `NotificationSettings` 문서 참고) 스위치 대신 `항상 켜짐` 칩을 둔다.
+/// 지연 알림은 설정 항목 자체가 없어(항상 발송, `NotificationSettings` 문서 참고) 스위치 대신 `항상 켜짐` 칩을
+/// 둔다.
 class NotificationSettingsPanel extends ConsumerWidget {
   const new({required this.isParent, super.key});
 
@@ -140,9 +141,9 @@ class _AlwaysOnRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BaraedaListGroup(
+    return const BaraedaListGroup(
       children: [
-        const BaraedaListRow(
+        BaraedaListRow(
           title: '지연 알림',
           subtitle: '버스가 늦으면 항상 알려 드려요',
           trailing: BaraedaStatusPill(

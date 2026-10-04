@@ -4,7 +4,8 @@ import 'package:parent_app/core/ui/format_date_time.dart';
 
 /// 회차 표시 문구·상태 칩 — 홈 카드(`RunCard`)와 일정 탭이 같은 말을 쓴다.
 
-/// 서버가 주는 시각은 **UTC 순간**이다(`…Z`). `DateTime.parse` 는 오프셋이 붙은 문자열을 UTC `DateTime` 으로
+/// 서버가 주는 시각은 **UTC 순간**이다(`…Z`). `DateTime.parse` 는 오프셋이 붙은 문자열을 UTC
+/// `DateTime` 으로
 /// 돌려주므로, 벽시계로 읽으려면 기기 표준시로 옮겨야 한다 — 안 옮기면 KST 에서 **9시간 이른 시각**이 나온다.
 String formatClock(DateTime time) {
   final local = time.toLocal();
