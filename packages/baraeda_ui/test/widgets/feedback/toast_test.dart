@@ -5,10 +5,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class _Host extends StatelessWidget {
-  const new({this.onAction, this.drive = false});
+  const new({this.onAction, this.drive = false, this.bottomOffset});
 
   final VoidCallback? onAction;
   final bool drive;
+  final double? bottomOffset;
 
   @override
   Widget build(BuildContext context) {
@@ -20,6 +21,7 @@ class _Host extends StatelessWidget {
             message: '새솔초 정문 도착 처리했어요 · 12:36',
             actionLabel: onAction == null ? null : '되돌리기',
             onAction: onAction,
+            bottomOffset: bottomOffset,
           ),
           child: const Text('열기'),
         ),
@@ -154,5 +156,30 @@ void main() {
       BaraedaColors.light.inkSurface,
     );
     await tester.pump(const Duration(seconds: 6));
+  });
+
+  // 운행 중 화면은 아래에 큰 단추 줄이 있어 토스트가 그 위로 떠야 한다 — 단추를 가리면 다음 누름을 가로챈다.
+  testWidgets('bottomOffset 을 주면 그 높이에 뜨고, 안 주면 탭 막대 위 기본 자리다', (tester) async {
+    await tester.pumpWidget(const _Host(drive: true));
+    await tester.tap(find.text('열기'));
+    await tester.pumpAndSettle();
+    final screenHeight =
+        tester.view.physicalSize.height / tester.view.devicePixelRatio;
+    final defaultBottom =
+        screenHeight - tester.getBottomLeft(find.byType(BaraedaToast)).dy;
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpAndSettle();
+
+    await tester.pumpWidget(const _Host(drive: true, bottomOffset: 96));
+    await tester.tap(find.text('열기'));
+    await tester.pumpAndSettle();
+    final raisedBottom =
+        screenHeight - tester.getBottomLeft(find.byType(BaraedaToast)).dy;
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpAndSettle();
+
+    // 기본은 탭 막대(64) + 간격(16) 위다.
+    expect(defaultBottom, closeTo(80, 0.5));
+    expect(raisedBottom, closeTo(96, 0.5));
   });
 }
