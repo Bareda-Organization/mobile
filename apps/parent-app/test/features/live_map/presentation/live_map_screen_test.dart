@@ -1811,6 +1811,29 @@ void main() {
       expect(map.fitToContent, isTrue);
     });
 
+    testWidgets('종료 — 달리다 끝났어도(마지막 좌표가 남음) 버스는 그리지 않고 노선만 그린다', (
+      tester,
+    ) async {
+      await pumpMap(
+        tester,
+        position: snapshot(),
+        routeDetail: route(arrived: true),
+      );
+      client.deliver(
+        _envelope(WsEventType.runEnded, {
+          'run_status': 'finished',
+          'finished_at': finished.toIso8601String(),
+        }),
+      );
+      await tester.pumpAndSettle();
+
+      final map = surface(tester);
+      expect(find.text('운행이 끝났어요'), findsOneWidget);
+      expect(map.markers.where((m) => m.kind == MapMarkerKind.bus), isEmpty);
+      expect(map.polylines.single.passed, isTrue);
+      expect(map.fitToContent, isTrue);
+    });
+
     testWidgets('종료 — 지나간 승하차지(arrived_at 있음)만 지나간 모양이다', (tester) async {
       await pumpMap(
         tester,
