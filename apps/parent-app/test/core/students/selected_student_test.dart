@@ -28,10 +28,7 @@ void main() {
     final students = [_child('s-1', '첫째'), _child('s-2', '둘째')];
 
     test('이번 실행에서 고른 자녀가 기억해 둔 자녀보다 먼저다', () {
-      expect(
-        pickStudentId(students, picked: 's-1', saved: 's-2'),
-        's-1',
-      );
+      expect(pickStudentId(students, picked: 's-1', saved: 's-2'), 's-1');
     });
 
     test('고른 적이 없으면 기억해 둔 자녀를 쓴다', () {
@@ -79,17 +76,16 @@ void main() {
 
     testWidgets('자녀가 1명이면 아무것도 그리지 않는다', (tester) async {
       await pump(tester, [_child('s-1', '첫째')], _MemoryStorage());
-      expect(find.byType(BaraedaSegmentedControl), findsNothing);
-      expect(find.byType(BaraedaSelect), findsNothing);
+      expect(find.byType(BaraedaFilterPill), findsNothing);
     });
 
-    testWidgets('자녀 2~3명은 이름이 나란히 보이고 한 번 누르면 바뀌며 기억한다', (tester) async {
+    testWidgets('자녀 2명은 이름이 알약으로 나란히 보이고 한 번 누르면 바뀌며 기억한다', (tester) async {
       final storage = _MemoryStorage();
-      final container = await pump(
-        tester,
-        [_child('s-1', '첫째'), _child('s-2', '둘째')],
-        storage,
-      );
+      final container = await pump(tester, [
+        _child('s-1', '첫째'),
+        _child('s-2', '둘째'),
+      ], storage);
+      expect(find.byType(BaraedaFilterPill), findsNWidgets(2));
       expect(find.text('첫째'), findsOneWidget);
       expect(find.text('둘째'), findsOneWidget);
 
@@ -100,24 +96,27 @@ void main() {
       expect(storage.saved, 's-2');
     });
 
-    testWidgets('자녀 3명도 이름이 나란히 보인다 — 칩의 최대 수는 3명이다', (tester) async {
-      await pump(
-        tester,
-        [for (var i = 1; i <= 3; i++) _child('s-$i', '자녀$i')],
-        _MemoryStorage(),
-      );
-      expect(find.byType(BaraedaSegmentedControl), findsOneWidget);
-      expect(find.byType(BaraedaSelect), findsNothing);
+    testWidgets('선택된 자녀의 알약만 선택 상태다', (tester) async {
+      await pump(tester, [
+        _child('s-1', '첫째'),
+        _child('s-2', '둘째'),
+      ], _MemoryStorage());
+      final pills = tester
+          .widgetList<BaraedaFilterPill>(find.byType(BaraedaFilterPill))
+          .toList();
+      expect(pills.map((p) => p.selected), [true, false]);
     });
 
-    testWidgets('자녀 4명 이상은 이름이 좁아 고르는 창(드롭다운)으로 둔다', (tester) async {
-      await pump(
-        tester,
-        [for (var i = 1; i <= 4; i++) _child('s-$i', '자녀$i')],
-        _MemoryStorage(),
-      );
-      expect(find.byType(BaraedaSelect), findsOneWidget);
-      expect(find.byType(BaraedaSegmentedControl), findsNothing);
+    testWidgets('자녀 4명 이상도 고르는 창 없이 알약이 가로로 이어진다 — 눌러서 바꾼다', (tester) async {
+      final container = await pump(tester, [
+        for (var i = 1; i <= 4; i++) _child('s-$i', '자녀$i'),
+      ], _MemoryStorage());
+      expect(find.byType(BaraedaFilterPill), findsNWidgets(4));
+      expect(find.byType(BaraedaSelect), findsNothing);
+
+      await tester.tap(find.text('자녀4'));
+      await tester.pump();
+      expect(container.read(selectedStudentIdProvider), 's-4');
     });
   });
 }

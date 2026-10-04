@@ -325,7 +325,7 @@ void main() {
       await tester.pump();
 
       expect(find.byType(StudentSwitcher), findsOneWidget);
-      expect(find.byType(BaraedaSegmentedControl), findsNothing);
+      expect(find.byType(BaraedaFilterPill), findsNothing);
     });
 
     testWidgets('자녀가 2명 이상이면 선택 UI 가 뜬다', (tester) async {
@@ -338,7 +338,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byType(BaraedaSegmentedControl), findsOneWidget);
+      expect(find.byType(BaraedaFilterPill), findsNWidgets(2));
     });
   });
 

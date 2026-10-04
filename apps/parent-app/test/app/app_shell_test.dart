@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
@@ -20,6 +21,7 @@ import 'package:parent_app/features/auth/presentation/login_screen.dart';
 import 'package:parent_app/features/auth/presentation/pending_approval_screen.dart';
 import 'package:parent_app/features/home/presentation/home_screen.dart';
 import 'package:parent_app/features/notifications/presentation/notifications_screen.dart';
+import 'package:parent_app/features/schedule/presentation/schedule_screen.dart';
 import 'package:parent_app/features/settings/domain/notification_settings.dart';
 import 'package:parent_app/features/settings/presentation/settings_providers.dart';
 import 'package:parent_app/features/settings/presentation/settings_screen.dart';
@@ -70,8 +72,9 @@ NotificationItem _item(String id, {bool unread = true}) => NotificationItem(
   readAt: unread ? null : DateTime.utc(2026, 9, 30),
 );
 
-/// 앱 아래 탭 막대(`NavigationBar`) — R44. 로그인 뒤 화면에만 있고, 로그인·가입·대기·차단 화면과
-/// 탭 위에 얹은 하위 화면(지도·일정·비밀번호 변경 …)에는 없다.
+/// 앱 아래 탭 막대(`BaraedaTabBar`) — R44 · R48. 로그인 뒤 화면에만 있고, 로그인·가입·대기·차단 화면과
+/// 탭 위에 얹은 하위 화면(지도·비밀번호 변경·요일별 주소 …)에는 없다.
+/// 학부모는 `홈 · 일정 · 알림 · 설정`, 학생은 `내 버스 · 알림 · 설정`(R48, `Ruling 826`).
 void main() {
   Future<FakeNotificationRepository> pumpApp(
     WidgetTester tester, {
@@ -112,31 +115,24 @@ void main() {
     return repository;
   }
 
-  Finder tabBar() => find.byType(NavigationBar);
+  Finder tabBar() => find.byType(BaraedaTabBar);
+
+  List<String> tabLabels(WidgetTester tester) =>
+      tester.widget<BaraedaTabBar>(tabBar()).items.map((i) => i.label).toList();
 
   group('탭이 나오는 곳', () {
-    testWidgets('로그인 뒤에는 [홈] [알림] [설정] 탭 3개가 있다', (tester) async {
+    testWidgets('학부모는 [홈] [일정] [알림] [설정] 탭 4개다 — 일정이 새 탭이다', (tester) async {
       await pumpApp(tester);
 
       expect(find.byType(HomeScreen), findsOneWidget);
       expect(tabBar(), findsOneWidget);
-      final destinations = tester.widgetList<NavigationDestination>(
-        find.byType(NavigationDestination),
-      );
-      expect(destinations.map((d) => d.label), ['홈', '알림', '설정']);
+      expect(tabLabels(tester), ['홈', '일정', '알림', '설정']);
     });
 
-    testWidgets('학생 계정도 같은 탭 3개다', (tester) async {
+    testWidgets('학생은 [내 버스] [알림] [설정] 탭 3개다 — 일정 탭이 없다', (tester) async {
       await pumpApp(tester, role: UserRole.student);
 
-      expect(
-        tester
-            .widgetList<NavigationDestination>(
-              find.byType(NavigationDestination),
-            )
-            .map((d) => d.label),
-        ['홈', '알림', '설정'],
-      );
+      expect(tabLabels(tester), ['내 버스', '알림', '설정']);
     });
 
     testWidgets('로그인 화면에는 탭이 없다', (tester) async {
@@ -173,6 +169,18 @@ void main() {
   });
 
   group('탭 이동', () {
+    testWidgets('[일정] 탭은 일정 화면을 연다(학부모)', (tester) async {
+      await pumpApp(tester);
+
+      await tester.tap(
+        find.descendant(of: tabBar(), matching: find.text('일정')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ScheduleScreen), findsOneWidget);
+      expect(tabBar(), findsOneWidget);
+    });
+
     testWidgets('[알림] 탭은 알림 화면을, [설정] 탭은 설정 화면을 연다', (tester) async {
       await pumpApp(tester);
 
@@ -202,10 +210,7 @@ void main() {
       expect(find.text('새 알림이 없습니다'), findsNothing);
       // 탭 막대 밖에서 '알림' 머리말이 하나도 없다.
       expect(
-        find.descendant(
-          of: find.byType(HomeScreen),
-          matching: find.text('알림'),
-        ),
+        find.descendant(of: find.byType(HomeScreen), matching: find.text('알림')),
         findsNothing,
       );
     });
@@ -242,13 +247,13 @@ void main() {
     testWidgets('안 읽은 알림이 없으면 배지가 없다', (tester) async {
       await pumpApp(tester, items: [_item('c', unread: false)]);
 
+      // 안 읽은 알림이 없으면 어느 탭에도 건수가 붙지 않는다.
       expect(
-        find.descendant(of: tabBar(), matching: find.byType(Badge)),
-        findsOneWidget,
-      );
-      expect(
-        tester.widget<Badge>(find.byType(Badge)).isLabelVisible,
-        isFalse,
+        tester
+            .widget<BaraedaTabBar>(tabBar())
+            .items
+            .every((item) => item.badge == 0 && !item.dotBadge),
+        isTrue,
       );
     });
 
@@ -284,7 +289,7 @@ void main() {
       final handle = tester.ensureSemantics();
       await pumpApp(tester);
 
-      expect(find.bySemanticsLabel(RegExp('안 읽은 알림 2건')), findsWidgets);
+      expect(find.bySemanticsLabel(RegExp('새 알림 2건')), findsWidgets);
       handle.dispose();
     });
   });
@@ -339,9 +344,8 @@ void main() {
         tester,
         extraOverrides: [webSocketClientProvider.overrideWithValue(client)],
       );
-      ProviderScope.containerOf(
-          tester.element(find.byType(AppShell)),
-        ).read(networkStatusProvider.notifier)
+      ProviderScope.containerOf(tester.element(find.byType(AppShell)))
+          .read(networkStatusProvider.notifier)
         ..markReachable()
         ..markReachable();
       await tester.pump();

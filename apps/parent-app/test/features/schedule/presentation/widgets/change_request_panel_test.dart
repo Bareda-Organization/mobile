@@ -48,6 +48,9 @@ class _ThrowingChangeRequestRepository implements ChangeRequestRepository {
       const ChangeRequestPage(items: [], pendingCount: 0);
 }
 
+/// 회차 칸의 제목 — `runOptionLabel` 과 달리 손으로 적은 리터럴이다(출발 08:00).
+const _fixtureRunTitle = '등원 · 08:00 출발';
+
 StudentRun _fixtureRun() => StudentRun(
   runId: 'run-1',
   direction: RunDirection.toAcademy,
@@ -63,16 +66,19 @@ StudentRun _fixtureRun() => StudentRun(
 
 /// 요청받은 날짜를 기록하고 날짜별로 다른 회차 목록을 돌려주는 가짜 — R33 P1.
 class _DatedRunRepository implements RunRepository {
-  new(this.byDate);
+  new(this.byDate, {this.today});
 
   /// `YYYY-MM-DD` → 그날 회차. 없는 날짜는 빈 목록.
   final Map<String, List<StudentRun>> byDate;
+
+  /// 날짜를 안 주는 조회(오늘)가 돌려줄 회차. 없으면 기본 한 건.
+  final List<StudentRun>? today;
   final List<DateTime?> requestedDates = [];
 
   @override
   Future<List<StudentRun>> getRuns(String studentId, {DateTime? date}) async {
     requestedDates.add(date);
-    if (date == null) return [_fixtureRun()];
+    if (date == null) return today ?? [_fixtureRun()];
     final key =
         '${date.year}-${date.month.toString().padLeft(2, '0')}-'
         '${date.day.toString().padLeft(2, '0')}';
@@ -148,6 +154,9 @@ Future<void> _pumpAndSubmitWith(
   ChangeRequestRepository repository, {
   RunRepository? runs,
 }) async {
+  tester.view.physicalSize = const Size(800, 2400);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
@@ -159,9 +168,7 @@ Future<void> _pumpAndSubmitWith(
       // 테스트 뷰포트를 넘겨 무관한 RenderFlex overflow 로 실패한다.
       child: MaterialApp(
         home: Scaffold(
-          body: ListView(
-            children: const [ChangeRequestPanel(studentId: 's-1')],
-          ),
+          body: const ChangeRequestPanel(studentId: 's-1'),
         ),
       ),
     ),
@@ -170,9 +177,7 @@ Future<void> _pumpAndSubmitWith(
 
   // 회차 선택 → 제출. 라벨 문자열을 직접 적지 않고 위젯이 쓰는 것과
   // 같은 함수(`runOptionLabel`)로 만들어 — 라벨 문구가 바뀌어도 안 깨진다.
-  await tester.tap(find.byType(BaraedaSelect).first);
-  await tester.pumpAndSettle();
-  await tester.tap(find.text(runOptionLabel(_fixtureRun())).last);
+  await tester.tap(find.text(_fixtureRunTitle));
   await tester.pumpAndSettle();
   await tester.tap(find.text('변경 신청하기'));
   await tester.pumpAndSettle();
@@ -229,7 +234,9 @@ void main() {
       ),
     );
 
-    expect(find.text('승인 대기로 접수됐습니다 (마감 9월 12일 07:30).'), findsOneWidget);
+    // 제출하면 폼 대신 신청 내용 영수증이 나온다(P1) — 마감 시각은 한국어 날짜로 읽힌다.
+    expect(find.text('승인 요청을 보냈어요'), findsOneWidget);
+    expect(find.textContaining('마감 9월 12일 07:30'), findsOneWidget);
   });
 
   // R32 P12 — 날짜 선택은 넣지 않았다: 서버가 회차를 그날 하루치만 만들어(DailyRunGenerator)
@@ -255,9 +262,7 @@ void main() {
           ],
           child: MaterialApp(
             home: Scaffold(
-              body: ListView(
-                children: const [ChangeRequestPanel(studentId: 's-1')],
-              ),
+              body: const ChangeRequestPanel(studentId: 's-1'),
             ),
           ),
         ),
@@ -274,9 +279,7 @@ void main() {
         null;
 
     Future<void> chooseRun(WidgetTester tester) async {
-      await tester.tap(find.byType(BaraedaSelect).first);
-      await tester.pumpAndSettle();
-      await tester.tap(find.text(runOptionLabel(_fixtureRun())).last);
+      await tester.tap(find.text(_fixtureRunTitle));
       await tester.pumpAndSettle();
     }
 
@@ -300,9 +303,7 @@ void main() {
     ) async {
       await pumpPanel(tester);
       await chooseRun(tester);
-      await tester.tap(find.byType(BaraedaSelect).at(1));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('승하차지 변경').last);
+      await tester.tap(find.text('승하차지 변경'));
       await tester.pumpAndSettle();
 
       expect(submitEnabled(tester), isFalse);
@@ -350,9 +351,7 @@ void main() {
           ],
           child: MaterialApp(
             home: Scaffold(
-              body: ListView(
-                children: const [ChangeRequestPanel(studentId: 's-1')],
-              ),
+              body: const ChangeRequestPanel(studentId: 's-1'),
             ),
           ),
         ),
@@ -383,7 +382,7 @@ void main() {
       await tester.tap(find.text('내일'));
       await tester.pumpAndSettle();
 
-      expect(find.text('그날 운행이 아직 없습니다'), findsOneWidget);
+      expect(find.text('그날 운행이 아직 없어요'), findsOneWidget);
       // 날짜를 다시 오늘로 되돌릴 수 있도록 선택 버튼은 남아 있다.
       expect(find.text('오늘'), findsOneWidget);
     });
@@ -400,9 +399,7 @@ void main() {
 
       await tester.tap(find.text('내일'));
       await tester.pumpAndSettle();
-      await tester.tap(find.byType(BaraedaSelect).first);
-      await tester.pumpAndSettle();
-      await tester.tap(find.text(runOptionLabel(tomorrowRun)).last);
+      await tester.tap(find.text('하원 · 18:00 출발'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('변경 신청하기'));
       await tester.pumpAndSettle();
@@ -418,9 +415,7 @@ void main() {
         }),
         _RecordingChangeRequestRepository(),
       );
-      await tester.tap(find.byType(BaraedaSelect).first);
-      await tester.pumpAndSettle();
-      await tester.tap(find.text(runOptionLabel(_fixtureRun())).last);
+      await tester.tap(find.text(_fixtureRunTitle));
       await tester.pumpAndSettle();
       expect(find.text('대상 회차를 골라 주세요'), findsNothing);
 
@@ -489,5 +484,109 @@ void main() {
     );
 
     expect(find.text('주소를 확인할 수 없습니다. 다시 입력해 주세요'), findsOneWidget);
+  });
+
+  // R48 — 회차 라디오 칸 · 구간 안내 · 영수증(시안 `daily-change` · `--approval` · `--done`).
+  group('R48 일일 변경 화면', () {
+    StudentRun run(
+      String id, {
+      RunStatus status = RunStatus.idle,
+      bool confirmed = false,
+      int hour = 8,
+      RunDirection direction = RunDirection.toAcademy,
+    }) => StudentRun(
+      runId: id,
+      direction: direction,
+      busNo: '2호차',
+      departTime: DateTime(2026, 9, 12, hour),
+      runStatus: status,
+      confirmed: confirmed,
+      riding: true,
+      riderStatus: RiderStatus.waiting,
+      stop: const RunStop(stopId: 'stop-1', name: '행복마을 입구'),
+      changeQuotaLeft: 1,
+    );
+
+    Future<_RecordingChangeRequestRepository> pump(
+      WidgetTester tester,
+      List<StudentRun> runs,
+    ) async {
+      tester.view.physicalSize = const Size(800, 2400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final changes = _RecordingChangeRequestRepository();
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            runRepositoryProvider.overrideWithValue(
+              _DatedRunRepository({}, today: runs),
+            ),
+            changeRequestRepositoryProvider.overrideWithValue(changes),
+          ],
+          child: const MaterialApp(
+            home: Scaffold(body: ChangeRequestPanel(studentId: 's-1')),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      return changes;
+    }
+
+    testWidgets('운행 중인 회차는 이유와 함께 꺼지고 눌러도 골라지지 않는다', (tester) async {
+      final changes = await pump(tester, [
+        run('moving', status: RunStatus.moving),
+        run('ok', hour: 14),
+      ]);
+
+      expect(find.text('운행이 시작되어 바꿀 수 없어요 · 탑승 취소는 홈에서'), findsOneWidget);
+      await tester.tap(find.text('등원 · 08:00 출발'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('대상 회차를 골라 주세요'), findsOneWidget);
+      expect(changes.runIds, isEmpty);
+    });
+
+    testWidgets('끝난 회차는 "운행이 끝났어요" 로 꺼진다', (tester) async {
+      await pump(tester, [run('done', status: RunStatus.finished)]);
+
+      expect(find.text('운행이 끝났어요'), findsOneWidget);
+    });
+
+    testWidgets('① 구간(확정 전)은 "바로 반영돼요" 와 변경 신청하기 단추다', (tester) async {
+      await pump(tester, [run('a')]);
+      await tester.tap(find.text('등원 · 08:00 출발'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('바로 반영돼요'), findsOneWidget);
+      expect(find.text('07:30 이후에는 학원 승인이 필요해요'), findsOneWidget);
+      expect(find.text('변경 신청하기'), findsOneWidget);
+    });
+
+    testWidgets('② 구간(확정 뒤)은 "학원 승인이 필요해요" 와 승인 요청 보내기 단추다 — 취소가 즉시 되는 줄 아는 오해 방지', (
+      tester,
+    ) async {
+      await pump(tester, [run('a', confirmed: true)]);
+      await tester.tap(find.text('등원 · 08:00 출발'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('학원 승인이 필요해요'), findsOneWidget);
+      expect(find.text('승인 요청 보내기'), findsOneWidget);
+      expect(find.text('변경 신청하기'), findsNothing);
+    });
+
+    testWidgets('제출하면 폼이 아니라 신청 내용 영수증이 나온다 — 회차 · 변경 · 사유', (tester) async {
+      await pump(tester, [run('a')]);
+      await tester.tap(find.text('등원 · 08:00 출발'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField).first, '오늘은 할머니 댁에서 내려요');
+      await tester.tap(find.text('변경 신청하기'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('신청 내용'), findsOneWidget);
+      expect(find.text('등원 · 08:00 출발'), findsOneWidget);
+      expect(find.text('탑승 취소'), findsOneWidget);
+      expect(find.text('오늘은 할머니 댁에서 내려요'), findsOneWidget);
+      expect(find.byType(TextField), findsNothing);
+    });
   });
 }

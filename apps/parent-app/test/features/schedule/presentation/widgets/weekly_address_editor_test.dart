@@ -135,6 +135,98 @@ void main() {
     expect(repository.saved.single.address, '서울시 강남구 9');
   });
 
+  // R48 — 요일 알약 하나를 고르면 그 요일의 등원 · 하원 두 칸이 나오고, 저장하지 않은 요일에는 점이 붙는다.
+  group('R48 요일 알약', () {
+    const monTo = WeeklyAddressEntry(
+      weekday: Weekday.mon,
+      direction: RunDirection.toAcademy,
+      address: '월 등원 주소',
+    );
+    const monFrom = WeeklyAddressEntry(
+      weekday: Weekday.mon,
+      direction: RunDirection.fromAcademy,
+      address: '월 하원 주소',
+    );
+    const tueTo = WeeklyAddressEntry(
+      weekday: Weekday.tue,
+      direction: RunDirection.toAcademy,
+      address: '화 등원 주소',
+    );
+    const tueFrom = WeeklyAddressEntry(
+      weekday: Weekday.tue,
+      direction: RunDirection.fromAcademy,
+      address: '화 하원 주소',
+    );
+
+    Future<_RecordingWeeklyAddressRepository> pumpFour(
+      WidgetTester tester,
+    ) async {
+      final repository = _RecordingWeeklyAddressRepository();
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            weeklyAddressRepositoryProvider.overrideWithValue(repository),
+          ],
+          child: const MaterialApp(
+            home: Scaffold(
+              body: WeeklyAddressEditor(
+                studentId: 's-1',
+                entries: [monTo, monFrom, tueTo, tueFrom],
+              ),
+            ),
+          ),
+        ),
+      );
+      return repository;
+    }
+
+    testWidgets('등록된 요일만 알약에 나오고, 고른 요일의 등원 · 하원 두 칸만 보인다', (tester) async {
+      await pumpFour(tester);
+
+      expect(find.byType(TextField), findsNWidgets(2));
+      expect(find.text('월요일 · 등원', findRichText: true), findsOneWidget);
+      expect(find.text('월요일 · 하원', findRichText: true), findsOneWidget);
+      expect(find.text('화요일 · 등원', findRichText: true), findsNothing);
+
+      await tester.tap(find.text('화'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('화요일 · 등원', findRichText: true), findsOneWidget);
+      expect(find.text('월요일 · 등원', findRichText: true), findsNothing);
+    });
+
+    testWidgets('고친 요일에만 ● 가 붙고 "저장하지 않은 변경" 띠가 나온다 — 되돌리면 사라진다', (tester) async {
+      await pumpFour(tester);
+      expect(find.text('저장하지 않은 변경이 있어요'), findsNothing);
+
+      await tester.enterText(find.byType(TextField).first, '월 등원 주소 고침');
+      await tester.pumpAndSettle();
+
+      expect(find.text('월●'), findsOneWidget);
+      expect(find.text('화●'), findsNothing);
+      expect(find.text('저장하지 않은 변경이 있어요'), findsOneWidget);
+
+      await tester.enterText(find.byType(TextField).first, '월 등원 주소');
+      await tester.pumpAndSettle();
+
+      expect(find.text('월●'), findsNothing);
+      expect(find.text('저장하지 않은 변경이 있어요'), findsNothing);
+    });
+
+    testWidgets('다른 요일을 보다 저장해도 고친 요일까지 전체가 한 번에 간다(저장은 일괄)', (tester) async {
+      final repository = await pumpFour(tester);
+
+      await tester.enterText(find.byType(TextField).first, '월 등원 주소 고침');
+      await tester.tap(find.text('화'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('저장하기'));
+      await tester.pumpAndSettle();
+
+      expect(repository.saved, hasLength(4));
+      expect(repository.saved.first.address, '월 등원 주소 고침');
+    });
+  });
+
   // R32 P11 — 등록된 주소가 하나도 없으면 편집할 칸이 없어 주소를 넣을 방법이 없었다.
   group('P11 빈 목록에서 추가', () {
     Future<_RecordingWeeklyAddressRepository> pumpEmpty(
@@ -148,9 +240,7 @@ void main() {
           ],
           child: const MaterialApp(
             home: Scaffold(
-              body: SingleChildScrollView(
-                child: WeeklyAddressEditor(studentId: 's-1', entries: []),
-              ),
+              body: WeeklyAddressEditor(studentId: 's-1', entries: []),
             ),
           ),
         ),
@@ -161,7 +251,7 @@ void main() {
     testWidgets('빈 목록에는 안내와 [추가] 버튼이 있다', (tester) async {
       await pumpEmpty(tester);
 
-      expect(find.text('등록된 등하원 주소가 없습니다'), findsOneWidget);
+      expect(find.text('등록된 등하원 주소가 없어요'), findsOneWidget);
       expect(find.text('추가'), findsOneWidget);
     });
 

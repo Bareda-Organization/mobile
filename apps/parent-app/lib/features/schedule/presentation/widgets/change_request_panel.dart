@@ -4,15 +4,19 @@ import 'package:baraeda_core/baraeda_core.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:parent_app/app/app_routes.dart';
 import 'package:parent_app/app/di.dart';
 import 'package:parent_app/core/change_requests/domain/change_request.dart';
 import 'package:parent_app/core/runs/domain/student_run.dart';
+import 'package:parent_app/core/runs/presentation/run_display.dart';
 import 'package:parent_app/core/runs/presentation/run_providers.dart';
 import 'package:parent_app/core/time/service_date.dart';
 import 'package:parent_app/core/ui/failure_message.dart';
 import 'package:parent_app/core/ui/format_date_time.dart';
 import 'package:parent_app/features/schedule/presentation/schedule_providers.dart';
 import 'package:parent_app/features/schedule/presentation/unsaved_edits.dart';
+import 'package:parent_app/features/schedule/presentation/widgets/sticky_action_bar.dart';
 
 /// 회차 선택 목록에 쓰는 표시 문구 — `방향 · 버스번호번`. 위젯 시험이
 /// 이 문구를 직접 적어 두면 라벨 문구(`RunDirection.label`)가 바뀔 때
@@ -22,8 +26,10 @@ import 'package:parent_app/features/schedule/presentation/unsaved_edits.dart';
 String runOptionLabel(StudentRun run) =>
     '${run.direction.label} · ${run.busNo}';
 
-/// §3.8·§3.9 — 일일 변경 신청. 날짜(오늘·내일, 한국 시간)를 고르면 `core/runs` 의
-/// §3.5 조회가 그날 회차를 주고, 그중 하나를 대상으로 신청한다.
+/// §3.8 — 일일 변경 신청. 날짜(오늘·내일, 한국 시간)를 고르면 `core/runs` 의
+/// §3.5 조회가 그날 회차를 주고, 그중 하나를 대상으로 신청한다(R48 시안 `daily-change`).
+///
+/// 신청 이력(§3.9)은 일정 탭 맨 아래로 옮겼다. 제출하면 신청 내용 영수증이 이 화면을 대신한다(`daily-change--done`).
 class ChangeRequestPanel extends ConsumerStatefulWidget {
   const new({required this.studentId, super.key});
 
@@ -44,6 +50,9 @@ class _ChangeRequestPanelState extends ConsumerState<ChangeRequestPanel> {
   bool _submitting = false;
   String? _banner;
   AlertTone _bannerTone = AlertTone.info;
+
+  /// 제출에 성공했을 때 접수 내용 — 있으면 폼 대신 영수증을 그린다.
+  _Receipt? _receipt;
 
   /// dispose 에서는 `ref` 를 못 쓰므로 미리 잡아 둔다.
   late final UnsavedEdits _edits;
@@ -122,12 +131,22 @@ class _ChangeRequestPanelState extends ConsumerState<ChangeRequestPanel> {
                 : _reasonController.text.trim(),
           );
       if (!mounted) return;
+      final run = _runsOfDay.where((r) => r.runId == runId).firstOrNull;
+      final address = _addressController.text.trim();
+      final reason = _reasonController.text.trim();
       setState(() {
         _submitting = false;
-        _bannerTone = AlertTone.boarded;
-        _banner = result.result == 'pending_approval'
-            ? '승인 대기로 접수됐습니다${deadlineNote(result.deadlineAt)}.'
-            : '변경 신청이 반영됐습니다.';
+        _receipt = _Receipt(
+          pendingApproval: result.result == 'pending_approval',
+          deadlineAt: result.deadlineAt,
+          run: run == null
+              ? null
+              : '${run.direction.label} · ${formatClock(run.departTime)} 출발',
+          originalStop: run?.stop.name,
+          type: _type,
+          address: _type == ChangeRequestType.relocate ? address : null,
+          reason: reason.isEmpty ? null : reason,
+        );
       });
       // 접수한 내용은 더 이상 저장 안 된 입력이 아니다 — 비워서 같은 내용의 재접수도 막는다.
       _addressController.clear();
@@ -156,53 +175,109 @@ class _ChangeRequestPanelState extends ConsumerState<ChangeRequestPanel> {
     }
   }
 
+  /// 오늘은 서버 기본값(당일) 조회를 그대로 쓰고, 내일은 한국 시간 날짜를 `date` 로 보낸다.
+  AsyncValue<List<StudentRun>> _watchRuns() => _dayOffset == 0
+      ? ref.watch(runsForStudentProvider(widget.studentId))
+      : ref.watch(
+          runsForStudentOnProvider((
+            widget.studentId,
+            koreaServiceDate(
+              ref.watch(clockProvider).now(),
+              plusDays: _dayOffset,
+            ),
+          )),
+        );
+
+  List<StudentRun> get _runsOfDay =>
+      (_dayOffset == 0
+              ? ref.read(runsForStudentProvider(widget.studentId))
+              : ref.read(
+                  runsForStudentOnProvider((
+                    widget.studentId,
+                    koreaServiceDate(
+                      ref.read(clockProvider).now(),
+                      plusDays: _dayOffset,
+                    ),
+                  )),
+                ))
+          .value ??
+      const [];
+
   @override
   Widget build(BuildContext context) {
-    // 오늘은 서버 기본값(당일) 조회를 그대로 쓰고, 내일은 한국 시간 날짜를 `date` 로 보낸다.
-    final runsAsync = _dayOffset == 0
-        ? ref.watch(runsForStudentProvider(widget.studentId))
-        : ref.watch(
-            runsForStudentOnProvider((
-              widget.studentId,
-              koreaServiceDate(
-                ref.watch(clockProvider).now(),
-                plusDays: _dayOffset,
-              ),
-            )),
-          );
-    final requestsAsync = ref.watch(changeRequestsProvider(widget.studentId));
+    // 영수증 화면에서도 회차 조회를 계속 본다 — 신청이 반영된 뒤 홈 카드가 새 값을 받게 무효화한 것을 이 구독이 받는다.
+    final runsAsync = _watchRuns();
+    final receipt = _receipt;
+    if (receipt != null) return _buildReceipt(receipt);
+
+    final runs = runsAsync.value;
+    final selectedRun = runs
+        ?.where((r) => r.runId == _selectedRunId)
+        .firstOrNull;
+    final canSubmit = !_submitting && _missingInput == null;
+    // 구간②(승인 필요)는 단추 글자부터 다르다 — 취소가 즉시 되는 줄 아는 오해를 막는다(P2).
+    final needsApproval =
+        selectedRun != null && _zoneOf(selectedRun) == _Zone.approval;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _buildDayPicker(),
-        const SizedBox(height: BaraedaSpacing.space2),
-        runsAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, stack) => const AlertBanner(
-            tone: AlertTone.missed,
-            body: '회차를 불러오지 못했습니다',
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.all(BaraedaSpacing.gutterMobile),
+            children: [
+              _buildDayPicker(),
+              const SizedBox(height: BaraedaSpacing.space4),
+              const _FieldTitle('어느 회차예요?'),
+              runsAsync.when(
+                skipError: true,
+                loading: () => const BaraedaSkeletonList(count: 2),
+                error: (error, stack) => const AlertBanner(
+                  tone: AlertTone.missed,
+                  body: '회차를 불러오지 못했어요',
+                ),
+                data: (runs) => runs.isEmpty
+                    ? const WordWrapText('그날 운행이 아직 없어요')
+                    : _buildRunChoices(runs),
+              ),
+              if (selectedRun != null) ...[
+                const SizedBox(height: BaraedaSpacing.space3),
+                _buildZoneNotice(selectedRun),
+                const SizedBox(height: BaraedaSpacing.space4),
+                const _FieldTitle('어떻게 바꿀까요?'),
+                _buildTypePicker(),
+                if (_type == ChangeRequestType.relocate) ...[
+                  const SizedBox(height: BaraedaSpacing.space3),
+                  BaraedaInput(label: '변경할 주소', controller: _addressController),
+                  const SizedBox(height: BaraedaSpacing.space1),
+                  Text(
+                    '주소를 확인한 뒤 노선에 반영해요',
+                    style: BaraedaTypography.bodySm.copyWith(
+                      color: context.colors.textSecondary,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: BaraedaSpacing.space3),
+                BaraedaTextarea(
+                  label: '사유 (선택)',
+                  controller: _reasonController,
+                ),
+              ],
+              if (_banner != null) ...[
+                const SizedBox(height: BaraedaSpacing.space3),
+                AlertBanner(tone: _bannerTone, body: _banner),
+              ],
+            ],
           ),
-          data: (runs) {
-            if (runs.isEmpty) {
-              return const WordWrapText('그날 운행이 아직 없습니다');
-            }
-            final runOptions = runs
-                .map((r) => (r.runId, runOptionLabel(r)))
-                .toList();
-            return _buildForm(runOptions);
-          },
         ),
-        const SizedBox(height: BaraedaSpacing.space6),
-        const Text('신청 이력', style: BaraedaTypography.h3),
-        const SizedBox(height: BaraedaSpacing.space2),
-        requestsAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, stack) => const AlertBanner(
-            tone: AlertTone.missed,
-            body: '신청 이력을 불러오지 못했습니다',
+        StickyActionBar(
+          child: BaraedaButton(
+            label: needsApproval ? '승인 요청 보내기' : '변경 신청하기',
+            block: true,
+            // 단추가 왜 꺼졌는지 단추 아래 글로 알려 준다(R32 P12).
+            disabledReason: canSubmit ? null : _missingInput,
+            onPressed: canSubmit ? _submit : null,
           ),
-          data: _buildHistory,
         ),
       ],
     );
@@ -224,93 +299,191 @@ class _ChangeRequestPanelState extends ConsumerState<ChangeRequestPanel> {
     );
   }
 
-  Widget _buildForm(List<(String, String)> runOptions) {
+  /// 회차 라디오 칸 — 운행이 시작됐거나 끝난 회차는 이유와 함께 꺼진다(탑승 취소는 홈에서).
+  Widget _buildRunChoices(List<StudentRun> runs) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        BaraedaSelect(
-          label: '대상 회차',
-          value: _selectedRunId,
-          options: runOptions
-              .map((o) => BaraedaSelectOption(o.$1, label: o.$2))
-              .toList(),
-          onChanged: (value) => setState(() => _selectedRunId = value),
-        ),
-        const SizedBox(height: BaraedaSpacing.space2),
-        BaraedaSelect(
-          label: '신청 종류',
-          value: _type.wireValue,
-          options: const [
-            BaraedaSelectOption('cancel', label: '탑승 취소'),
-            BaraedaSelectOption('relocate', label: '승하차지 변경'),
-          ],
-          onChanged: (value) {
-            setState(
-              () => _type = ChangeRequestType.fromWireValue(value ?? 'cancel'),
-            );
-            _reportDirty();
-          },
-        ),
-        if (_type == ChangeRequestType.relocate) ...[
-          const SizedBox(height: BaraedaSpacing.space2),
-          BaraedaInput(label: '변경할 주소', controller: _addressController),
+        for (final run in runs) ...[
+          if (run != runs.first) const SizedBox(height: BaraedaSpacing.space2),
+          BaraedaChoiceTile(
+            title: '${run.direction.label} · ${formatClock(run.departTime)} 출발',
+            subtitle: '${run.stop.name} · ${run.busNo}',
+            selected: run.runId == _selectedRunId,
+            disabledReason: switch (run.runStatus) {
+              RunStatus.moving => '운행이 시작되어 바꿀 수 없어요 · 탑승 취소는 홈에서',
+              RunStatus.finished => '운행이 끝났어요',
+              RunStatus.idle || RunStatus.confirmed => null,
+            },
+            trailing: _runChip(run),
+            onTap: () => setState(() => _selectedRunId = run.runId),
+          ),
         ],
-        const SizedBox(height: BaraedaSpacing.space2),
-        BaraedaTextarea(label: '사유(선택)', controller: _reasonController),
-        const SizedBox(height: BaraedaSpacing.space2),
-        if (_banner != null) ...[
-          AlertBanner(tone: _bannerTone, body: _banner),
-          const SizedBox(height: BaraedaSpacing.space2),
-        ],
-        // 버튼이 왜 눌리지 않는지 알려 준다.
-        if (_missingInput != null) ...[
-          WordWrapText(_missingInput!, style: BaraedaTypography.bodySm),
-          const SizedBox(height: BaraedaSpacing.space2),
-        ],
-        BaraedaButton(
-          label: '변경 신청하기',
-          onPressed: (_submitting || _missingInput != null) ? null : _submit,
-        ),
       ],
     );
   }
 
-  Widget _buildHistory(ChangeRequestPage page) {
-    if (page.items.isEmpty) {
-      return const EmptyState(title: '신청 이력이 없습니다');
-    }
-    return Column(
-      children: page.items
-          .map(
-            (item) => ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(
-                item.type == ChangeRequestType.cancel ? '탑승 취소' : '승하차지 변경',
-              ),
-              subtitle: item.rejectReason != null
-                  ? WordWrapText('반려: ${item.rejectReason}')
-                  : null,
-              trailing: BaraedaBadge(
-                label: _statusLabel(item.status),
-                tone: _statusTone(item.status),
-              ),
-            ),
-          )
-          .toList(),
+  Widget _runChip(StudentRun run) => switch (run.runStatus) {
+    RunStatus.moving => const BaraedaStatusPill(
+      status: BaraedaStatus.moving,
+      label: '이동 중',
+    ),
+    RunStatus.finished => const BaraedaStatusPill(
+      status: BaraedaStatus.idle,
+      label: '종료',
+    ),
+    RunStatus.confirmed => const BaraedaStatusPill(
+      status: BaraedaStatus.boarded,
+      label: '확정',
+    ),
+    RunStatus.idle => BaraedaStatusPill(
+      status: run.confirmed ? BaraedaStatus.boarded : BaraedaStatus.waiting,
+      label: run.confirmed ? '확정' : '확정 전',
+    ),
+  };
+
+  /// 구간 안내 띠 — ①바로 반영 / ②승인이 필요해요(회차당 1번).
+  Widget _buildZoneNotice(StudentRun run) {
+    final confirmAt = formatClock(
+      run.departTime.subtract(const Duration(minutes: 30)),
+    );
+    final departAt = formatClock(run.departTime);
+    return switch (_zoneOf(run)) {
+      _Zone.immediate => AlertBanner(
+        tone: AlertTone.info,
+        title: '바로 반영돼요',
+        body: '$confirmAt 이후에는 학원 승인이 필요해요',
+      ),
+      _Zone.approval => AlertBanner(
+        tone: AlertTone.moving,
+        title: '학원 승인이 필요해요',
+        body: '이 회차에서 1번만 신청할 수 있어요. $departAt 까지 승인되지 않으면 자동 반려돼요.',
+      ),
+    };
+  }
+
+  Widget _buildTypePicker() {
+    return BaraedaSegmentedControl(
+      block: true,
+      options: const [
+        BaraedaSegmentedOption('cancel', label: '탑승 취소'),
+        BaraedaSegmentedOption('relocate', label: '승하차지 변경'),
+      ],
+      value: _type.wireValue,
+      onChanged: (value) {
+        setState(() => _type = ChangeRequestType.fromWireValue(value));
+        _reportDirty();
+      },
     );
   }
 
-  String _statusLabel(ChangeRequestStatus status) => switch (status) {
-    ChangeRequestStatus.pending => '대기',
-    ChangeRequestStatus.approved => '승인',
-    ChangeRequestStatus.rejected => '반려',
-    ChangeRequestStatus.autoRejected => '자동 반려',
-  };
+  /// 제출 뒤 화면 — 무엇을 신청했는지 영수증으로 보여 주고, 승인 전에는 원래 승하차지로 버스가 온다는 말을 한다(P1).
+  Widget _buildReceipt(_Receipt receipt) {
+    final deadline = receipt.deadlineAt;
+    final deadlineText = deadline == null
+        ? '학원이 확인하면 알림으로 알려 드려요'
+        : '마감 ${formatDateTime(deadline)} · 학원이 확인하면 알림으로 알려 드려요';
+    return ListView(
+      padding: const EdgeInsets.all(BaraedaSpacing.gutterMobile),
+      children: [
+        AlertBanner(
+          tone: receipt.pendingApproval ? AlertTone.moving : AlertTone.boarded,
+          title: receipt.pendingApproval ? '승인 요청을 보냈어요' : '변경했어요',
+          body: receipt.pendingApproval ? deadlineText : '바로 반영됐어요',
+        ),
+        const SizedBox(height: BaraedaSpacing.space4),
+        BaraedaReceiptCard(
+          title: '신청 내용',
+          rows: [
+            if (receipt.run != null) BaraedaReceiptRow('회차', receipt.run!),
+            BaraedaReceiptRow(
+              '변경',
+              receipt.type == ChangeRequestType.cancel ? '탑승 취소' : '승하차지 변경',
+            ),
+            if (receipt.address != null)
+              BaraedaReceiptRow('변경할 주소', receipt.address!),
+            if (receipt.reason != null)
+              BaraedaReceiptRow('사유', receipt.reason!),
+          ],
+        ),
+        if (receipt.pendingApproval) ...[
+          const SizedBox(height: BaraedaSpacing.space3),
+          Text(
+            [
+              if (receipt.originalStop != null)
+                '승인되기 전까지는 원래 승하차지(${receipt.originalStop})로 버스가 와요.',
+              if (deadline != null)
+                '${formatClock(deadline)} 까지 승인되지 않으면 자동으로 반려돼요.',
+            ].join(' '),
+            style: BaraedaTypography.body.copyWith(
+              color: context.colors.textSecondary,
+            ),
+          ),
+        ],
+        const SizedBox(height: BaraedaSpacing.space6),
+        BaraedaButton(
+          label: '일정으로 돌아가기',
+          block: true,
+          onPressed: () => context.go(AppRoutes.schedule),
+        ),
+        const SizedBox(height: BaraedaSpacing.space2),
+        BaraedaButton(
+          label: '신청 이력 보기',
+          block: true,
+          variant: BaraedaButtonVariant.ghost,
+          onPressed: () => context.go(AppRoutes.schedule),
+        ),
+      ],
+    );
+  }
+}
 
-  BaraedaBadgeTone _statusTone(ChangeRequestStatus status) => switch (status) {
-    ChangeRequestStatus.pending => BaraedaBadgeTone.amber,
-    ChangeRequestStatus.approved => BaraedaBadgeTone.brand,
-    ChangeRequestStatus.rejected ||
-    ChangeRequestStatus.autoRejected => BaraedaBadgeTone.red,
-  };
+/// 신청 구간 — 서버가 준 `run_status`·`confirmed` 로만 가른다(시각으로 계산하지 않는다).
+/// 일일 변경에서 고를 수 있는 회차는 운행 전(`idle`·`confirmed`)뿐이다.
+enum _Zone { immediate, approval }
+
+_Zone _zoneOf(StudentRun run) =>
+    run.runStatus == RunStatus.idle && !run.confirmed
+    ? _Zone.immediate
+    : _Zone.approval;
+
+/// 제출 성공 때 영수증에 쓸 값 — 폼이 비워지기 전에 담아 둔다.
+class _Receipt {
+  const new({
+    required this.pendingApproval,
+    required this.type,
+    this.deadlineAt,
+    this.run,
+    this.originalStop,
+    this.address,
+    this.reason,
+  });
+
+  final bool pendingApproval;
+  final DateTime? deadlineAt;
+  final String? run;
+  final String? originalStop;
+  final ChangeRequestType type;
+  final String? address;
+  final String? reason;
+}
+
+class _FieldTitle extends StatelessWidget {
+  const new(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: BaraedaSpacing.space2),
+      child: Text(
+        text,
+        style: BaraedaTypography.caption.copyWith(
+          color: context.colors.textSecondary,
+          fontWeight: BaraedaFontWeight.bold,
+        ),
+      ),
+    );
+  }
 }

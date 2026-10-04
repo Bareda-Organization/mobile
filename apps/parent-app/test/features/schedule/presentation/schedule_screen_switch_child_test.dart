@@ -15,7 +15,8 @@ import 'package:parent_app/core/students/presentation/selected_student.dart';
 import 'package:parent_app/core/students/presentation/student_providers.dart';
 import 'package:parent_app/features/schedule/domain/weekly_address_entry.dart';
 import 'package:parent_app/features/schedule/presentation/schedule_providers.dart';
-import 'package:parent_app/features/schedule/presentation/schedule_screen.dart';
+import 'package:parent_app/features/schedule/presentation/daily_change_screen.dart';
+import 'package:parent_app/features/schedule/presentation/weekly_address_screen.dart';
 
 /// R32 P5 — 자녀를 바꿔도 주소 입력칸·고른 회차가 이전 자녀 값으로 남으면, 다른 아이의 이름으로
 /// 저장·신청된다. 두 자녀의 데이터가 이미 캐시에 있는 경우(화면이 로딩을 거치지 않고 곧장
@@ -64,8 +65,9 @@ WeeklyAddressEntry _entry(String address) => WeeklyAddressEntry(
 );
 
 Future<(ProviderContainer, _RecordingChangeRequestRepository)> _pump(
-  WidgetTester tester,
-) async {
+  WidgetTester tester, {
+  required Widget screen,
+}) async {
   // 폼이 길어 기본 화면(800x600)에서는 ListView 가 아래쪽 위젯을 만들지 않는다.
   tester.view.physicalSize = const Size(800, 2400);
   tester.view.devicePixelRatio = 1;
@@ -99,7 +101,7 @@ Future<(ProviderContainer, _RecordingChangeRequestRepository)> _pump(
   await tester.pumpWidget(
     UncontrolledProviderScope(
       container: container,
-      child: const MaterialApp(home: ScheduleScreen()),
+      child: MaterialApp(home: screen),
     ),
   );
   await tester.pumpAndSettle();
@@ -108,7 +110,10 @@ Future<(ProviderContainer, _RecordingChangeRequestRepository)> _pump(
 
 void main() {
   testWidgets('P5 자녀를 바꾸면 주소 입력칸이 새 자녀의 주소로 바뀐다', (tester) async {
-    final (container, _) = await _pump(tester);
+    final (container, _) = await _pump(
+      tester,
+      screen: const WeeklyAddressScreen(),
+    );
     await tester.enterText(
       find.widgetWithText(TextField, '첫째 집'),
       '첫째 집 고치는 중',
@@ -122,17 +127,20 @@ void main() {
   });
 
   testWidgets('P5 자녀를 바꾸면 고른 회차가 비워져 다른 자녀의 회차로 신청되지 않는다', (tester) async {
-    final (container, repository) = await _pump(tester);
-    await tester.tap(find.byType(DropdownButtonFormField<String>).at(0));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('등원 · 1호차').last);
+    final (container, repository) = await _pump(
+      tester,
+      screen: const DailyChangeScreen(),
+    );
+    await tester.tap(find.text('등원 · 08:00 출발'));
     await tester.pumpAndSettle();
 
     container.read(selectedStudentIdProvider.notifier).state = 's-2';
     await tester.pumpAndSettle();
+    // 자녀를 바꾸면 고른 회차가 비워져 단추가 꺼진다 — 눌러도 신청이 나가지 않는다.
     await tester.tap(find.widgetWithText(BaraedaButton, '변경 신청하기'));
     await tester.pumpAndSettle();
 
     expect(repository.calls, isEmpty);
+    expect(find.text('대상 회차를 골라 주세요'), findsOneWidget);
   });
 }

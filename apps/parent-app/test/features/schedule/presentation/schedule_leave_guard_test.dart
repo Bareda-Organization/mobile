@@ -15,11 +15,16 @@ import 'package:parent_app/core/students/presentation/student_providers.dart';
 import 'package:parent_app/features/schedule/domain/weekly_address_entry.dart';
 import 'package:parent_app/features/schedule/domain/weekly_address_repository.dart';
 import 'package:parent_app/features/schedule/presentation/schedule_providers.dart';
-import 'package:parent_app/features/schedule/presentation/schedule_screen.dart';
+import 'package:parent_app/features/schedule/presentation/daily_change_screen.dart';
+import 'package:parent_app/features/schedule/presentation/weekly_address_screen.dart';
 
-/// R32 P14 — 주소·변경 요청을 적다가 뒤로 가면 확인 없이 입력이 사라졌다.
-/// 홈 → 일정 으로 들어가 Android 뒤로가기(`handlePopRoute`)를 눌러 본다.
-Future<void> _pumpSchedule(WidgetTester tester) async {
+/// R32 P14 — 주소·변경 요청을 적다가 뒤로 가면 확인 없이 입력이 사라졌다. R48 에서 일정 화면이 탭이 되고
+/// 편집 둘이 하위 화면(요일별 주소 · 일일 변경)이 되었다 — 두 화면 모두 같은 확인을 거친다.
+/// 앞 화면 → [path] 로 들어가 Android 뒤로가기(`handlePopRoute`)를 눌러 본다.
+Future<void> _pumpSchedule(
+  WidgetTester tester, {
+  String path = AppRoutes.weeklyAddress,
+}) async {
   tester.view.physicalSize = const Size(800, 2400);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
@@ -29,14 +34,18 @@ Future<void> _pumpSchedule(WidgetTester tester) async {
         path: '/',
         builder: (context, _) => Scaffold(
           body: TextButton(
-            onPressed: () => context.push(AppRoutes.schedule),
+            onPressed: () => context.push(path),
             child: const Text('일정 열기'),
           ),
         ),
       ),
       GoRoute(
-        path: AppRoutes.schedule,
-        builder: (_, _) => const ScheduleScreen(),
+        path: AppRoutes.weeklyAddress,
+        builder: (_, _) => const WeeklyAddressScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.dailyChange,
+        builder: (_, _) => const DailyChangeScreen(),
       ),
     ],
   );
@@ -146,8 +155,10 @@ void main() {
     expect(find.text('일정 열기'), findsOneWidget);
   });
 
-  testWidgets('P14 변경 신청 사유를 적다 뒤로가도 확인 창이 뜬다', (tester) async {
-    await _pumpSchedule(tester);
+  testWidgets('P14 변경 신청 사유를 적다 뒤로가도 확인 창이 뜬다(일일 변경 화면)', (tester) async {
+    await _pumpSchedule(tester, path: AppRoutes.dailyChange);
+    await tester.tap(find.text('등원 · 08:00 출발'));
+    await tester.pumpAndSettle();
     await tester.enterText(
       find.descendant(
         of: find.byType(BaraedaTextarea),
@@ -161,6 +172,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('나가기'), findsOneWidget);
+    // 시안 `weekly-address--leave` 의 문구.
+    expect(find.text('입력을 그만할까요?'), findsOneWidget);
+    expect(find.text('저장하지 않은 내용은 사라져요.'), findsOneWidget);
   });
 
   testWidgets('P14 고친 주소를 저장한 뒤에는 뒤로가도 확인 없이 나간다', (tester) async {

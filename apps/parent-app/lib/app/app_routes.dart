@@ -24,7 +24,15 @@ abstract final class AppRoutes {
   static const notifications = '/notifications';
   static const liveMap = '/live-map';
   static const routeDetail = '/route-detail';
+
+  /// 일정 탭(P-04) — 학부모 앱 아래 탭 막대의 두 번째 칸(R48). 학생에게는 탭이 없다.
   static const schedule = '/schedule';
+
+  /// 요일별 등하원 주소(P-05) — 일정 탭에서 `push` 하는 하위 화면.
+  static const weeklyAddress = '/schedule/weekly-address';
+
+  /// 일일 변경 신청(P-06) — 일정 탭 · 요일별 주소 화면에서 `push` 하는 하위 화면.
+  static const dailyChange = '/schedule/daily-change';
   static const settings = '/settings';
 
   /// AUTH-07 · API_SPEC §2.8 — [settings] 화면에서 `push`.

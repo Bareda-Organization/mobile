@@ -8,6 +8,7 @@ import 'package:parent_app/app/di.dart';
 import 'package:parent_app/core/change_requests/presentation/change_request_providers.dart';
 import 'package:parent_app/core/runs/domain/run_intent_result.dart';
 import 'package:parent_app/core/runs/domain/student_run.dart';
+import 'package:parent_app/core/runs/presentation/run_display.dart';
 import 'package:parent_app/core/ui/confirm_dialog.dart';
 import 'package:parent_app/core/ui/failure_message.dart';
 import 'package:parent_app/core/ui/format_date_time.dart';
@@ -138,7 +139,7 @@ class _RunCardState extends ConsumerState<RunCard> {
   @override
   Widget build(BuildContext context) {
     final run = widget.run;
-    final status = _statusFor(run);
+    final status = runStatusChip(run);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: BaraedaSpacing.cardGap),
@@ -178,14 +179,14 @@ class _RunCardState extends ConsumerState<RunCard> {
                     ),
                     const SizedBox(height: BaraedaSpacing.space1),
                     Text(
-                      '${_formatTime(run.departTime)} 출발 · ${run.stop.name}',
+                      '${formatClock(run.departTime)} 출발 · ${run.stop.name}',
                     ),
                     if (widget.date == null)
                       MinuteTicker(
                         builder: (context, now) => Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            if (_untilConfirm(run, now) case final left?)
+                            if (untilConfirm(run, now) case final left?)
                               WordWrapText(
                                 '확정까지 $left',
                                 style: BaraedaTypography.bodySm,
@@ -252,48 +253,10 @@ class _RunCardState extends ConsumerState<RunCard> {
   }
 }
 
-/// 확정(출발 30분 전)까지 남은 시간 문구 — 확정 전(`idle`·미확정)이고 아직 남았을 때만.
-String? _untilConfirm(StudentRun run, DateTime now) {
-  if (run.runStatus != RunStatus.idle || run.confirmed) return null;
-  final left = run.departTime
-      .subtract(const Duration(minutes: 30))
-      .difference(now);
-  return left <= Duration.zero ? null : formatRemaining(left);
-}
-
 /// ②구간 변경 신청은 출발 시각이 되면 서버가 자동 거절한다(`FEATURE_SPEC C-04`) — 그때까지 남은 시간이 카운트다운이다.
 String _approvalWaitText(DateTime departTime, DateTime now) {
   final left = departTime.difference(now);
   return left <= Duration.zero
       ? '승인 대기'
       : '승인 대기 · 출발까지 ${formatRemaining(left)}';
-}
-
-({BaraedaStatus status, String label}) _statusFor(StudentRun run) {
-  return switch (run.riderStatus) {
-    RiderStatus.boarded || RiderStatus.alighted => (
-      status: BaraedaStatus.boarded,
-      label: run.riderStatus == RiderStatus.boarded ? '탑승 완료' : '하차 완료',
-    ),
-    // ⚠ `absent`(미등원)와 `no_show`(미승차)를 합치지 않는다 — `FEATURE_SPEC C-02`
-    // 가 "반드시 구분" 을 명시한다. 학부모에게 둘은 전혀 다른 일이다 —
-    // 미등원은 **내가 직접 껐다**(정상), 미승차는 **버스가 왔는데 안 나왔다**(사고).
-    // 색도 사양이 가른다(§3 상태표) — 미등원 스톤 · 미승차 레드.
-    RiderStatus.absent => (status: BaraedaStatus.idle, label: '미등원'),
-    RiderStatus.noShow => (status: BaraedaStatus.missed, label: '미승차'),
-    RiderStatus.waiting =>
-      run.runStatus == RunStatus.moving
-          ? (status: BaraedaStatus.moving, label: '이동 중')
-          : (status: BaraedaStatus.idle, label: '운행 전'),
-  };
-}
-
-/// 서버가 주는 시각은 **UTC 순간**이다(`…Z`). `DateTime.parse` 는 오프셋이
-/// 붙은 문자열을 UTC `DateTime` 으로 돌려주므로, 벽시계로 읽으려면 기기
-/// 표준시로 옮겨야 한다 — 안 옮기면 KST 에서 **9시간 이른 시각**이 나온다.
-String _formatTime(DateTime time) {
-  final local = time.toLocal();
-  final hour = local.hour.toString().padLeft(2, '0');
-  final minute = local.minute.toString().padLeft(2, '0');
-  return '$hour:$minute';
 }

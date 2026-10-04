@@ -6,11 +6,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:parent_app/app/app_routes.dart';
 import 'package:parent_app/app/di.dart';
+import 'package:parent_app/core/auth/auth_providers.dart';
 import 'package:parent_app/core/network/network_status.dart';
 import 'package:parent_app/core/refresh/visible_poller.dart';
 import 'package:parent_app/features/notifications/presentation/notification_providers.dart';
 
-/// 로그인 뒤 화면 아래의 탭 막대 — `[홈]` `[알림]` `[설정]` (학부모·학생 공통, R44).
+/// 로그인 뒤 화면 아래의 탭 막대 — 학부모 `[홈]` `[일정]` `[알림]` `[설정]` · 학생 `[내 버스]` `[알림]` `[설정]` (R44 · R48).
 ///
 /// `router.dart` 의 `StatefulShellRoute` 가 탭마다 화면 상태(스크롤 위치·받아 둔 목록)를
 /// 따로 붙들어 두고,
@@ -36,6 +37,7 @@ class _AppShellState extends ConsumerState<AppShell>
     // 탭 막대는 탭 화면에서만 보인다 — 지도·일정 같은 하위 화면이 위에 있으면 배지도 안 보이므로 쉰다.
     isCovered: () => isCoveredFrom(context, {
       AppRoutes.home,
+      AppRoutes.schedule,
       AppRoutes.notifications,
       AppRoutes.settings,
     }),
@@ -80,95 +82,66 @@ class _AppShellState extends ConsumerState<AppShell>
         if (!isOffline) ref.read(webSocketClientProvider).reconnectNow();
       }
     });
-    final colors = context.colors;
     final unread = ref.watch(
       notificationFeedProvider.select((feed) => feed.value?.unreadCount ?? 0),
     );
+    // 일정을 편집하는 쪽(학부모)만 일정 탭이 있다 — 역할 문자열이 아니라 권한으로 가른다(§1.1).
+    final hasScheduleTab =
+        ref.watch(roleCapabilitiesProvider)?.canChangeBoardingLocation ?? true;
     final navigationShell = widget.navigationShell;
+    final tabs = hasScheduleTab ? _parentTabs : _studentTabs;
+    // 막대의 칸 순서와 라우터 가지(홈 · 일정 · 알림 · 설정) 순서가 다르다 — 학생은 일정 가지를 건너뛴다.
+    final currentTab = tabs.indexWhere(
+      (tab) => tab.branch == navigationShell.currentIndex,
+    );
 
     return Scaffold(
       body: navigationShell,
-      bottomNavigationBar: DecoratedBox(
-        decoration: BoxDecoration(
-          border: Border(top: BorderSide(color: colors.borderChrome)),
-        ),
-        child: NavigationBarTheme(
-          data: NavigationBarThemeData(
-            height: BaraedaSpacing.tabBarHeight,
-            backgroundColor: colors.surfaceChrome,
-            surfaceTintColor: Colors.transparent,
-            elevation: 0,
-            indicatorColor: colors.navActiveBg,
-            iconTheme: WidgetStateProperty.resolveWith(
-              (states) => IconThemeData(
-                size: 24,
-                color: states.contains(WidgetState.selected)
-                    ? colors.navActiveText
-                    : colors.navText,
-              ),
+      bottomNavigationBar: BaraedaTabBar(
+        currentIndex: currentTab < 0 ? 0 : currentTab,
+        items: [
+          for (final tab in tabs)
+            BaraedaTabItem(
+              icon: tab.icon,
+              label: tab.label,
+              badge: tab.branch == _notificationsBranch ? unread : 0,
             ),
-            labelTextStyle: WidgetStateProperty.resolveWith(
-              (states) => BaraedaTypography.labelSm.copyWith(
-                fontWeight: states.contains(WidgetState.selected)
-                    ? BaraedaFontWeight.bold
-                    : BaraedaFontWeight.regular,
-                color: states.contains(WidgetState.selected)
-                    ? colors.navActiveText
-                    : colors.navText,
-              ),
-            ),
-          ),
-          child: NavigationBar(
-            selectedIndex: navigationShell.currentIndex,
-            // 이미 보고 있는 탭을 다시 누르면 그 탭의 첫 화면으로.
-            onDestinationSelected: (index) => navigationShell.goBranch(
-              index,
-              initialLocation: index == navigationShell.currentIndex,
-            ),
-            destinations: [
-              const NavigationDestination(
-                icon: BaraedaIcon('house'),
-                label: '홈',
-              ),
-              NavigationDestination(
-                icon: _UnreadBadge(
-                  count: unread,
-                  child: const BaraedaIcon('bell'),
-                ),
-                label: '알림',
-              ),
-              const NavigationDestination(
-                icon: BaraedaIcon('settings'),
-                label: '설정',
-              ),
-            ],
-          ),
+        ],
+        // 이미 보고 있는 탭을 다시 누르면 그 탭의 첫 화면으로.
+        onChanged: (index) => navigationShell.goBranch(
+          tabs[index].branch,
+          initialLocation: tabs[index].branch == navigationShell.currentIndex,
         ),
       ),
     );
   }
 }
 
-/// 알림 아이콘 위 건수 배지 — 99건이 넘으면 `99+`. 낭독기에는 건수를 문장으로 싣고 숫자 글자는 가린다.
-class _UnreadBadge extends StatelessWidget {
-  const new({required this.count, required this.child});
+/// 라우터 가지 번호 — `router.dart` 의 `StatefulShellRoute` 가지 순서와 같다.
+const _homeBranch = 0;
+const _scheduleBranch = 1;
+const _notificationsBranch = 2;
+const _settingsBranch = 3;
 
-  final int count;
-  final Widget child;
+class _Tab {
+  const _Tab(this.branch, this.icon, this.label);
 
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    return Semantics(
-      label: count > 0 ? '안 읽은 알림 $count건' : null,
-      excludeSemantics: count > 0,
-      child: Badge(
-        isLabelVisible: count > 0,
-        backgroundColor: colors.statusMissed,
-        textColor: colors.textInverse,
-        label: Text(count > 99 ? '99+' : '$count'),
-        child: child,
-      ),
-    );
-  }
+  final int branch;
+  final String icon;
+  final String label;
 }
+
+/// 학부모 `홈 · 일정 · 알림 · 설정` — 일정이 새 탭이다(`Ruling 826`).
+const _parentTabs = [
+  _Tab(_homeBranch, 'house', '홈'),
+  _Tab(_scheduleBranch, 'calendar', '일정'),
+  _Tab(_notificationsBranch, 'bell', '알림'),
+  _Tab(_settingsBranch, 'settings', '설정'),
+];
+
+/// 학생 `내 버스 · 알림 · 설정` — 일정은 부모님 계정에서 관리한다.
+const _studentTabs = [
+  _Tab(_homeBranch, 'house', '내 버스'),
+  _Tab(_notificationsBranch, 'bell', '알림'),
+  _Tab(_settingsBranch, 'settings', '설정'),
+];

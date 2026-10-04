@@ -46,10 +46,11 @@ void main() {
     final reached = referencedTargets()
       // 첫 화면과 계정 상태 리다이렉트는 `router.dart` 의 redirect 가 보낸다 —
       // `context.push` 로 가지 않으므로 여기서 면제한다.
-      // 아래 탭 3칸(홈 · 알림 · 설정)은 `AppShell` 의 탭 막대가 인덱스로 간다 — 경로 문자열을 언급하지
-      // 않으므로 여기서 면제하고, 세 칸이 실제로 있는지는 `app_shell_test.dart` 가 본다.
+      // 아래 탭(홈 · 일정 · 알림 · 설정)은 `AppShell` 의 탭 막대가 인덱스로 간다 — 경로 문자열을 언급하지
+      // 않으므로 여기서 면제하고, 칸이 실제로 있는지는 `app_shell_test.dart` 가 본다.
       ..addAll({
         'home',
+        'schedule',
         'notifications',
         'settings',
         'pendingApproval',

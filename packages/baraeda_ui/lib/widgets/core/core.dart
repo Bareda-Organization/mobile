@@ -7,6 +7,7 @@ export 'baraeda_status.dart';
 export 'button.dart';
 export 'button_row.dart';
 export 'card.dart';
+export 'choice_tile.dart';
 export 'filter_pill.dart';
 export 'icon.dart';
 export 'icon_button.dart';

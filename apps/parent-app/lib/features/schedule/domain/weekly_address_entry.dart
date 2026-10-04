@@ -39,6 +39,11 @@ enum Weekday {
   };
 }
 
+/// `토요일` — 입력 칸 이름에 쓰는 긴 표기.
+extension WeekdayLongLabel on Weekday {
+  String get longLabel => '$label요일';
+}
+
 class WeeklyAddressEntry {
   const new({
     required this.weekday,
@@ -50,16 +55,15 @@ class WeeklyAddressEntry {
     this.verified,
   });
 
-  factory fromJson(Map<String, dynamic> json) =>
-      WeeklyAddressEntry(
-        weekday: Weekday.fromWireValue(json['weekday'] as String),
-        direction: RunDirection.fromWireValue(json['direction'] as String),
-        address: json['address'] as String,
-        addressDetail: json['address_detail'] as String?,
-        lat: (json['lat'] as num?)?.toDouble(),
-        lng: (json['lng'] as num?)?.toDouble(),
-        verified: json['verified'] as bool?,
-      );
+  factory fromJson(Map<String, dynamic> json) => WeeklyAddressEntry(
+    weekday: Weekday.fromWireValue(json['weekday'] as String),
+    direction: RunDirection.fromWireValue(json['direction'] as String),
+    address: json['address'] as String,
+    addressDetail: json['address_detail'] as String?,
+    lat: (json['lat'] as num?)?.toDouble(),
+    lng: (json['lng'] as num?)?.toDouble(),
+    verified: json['verified'] as bool?,
+  );
 
   Map<String, dynamic> toJson() => {
     'weekday': weekday.wireValue,

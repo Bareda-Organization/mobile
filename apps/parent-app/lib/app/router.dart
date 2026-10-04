@@ -16,7 +16,9 @@ import 'package:parent_app/features/home/presentation/home_screen.dart';
 import 'package:parent_app/features/live_map/presentation/live_map_screen.dart';
 import 'package:parent_app/features/notifications/presentation/notifications_screen.dart';
 import 'package:parent_app/features/route/presentation/route_detail_screen.dart';
+import 'package:parent_app/features/schedule/presentation/daily_change_screen.dart';
 import 'package:parent_app/features/schedule/presentation/schedule_screen.dart';
+import 'package:parent_app/features/schedule/presentation/weekly_address_screen.dart';
 import 'package:parent_app/features/settings/presentation/password_change_screen.dart';
 import 'package:parent_app/features/settings/presentation/settings_screen.dart';
 
@@ -95,8 +97,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.blockedAccount,
         builder: (context, state) => const BlockedScreen(),
       ),
-      // 로그인 뒤 탭 3칸 — 홈 · 알림 · 설정. 탭마다 화면 상태를 따로 붙든다(R44).
-      // 아래 나머지 화면(지도·일정·비밀번호 변경 …)은 탭 밖 경로라 그 위에 얹히고 탭 막대를 가린다.
+      // 로그인 뒤 탭 — 학부모 홈 · 일정 · 알림 · 설정 / 학생 내 버스 · 알림 · 설정(R48). 탭마다 화면 상태를 따로 붙든다(R44).
+      // 아래 나머지 화면(지도·노선 자세히·요일별 주소·일일 변경·비밀번호 변경 …)은 탭 밖 경로라 그 위에 얹히고 탭 막대를 가린다.
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>
             AppShell(navigationShell: navigationShell),
@@ -106,6 +108,14 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: AppRoutes.home,
                 builder: (context, state) => const HomeScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.schedule,
+                builder: (context, state) => const ScheduleScreen(),
               ),
             ],
           ),
@@ -136,8 +146,12 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const RouteDetailScreen(),
       ),
       GoRoute(
-        path: AppRoutes.schedule,
-        builder: (context, state) => const ScheduleScreen(),
+        path: AppRoutes.weeklyAddress,
+        builder: (context, state) => const WeeklyAddressScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.dailyChange,
+        builder: (context, state) => const DailyChangeScreen(),
       ),
       GoRoute(
         path: AppRoutes.passwordChange,
