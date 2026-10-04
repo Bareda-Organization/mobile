@@ -12,6 +12,9 @@ import 'package:parent_app/core/ui/failure_message.dart';
 import 'package:parent_app/features/notifications/presentation/notification_kind.dart';
 import 'package:parent_app/features/notifications/presentation/notification_providers.dart';
 
+/// 목록 모양 — 행 시각의 형식도 이 모양으로 정해진다(머리 오른쪽에 날짜가 있어 행은 시각만, Ruling 835).
+const NotificationListStyle _listStyle = NotificationListStyle.pills;
+
 /// P-09 · S-03 알림 탭 — §3.12 목록 · §3.13 읽음 처리 (UF-P-08).
 ///
 /// 목록 그리기(걸러 보기 · 날짜 머리 · 다음 쪽 자동 받기 · 당겨서 새로고침)는
@@ -31,7 +34,7 @@ class NotificationsScreen extends ConsumerWidget {
       appBar: AppHeader(title: '알림', subtitle: _subtitle(ref)),
       body: SafeArea(
         child: NotificationListView<NotificationItem>(
-          style: NotificationListStyle.pills,
+          style: _listStyle,
           unreadCount: feed?.unreadCount ?? 0,
           items: feed?.items ?? const [],
           sentAtOf: (item) => item.sentAt,
@@ -76,6 +79,7 @@ class _ItemRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final kind = kindOf(item.type);
+    final now = ref.watch(clockProvider).now();
     // 자녀 이름(ATT-03)은 제목이 아니라 종류 · 시각 줄 끝에 붙는다 — 학생은 본인뿐이라 붙이지 않는다.
     final isParent =
         ref.watch(roleCapabilitiesProvider)?.canToggleAttendance ?? false;
@@ -86,8 +90,8 @@ class _ItemRow extends ConsumerWidget {
       kindLabel: kind.label,
       title: item.title,
       body: item.body.isEmpty ? null : item.body,
-      time: clockLabel(item.sentAt),
-      timeSpoken: spokenClock(item.sentAt),
+      time: _listStyle.rowTime(item.sentAt, now),
+      timeSpoken: spokenTime(item.sentAt, now),
       who: isParent ? item.studentName : null,
       unread: item.isUnread,
       important: kind.important,

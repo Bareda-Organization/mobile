@@ -327,6 +327,15 @@ void main() {
       expect(find.text('로그아웃'), findsNothing, reason: '강제 변경이 아니면 로그아웃 줄이 없다');
     });
 
+    testWidgets('두 입력란 모두 낭독기가 "필수" 를 읽는다(Ruling 833)', (tester) async {
+      final handle = tester.ensureSemantics();
+      await pump(tester);
+
+      expect(find.bySemanticsLabel('현재 비밀번호 필수'), findsOneWidget);
+      expect(find.bySemanticsLabel('새 비밀번호 필수'), findsOneWidget);
+      handle.dispose();
+    });
+
     testWidgets('강제 변경 — 뒤로 가기가 없고 임시 비밀번호 안내와 로그아웃만 있다', (tester) async {
       await pump(tester, forced: true);
 

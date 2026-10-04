@@ -23,7 +23,19 @@ enum NotificationListStyle {
 
   /// `[전체]` `[안 읽음 N]` 두 알약 + 큰 그림의 빈 · 오류 화면 + 목록 모양 뼈대(시안 학부모·학생
   /// `notifications*`).
-  pills,
+  pills;
+
+  /// 날짜 머리가 오른쪽에 날짜(`10월 3일 (토)`)를 그리는가 — 알약 모양만 그린다.
+  bool get headerShowsDate => this == pills;
+
+  /// 알림 행 오른쪽의 시각(Ruling 835) — 날짜는 **그 날의 머리에 날짜가 없을 때만** 붙인다(날짜를 두 번 쓰지
+  /// 않는다). 알약 모양은 머리 오른쪽에 날짜가 있고, 머리 글자 자체가 날짜(`9월 28일(월)`)인 날도 머리가 이미
+  /// 날짜를 말한다 — 날짜 없는 머리는 두 칸 전환 모양의 `어제` 뿐이다. 화면은 목록에 준 모양으로 행 시각도 이
+  /// 메서드로 그린다.
+  String rowTime(DateTime sentAt, DateTime now) {
+    final headerHasNoDate = !headerShowsDate && dayHeader(sentAt, now) == '어제';
+    return headerHasNoDate ? timeLabel(sentAt, now) : clockLabel(sentAt);
+  }
 }
 
 /// 알림 목록 화면의 본문 — `[전체]` `[안 읽음]` 걸러 보기 · 날짜 머리 · 스크롤 끝에서 다음 쪽 자동 받기 ·
@@ -259,11 +271,10 @@ class _NotificationListViewState<T> extends State<NotificationListView<T>> {
 
   bool get _hasFooter => widget.loadingMore || widget.loadMoreFailed;
 
-  /// 날짜 머리와 알림 행을 한 줄씩 만드는 빌더 목록. [NotificationListStyle.pills] 는 한 날의 행을 흰 카드
-  /// 하나로 묶는다.
+  /// 날짜 머리와 한 날의 행을 묶은 카드를 한 줄씩 만드는 빌더 목록(Ruling 835 — 걸러 보기 모양과 무관하게
+  /// 한 날의 알림은 카드 하나다).
   List<Widget Function()> _rows() {
     final w = widget;
-    final pills = w.style == NotificationListStyle.pills;
     final rows = <Widget Function()>[];
     String? lastHeader;
     var group = <T>[];
@@ -284,15 +295,13 @@ class _NotificationListViewState<T> extends State<NotificationListView<T>> {
       final header = dayHeader(sentAt, w.now);
       if (header != lastHeader) {
         flushGroup();
-        final date = pills ? dayHeaderDate(sentAt, w.now) : null;
+        final date = w.style.headerShowsDate
+            ? dayHeaderDate(sentAt, w.now)
+            : null;
         rows.add(() => _DayHeader(label: header, date: date));
         lastHeader = header;
       }
-      if (pills) {
-        group.add(item);
-      } else {
-        rows.add(() => w.itemBuilder(context, item));
-      }
+      group.add(item);
     }
     flushGroup();
     return rows;

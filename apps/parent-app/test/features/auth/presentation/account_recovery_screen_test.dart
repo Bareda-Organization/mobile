@@ -180,6 +180,24 @@ Future<void> _tapVisible(WidgetTester tester, Finder finder) async {
 }
 
 void main() {
+  testWidgets('휴대폰 번호 칸은 낭독기가 "필수" 를 읽는다(Ruling 833)', (tester) async {
+    final handle = tester.ensureSemantics();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authRepositoryProvider.overrideWithValue(_OkAuthRepository()),
+        ],
+        child: const MaterialApp(home: AccountRecoveryScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('문자로 찾기'));
+    await tester.pumpAndSettle();
+
+    expect(find.bySemanticsLabel('가입 시 등록한 휴대폰 번호 필수'), findsOneWidget);
+    handle.dispose();
+  });
+
   testWidgets('인증번호 요청이 성공하면 가입 여부를 단정하지 않는 안내를 보여준다', (tester) async {
     await tester.pumpWidget(
       ProviderScope(

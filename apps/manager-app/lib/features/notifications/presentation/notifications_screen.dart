@@ -15,6 +15,9 @@ import 'package:manager_app/features/notifications/presentation/notification_kin
 import 'package:manager_app/features/notifications/presentation/notification_providers.dart';
 import 'package:manager_app/features/notifications/presentation/widgets/manager_notification_row.dart';
 
+/// 목록 모양 — 행 시각의 형식도 이 모양으로 정해진다(머리에 날짜가 없어 지난 날짜 행에 날짜가 붙는다, Ruling 835).
+const NotificationListStyle _listStyle = NotificationListStyle.segmented;
+
 /// 알림 목록(NTF-08 · §3.12) — 홈 머리말 [알림] 에서 들어온다. 운행 중 화면(운전 화면·명단)에는 진입점이 없다.
 ///
 /// 목록 그리기(걸러 보기 · 날짜 머리 · 다음 쪽 자동 받기 · 당겨서 새로고침)는
@@ -35,6 +38,9 @@ class NotificationsScreen extends ConsumerWidget {
       appBar: const ManagerHeader(title: '알림'),
       body: SafeArea(
         child: NotificationListView<NotificationItem>(
+          // 기본값과 같아도 명시한다 — 목록 모양과 행 시각 형식이 같은 상수로 함께 움직이게.
+          // ignore: avoid_redundant_argument_values
+          style: _listStyle,
           items: feed?.items ?? const [],
           sentAtOf: (item) => item.sentAt,
           now: ref.watch(clockProvider).now(),
@@ -67,13 +73,14 @@ class _ItemRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final kind = kindOf(item.type);
+    final now = ref.watch(clockProvider).now();
     return ManagerNotificationRow(
       icon: kind.icon,
       kindLabel: kind.label,
       title: item.title,
       body: item.body.isEmpty ? null : item.body,
-      time: clockLabel(item.sentAt),
-      timeSpoken: spokenClock(item.sentAt),
+      time: _listStyle.rowTime(item.sentAt, now),
+      timeSpoken: spokenTime(item.sentAt, now),
       unread: item.isUnread,
       important: kind.important,
       onTap: _tapHandler(context, ref),

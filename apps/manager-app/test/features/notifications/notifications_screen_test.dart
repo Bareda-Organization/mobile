@@ -106,6 +106,33 @@ void main() {
     expect(find.text('중요'), findsOneWidget);
   });
 
+  // Ruling 835 — 한 날의 알림은 카드 하나, 오늘이 아닌 알림은 시각 앞에 날짜. "오늘" 은 서울 날짜다.
+  testWidgets('한 날의 알림은 카드 하나로 묶이고 오늘이 아닌 알림의 시각에는 날짜가 붙는다', (tester) async {
+    await _pump(tester, [
+      _item('1', sentAt: _kst(9, 30, 8, 37)),
+      // 서울 0시 10분 = UTC 전날 15:10 — UTC 날짜로 가르면 오늘이 아니게 되는 시각이다.
+      _item('2', sentAt: _kst(9, 30, 0, 10)),
+      _item('3', sentAt: _kst(9, 29, 14, 5), unread: false),
+    ]);
+
+    expect(find.text('오늘'), findsOneWidget);
+    expect(find.text('어제'), findsOneWidget);
+    // 오늘 카드의 두 행 사이 선 하나뿐 — 어제 카드는 행이 하나다.
+    expect(find.byType(Divider), findsNWidgets(1));
+    expect(find.text('8:37'), findsOneWidget);
+    expect(find.text('0:10'), findsOneWidget);
+    expect(find.text('9월 29일 14:05'), findsOneWidget);
+  });
+
+  // 머리 글자가 날짜(`9월 28일(월)`)인 날은 머리가 이미 날짜를 말한다 — 행에 날짜를 또 쓰지 않는다(Ruling 835).
+  testWidgets('머리 글자가 날짜인 날의 행은 시각만이다', (tester) async {
+    await _pump(tester, [_item('1', sentAt: _kst(9, 28, 14, 5))]);
+
+    expect(find.text('9월 28일(월)'), findsOneWidget);
+    expect(find.text('14:05'), findsOneWidget);
+    expect(find.text('9월 28일 14:05'), findsNothing);
+  });
+
   testWidgets('안 읽은 행에만 초록 점이 있고 읽은 행에는 없다', (tester) async {
     await _pump(tester, [
       _item('1', type: 'route_changed'),

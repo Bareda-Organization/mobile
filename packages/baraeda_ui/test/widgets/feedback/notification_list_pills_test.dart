@@ -136,16 +136,52 @@ void main() {
     });
   });
 
-  testWidgets('기본 모양(row)은 카드로 묶이지 않고 날짜 머리에 날짜도 없다', (tester) async {
+  // Ruling 835 — 묶음은 알약 모양만의 것이 아니다. 기본(segmented · 매니저 앱)도 같은 규칙이다.
+  Widget segmentedHost(List<DateTime> sentAt) => MaterialApp(
+    theme: BaraedaTheme.light(),
+    home: Scaffold(
+      body: NotificationListView<DateTime>(
+        items: sentAt,
+        sentAtOf: (t) => t,
+        itemBuilder: (context, t) => Text('알림 ${t.toIso8601String()}'),
+        now: DateTime.utc(2026, 10, 3, 4),
+        unreadOnly: false,
+        onUnreadOnlyChanged: (_) {},
+        onRefresh: () async {},
+        onLoadMore: () {},
+      ),
+    ),
+  );
+
+  testWidgets('기본 모양(row)도 한 날의 행을 카드 하나로 묶고 날짜 머리에 날짜는 없다', (tester) async {
+    final today = DateTime.utc(2026, 10, 3, 3, 12);
+    final today2 = DateTime.utc(2026, 10, 3, 3, 10);
+    final yesterday = DateTime.utc(2026, 10, 2, 7, 52);
+    await tester.pumpWidget(segmentedHost([today, today2, yesterday]));
+
+    expect(find.text('오늘'), findsOneWidget);
+    expect(find.text('어제'), findsOneWidget);
+    expect(find.text('10월 3일 (토)'), findsNothing);
+    expect(find.text('10월 2일'), findsNothing);
+    // 카드 안 행 수: 오늘 2 · 어제 1 → 카드 둘, 사이 선은 오늘 카드의 한 줄뿐.
+    expect(find.byType(Divider), findsNWidgets(1));
+  });
+
+  testWidgets('기본 모양에서 서울 자정~오전 9시 알림도 서울 날짜로 묶인다', (tester) async {
+    // 지금 10-04 08:30 KST. 10-03 23:50 KST(= 14:50 UTC)는 어제,
+    // 10-04 07:00 KST(= 10-03 22:00 UTC)는 오늘.
     await tester.pumpWidget(
       MaterialApp(
         theme: BaraedaTheme.light(),
         home: Scaffold(
-          body: NotificationListView<int>(
-            items: const [1],
-            sentAtOf: (_) => DateTime.utc(2026, 10, 3, 3),
-            itemBuilder: (context, item) => Text('알림 $item'),
-            now: DateTime.utc(2026, 10, 3, 4),
+          body: NotificationListView<DateTime>(
+            items: [
+              DateTime.utc(2026, 10, 3, 22),
+              DateTime.utc(2026, 10, 3, 14, 50),
+            ],
+            sentAtOf: (t) => t,
+            itemBuilder: (context, t) => Text('알림 ${t.hour}'),
+            now: DateTime.utc(2026, 10, 3, 23, 30),
             unreadOnly: false,
             onUnreadOnlyChanged: (_) {},
             onRefresh: () async {},
@@ -156,8 +192,8 @@ void main() {
     );
 
     expect(find.text('오늘'), findsOneWidget);
-    expect(find.text('10월 3일 (토)'), findsNothing);
-    expect(find.byType(Divider), findsNothing);
+    expect(find.text('어제'), findsOneWidget);
+    expect(find.byType(Divider), findsNothing, reason: '각 카드에 행이 하나씩');
   });
 
   testWidgets('기본은 두 칸 전환이다 — 알약도 안 읽음 수도 없다', (tester) async {
@@ -227,5 +263,71 @@ void main() {
 
     expect(find.byType(CircularProgressIndicator), findsNothing);
     expect(find.byType(BaraedaSkeletonRow), findsWidgets);
+  });
+
+  // Ruling 835 정정 — 행 시각의 날짜는 날짜 머리에 날짜가 없을 때만 붙는다(날짜를 두 번 쓰지 않는다).
+  group('행 시각의 날짜는 머리에 날짜가 없을 때만 붙는다', () {
+    final now = DateTime.utc(2026, 10, 3, 3, 14); // 10-03 12:14 KST
+    final today = DateTime.utc(2026, 10, 3, 3, 12);
+    final yesterday = DateTime.utc(2026, 10, 2, 7, 52); // 10-02 16:52 KST
+
+    test('알약 모양은 머리 오른쪽에 날짜가 있어 지난 날짜 행도 시각만이다', () {
+      expect(NotificationListStyle.pills.rowTime(yesterday, now), '16:52');
+    });
+
+    test('두 칸 전환 모양은 머리에 날짜가 없어 지난 날짜 행에 날짜가 붙는다', () {
+      expect(
+        NotificationListStyle.segmented.rowTime(yesterday, now),
+        '10월 2일 16:52',
+      );
+    });
+
+    // 머리 글자 자체가 날짜(`9월 28일(월)`)인 날은 어느 모양이든 머리가 이미 날짜를
+    // 말한다 — 날짜 없는 머리는 `어제` 뿐이다.
+    test('두 칸 전환 모양도 머리 글자가 날짜인 날의 행은 시각만이다', () {
+      final older = DateTime.utc(2026, 9, 28, 5, 5); // 9-28 14:05 KST
+
+      expect(dayHeader(older, now), '9월 28일(월)');
+      expect(NotificationListStyle.segmented.rowTime(older, now), '14:05');
+    });
+
+    test('오늘 행은 어느 모양이든 시각만이다', () {
+      for (final style in NotificationListStyle.values) {
+        expect(style.rowTime(today, now), '12:12', reason: '$style');
+      }
+    });
+
+    // 행 시각의 형식은 `headerShowsDate` 로 고르니, 이 값이 실제로 머리가 그리는 것과 같아야 둘이 어긋나지 않는다.
+    testWidgets('headerShowsDate 는 날짜 머리가 실제로 오른쪽 날짜를 그리는지와 같다', (
+      tester,
+    ) async {
+      for (final style in NotificationListStyle.values) {
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: BaraedaTheme.light(),
+            home: Scaffold(
+              body: NotificationListView<DateTime>(
+                items: [today, yesterday],
+                sentAtOf: (t) => t,
+                itemBuilder: (context, t) => const SizedBox(height: 20),
+                now: now,
+                unreadOnly: false,
+                onUnreadOnlyChanged: (_) {},
+                onRefresh: () async {},
+                onLoadMore: () {},
+                style: style,
+              ),
+            ),
+          ),
+        );
+
+        // 어제 머리의 오른쪽 날짜 — 그리면 `10월 2일` 글자가 하나 보인다.
+        expect(
+          find.text('10월 2일').evaluate().length == 1,
+          style.headerShowsDate,
+          reason: '$style',
+        );
+      }
+    });
   });
 }

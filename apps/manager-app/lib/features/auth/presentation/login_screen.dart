@@ -43,7 +43,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   /// 서버가 알려 준 남은 시도 횟수(`remaining_attempts`) — 한도 안내(M14)에 쓴다. 모르면 `null`.
   int? _remainingAttempts;
-  bool _showPassword = false;
 
   @override
   void dispose() {
@@ -203,18 +202,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     BaraedaInput(
                       label: '비밀번호',
                       kind: BaraedaInputKind.currentPassword,
-                      obscureText: !_showPassword,
+                      obscureText: true,
                       error: _passwordError,
                       controller: _passwordController,
-                      suffix: IconButton(
-                        tooltip: _showPassword ? '비밀번호 숨기기' : '비밀번호 보기',
-                        onPressed: () =>
-                            setState(() => _showPassword = !_showPassword),
-                        icon: BaraedaIcon(
-                          _showPassword ? 'eye-off' : 'eye',
-                          color: colors.textSecondary,
-                        ),
-                      ),
                     ),
                     if (remaining != null) ...[
                       const SizedBox(height: 12),

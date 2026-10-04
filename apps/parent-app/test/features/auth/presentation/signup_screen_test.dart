@@ -34,6 +34,23 @@ void main() {
     expect(find.textContaining('72바이트'), findsOneWidget);
   });
 
+  // Ruling 833 — 시안에는 별표가 없다. 눈에는 아무것도 없고 화면 낭독기만 "필수" 를 읽는다.
+  testWidgets('아이디 · 비밀번호 · 이름 · 연락처는 낭독기가 "필수" 를 읽고 눈에는 별표가 없다', (
+    tester,
+  ) async {
+    final handle = tester.ensureSemantics();
+    await pumpSignup(tester);
+
+    for (final name in ['아이디', '비밀번호', '이름', '연락처']) {
+      expect(find.bySemanticsLabel('$name 필수'), findsOneWidget, reason: name);
+    }
+    final asterisk = tester
+        .widgetList<RichText>(find.byType(RichText))
+        .any((w) => w.text.toPlainText().contains('*'));
+    expect(asterisk, isFalse);
+    handle.dispose();
+  });
+
   testWidgets('아이디가 50자를 넘으면 그 입력란 옆에 이유를 보인다', (tester) async {
     await pumpSignup(tester);
 

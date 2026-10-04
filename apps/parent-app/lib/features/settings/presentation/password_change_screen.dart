@@ -52,10 +52,6 @@ class _PasswordChangeScreenState extends ConsumerState<PasswordChangeScreen> {
   final _currentPasswordController = TextEditingController();
   final _newPasswordController = TextEditingController();
 
-  /// 비밀번호 보기 단추 — 평소엔 가린다. 칸마다 따로다.
-  bool _showCurrent = false;
-  bool _showNew = false;
-
   bool _submitting = false;
   String? _currentPasswordError;
   String? _formError;
@@ -163,12 +159,8 @@ class _PasswordChangeScreenState extends ConsumerState<PasswordChangeScreen> {
                     BaraedaInput(
                       label: '현재 비밀번호',
                       kind: BaraedaInputKind.currentPassword,
-                      obscureText: !_showCurrent,
-                      suffix: _EyeButton(
-                        shown: _showCurrent,
-                        onPressed: () =>
-                            setState(() => _showCurrent = !_showCurrent),
-                      ),
+                      obscureText: true,
+                      announceRequired: true,
                       error: _currentPasswordError,
                       controller: _currentPasswordController,
                       onChanged: (_) => setState(() {}),
@@ -179,11 +171,8 @@ class _PasswordChangeScreenState extends ConsumerState<PasswordChangeScreen> {
                       kind: BaraedaInputKind.newPassword,
                       placeholder: '새 비밀번호',
                       hint: passwordLimitHint,
-                      obscureText: !_showNew,
-                      suffix: _EyeButton(
-                        shown: _showNew,
-                        onPressed: () => setState(() => _showNew = !_showNew),
-                      ),
+                      obscureText: true,
+                      announceRequired: true,
                       error: passwordLengthError(_newPasswordController.text),
                       controller: _newPasswordController,
                       onChanged: (_) => setState(() {}),
@@ -233,23 +222,6 @@ class _PasswordChangeScreenState extends ConsumerState<PasswordChangeScreen> {
           ],
         ),
       ),
-    );
-  }
-}
-
-/// 입력칸 안 오른쪽 "비밀번호 보기" 단추(시안) — 눈 모양, 누르면 가림이 바뀐다.
-class _EyeButton extends StatelessWidget {
-  const new({required this.shown, required this.onPressed});
-
-  final bool shown;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return BaraedaIconButton(
-      icon: shown ? 'eye-off' : 'eye',
-      label: shown ? '비밀번호 가리기' : '비밀번호 보기',
-      onPressed: onPressed,
     );
   }
 }

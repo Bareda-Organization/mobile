@@ -93,8 +93,8 @@ void main() {
   testWidgets('비밀번호는 가려지고, 보기 단추를 누르면 보이며 다시 누르면 가려진다', (tester) async {
     await _pump(tester);
     // 입력 칸은 아이디 · 비밀번호 순이다(라벨은 RichText 라 글자로 못 찾는다).
-    final password = find.byType(BaraedaInput).at(1);
-    bool obscured() => tester.widget<BaraedaInput>(password).obscureText;
+    bool obscured() =>
+        tester.widget<TextField>(find.byType(TextField).at(1)).obscureText;
 
     expect(obscured(), isTrue);
 
@@ -102,7 +102,7 @@ void main() {
     await tester.pump();
     expect(obscured(), isFalse);
 
-    await tester.tap(find.bySemanticsLabel('비밀번호 가리기'));
+    await tester.tap(find.bySemanticsLabel('비밀번호 숨기기'));
     await tester.pump();
     expect(obscured(), isTrue);
   });

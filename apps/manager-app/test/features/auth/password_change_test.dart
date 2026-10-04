@@ -130,6 +130,24 @@ void main() {
       tester.widget<BaraedaButton>(find.widgetWithText(BaraedaButton, '변경하기'));
 
   // M15 — 꺼진 단추는 왜 꺼졌는지 단추 아래에 적는다.
+  // Ruling 834 — 공용 입력 부품이 눈 아이콘을 갖는다. 이 화면은 따로 손대지 않는다.
+  testWidgets('두 칸 모두 비밀번호 보기 눈 아이콘이 있고 칸마다 따로 바뀐다', (tester) async {
+    final handle = tester.ensureSemantics();
+    await pumpScreen(tester, _RecordingAuthRepository());
+    bool obscured(int index) => tester
+        .widget<TextField>(find.byType(TextField).at(index))
+        .obscureText;
+    expect(obscured(0), isTrue);
+    expect(obscured(1), isTrue);
+
+    await tester.tap(find.bySemanticsLabel('비밀번호 보기').first);
+    await tester.pump();
+
+    expect(obscured(0), isFalse);
+    expect(obscured(1), isTrue);
+    handle.dispose();
+  });
+
   testWidgets('새 비밀번호가 비어 있으면 [변경하기] 가 꺼지고 이유가 단추 아래에 보인다(M15)', (
     tester,
   ) async {
