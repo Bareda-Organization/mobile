@@ -48,7 +48,8 @@ class Stop {
   /// 미탑승 인원.
   final int? missed;
 
-  /// 이름 옆에 붙는 꼬리표 — `내 승하차지` · `제외` · `추가` 같은 짧은 글자(시안 `.m-stop` 의 칩). 없으면 안 붙는다.
+  /// 이름 옆에 붙는 꼬리표 — `내 승하차지` · `제외` · `추가` 같은 짧은 글자
+  /// (시안 `.m-stop` 의 칩). 없으면 안 붙는다.
   final String? tag;
   final BaraedaBadgeTone tagTone;
 }
@@ -171,9 +172,9 @@ class _StopTimelineRow extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        // 승하차지 이름은 두 줄까지 보이고 그 뒤는 `…`. 꼬리표는 이름 옆에 붙는다.
+                        // 승하차지 이름은 두 줄까지 보이고 그 뒤는 `…`.
+                        // 꼬리표는 이름 옆에 붙는다.
                         Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             Flexible(
                               child: Text(
@@ -195,7 +196,10 @@ class _StopTimelineRow extends StatelessWidget {
                             ),
                             if (stop.tag != null) ...[
                               const SizedBox(width: BaraedaSpacing.space2),
-                              BaraedaBadge(label: stop.tag!, tone: stop.tagTone),
+                              BaraedaBadge(
+                                label: stop.tag!,
+                                tone: stop.tagTone,
+                              ),
                             ],
                           ],
                         ),

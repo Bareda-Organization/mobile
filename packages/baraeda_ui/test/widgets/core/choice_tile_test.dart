@@ -5,14 +5,25 @@ import 'package:flutter_test/flutter_test.dart';
 
 Widget _host(Widget child) => MaterialApp(
   theme: BaraedaTheme.light(),
-  home: Scaffold(body: Align(alignment: Alignment.topLeft, child: SizedBox(width: 360, child: child))),
+  home: Scaffold(
+    body: Align(
+      alignment: Alignment.topLeft,
+      child: SizedBox(width: 360, child: child),
+    ),
+  ),
 );
 
 void main() {
   testWidgets('누르면 콜백이 불리고 선택 상태가 낭독에 실린다', (tester) async {
     var taps = 0;
     await tester.pumpWidget(
-      _host(BaraedaChoiceTile(title: '하원 · 14:40 출발', selected: true, onTap: () => taps++)),
+      _host(
+        BaraedaChoiceTile(
+          title: '하원 · 14:40 출발',
+          selected: true,
+          onTap: () => taps++,
+        ),
+      ),
     );
 
     await tester.tap(find.text('하원 · 14:40 출발'));
@@ -44,7 +55,9 @@ void main() {
     expect(find.text('행복마을 입구 · 2호차'), findsNothing);
   });
 
-  testWidgets('꺼진 칸의 글자는 기존 보조 글자색(#5C665F)이다 — 새 색을 만들지 않는다(Ruling 829)', (tester) async {
+  testWidgets('꺼진 칸의 글자는 기존 보조 글자색(#5C665F)이다 — 새 색을 만들지 않는다(Ruling 829)', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       _host(const BaraedaChoiceTile(title: '등원', disabledReason: '운행이 끝났어요')),
     );
@@ -56,20 +69,32 @@ void main() {
   testWidgets('선택된 칸은 초록 2px 테두리, 아닌 칸은 1px 테두리다', (tester) async {
     await tester.pumpWidget(
       _host(
-        Column(
-          children: const [
-            BaraedaChoiceTile(key: Key('on'), title: 'A', selected: true, onTap: _noop),
+        const Column(
+          children: [
+            BaraedaChoiceTile(
+              key: Key('on'),
+              title: 'A',
+              selected: true,
+              onTap: _noop,
+            ),
             BaraedaChoiceTile(key: Key('off'), title: 'B', onTap: _noop),
           ],
         ),
       ),
     );
 
-    BoxDecoration decorationOf(Key key) => tester
-        .widget<DecoratedBox>(
-          find.descendant(of: find.byKey(key), matching: find.byType(DecoratedBox)).first,
-        )
-        .decoration as BoxDecoration;
+    BoxDecoration decorationOf(Key key) =>
+        tester
+                .widget<DecoratedBox>(
+                  find
+                      .descendant(
+                        of: find.byKey(key),
+                        matching: find.byType(DecoratedBox),
+                      )
+                      .first,
+                )
+                .decoration
+            as BoxDecoration;
 
     final on = decorationOf(const Key('on')).border! as Border;
     final off = decorationOf(const Key('off')).border! as Border;

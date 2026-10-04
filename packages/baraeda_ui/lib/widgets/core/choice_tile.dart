@@ -54,7 +54,9 @@ class BaraedaChoiceTile extends StatelessWidget {
           ),
         ),
         child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: BaraedaSpacing.rowMinHeight),
+          constraints: const BoxConstraints(
+            minHeight: BaraedaSpacing.rowMinHeight,
+          ),
           child: Padding(
             padding: const EdgeInsets.symmetric(
               horizontal: BaraedaSpacing.space3,
@@ -72,7 +74,9 @@ class BaraedaChoiceTile extends StatelessWidget {
                       Text(
                         title,
                         style: BaraedaTypography.body.copyWith(
-                          color: disabled ? colors.textSecondary : colors.textPrimary,
+                          color: disabled
+                              ? colors.textSecondary
+                              : colors.textPrimary,
                           fontWeight: BaraedaFontWeight.medium,
                         ),
                       ),
@@ -100,7 +104,11 @@ class BaraedaChoiceTile extends StatelessWidget {
 }
 
 class _Radio extends StatelessWidget {
-  const new({required this.selected, required this.disabled, required this.colors});
+  const new({
+    required this.selected,
+    required this.disabled,
+    required this.colors,
+  });
 
   final bool selected;
   final bool disabled;
