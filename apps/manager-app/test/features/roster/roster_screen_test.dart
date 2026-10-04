@@ -11,6 +11,7 @@ import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/core/auth/user_role.dart';
 import 'package:manager_app/core/constants/api_constants.dart';
 import 'package:manager_app/core/run/run_enums.dart';
+import 'package:manager_app/core/run/manager_connection.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/core/ui/manager_header.dart';
 import 'package:manager_app/features/home/data/models/manager_run.dart';
@@ -865,5 +866,45 @@ void main() {
       );
       expect(find.text(label), findsOneWidget);
     }
+  });
+
+  group('연결 끊김 띠 (시안 roster-escort--offline)', () {
+    Future<void> pumpRoster(
+      WidgetTester tester, {
+      DateTime? offlineSince,
+    }) async {
+      await tester.pumpWidget(
+        _wrap(const RosterScreen(), [
+          selectedRunIdProvider.overrideWith((ref) => runId),
+          rosterRepositoryProvider.overrideWithValue(
+            _FakeRosterRepository(roster: _roster()),
+          ),
+          currentUserRoleProvider.overrideWith((ref) => UserRole.escort),
+          todayRunsProvider.overrideWith(
+            (ref) async => [_managerRun(ackRequired: false)],
+          ),
+          managerOfflineSinceProvider(runId)
+              .overrideWith((ref) => offlineSince),
+        ]),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('끊겨 있으면 맨 위에 언제부터인지 띠로 알린다', (tester) async {
+      await pumpRoster(tester, offlineSince: DateTime(2026, 9, 12, 8, 41));
+
+      expect(find.text('인터넷 연결 없음 · 08:41 부터'), findsOneWidget);
+      // 띠는 머리줄(제목) 위에 있다.
+      expect(
+        tester.getTopLeft(find.text('인터넷 연결 없음 · 08:41 부터')).dy,
+        lessThan(tester.getTopLeft(find.text('명단')).dy),
+      );
+    });
+
+    testWidgets('연결돼 있으면 띠가 없다', (tester) async {
+      await pumpRoster(tester);
+
+      expect(find.byType(BaraedaConnectionStrip), findsNothing);
+    });
   });
 }

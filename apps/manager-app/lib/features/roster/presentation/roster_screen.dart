@@ -10,6 +10,7 @@ import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/core/network/failure_messages.dart';
 import 'package:manager_app/core/run/manager_channel_banner.dart';
+import 'package:manager_app/core/run/manager_connection.dart';
 import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/core/time/run_time_labels.dart';
@@ -186,12 +187,22 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
     final runId = ref.watch(selectedRunIdProvider);
     final run = ref.watch(selectedManagerRunProvider);
     final roster = ref.watch(rosterProvider).value;
+    final offlineSince = runId == null
+        ? null
+        : ref.watch(managerOfflineSinceProvider(runId));
     return Scaffold(
       appBar: ManagerHeader(
         title: '명단',
         subtitle: _subtitleOf(roster, run),
         // 탭으로 열린 명단은 뒤로 갈 곳이 없다 — 기사의 조회 전용만 뒤로 가기가 있다.
         onBack: widget.readOnly ? () => Navigator.of(context).maybePop() : null,
+        // 연결이 끊겨 있으면 맨 위에 언제부터인지 띠로 알린다(시안 `roster-escort--offline`).
+        strip: offlineSince == null
+            ? null
+            : BaraedaConnectionStrip(
+                state: BaraedaConnectionState.offline,
+                message: '인터넷 연결 없음 · ${hhmm(offlineSince)} 부터',
+              ),
       ),
       body: runId == null
           ? const EmptyState(

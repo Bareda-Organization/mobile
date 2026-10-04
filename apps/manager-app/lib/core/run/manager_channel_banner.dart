@@ -25,6 +25,10 @@ class ManagerChannelBanner extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final status = ref.watch(managerRunChannelProvider(runId));
+    // 재연결 중은 화면 맨 위 연결 끊김 띠가 맡는다(`managerOfflineSinceProvider`) — 같은 사건을 두 번 알리지 않는다.
+    if (status == ManagerChannelStatus.reconnecting) {
+      return const SizedBox.shrink();
+    }
     final content = managerChannelBannerContentFor(status);
     if (content == null) return const SizedBox.shrink();
     return Padding(

@@ -186,9 +186,21 @@ class ManagerRunChannelController extends StateNotifier<ManagerChannelStatus> {
   /// 방송을 되찾으려고 화면 값을 다시 받는다(F06-09).
   bool _wasConnected = false;
 
+  /// 연결이 끊긴 채로 처음 확인된 시각 — 연결 끊김 띠의 `HH:mm 부터`. 재시도 중 `connecting` ↔
+  /// `reconnecting` 을 오가도 처음 시각을 지키고, 다시 `connected` 가 되면 지운다. 처음 연결을 시도하는 중
+  /// (`connecting`)은 끊긴 것이 아니라 세지 않는다.
+  DateTime? get offlineSince => _offlineSince;
+  DateTime? _offlineSince;
+
   void _onConnectionState(WsConnectionState wsState) {
     if (_forbidden) return;
-    state = mapConnectionState(wsState);
+    final mapped = mapConnectionState(wsState);
+    if (mapped == ManagerChannelStatus.reconnecting) {
+      _offlineSince ??= _ref.read(clockProvider).now();
+    } else if (mapped == ManagerChannelStatus.connected) {
+      _offlineSince = null;
+    }
+    state = mapped;
     if (wsState == WsConnectionState.connected) {
       if (_wasConnected) {
         _ref.invalidate(todayRunsProvider);
