@@ -1,6 +1,7 @@
 // 승하차지 타임라인 — 상태마다 번호 원의 모양이 다르다(시안 kit "승하차지 타임라인").
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 Widget _host(Widget child) => MaterialApp(
@@ -80,5 +81,30 @@ void main() {
       tester.getSize(find.byType(StopTimeline)).height,
       greaterThanOrEqualTo(BaraedaSpacing.rowMinHeight),
     );
+  });
+
+  testWidgets('번호 원 사이를 잇는 2px 연결선이 실제로 그려진다(높이 > 0)', (tester) async {
+    await tester.pumpWidget(
+      _host(
+        const StopTimeline(
+          stops: [
+            Stop(name: 'A', state: StopState.done),
+            Stop(name: 'B', state: StopState.current),
+            Stop(name: 'C'),
+          ],
+        ),
+      ),
+    );
+    final lines = find.byWidgetPredicate(
+      (w) =>
+          w is ColoredBox && w.color == colors.borderDefault && w.child == null,
+    );
+    // 첫 줄은 아래 선만, 가운데는 위·아래, 마지막은 위 선만 → 4개.
+    expect(lines, findsNWidgets(4));
+    for (final element in lines.evaluate()) {
+      final box = element.renderObject! as RenderBox;
+      expect(box.size.width, 2);
+      expect(box.size.height, greaterThan(0));
+    }
   });
 }

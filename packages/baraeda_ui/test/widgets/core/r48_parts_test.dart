@@ -287,6 +287,41 @@ void main() {
       );
     });
 
+    testWidgets('Scaffold 아래 막대 자리에서도 화면 전체를 먹지 않고 본문이 남는다', (tester) async {
+      // 2026-10-04 시뮬레이터에서 견본을 띄웠을 때 막대가 화면 전체 높이가 되어 본문이 사라졌다 —
+      // `Scaffold.bottomNavigationBar` 는 세로 제약이 느슨해서 Column 이 최대 높이를 잡는다.
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: BaraedaTheme.light(),
+          home: Scaffold(
+            body: const Center(child: Text('본문')),
+            bottomNavigationBar: BaraedaTabBar(
+              items: items,
+              currentIndex: 0,
+              onChanged: (_) {},
+            ),
+          ),
+        ),
+      );
+      expect(tester.getSize(find.byType(BaraedaTabBar)).height, lessThan(100));
+      expect(tester.getSize(find.text('본문')).height, greaterThan(0));
+      expect(tester.getCenter(find.text('본문')).dy, lessThan(500));
+    });
+
+    testWidgets('현재 탭의 연초록 면이 칸 폭을 가득 채운다(내용 폭으로 줄지 않는다)', (tester) async {
+      await tester.pumpWidget(
+        _host(BaraedaTabBar(items: items, currentIndex: 0, onChanged: (_) {})),
+      );
+      final cell = find.widgetWithText(BaraedaPressable, '명단');
+      // 칸(탭 영역)이 아니라 **색이 칠해진 면**의 폭을 잰다 — 칸은 Stack 이 제약대로 채워 줘도
+      // 면은 느슨한 제약에서 내용 폭으로 줄 수 있다(2026-10-04 시뮬레이터에서 좁은 알약으로 보였다).
+      final face = find
+          .descendant(of: cell, matching: find.byType(DecoratedBox))
+          .first;
+      expect(tester.getSize(face).width, tester.getSize(cell).width);
+      expect(tester.getSize(face).width, greaterThan(70));
+    });
+
     testWidgets('배지는 건수, 99 를 넘으면 99+', (tester) async {
       await tester.pumpWidget(
         _host(

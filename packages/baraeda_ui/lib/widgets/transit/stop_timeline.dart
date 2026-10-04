@@ -260,7 +260,12 @@ class _Line extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Center(
-    child: SizedBox(width: 2, child: ColoredBox(color: color)),
+    // 높이를 비우면 Center 가 느슨한 제약을 줘서 선이 0 높이로 줄어든다(2026-10-04 시뮬레이터 확인).
+    child: SizedBox(
+      width: 2,
+      height: double.infinity,
+      child: ColoredBox(color: color),
+    ),
   );
 }
 

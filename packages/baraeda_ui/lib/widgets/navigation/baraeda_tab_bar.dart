@@ -97,6 +97,8 @@ class _Tab extends StatelessWidget {
       selected: selected,
       semanticLabel: spoken,
       child: Stack(
+        // 부모(Expanded)가 준 폭을 그대로 써서 현재 탭의 연초록 면이 칸을 가득 채운다.
+        fit: StackFit.passthrough,
         clipBehavior: Clip.none,
         children: [
           DecoratedBox(
@@ -107,6 +109,8 @@ class _Tab extends StatelessWidget {
             child: ConstrainedBox(
               constraints: const BoxConstraints(minHeight: 56),
               child: Column(
+                // `Scaffold.bottomNavigationBar` 는 세로 제약이 느슨해서, 줄이지 않으면 화면 전체를 먹는다.
+                mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   BaraedaIcon(item.icon, size: 24, color: foreground),
