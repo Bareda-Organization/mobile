@@ -264,4 +264,61 @@ void main() {
     expect(find.byType(CircularProgressIndicator), findsNothing);
     expect(find.byType(BaraedaSkeletonRow), findsWidgets);
   });
+
+  // Ruling 835 정정 — 행 시각의 날짜는 날짜 머리에 날짜가 없을 때만 붙는다(날짜를 두 번 쓰지 않는다).
+  group('행 시각의 날짜는 머리에 날짜가 없을 때만 붙는다', () {
+    final now = DateTime.utc(2026, 10, 3, 3, 14); // 10-03 12:14 KST
+    final today = DateTime.utc(2026, 10, 3, 3, 12);
+    final yesterday = DateTime.utc(2026, 10, 2, 7, 52); // 10-02 16:52 KST
+
+    test('알약 모양은 머리 오른쪽에 날짜가 있어 지난 날짜 행도 시각만이다', () {
+      expect(NotificationListStyle.pills.rowTime(yesterday, now), '16:52');
+    });
+
+    test('두 칸 전환 모양은 머리에 날짜가 없어 지난 날짜 행에 날짜가 붙는다', () {
+      expect(
+        NotificationListStyle.segmented.rowTime(yesterday, now),
+        '10월 2일 16:52',
+      );
+    });
+
+    test('오늘 행은 어느 모양이든 시각만이다', () {
+      for (final style in NotificationListStyle.values) {
+        expect(style.rowTime(today, now), '12:12', reason: '$style');
+      }
+    });
+
+    // 행 시각의 형식은 `headerShowsDate` 로 고르니, 이 값이 실제로 머리가 그리는 것과 같아야 둘이 어긋나지 않는다.
+    testWidgets('headerShowsDate 는 날짜 머리가 실제로 오른쪽 날짜를 그리는지와 같다', (
+      tester,
+    ) async {
+      for (final style in NotificationListStyle.values) {
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: BaraedaTheme.light(),
+            home: Scaffold(
+              body: NotificationListView<DateTime>(
+                items: [today, yesterday],
+                sentAtOf: (t) => t,
+                itemBuilder: (context, t) => const SizedBox(height: 20),
+                now: now,
+                unreadOnly: false,
+                onUnreadOnlyChanged: (_) {},
+                onRefresh: () async {},
+                onLoadMore: () {},
+                style: style,
+              ),
+            ),
+          ),
+        );
+
+        // 어제 머리의 오른쪽 날짜 — 그리면 `10월 2일` 글자가 하나 보인다.
+        expect(
+          find.text('10월 2일').evaluate().length == 1,
+          style.headerShowsDate,
+          reason: '$style',
+        );
+      }
+    });
+  });
 }
