@@ -202,9 +202,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                       label: '비밀번호',
                       required: true,
                       obscureText: true,
-                      hint:
-                          '영문 $passwordMaxBytes자 · '
-                          '한글 ${passwordMaxBytes ~/ 3}자까지',
+                      hint: passwordLimitHint,
                       error: passwordLengthError(_passwordController.text),
                       controller: _passwordController,
                       onChanged: (_) => setState(() {}),
