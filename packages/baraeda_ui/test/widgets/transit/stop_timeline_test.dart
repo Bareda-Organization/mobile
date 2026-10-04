@@ -1,7 +1,6 @@
 // 승하차지 타임라인 — 상태마다 번호 원의 모양이 다르다(시안 kit "승하차지 타임라인").
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 Widget _host(Widget child) => MaterialApp(

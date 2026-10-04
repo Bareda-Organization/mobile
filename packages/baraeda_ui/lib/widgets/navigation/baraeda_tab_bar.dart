@@ -109,7 +109,8 @@ class _Tab extends StatelessWidget {
             child: ConstrainedBox(
               constraints: const BoxConstraints(minHeight: 56),
               child: Column(
-                // `Scaffold.bottomNavigationBar` 는 세로 제약이 느슨해서, 줄이지 않으면 화면 전체를 먹는다.
+                // `Scaffold.bottomNavigationBar` 는 세로 제약이 느슨해서
+                // 줄이지 않으면 화면 전체를 먹는다.
                 mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
