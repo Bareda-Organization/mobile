@@ -179,4 +179,48 @@ void main() {
       expect(find.textContaining('끌까요'), findsNothing);
     });
   });
+
+  // R48 시안 `cancel-ride` · `--approval` · `--moving` — 구간마다 확인 단추의 글자와 색이 다르다(P2).
+  // ② 구간의 단추는 취소가 아니라 "요청" 이다 — 위험색(빨강)이 아니라 주 단추(초록)여야 취소가 즉시 되는 줄 아는 오해가 없다.
+  group('R48 탑승 취소 확인 창 — 구간별 단추', () {
+    BaraedaButton confirmButton(WidgetTester tester, String label) =>
+        tester.widget<BaraedaButton>(find.widgetWithText(BaraedaButton, label));
+
+    testWidgets('① 구간(확정 전) — "바로 반영돼요" · 탑승 취소(위험색)', (tester) async {
+      await _pump(tester, run: _run());
+      await tester.tap(find.byType(BaraedaSwitch));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('바로 반영돼요. 출발 30분 전(07:30)까지는 다시 탑승으로 바꿀 수 있어요.'), findsOneWidget);
+      expect(confirmButton(tester, '탑승 취소').variant, BaraedaButtonVariant.danger);
+      expect(find.text('닫기'), findsOneWidget);
+    });
+
+    testWidgets('② 구간(확정 뒤) — 단추 글자는 "승인 요청 보내기" 이고 위험색이 아니라 주 단추다', (tester) async {
+      await _pump(tester, run: _run(confirmed: true));
+      await tester.tap(find.byType(BaraedaSwitch));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('학원 관리자의 승인이 필요해요'), findsOneWidget);
+      expect(find.textContaining('08:00 까지 승인되지 않으면 자동으로 반려돼요'), findsOneWidget);
+      expect(find.text('탑승 취소'), findsNothing);
+      expect(
+        confirmButton(tester, '승인 요청 보내기').variant,
+        BaraedaButtonVariant.primary,
+      );
+    });
+
+    testWidgets('③ 구간(운행 중) — 되돌릴 수 없다 · 승하차지에 정차하지 않는다 · 탑승 취소(위험색)', (tester) async {
+      await _pump(
+        tester,
+        run: _run(runStatus: RunStatus.moving, confirmed: true),
+      );
+      await tester.tap(find.byType(BaraedaSwitch));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('다시 탑승으로 바꿀 수 없어요'), findsOneWidget);
+      expect(find.textContaining('에는 정차하지 않아요'), findsOneWidget);
+      expect(confirmButton(tester, '탑승 취소').variant, BaraedaButtonVariant.danger);
+    });
+  });
 }

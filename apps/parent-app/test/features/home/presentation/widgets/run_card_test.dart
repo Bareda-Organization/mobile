@@ -386,7 +386,7 @@ void main() {
     await tester.tap(find.byType(BaraedaSwitch));
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('승인'), findsOneWidget);
+    expect(find.textContaining('학원 관리자의 승인이 필요해요'), findsOneWidget);
     expect(find.textContaining('1번'), findsOneWidget);
     expect(find.textContaining('바로 반영'), findsNothing);
   });
@@ -456,7 +456,7 @@ void main() {
 
     await tester.tap(find.byType(BaraedaSwitch));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('탑승 취소'));
+    await tester.tap(find.text('승인 요청 보내기'));
     await tester.pumpAndSettle();
 
     expect(

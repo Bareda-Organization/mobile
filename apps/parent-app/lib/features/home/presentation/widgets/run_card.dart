@@ -60,20 +60,32 @@ class _RunCardState extends ConsumerState<RunCard> {
   Future<void> _onSwitchChanged(bool value) async {
     if (value) return await _toggle(true);
     final run = widget.run;
+    final confirmAt = formatClock(
+      run.departTime.subtract(const Duration(minutes: 30)),
+    );
+    final departAt = formatClock(run.departTime);
+    // 구간마다 결과가 달라 문구와 확인 단추를 가른다(시안 `cancel-ride` · `--approval` · `--moving`).
+    // ②구간의 단추는 취소가 아니라 "요청" 이라 위험색이 아니다 — 취소가 즉시 되는 줄 아는 오해를 막는다(P2).
+    final needsApproval = switch (run.runStatus) {
+      RunStatus.idle when !run.confirmed => false,
+      RunStatus.idle || RunStatus.confirmed => true,
+      RunStatus.moving || RunStatus.finished => false,
+    };
     final confirmed = await showConfirmDialog(
       context,
       title: '$_dayWord 탑승을 취소할까요?',
       body: switch (run.runStatus) {
         RunStatus.idle when !run.confirmed =>
-          '바로 반영됩니다. 출발 30분 전까지는 다시 탑승으로 바꿀 수 있습니다.',
+          '바로 반영돼요. 출발 30분 전($confirmAt)까지는 다시 탑승으로 바꿀 수 있어요.',
         RunStatus.idle || RunStatus.confirmed =>
-          '출발 30분 전이 지나 학원 관리자의 승인이 필요합니다. '
-              '승인 요청은 이 회차에서 1번만 보낼 수 있습니다.',
+          '출발 30분 전이 지나 학원 관리자의 승인이 필요해요. '
+              '승인 요청은 이 회차에서 1번만 보낼 수 있고, $departAt 까지 승인되지 않으면 자동으로 반려돼요.',
         RunStatus.moving || RunStatus.finished =>
-          '운행이 시작돼 바로 반영되며 다시 탑승으로 바꿀 수 없습니다. '
-              '노선은 바뀌지 않고 이 승하차지에는 정차하지 않습니다.',
+          '운행이 시작돼 바로 반영되고 다시 탑승으로 바꿀 수 없어요. '
+              '노선은 바뀌지 않고, ${run.stop.name}에는 정차하지 않아요.',
       },
-      confirmLabel: '탑승 취소',
+      confirmLabel: needsApproval ? '승인 요청 보내기' : '탑승 취소',
+      danger: !needsApproval,
       // 확인 버튼이 "탑승 취소" 라 창을 닫는 쪽을 "취소" 로 두면 두 버튼이 같은 말이 된다.
       cancelLabel: '닫기',
     );
