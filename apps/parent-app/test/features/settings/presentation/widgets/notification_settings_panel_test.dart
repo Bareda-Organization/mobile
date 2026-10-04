@@ -52,7 +52,7 @@ void main() {
           ),
         ],
         child: const MaterialApp(
-          home: Scaffold(body: NotificationSettingsPanel()),
+          home: Scaffold(body: NotificationSettingsPanel(isParent: true)),
         ),
       ),
     );
@@ -96,7 +96,7 @@ void main() {
           ),
         ],
         child: const MaterialApp(
-          home: Scaffold(body: NotificationSettingsPanel()),
+          home: Scaffold(body: NotificationSettingsPanel(isParent: true)),
         ),
       ),
     );
@@ -106,5 +106,63 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('네트워크 상태를 확인해 주세요'), findsOneWidget);
+  });
+
+  // R48 `Ruling 829` — 학생이 받는 알림은 도착 · 운행 시작뿐이라 의미 없는 스위치(미승차)를 뺀다.
+  group('R48 역할별 스위치', () {
+    const settings = NotificationSettings(
+      arrive: true,
+      boarding: true,
+      noShow: true,
+    );
+
+    Future<void> pump(WidgetTester tester, {required bool isParent}) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            notificationSettingsRepositoryProvider.overrideWithValue(
+              _RejectingNotificationSettingsRepository(settings),
+            ),
+          ],
+          child: MaterialApp(
+            home: Scaffold(
+              body: NotificationSettingsPanel(isParent: isParent),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('학생은 스위치 2개 — 버스 도착 알림 · 운행 시작 알림', (tester) async {
+      await pump(tester, isParent: false);
+
+      expect(find.byType(BaraedaSwitch), findsNWidgets(2));
+      expect(find.text('버스 도착 알림'), findsOneWidget);
+      expect(find.text('운행 시작 알림'), findsOneWidget);
+      expect(find.text('내 버스의 운행이 시작될 때'), findsOneWidget);
+      expect(find.text('미승차 알림'), findsNothing);
+      expect(find.text('등하원 알림'), findsNothing);
+    });
+
+    testWidgets('학부모는 스위치 3개 — 도착 · 등하원 · 미승차', (tester) async {
+      await pump(tester, isParent: true);
+
+      expect(find.byType(BaraedaSwitch), findsNWidgets(3));
+      expect(find.text('등하원 알림'), findsOneWidget);
+      expect(find.text('승차 · 하차 · 운행 시작'), findsOneWidget);
+      expect(find.text('미승차 알림'), findsOneWidget);
+      expect(find.text('운행 시작 알림'), findsNothing);
+    });
+
+    testWidgets('지연 알림은 스위치 없이 "항상 켜짐" 칩이다 — 학부모 · 학생 공통', (tester) async {
+      for (final isParent in [true, false]) {
+        await pump(tester, isParent: isParent);
+
+        expect(find.text('지연 알림'), findsOneWidget);
+        expect(find.text('버스가 늦으면 항상 알려 드려요'), findsOneWidget);
+        expect(find.text('항상 켜짐'), findsOneWidget);
+      }
+    });
   });
 }

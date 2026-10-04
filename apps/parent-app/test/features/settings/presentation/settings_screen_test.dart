@@ -98,10 +98,18 @@ class _FakeDeviceRegistrationStorage extends DeviceRegistrationStorage {
   Future<void> clearToken() async {}
 }
 
+/// 설정은 항목이 길어 기본 화면(800x600)에서는 맨 아래 로그아웃이 만들어지지 않는다.
+void _tallView(WidgetTester tester) {
+  tester.view.physicalSize = const Size(800, 3200);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
+}
+
 Future<void> _pumpSettings(
   WidgetTester tester,
   AuthRepository authRepository,
 ) async {
+  _tallView(tester);
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
@@ -138,6 +146,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(BaraedaDialog), findsOneWidget);
+    // 시안 `settings--logout` 의 문구.
+    expect(find.text('로그아웃할까요?'), findsOneWidget);
+    expect(find.text('다시 로그인하면 계속 쓸 수 있어요.'), findsOneWidget);
     expect(repository.logoutCallCount, 0);
   });
 
@@ -179,6 +190,7 @@ void main() {
       );
       addTearDown(container.dispose);
 
+      _tallView(tester);
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
@@ -225,6 +237,7 @@ void main() {
       );
       addTearDown(container.dispose);
 
+      _tallView(tester);
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,

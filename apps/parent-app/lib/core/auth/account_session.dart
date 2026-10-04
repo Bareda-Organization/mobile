@@ -138,8 +138,8 @@ Future<void> signOut(WidgetRef ref) async {
 Future<void> confirmLogout(BuildContext context, WidgetRef ref) async {
   final confirmed = await showConfirmDialog(
     context,
-    title: '로그아웃',
-    body: '로그아웃 하시겠습니까?',
+    title: '로그아웃할까요?',
+    body: '다시 로그인하면 계속 쓸 수 있어요.',
     confirmLabel: '로그아웃하기',
   );
   if (confirmed) {
