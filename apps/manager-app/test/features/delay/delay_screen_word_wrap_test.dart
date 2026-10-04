@@ -6,6 +6,7 @@ import 'package:manager_app/core/auth/role_policy.dart';
 import 'package:manager_app/core/auth/user_role.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/features/delay/presentation/delay_screen.dart';
+import 'package:manager_app/features/home/presentation/home_providers.dart';
 
 import '../../support/line_breaks.dart';
 
@@ -17,6 +18,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          todayRunsProvider.overrideWith((ref) async => const []),
           selectedRunIdProvider.overrideWith((ref) => 'run-1'),
           roleCapabilitiesProvider.overrideWithValue(
             RoleCapabilities.of(UserRole.escort),
@@ -24,9 +26,8 @@ void main() {
         ],
         child: MaterialApp(
           builder: (context, child) => MediaQuery(
-            data: MediaQuery.of(
-              context,
-            ).copyWith(textScaler: const TextScaler.linear(1.3)),
+            data: MediaQuery.of(context)
+                .copyWith(textScaler: const TextScaler.linear(1.3)),
             child: child!,
           ),
           home: const DelayScreen(),
@@ -34,7 +35,7 @@ void main() {
       ),
     );
 
-    final paragraph = paragraphContaining(tester, '이 들어갑니다');
+    final paragraph = paragraphContaining(tester, '이 들어가요');
     expect(
       layoutLike(paragraph).computeLineMetrics().length,
       greaterThan(1),

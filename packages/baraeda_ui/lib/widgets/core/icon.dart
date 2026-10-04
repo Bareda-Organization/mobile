@@ -32,6 +32,7 @@ const Map<String, IconData> _kBaraedaIconGlyphs = {
   'search': Icons.search,
   'settings': Icons.settings,
   'plus': Icons.add,
+  'minus': Icons.remove,
   'pencil': Icons.edit,
   'trash-2': Icons.delete,
   'triangle-alert': Icons.warning_amber,
