@@ -110,7 +110,7 @@ void main() {
       expect(BaraedaColors.light.statusMoving, const Color(0xFF8A560C));
     });
 
-    test('칩 모양 색 5종(라이트): 종료 #6B7672 · 이동 #C77E12 · 확정 #1F5C4D · 대기 #7BBAA6 · 위험 #C93F2C', () {
+    test('칩 모양 색 5종(라이트) — 종료 · 이동 · 확정 · 대기 · 위험', () {
       const c = BaraedaColors.light;
       expect(c.shapeIdle, const Color(0xFF6B7672));
       expect(c.shapeMoving, const Color(0xFFC77E12));

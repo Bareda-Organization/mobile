@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class _Host extends StatelessWidget {
-  const _Host({this.onAction, this.drive = false});
+  const new({this.onAction, this.drive = false});
 
   final VoidCallback? onAction;
   final bool drive;

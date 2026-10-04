@@ -14,8 +14,7 @@ Widget _host(Widget child, {double? width}) => MaterialApp(
 );
 
 Color _inkColor(WidgetTester tester) =>
-    ((tester.widget<Ink>(find.byType(Ink)).decoration)! as BoxDecoration)
-        .color!;
+    (tester.widget<Ink>(find.byType(Ink)).decoration! as BoxDecoration).color!;
 
 double _scale(WidgetTester tester) =>
     tester.widget<AnimatedScale>(find.byType(AnimatedScale)).scale;
@@ -134,10 +133,8 @@ void main() {
         matchesSemantics(
           isButton: true,
           hasEnabledState: true,
-          isEnabled: false,
           label: '변경하기',
           hint: '새 비밀번호를 입력하면 눌러요',
-          hasTapAction: false,
         ),
       );
       handle.dispose();

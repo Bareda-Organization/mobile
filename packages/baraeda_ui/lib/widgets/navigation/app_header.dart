@@ -140,26 +140,36 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
                   ),
                 ),
               Expanded(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: floating
-                      ? CrossAxisAlignment.center
-                      : CrossAxisAlignment.start,
-                  children: [
-                    ?titleWidget,
-                    if (subtitle != null && !floating)
-                      Text(
-                        subtitle!,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: BaraedaTypography.caption.copyWith(
-                          height: 1.3,
-                          color: chrome
-                              ? colors.textOnChromeMuted
-                              : colors.textSecondary,
+                // 머리줄 높이는 `preferredSize` 로 정해져 글자가 커져도 늘어날 수 없다 —
+                // 글자 배율이 넘치지 않는 한도로 묶는다(제목 24 + 부제 14 가 64 에 들어가는 1.1배,
+                // 부제가 없으면 1.6배). 부제 · 제목은 한 줄이라 잘려도 전체 이름은 다른 화면에 있다.
+                child: MediaQuery(
+                  data: MediaQuery.of(context).copyWith(
+                    textScaler: MediaQuery.textScalerOf(context).clamp(
+                      maxScaleFactor: subtitle != null && !floating ? 1.1 : 1.6,
+                    ),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: floating
+                        ? CrossAxisAlignment.center
+                        : CrossAxisAlignment.start,
+                    children: [
+                      ?titleWidget,
+                      if (subtitle != null && !floating)
+                        Text(
+                          subtitle!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: BaraedaTypography.caption.copyWith(
+                            height: 1.3,
+                            color: chrome
+                                ? colors.textOnChromeMuted
+                                : colors.textSecondary,
+                          ),
                         ),
-                      ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
               ?actions,

@@ -94,4 +94,58 @@ void main() {
       reason: '고정값을 더하면 여백이 없는 기기에서 머리말이 쓸데없이 두꺼워진다',
     );
   });
+
+  // 시안 R48 머리줄 — 제목 24 + 부제 14 가 `preferredSize`(64) 안에 들어가야 한다.
+  // 높이가 고정이라 글자 배율이 크면 넘치므로 배율을 묶는다.
+  for (final scale in [1.0, 1.3, 2.0]) {
+    testWidgets('부제가 있는 머리줄은 글자 $scale 배에서도 넘치지 않는다', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: BaraedaTheme.light(),
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context)
+                .copyWith(textScaler: TextScaler.linear(scale)),
+            child: child!,
+          ),
+          home: const Scaffold(
+            appBar: AppHeader(title: '명단', subtitle: '2호차 · 등원 · 12:20 출발'),
+            body: SizedBox(),
+          ),
+        ),
+      );
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  testWidgets('부제는 한 줄에서 `…` 로 잘린다 — 긴 학원 이름이 비상 버튼 밑으로 흐르지 않는다', (
+    tester,
+  ) async {
+    const longSub = '기사 박정훈 · 하늘수학학원 부천중동 센트럴파크 푸르지오 2단지 아파트 정문 앞 본원 제2별관';
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: BaraedaTheme.light(),
+        home: const Scaffold(
+          appBar: AppHeader(title: '운행 중', subtitle: longSub),
+          body: SizedBox(),
+        ),
+      ),
+    );
+    final text = tester.widget<Text>(find.text(longSub));
+    expect(text.maxLines, 1);
+    expect(text.overflow, TextOverflow.ellipsis);
+  });
+
+  testWidgets('제목은 24 · 한 줄, floating 은 면 없이 제목만 알약 안에', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: BaraedaTheme.light(),
+        home: const Scaffold(
+          appBar: AppHeader(title: '실시간 위치', tone: AppHeaderTone.floating),
+          body: SizedBox(),
+        ),
+      ),
+    );
+    // floating 의 제목은 16 — 흰 알약 안.
+    expect(tester.widget<Text>(find.text('실시간 위치')).style!.fontSize, 16);
+  });
 }

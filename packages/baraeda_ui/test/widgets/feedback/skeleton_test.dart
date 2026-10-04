@@ -38,9 +38,7 @@ void main() {
   });
 
   testWidgets('뼈대는 이동 · 크기 변화 없이 같은 자리 · 같은 크기다', (tester) async {
-    await tester.pumpWidget(
-      _host(const BaraedaSkeleton(width: 120, height: 16)),
-    );
+    await tester.pumpWidget(_host(const BaraedaSkeleton(width: 120)));
     final first = tester.getRect(find.byType(BaraedaSkeleton));
     await tester.pump(const Duration(milliseconds: 700));
     expect(tester.getRect(find.byType(BaraedaSkeleton)), first);
@@ -56,7 +54,7 @@ void main() {
   testWidgets('목록 뼈대 행은 최종 행과 같은 높이(56 이상)이고 낭독은 "불러오는 중" 하나', (tester) async {
     final handle = tester.ensureSemantics();
     await tester.pumpWidget(
-      _host(const BaraedaSkeletonList(count: 3), reduceMotion: true),
+      _host(const BaraedaSkeletonList(), reduceMotion: true),
     );
     expect(
       tester.getSize(find.byType(BaraedaSkeletonRow).first).height,

@@ -56,9 +56,8 @@ void main() {
         MaterialApp(
           theme: BaraedaTheme.light(),
           builder: (context, child) => MediaQuery(
-            data: MediaQuery.of(
-              context,
-            ).copyWith(textScaler: TextScaler.linear(scale)),
+            data: MediaQuery.of(context)
+                .copyWith(textScaler: TextScaler.linear(scale)),
             child: child!,
           ),
           // 매니저 앱 운행 화면이 넘기는 값 그대로, 화면 좌우 여백 안에 둔다.
