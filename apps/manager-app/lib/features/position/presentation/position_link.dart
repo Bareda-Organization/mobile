@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/constants/position_constants.dart';
+import 'package:manager_app/core/time/run_time_labels.dart';
 import 'package:manager_app/features/position/presentation/position_transmitter.dart';
 
 /// 위치 송신이 서버에 **실제로 닿고 있는지** — 기사 단말의 GPS 값(화면의 버스 점)과는 별개다. 터널·지하에서
@@ -142,6 +143,53 @@ class _PositionLinkChipState extends ConsumerState<PositionLinkChip> {
     return Align(
       alignment: Alignment.centerLeft,
       child: BaraedaStatusPill(status: tone, label: text),
+    );
+  }
+}
+
+/// 위치 전송이 서버에 닿지 않을 때(`lost`)만 그리는 경고 — 인터넷이 끊긴 것으로 보고 언제부터인지 알린다.
+/// 연결되면 송신기가 저절로 다시 보내므로 기사가 할 일은 없다(운행 중 다크 화면 `drive--offline`).
+class PositionLostBanner extends ConsumerStatefulWidget {
+  const new({super.key});
+
+  @override
+  ConsumerState<PositionLostBanner> createState() => _PositionLostBannerState();
+}
+
+class _PositionLostBannerState extends ConsumerState<PositionLostBanner> {
+  Timer? _ticker;
+
+  @override
+  void initState() {
+    super.initState();
+    _ticker = Timer.periodic(
+      const Duration(seconds: 1),
+      (_) => setState(() {}),
+    );
+  }
+
+  @override
+  void dispose() {
+    _ticker?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final link = ref.watch(positionLinkProvider);
+    final status = judgePositionLink(
+      now: ref.watch(clockProvider).now(),
+      link: link,
+    );
+    if (status?.kind != PositionLinkKind.lost) return const SizedBox.shrink();
+    final since = hhmm(link.lastSentAt ?? link.startedAt!);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: AlertBanner(
+        tone: AlertTone.missed,
+        title: '버스 위치를 보내지 못하고 있어요',
+        body: '$since 이후 위치가 서버에 닿지 않았어요. 연결되면 자동으로 다시 보내요.',
+      ),
     );
   }
 }

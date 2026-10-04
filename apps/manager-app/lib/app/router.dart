@@ -1,7 +1,9 @@
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:manager_app/app/app_routes.dart';
+import 'package:manager_app/app/manager_shell.dart';
 import 'package:manager_app/core/auth/account_session.dart';
 import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/core/auth/user_role.dart';
@@ -14,10 +16,14 @@ import 'package:manager_app/features/delay/presentation/delay_screen.dart';
 import 'package:manager_app/features/drive_mode/presentation/drive_mode_screen.dart';
 import 'package:manager_app/features/emergency/presentation/emergency_screen.dart';
 import 'package:manager_app/features/home/presentation/home_screen.dart';
+import 'package:manager_app/features/home/presentation/me_screen.dart';
+import 'package:manager_app/features/home/presentation/run_ready_screen.dart';
 import 'package:manager_app/features/notifications/presentation/notifications_screen.dart';
 import 'package:manager_app/features/offline_queue/presentation/offline_queue_screen.dart';
+import 'package:manager_app/features/roster/presentation/no_show_screen.dart';
 import 'package:manager_app/features/roster/presentation/roster_screen.dart';
 import 'package:manager_app/features/route_map/presentation/route_map_screen.dart';
+import 'package:manager_app/features/run_end/presentation/report_screen.dart';
 import 'package:manager_app/features/run_end/presentation/run_end_screen.dart';
 
 /// 라우트 경로 상수는 [AppRoutes](`app_routes.dart`)를 본다 — 순환 참조
@@ -67,7 +73,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
 
       if (!loggedIn && !onAuthScreen) return AppRoutes.login;
+      // 로그인 직후 첫 화면 — 동승자는 명단, 기사는 운행(시안 `home-driver` · `roster-escort`).
       if (loggedIn && (onAuthScreen || location == AppRoutes.pendingApproval)) {
+        return role == UserRole.escort ? AppRoutes.roster : AppRoutes.home;
+      }
+      // 명단 탭은 동승자만 있다 — 기사가 닿으면 운행 탭으로(기사의 명단은 조회 전용 [rosterView]).
+      if (loggedIn && role == UserRole.driver && location == AppRoutes.roster) {
         return AppRoutes.home;
       }
       return null;
@@ -89,17 +100,71 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.blockedAccount,
         builder: (context, state) => const BlockedScreen(),
       ),
-      GoRoute(
-        path: AppRoutes.home,
-        builder: (context, state) => const ManagerHomeScreen(),
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navigationShell) =>
+            ManagerShell(navigationShell: navigationShell),
+        branches: [
+          // 브랜치 순서는 `ManagerShell.*Branch` 와 같다.
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.roster,
+                builder: (context, state) => const RosterScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.home,
+                builder: (context, state) => const ManagerHomeScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.notifications,
+                builder: (context, state) => const NotificationsScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.me,
+                builder: (context, state) => const MeScreen(),
+              ),
+            ],
+          ),
+        ],
       ),
+      GoRoute(
+        path: AppRoutes.runReady,
+        builder: (context, state) => const RunReadyScreen(),
+      ),
+      // 운행 중 화면은 항상 다크(`Ruling 830`) — 움직임 없는 구역으로 감싼다.
       GoRoute(
         path: AppRoutes.driveMode,
-        builder: (context, state) => const DriveModeScreen(),
+        builder: (context, state) =>
+            const BaraedaDriveZone(child: DriveModeScreen()),
       ),
       GoRoute(
-        path: AppRoutes.roster,
-        builder: (context, state) => const RosterScreen(),
+        path: AppRoutes.noShow,
+        builder: (context, state) =>
+            NoShowScreen(riderId: state.uri.queryParameters['rider']),
+      ),
+      GoRoute(
+        path: AppRoutes.report,
+        builder: (context, state) => const ReportScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.reportGuardian,
+        builder: (context, state) => const ReportScreen(guardianAbsent: true),
+      ),
+      GoRoute(
+        path: AppRoutes.rosterView,
+        builder: (context, state) => const RosterScreen(readOnly: true),
       ),
       GoRoute(
         path: AppRoutes.delay,
@@ -124,10 +189,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.offlineQueue,
         builder: (context, state) => const OfflineQueueScreen(),
-      ),
-      GoRoute(
-        path: AppRoutes.notifications,
-        builder: (context, state) => const NotificationsScreen(),
       ),
     ],
   );

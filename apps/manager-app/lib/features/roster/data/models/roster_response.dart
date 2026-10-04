@@ -37,7 +37,8 @@ enum RiderChange {
   }
 }
 
-/// 미승차 연락 기록 한 건 — `no_show_case.contacts[]`(§4.2, `Ruling 823`). 시각 · 수단 · 결과뿐이다.
+/// 미승차 연락 기록 한 건 — `no_show_case.contacts[]`(§4.2, `Ruling 823`). 시각 · 수단 ·
+/// 결과뿐이다.
 class NoShowContact {
   const new({
     required this.attemptType,
@@ -48,7 +49,9 @@ class NoShowContact {
   factory fromJson(Map<String, dynamic> json) {
     return NoShowContact(
       attemptType:
-          NoShowAttemptType.fromWireValueOrNull(json['attempt_type'] as String?) ??
+          NoShowAttemptType.fromWireValueOrNull(
+            json['attempt_type'] as String?,
+          ) ??
           NoShowAttemptType.call,
       result:
           NoShowContactResult.fromWireValueOrNull(json['result'] as String?) ??

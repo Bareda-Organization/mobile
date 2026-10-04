@@ -5,6 +5,14 @@ enum NoShowAttemptType {
 
   new(this.wireValue);
 
+  /// 서버가 모르는 값을 주면 `null` — 이력 한 줄 때문에 명단 전체를 못 그리지 않는다.
+  static NoShowAttemptType? fromWireValueOrNull(String? value) {
+    for (final type in NoShowAttemptType.values) {
+      if (type.wireValue == value) return type;
+    }
+    return null;
+  }
+
   final String wireValue;
 }
 
@@ -14,6 +22,13 @@ enum NoShowContactResult {
   noAnswer('no_answer');
 
   new(this.wireValue);
+
+  static NoShowContactResult? fromWireValueOrNull(String? value) {
+    for (final result in NoShowContactResult.values) {
+      if (result.wireValue == value) return result;
+    }
+    return null;
+  }
 
   final String wireValue;
 }
@@ -32,11 +47,7 @@ enum NoShowDecision {
 /// 응답 필드가 사양에 명시되지 않아(§4.8, 에러 코드만 정의) 요청 성공 여부만
 /// 반환한다(repository 는 `Future<void>`).
 class NoShowContactRequest {
-  const new({
-    required this.attemptType,
-    required this.result,
-    this.decision,
-  });
+  const new({required this.attemptType, required this.result, this.decision});
 
   Map<String, dynamic> toJson() => {
     'attempt_type': attemptType.wireValue,

@@ -67,6 +67,7 @@ class ManagerRun {
   final DateTime departTime;
   final String origin;
   final String destination;
+
   /// 스케줄이 값을 안 적었으면 `null`(§4.1) — 화면은 소요 시간 줄을 그리지 않는다.
   final int? estDurationMin;
   final RunStatus runStatus;

@@ -46,11 +46,12 @@ void main() {
         ),
       ),
     );
-    expect(find.text('변경 목록 확인'), findsOneWidget);
+    expect(find.text('변경 확인'), findsOneWidget);
 
-    await tester.tap(find.text('변경 목록 확인'));
+    await tester.tap(find.text('변경 확인'));
     await tester.pumpAndSettle();
-    expect(find.text('변경 목록 확인'), findsNothing, reason: '확인 직후에는 숨는다');
+    expect(find.text('변경 확인'), findsNothing, reason: '확인 직후에는 단추가 사라진다');
+    expect(find.text('노선 변경을 확인했어요'), findsOneWidget);
 
     // 서버가 목록을 다시 받아 ack_required=false 로 돌려준다.
     ackRequired.value = false;
@@ -59,7 +60,7 @@ void main() {
     ackRequired.value = true;
     await tester.pump();
 
-    expect(find.text('변경 목록 확인'), findsOneWidget);
+    expect(find.text('변경 확인'), findsOneWidget);
   });
 
   // F06-16 — 확인 요청 중 화면이 닫혀도 닫힌 화면의 ref 를 써서 처리되지 않은 예외가 남으면 안 된다.
@@ -79,7 +80,7 @@ void main() {
       ),
     );
 
-    await tester.tap(find.text('변경 목록 확인'));
+    await tester.tap(find.text('변경 확인'));
     await tester.pump();
     await tester.pumpWidget(const SizedBox.shrink());
     repository.gate!.complete();
