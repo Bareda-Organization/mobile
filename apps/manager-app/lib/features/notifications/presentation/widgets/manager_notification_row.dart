@@ -1,7 +1,8 @@
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 
-/// 매니저 앱 알림 한 줄(시안 `notifications`) — 종류 아이콘 칸 · 제목 + `중요` 칩 · 본문 · 시각, 오른쪽에 안 읽음 점과
+/// 매니저 앱 알림 한 줄(시안 `notifications`) — 종류 아이콘 칸 · 제목 + `중요` 칩 ·
+/// 본문 · 시각, 오른쪽에 안 읽음 점과
 /// 이동 화살표. 안 읽음은 옅은 초록 바탕, 읽음은 흰 바탕이다. 왼쪽 막대는 없다(시안).
 ///
 /// 학부모·학생 앱의 `NotificationTile` 은 같은 패키지를 쓰는 다른 앱이 있어 건드리지 않고 이 앱 안에 둔다.

@@ -1,4 +1,3 @@
-import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 
 /// 범례 한 칸 — 색 표식 + 이름(시안 `.m-legend`).

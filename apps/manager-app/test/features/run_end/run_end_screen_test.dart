@@ -88,7 +88,8 @@ Override _boardedRoster(List<({String id, String name})> riders) =>
     );
 
 /// 운행이 끝난 명단 — 서버 `counts.boarded` 는 **지금 탑승 중인** 학생 수라 전원이 하차한 종료 뒤에는 0 이다
-/// (`RosterQueryService.countsOf`). 하차 학생은 `stops[].students[].status == alighted` 행으로만 보인다.
+/// (`RosterQueryService.countsOf`). 하차 학생은
+/// `stops[].students[].status == alighted` 행으로만 보인다.
 RosterResponse _finishedResponse({
   required int alighted,
   int noShow = 0,
@@ -277,7 +278,8 @@ void main() {
     expect(find.text('13명'), findsOneWidget);
   });
 
-  // R48 1순위 결함 — 하차 합계를 `counts.boarded` 로 그리면 운행이 끝난 뒤(전원 alighted) 항상 0 이 나왔다.
+  // R48 1순위 결함 — 하차 합계를 `counts.boarded` 로 그리면 운행이 끝난 뒤
+  // (전원 alighted) 항상 0 이 나왔다.
   testWidgets('전원이 하차한 종료 명단은 하차를 alighted 학생 수로 센다(counts.boarded 는 0)', (
     tester,
   ) async {

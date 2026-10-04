@@ -7,7 +7,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:manager_app/app/di.dart';
-import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/core/network/failure_messages.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/core/time/run_time_labels.dart';
@@ -38,7 +37,7 @@ import 'package:manager_app/features/roster/presentation/roster_providers.dart';
 /// 판단한다 — 클라이언트가 `발신 시각 + 1분` 을 계산하면 단말·서버 시계가
 /// 어긋났을 때(clock skew) 실제와 다른 창을 보여준다.
 ///
-/// 진입점은 홈·운행·명단 화면 머리말의 [EmergencyButton] 이다(R32 M2 — 그 전에는 라우트만
+/// 진입점은 홈·운행·명단 화면 머리말의 `EmergencyButton` 이다(R32 M2 — 그 전에는 라우트만
 /// 있고 갈 길이 없었다). 실시간 확인 반영(WS `emergency_acked`, Ruling 277)은 이 화면이
 /// 직접 구독하지 않는다 — `ManagerRunChannelController`(DriveMode·StopRoster 가 호스팅)가
 /// `emergency_acked` 를 받을 때마다 `emergencyListProvider` 를 무효화해 두므로, 이 화면에

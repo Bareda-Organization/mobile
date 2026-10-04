@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:manager_app/app/di.dart';
-import 'package:manager_app/core/run/manager_connection.dart';
 import 'package:manager_app/core/run/manager_run_channel.dart';
 
 /// 소켓 없이 연결 상태만 밀어 넣는 가짜 클라이언트 — 컨트롤러가 쓰는 입구만 구현한다.
@@ -40,7 +39,7 @@ class _FakeClient implements BaraedaWebSocketClient {
   void Function({Map<String, String>? unsubscribeHeaders}) subscribe(
     String destination,
     void Function(WebSocketEnvelope envelope) onEnvelope,
-  ) => ({Map<String, String>? unsubscribeHeaders}) {};
+  ) => ({unsubscribeHeaders}) {};
 
   @override
   dynamic noSuchMethod(Invocation invocation) =>
@@ -51,7 +50,7 @@ class _FakeClient implements BaraedaWebSocketClient {
 
 /// 시험이 손으로 돌리는 시계.
 class _MutableClock implements Clock {
-  _MutableClock(this.current);
+  new(this.current);
 
   DateTime current;
 

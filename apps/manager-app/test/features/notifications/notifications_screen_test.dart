@@ -1,5 +1,4 @@
 import 'package:baraeda_core/baraeda_core.dart';
-import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
@@ -11,8 +10,8 @@ import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/core/auth/user_role.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/features/notifications/presentation/notification_providers.dart';
-import 'package:manager_app/features/notifications/presentation/widgets/manager_notification_row.dart';
 import 'package:manager_app/features/notifications/presentation/notifications_screen.dart';
+import 'package:manager_app/features/notifications/presentation/widgets/manager_notification_row.dart';
 
 import '../../support/fake_notification_repository.dart';
 

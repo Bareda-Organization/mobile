@@ -229,6 +229,7 @@ class _StatusBody extends StatelessWidget {
     final dateFormat = DateFormat('yyyy.MM.dd HH:mm');
     final contact = status.academyContact;
     final academy = newAcademy;
+    final rejectReason = status.rejectReason ?? '등록된 사유가 없어요. 학원에 문의해 주세요.';
     final reapplyReason = academy == null ? '다시 신청할 학원을 고르면 눌러요' : null;
 
     return Column(
@@ -242,8 +243,7 @@ class _StatusBody extends StatelessWidget {
                 AlertBanner(
                   tone: AlertTone.missed,
                   title: '가입이 거절됐어요',
-                  body:
-                      '사유 · ${status.rejectReason ?? '등록된 사유가 없어요. 학원에 문의해 주세요.'}',
+                  body: '사유 · $rejectReason',
                 ),
                 const SizedBox(height: BaraedaSpacing.space3),
                 InfoRowsCard(
@@ -276,7 +276,8 @@ class _StatusBody extends StatelessWidget {
                               ),
                             ),
                           ),
-                          // 번호 모양이 아닌 문의처(문장)는 걸 곳이 없다 — 전화 단추를 만들지 않는다(`Ruling 827`).
+                          // 번호 모양이 아닌 문의처(문장)는 걸 곳이 없어
+                          // 전화 단추를 만들지 않는다(`Ruling 827`).
                           if (looksLikePhoneNumber(contact))
                             _CallButton(number: contact!.trim()),
                         ],
