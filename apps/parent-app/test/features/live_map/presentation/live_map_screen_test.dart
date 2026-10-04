@@ -9,17 +9,20 @@ import 'package:parent_app/app/di.dart';
 import 'package:parent_app/core/auth/auth_providers.dart';
 import 'package:parent_app/core/auth/role_policy.dart';
 import 'package:parent_app/core/auth/user_role.dart';
+import 'package:parent_app/core/common/run_direction.dart';
 import 'package:parent_app/core/map/map_surface.dart';
 import 'package:parent_app/core/routes/domain/route_detail.dart';
 import 'package:parent_app/core/routes/domain/route_repository.dart';
 import 'package:parent_app/core/runs/domain/bus_position.dart';
 import 'package:parent_app/core/runs/domain/student_run.dart';
+import 'package:parent_app/core/runs/presentation/run_display.dart';
 import 'package:parent_app/core/students/domain/student.dart';
 import 'package:parent_app/core/students/presentation/selected_student.dart';
 import 'package:parent_app/core/students/presentation/student_switcher.dart';
 import 'package:parent_app/features/home/presentation/home_providers.dart';
 import 'package:parent_app/features/live_map/domain/bus_position_repository.dart';
 import 'package:parent_app/features/live_map/presentation/live_map_screen.dart';
+import 'package:parent_app/features/live_map/presentation/widgets/live_map_sheet.dart';
 // `Override` 는 `flutter_riverpod.dart` 배럴이 재노출하지 않는다(3.4.3 확인 —
 // `ProviderScope.overrides` 내부에서만 쓰고 공개 `show` 목록엔 없음). 실제
 // 정의는 `riverpod` 패키지의 `misc.dart` 가 공개한다 — `flutter_riverpod` 가
@@ -145,6 +148,13 @@ class _ScriptedBusPositionRepository implements BusPositionRepository {
   }
 }
 
+/// 응답이 끝내 오지 않는 가짜 — 첫 스냅샷을 기다리는 "불러오는 중" 화면을 붙잡아 둔다.
+class _NeverBusPositionRepository implements BusPositionRepository {
+  @override
+  Future<BusPosition> getBusPosition(String studentId) =>
+      Completer<BusPosition>().future;
+}
+
 /// 기본 노선 가짜 — 지도 시험 대부분은 내 승하차지 핀과 무관하므로 항상 실패하게 둔다.
 /// 실 `ApiClient`(Dio)를 거치면 "A Timer is still pending" 으로 시험이 깨진다.
 class _FakeRouteRepository implements RouteRepository {
@@ -214,6 +224,9 @@ class _MutableClock implements Clock {
 }
 
 final _linkedAt = DateTime(2026);
+
+/// R48 시안 `live-map--offline` 의 연결 끊김 띠 제목 — 옛 `_gaveUpTitle` 을 대신한다.
+const _gaveUpTitle = '실시간 위치 연결이 끊어졌어요';
 
 void main() {
   late _FakeWsClient client;
@@ -288,8 +301,8 @@ void main() {
         await pumpAsStudent(tester, studentId: 's-1');
         await tester.pump();
 
-        expect(find.byType(CircularProgressIndicator), findsOneWidget);
-        expect(find.text(WsConnectionNotice.gaveUpTitle), findsNothing);
+        expect(find.byType(MapSheetSkeleton), findsOneWidget);
+        expect(find.text(_gaveUpTitle), findsNothing);
         expect(find.text('아직 위치 정보가 없습니다'), findsNothing);
       },
     );
@@ -447,7 +460,7 @@ void main() {
       await pumpConnected(tester);
 
       expect(find.text('아직 위치 정보가 없습니다'), findsOneWidget);
-      expect(find.text(WsConnectionNotice.gaveUpTitle), findsNothing);
+      expect(find.text(_gaveUpTitle), findsNothing);
       expect(
         client.subscribedDestinations,
         contains(WsChannel.studentRun('s-1')),
@@ -470,20 +483,18 @@ void main() {
       await tester.pump();
 
       expect(find.text('아직 위치 정보가 없습니다'), findsNothing);
-      expect(find.textContaining('마지막으로 지난 곳 · 정문 앞'), findsOneWidget);
+      expect(find.text('정문 앞'), findsOneWidget);
+      expect(find.text('마지막으로 지난 곳'), findsOneWidget);
 
       // ⚠ 2026-09-21 실측 — 이 줄이 UTC 를 그대로 벽시계로 보여줬다(한국시간
-      // 20:03 에 "11:03:23 기준"). 서버가 주는 `received_at` 은 UTC 순간이고
+      // 20:03 에 "11:03 기준"). 서버가 주는 `received_at` 은 UTC 순간이고
       // `DateTime.parse` 는 그것을 UTC `DateTime` 으로 돌려준다.
       // 기대값을 `toLocal()` 로 만드는 이유는 시험기의 표준시를 바꿀 수단이
       // 부재하기 때문 — UTC 기계에서는 무해하게 통과하고 KST 에서 문다.
       final local = DateTime.utc(2026, 9, 13, 8).toLocal();
       String pad(int v) => v.toString().padLeft(2, '0');
       expect(
-        find.textContaining(
-          '현재 위치 · ${pad(local.hour)}:${pad(local.minute)}:'
-          '${pad(local.second)} 기준',
-        ),
+        find.text('${pad(local.hour)}:${pad(local.minute)} 기준'),
         findsOneWidget,
       );
     });
@@ -517,7 +528,7 @@ void main() {
         client.emit(WsConnectionState.gaveUp);
         await tester.pump();
 
-        expect(find.text(WsConnectionNotice.gaveUpTitle), findsOneWidget);
+        expect(find.text(_gaveUpTitle), findsOneWidget);
         expect(find.text('아직 위치 정보가 없습니다'), findsNothing);
       },
     );
@@ -580,8 +591,10 @@ void main() {
         );
       await tester.pump();
 
-      expect(find.textContaining('운행 시작'), findsOneWidget);
-      expect(find.textContaining('운행 종료'), findsOneWidget);
+      // 종료 상태 — 운행 시작 · 종료 두 칸과 끝났다는 띠. 인원수 문구는 어디에도 없다.
+      expect(find.text('운행 시작'), findsOneWidget);
+      expect(find.text('운행 종료'), findsWidgets);
+      expect(find.text('운행이 끝났어요'), findsOneWidget);
       expect(find.textContaining('명'), findsNothing);
     });
 
@@ -645,7 +658,7 @@ void main() {
         ..emit(WsConnectionState.connecting);
       await tester.pump();
 
-      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(find.byType(MapSheetSkeleton), findsNothing);
       expect(find.text(WsConnectionNotice.reconnectingTitle), findsOneWidget);
       expect(find.textContaining('운행 시작'), findsOneWidget);
     });
@@ -656,7 +669,7 @@ void main() {
       await pumpUntilFirstConnecting(tester);
       client.emit(WsConnectionState.connecting);
       await tester.pump();
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byType(MapSheetSkeleton), findsOneWidget);
 
       client
         ..emit(WsConnectionState.reconnecting)
@@ -665,7 +678,7 @@ void main() {
 
       // 받은 데이터가 아직 없으니 재연결 배너 대신 "데이터 없음" 화면이다 —
       // 요지는 시도마다 전체 스피너로 돌아가지 않는다는 것.
-      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(find.byType(MapSheetSkeleton), findsNothing);
       expect(find.text('아직 위치 정보가 없습니다'), findsOneWidget);
     });
   });
@@ -801,10 +814,10 @@ void main() {
       await tester.pump();
     }
 
-    testWidgets('1분 59초가 지나도 "현재 위치" 표시를 유지한다', (tester) async {
+    testWidgets('1분 59초가 지나도 "HH:mm 기준" 표지 표시를 유지한다', (tester) async {
       final clock = _MutableClock(t0);
       await pumpConnectedWithPosition(tester, clock: clock);
-      expect(find.textContaining('현재 위치'), findsOneWidget);
+      expect(find.textContaining(' 기준'), findsOneWidget);
 
       // 실제로 재빌드를 일으키는 계기(백오프 재연결 시도)를 흉내낸다 —
       // 방송이 몇 초씩 끊기는 것(Ruling 349)은 연결 자체가 흔들리는 것과
@@ -813,13 +826,13 @@ void main() {
       client.emit(WsConnectionState.reconnecting);
       await tester.pump();
 
-      expect(find.textContaining('현재 위치'), findsOneWidget);
+      expect(find.textContaining(' 기준'), findsOneWidget);
       expect(find.textContaining('마지막 확인 위치'), findsNothing);
     });
 
     testWidgets(
       '마지막 수신 후 2분이 지나면 "마지막 확인 위치 · N분 전" 으로 전환된다 — '
-      '지금 코드는 연결이 끊기지 않는 한 "현재 위치" 로 그대로 남는다',
+      '지금 코드는 연결이 끊기지 않는 한 "HH:mm 기준" 표지 로 그대로 남는다',
       (tester) async {
         final clock = _MutableClock(t0);
         await pumpConnectedWithPosition(tester, clock: clock);
@@ -829,7 +842,7 @@ void main() {
         await tester.pump();
 
         expect(find.textContaining('마지막 확인 위치 · 2분 전'), findsOneWidget);
-        expect(find.textContaining('현재 위치'), findsNothing);
+        expect(find.textContaining(' 기준'), findsNothing);
       },
     );
   });
@@ -838,7 +851,7 @@ void main() {
     // 이 그룹은 위 그룹과 달리 `client.emit(...)` 을 전혀 부르지 않는다 —
     // WS 연결은 살아 있고 그 버스의 위치 방송만 끊긴(Ruling 349) 상황을
     // 재현한다. 지금 코드는 이 경우 화면을 다시 그리는 계기가 없어
-    // "현재 위치" 가 무기한 남는다(브리프가 지적한 결함 그대로).
+    // "HH:mm 기준" 표지 가 무기한 남는다(브리프가 지적한 결함 그대로).
     final t0 = DateTime.utc(2026, 9, 13, 8);
 
     Future<void> pumpConnectedWithPosition(
@@ -871,22 +884,22 @@ void main() {
 
     testWidgets(
       '다른 이벤트 없이 시간만 2분 지나면 자동으로 "마지막 확인 위치 · 2분 전" 으로 '
-      '전환된다 — 1분 59초에는 "현재 위치" 를 유지한다',
+      '전환된다 — 1분 59초에는 "HH:mm 기준" 표지 를 유지한다',
       (tester) async {
         final clock = _MutableClock(t0);
         await pumpConnectedWithPosition(tester, clock: clock);
-        expect(find.textContaining('현재 위치'), findsOneWidget);
+        expect(find.textContaining(' 기준'), findsOneWidget);
 
         clock.value = t0.add(const Duration(minutes: 1, seconds: 59));
         await tester.pump(const Duration(minutes: 1, seconds: 59));
-        expect(find.textContaining('현재 위치'), findsOneWidget);
+        expect(find.textContaining(' 기준'), findsOneWidget);
         expect(find.textContaining('마지막 확인 위치'), findsNothing);
 
         clock.value = t0.add(const Duration(minutes: 2));
         await tester.pump(const Duration(seconds: 1));
 
         expect(find.textContaining('마지막 확인 위치 · 2분 전'), findsOneWidget);
-        expect(find.textContaining('현재 위치'), findsNothing);
+        expect(find.textContaining(' 기준'), findsNothing);
       },
     );
 
@@ -895,7 +908,7 @@ void main() {
     ) async {
       final clock = _MutableClock(t0);
       await pumpConnectedWithPosition(tester, clock: clock);
-      expect(find.textContaining('현재 위치'), findsOneWidget);
+      expect(find.textContaining(' 기준'), findsOneWidget);
 
       // dispose 뒤 Timer 가 취소되지 않으면 flutter_test 가 테스트 종료 시
       // "A Timer is still pending" 로 이 시험 자체를 실패시킨다 — 별도
@@ -943,26 +956,26 @@ void main() {
 
     testWidgets(
       '좌표 A 수신 1분30초 뒤 좌표 B 가 오면 예약이 B 기준으로 다시 걸린다 — '
-      'A 기준 2분(=B 기준 30초)에는 아직 "현재 위치", B 기준 2분에야 유실 문구로 전환된다',
+      'A 기준 2분(=B 기준 30초)에는 아직 "HH:mm 기준" 표지, B 기준 2분에야 유실 문구로 전환된다',
       (tester) async {
         final clock = _MutableClock(t0);
         await pumpConnected(tester, clock: clock);
         deliverPosition(t0);
         await tester.pump();
-        expect(find.textContaining('현재 위치'), findsOneWidget);
+        expect(find.textContaining(' 기준'), findsOneWidget);
 
         final tB = t0.add(const Duration(minutes: 1, seconds: 30));
         clock.value = tB;
         await tester.pump(const Duration(minutes: 1, seconds: 30));
         deliverPosition(tB);
         await tester.pump();
-        expect(find.textContaining('현재 위치'), findsOneWidget);
+        expect(find.textContaining(' 기준'), findsOneWidget);
 
         // A 기준 2분(=B 기준 30초) — 재예약이 B 를 향해 걸렸다면 A 의
         // 예약은 이미 취소된 상태라 이 시점에는 아무것도 전환되지 않는다.
         clock.value = t0.add(const Duration(minutes: 2));
         await tester.pump(const Duration(seconds: 30));
-        expect(find.textContaining('현재 위치'), findsOneWidget);
+        expect(find.textContaining(' 기준'), findsOneWidget);
         expect(find.textContaining('마지막 확인 위치'), findsNothing);
 
         // B 기준 2분 — 재예약이 실제로 B 를 향해 걸렸어야 이 시점에
@@ -971,7 +984,7 @@ void main() {
         clock.value = tB.add(const Duration(minutes: 2));
         await tester.pump(const Duration(minutes: 1, seconds: 30));
         expect(find.textContaining('마지막 확인 위치 · 2분 전'), findsOneWidget);
-        expect(find.textContaining('현재 위치'), findsNothing);
+        expect(find.textContaining(' 기준'), findsNothing);
       },
     );
 
@@ -1042,7 +1055,7 @@ void main() {
       );
     });
 
-    testWidgets('F05-05 다음 회차 운행 시작이 오면 앞 회차의 도착·종료 줄을 지운다', (tester) async {
+    testWidgets('F05-05 다음 회차 운행 시작이 오면 앞 회차의 지난 곳·종료 상태를 지운다', (tester) async {
       await pumpConnected(tester);
       WebSocketEnvelope forRun(
         String runId,
@@ -1070,16 +1083,26 @@ void main() {
             'name': '정문',
             'arrived_at': '2026-09-13T07:10:00Z',
           }),
-        )
-        ..deliver(
-          forRun('r-1', WsEventType.runEnded, {
-            'run_status': 'finished',
-            'finished_at': '2026-09-13T07:40:00Z',
-          }),
         );
       await tester.pump();
-      expect(find.textContaining('운행 종료'), findsOneWidget);
-      expect(find.textContaining('정문 도착'), findsOneWidget);
+      // 달리는 중 — 마지막으로 지난 곳이 시트 칸에 있다.
+      expect(find.text('정문'), findsOneWidget);
+      expect(
+        find.text(
+          '마지막으로 지난 곳 · '
+          '${formatClock(DateTime.utc(2026, 9, 13, 7, 10))}',
+        ),
+        findsOneWidget,
+      );
+
+      client.deliver(
+        forRun('r-1', WsEventType.runEnded, {
+          'run_status': 'finished',
+          'finished_at': '2026-09-13T07:40:00Z',
+        }),
+      );
+      await tester.pump();
+      expect(find.text('운행이 끝났어요'), findsOneWidget);
 
       client.deliver(
         forRun('r-2', WsEventType.runStarted, {
@@ -1090,8 +1113,8 @@ void main() {
       await tester.pump();
 
       expect(find.textContaining('운행 시작'), findsOneWidget);
-      expect(find.textContaining('운행 종료'), findsNothing);
-      expect(find.textContaining('정문 도착'), findsNothing);
+      expect(find.text('운행이 끝났어요'), findsNothing);
+      expect(find.text('정문'), findsNothing);
     });
 
     Map<String, Object> pos(double lat) => {
@@ -1143,7 +1166,7 @@ void main() {
     });
 
     // R46 P1 — 지도에 버스 점만 있어 내 승하차지가 어디인지 알 수 없었다. 서버가 준 §3.10 좌표만 쓴다.
-    testWidgets('R46 P1 내 승하차지를 지도 핀과 한 줄 문구로 보여준다', (tester) async {
+    testWidgets('R46 P1 내 승하차지를 지도 핀과 시트 칸으로 보여준다', (tester) async {
       await pumpConnected(tester, route: _routeWithMyStop());
       client.deliver(_envelope(WsEventType.position, pos(37.5)));
       await tester.pump();
@@ -1155,7 +1178,8 @@ void main() {
       expect(stops, hasLength(1));
       expect((stops.single.lat, stops.single.lng), (37.51, 127.02));
       expect(stops.single.label, '내 승하차지');
-      expect(find.text('내 승하차지 · 행복아파트 정문'), findsOneWidget);
+      expect(find.text('행복아파트 정문'), findsOneWidget);
+      expect(find.text('내 승하차지'), findsOneWidget);
     });
 
     // C-08 — 학부모·학생 앱은 도착 예정 시각(ETA)·"몇 곳 전"·탑승 인원을 표시하지 않는다. 내 승하차지 핀을 더한 뒤에도
@@ -1187,8 +1211,10 @@ void main() {
           .map((t) => t.data ?? t.textSpan?.toPlainText() ?? '')
           .join('\n');
       // 핀·내 승하차지 문구가 실제로 그려진 상태에서만 "없다" 가 의미가 있다.
-      expect(rendered, contains('내 승하차지 · 행복아파트 정문'));
-      expect(rendered, contains('마지막으로 지난 곳 · 앞 승하차지'));
+      expect(rendered, contains('행복아파트 정문'));
+      expect(rendered, contains('내 승하차지'));
+      expect(rendered, contains('앞 승하차지'));
+      expect(rendered, contains('마지막으로 지난 곳'));
       expect(
         rendered,
         isNot(matches(RegExp(r'도착 예정|ETA|예상|곳 전|정거장 전|분 후|탑승 인원|\d+\s*명'))),
@@ -1275,7 +1301,7 @@ void main() {
       delay: delay,
     );
 
-    testWidgets('delay 가 있으면 "버스가 10분 늦어요" 띠와 사유가 나온다', (tester) async {
+    testWidgets('delay 가 있으면 "10분 늦어요" 띠와 사유가 나온다', (tester) async {
       await pumpWithSnapshot(
         tester,
         snapshot(
@@ -1287,7 +1313,7 @@ void main() {
         ),
       );
 
-      expect(find.text('버스가 10분 늦어요'), findsOneWidget);
+      expect(find.text('10분 늦어요'), findsOneWidget);
       expect(find.text('교통 체증'), findsOneWidget);
     });
 
@@ -1303,7 +1329,7 @@ void main() {
       await pumpWithSnapshot(tester, snapshot(started: startedAt));
 
       // 이벤트(`run_started`)는 한 번도 오지 않았다 — 시각은 스냅샷에서 온다.
-      expect(find.textContaining('운행 시작 ·'), findsOneWidget);
+      expect(find.textContaining('운행 시작'), findsOneWidget);
     });
 
     testWidgets('finished_at 이 있으면 운행 종료 시각을 그린다', (tester) async {
@@ -1316,13 +1342,261 @@ void main() {
         ),
       );
 
-      expect(find.textContaining('운행 종료 ·'), findsOneWidget);
+      expect(find.text('운행 종료'), findsWidgets);
+      expect(
+        find.text('${formatClock(finishedAt)} 에 운행을 마쳤어요.'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('마지막으로 지난 곳에는 도착 시각이 붙는다 — 12:09', (tester) async {
       await pumpWithSnapshot(tester, snapshot());
 
       expect(find.textContaining('마지막으로 지난 곳 · 12:09'), findsOneWidget);
+    });
+  });
+
+  // R48 시안 `live-map*` — 상태마다 시트 모양이 다르다. 한 모양이 다른 모양의 글자를 섞어 쓰면(예: 종료인데 "이동
+  // 중")
+  // 학부모가 버스가 아직 달리는 줄 안다.
+  group('R48 시트 — 상태마다 모양이 다르다', () {
+    final started = DateTime.utc(2026, 10, 4, 3, 5);
+    final departAt = DateTime.utc(2026, 10, 4, 5, 40);
+    final clockNow = DateTime.utc(2026, 10, 4, 3, 14);
+
+    StudentRun run({
+      RunStatus status = RunStatus.moving,
+      bool confirmed = true,
+      DateTime? depart,
+    }) => StudentRun(
+      runId: 'r-1',
+      direction: RunDirection.toAcademy,
+      busNo: '2호차',
+      departTime: depart ?? started,
+      runStatus: status,
+      confirmed: confirmed,
+      riding: true,
+      riderStatus: RiderStatus.waiting,
+      stop: const RunStop(stopId: 'st-mine', name: '행복마을 입구'),
+      changeQuotaLeft: 1,
+    );
+
+    BusPosition snapshot({
+      RunStatus status = RunStatus.moving,
+      bool withPosition = true,
+      DateTime? lastSeenAt,
+      DateTime? startedAt,
+      DateTime? finishedAt,
+      BusDelay? delay,
+    }) => BusPosition(
+      runId: 'r-1',
+      busNo: '2호차',
+      runStatus: status,
+      lat: withPosition ? 37.5 : null,
+      lng: withPosition ? 127 : null,
+      receivedAt: withPosition ? clockNow : null,
+      lastSeenAt: lastSeenAt,
+      currentStopName: withPosition ? '중앙공원 앞' : null,
+      currentStopArrivedAt: withPosition
+          ? DateTime.utc(2026, 10, 4, 3, 9)
+          : null,
+      startedAt: startedAt,
+      finishedAt: finishedAt,
+      delay: delay,
+    );
+
+    Future<void> pumpParent(
+      WidgetTester tester, {
+      required BusPositionRepository repository,
+      List<StudentRun> runs = const [],
+      RouteDetail? route,
+      bool settle = true,
+    }) async {
+      tester.view.physicalSize = const Size(800, 2400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await pumpScreen(
+        tester,
+        busPositionRepository: repository,
+        route: route,
+        extraOverrides: [
+          roleCapabilitiesProvider.overrideWithValue(
+            RoleCapabilities.of(UserRole.parent),
+          ),
+          myStudentsProvider.overrideWith(
+            (ref) async => [
+              Student(studentId: 's-1', name: '이하준', linkedAt: _linkedAt),
+            ],
+          ),
+          runsForStudentProvider.overrideWith((ref, id) async => runs),
+          clockProvider.overrideWithValue(_MutableClock(clockNow)),
+        ],
+      );
+      await tester.pump();
+      await tester.pump();
+      client.emit(WsConnectionState.connected);
+      if (settle) {
+        await tester.pumpAndSettle();
+      } else {
+        await tester.pump();
+        await tester.pump();
+      }
+    }
+
+    testWidgets('달리는 중 — 이동 중 칩 · 시각 표지 · 지도 단추 · 지연 띠, 다른 상태의 글자는 없다', (
+      tester,
+    ) async {
+      await pumpParent(
+        tester,
+        repository: _ScriptedBusPositionRepository([
+          snapshot(
+            startedAt: started,
+            delay: BusDelay(minutes: 10, reason: '교통 체증', sentAt: clockNow),
+          ),
+        ]),
+        runs: [run()],
+        route: _routeWithMyStop(),
+      );
+
+      expect(find.byType(MapSurface), findsOneWidget);
+      expect(find.text('이하준 등원 · 2호차'), findsOneWidget);
+      expect(find.text('이동 중'), findsOneWidget);
+      expect(find.text('${formatClock(clockNow)} 기준'), findsOneWidget);
+      expect(find.text('${formatClock(started)} 운행 시작'), findsOneWidget);
+      expect(find.text('10분 늦어요'), findsOneWidget);
+      expect(find.text('버스 위치로'), findsOneWidget);
+      expect(find.text('내 승하차지로'), findsOneWidget);
+      expect(find.text('중앙공원 앞'), findsOneWidget);
+      expect(find.text('신호 없음'), findsNothing);
+      expect(find.text('종료'), findsNothing);
+      expect(find.text('연결 끊김'), findsNothing);
+      expect(find.text('버스가 아직 출발 전이에요'), findsNothing);
+    });
+
+    testWidgets('신호 없음 — 지도 없이 앰버 이름표 · 끊겼다는 띠 · 마지막으로 확인한 시각', (tester) async {
+      final lastSeen = clockNow.subtract(const Duration(minutes: 4));
+      await pumpParent(
+        tester,
+        repository: _ScriptedBusPositionRepository([
+          snapshot(
+            withPosition: false,
+            lastSeenAt: lastSeen,
+            startedAt: started,
+          ),
+        ]),
+        runs: [run()],
+      );
+
+      expect(find.text('신호 없음'), findsOneWidget);
+      expect(find.text('위치 신호가 끊겼어요'), findsOneWidget);
+      expect(find.text('마지막 확인 위치 · 4분 전'), findsOneWidget);
+      expect(find.text('마지막으로 확인한 시각'), findsOneWidget);
+      expect(find.text(formatClock(lastSeen)), findsOneWidget);
+      // 좌표가 없는데 지도를 그릴 근거가 없다 — 지도 · 지도 단추 · 이동 중 칩이 모두 없다.
+      expect(find.byType(MapSurface), findsNothing);
+      expect(find.text('버스 위치로'), findsNothing);
+      expect(find.text('이동 중'), findsNothing);
+      expect(find.text('운행이 끝났어요'), findsNothing);
+    });
+
+    testWidgets('운행 전 — 지도 대신 출발 시각 안내 · 확정 전 칩 · 노선 미리 보기', (tester) async {
+      await pumpParent(
+        tester,
+        repository: _ScriptedBusPositionRepository([
+          snapshot(status: RunStatus.idle, withPosition: false),
+        ]),
+        runs: [run(status: RunStatus.idle, confirmed: false, depart: departAt)],
+      );
+
+      expect(find.text('버스가 아직 출발 전이에요'), findsOneWidget);
+      expect(find.textContaining(formatClock(departAt)), findsWidgets);
+      expect(find.text('확정 전'), findsOneWidget);
+      expect(
+        find.textContaining(
+          '${formatClock(departAt.subtract(const Duration(minutes: 30)))} '
+          '에 노선이 확정돼요',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('노선 미리 보기'), findsOneWidget);
+      expect(find.byType(MapSurface), findsNothing);
+      expect(find.text('이동 중'), findsNothing);
+      expect(find.text('노선 자세히 보기'), findsNothing);
+      expect(find.text('위치 신호가 끊겼어요'), findsNothing);
+    });
+
+    testWidgets('운행 전이라도 노선이 확정됐으면 "확정" 칩이고 확정 시각 안내는 없다', (tester) async {
+      await pumpParent(
+        tester,
+        repository: _ScriptedBusPositionRepository([
+          snapshot(status: RunStatus.confirmed, withPosition: false),
+        ]),
+        runs: [run(status: RunStatus.confirmed, depart: departAt)],
+      );
+
+      expect(find.text('확정'), findsOneWidget);
+      expect(find.text('확정 전'), findsNothing);
+      expect(find.textContaining('에 노선이 확정돼요'), findsNothing);
+    });
+
+    testWidgets('종료 — 종료 칩 · 끝났다는 띠 · 시작/종료 두 칸, 달리는 중 표시는 없다', (tester) async {
+      final finished = DateTime.utc(2026, 10, 4, 3, 52);
+      await pumpParent(
+        tester,
+        repository: _ScriptedBusPositionRepository([
+          snapshot(
+            status: RunStatus.finished,
+            withPosition: false,
+            startedAt: started,
+            finishedAt: finished,
+          ),
+        ]),
+        runs: [run(status: RunStatus.finished)],
+      );
+
+      expect(find.text('종료'), findsOneWidget);
+      expect(find.text('운행이 끝났어요'), findsOneWidget);
+      expect(find.text(formatClock(started)), findsOneWidget);
+      expect(find.text(formatClock(finished)), findsOneWidget);
+      expect(find.text('운행 시작'), findsOneWidget);
+      expect(find.text('운행 종료'), findsWidgets);
+      expect(find.text('이동 중'), findsNothing);
+      expect(find.text('신호 없음'), findsNothing);
+      expect(find.text('버스 위치로'), findsNothing);
+      expect(find.textContaining(' 기준'), findsNothing);
+    });
+
+    testWidgets('연결 끊김 — 마지막으로 받은 시각 이름표 · 다시 시도, 이동 중 칩은 없다', (tester) async {
+      await pumpParent(
+        tester,
+        repository: _ScriptedBusPositionRepository([snapshot()]),
+        runs: [run()],
+      );
+      client.emit(WsConnectionState.gaveUp);
+      await tester.pumpAndSettle();
+
+      expect(find.text('연결 끊김'), findsOneWidget);
+      expect(find.text(_gaveUpTitle), findsOneWidget);
+      expect(find.text('다시 시도'), findsOneWidget);
+      expect(find.text('마지막 갱신 ${formatClock(clockNow)}'), findsOneWidget);
+      expect(find.text('이동 중'), findsNothing);
+      expect(find.text('버스 위치로'), findsNothing);
+    });
+
+    testWidgets('불러오는 중 — 시트 뼈대만 있고 [노선 자세히 보기] 는 꺼져 있다', (tester) async {
+      await pumpParent(
+        tester,
+        repository: _NeverBusPositionRepository(),
+        settle: false,
+      );
+
+      expect(find.byType(MapSheetSkeleton), findsOneWidget);
+      final button = tester.widget<BaraedaButton>(
+        find.widgetWithText(BaraedaButton, '노선 자세히 보기'),
+      );
+      expect(button.onPressed, isNull);
+      expect(find.text('이동 중'), findsNothing);
+      expect(find.text('버스가 아직 출발 전이에요'), findsNothing);
     });
   });
 }

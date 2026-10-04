@@ -29,6 +29,8 @@ const Map<String, IconData> _kBaraedaIconGlyphs = {
   'chevron-right': Icons.chevron_right,
   'chevron-left': Icons.chevron_left,
   'chevron-down': Icons.expand_more,
+  // 지도 아래 시트의 "노선 자세히 보기" 끝 표시(시안 `live-map`).
+  'chevron-up': Icons.expand_less,
   'search': Icons.search,
   'settings': Icons.settings,
   'plus': Icons.add,
