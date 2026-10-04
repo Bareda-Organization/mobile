@@ -5,7 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/auth/account_session.dart';
 import 'package:manager_app/core/auth/auth_providers.dart';
+import 'package:manager_app/core/auth/credential_limits.dart';
 import 'package:manager_app/core/network/failure_messages.dart';
+import 'package:manager_app/core/ui/bottom_action_bar.dart';
 import 'package:manager_app/core/ui/manager_header.dart';
 
 /// AUTH-07 · API_SPEC §2.8 — 비밀번호 변경(기사·동승자 공통, R32 M13).
@@ -83,65 +85,114 @@ class _PasswordChangeScreenState extends ConsumerState<PasswordChangeScreen> {
     }
   }
 
+  /// 단추가 꺼진 이유 — 꺼져 있으면 단추 아래에 그대로 적는다(M15). 켜져 있으면 `null`.
+  String? get _disabledReason {
+    if (_currentPasswordController.text.isEmpty) {
+      return '현재 비밀번호를 입력하면 눌러요';
+    }
+    final next = _newPasswordController.text;
+    if (next.isEmpty) return '새 비밀번호를 입력하면 눌러요';
+    if (passwordLengthError(next) != null) return '새 비밀번호를 줄이면 눌러요';
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     final forced = ref.watch(mustChangePasswordProvider);
+    final colors = context.colors;
+    final reason = _disabledReason;
     return Scaffold(
       // 강제 변경(임시 비밀번호)은 뒤로 갈 곳이 없다 — 라우터가 이 화면에 고정한다.
       appBar: const ManagerHeader(title: '비밀번호 변경', showSos: false),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(BaraedaSpacing.gutterMobile),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+      body: Column(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(BaraedaSpacing.gutterMobile),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (forced) ...[
+                    const AlertBanner(
+                      tone: AlertTone.moving,
+                      icon: 'lock',
+                      title: '임시 비밀번호로 로그인했어요',
+                      body: '관리자가 초기화한 비밀번호예요. 새 비밀번호로 바꿔야 앱을 계속 쓸 수 있어요.',
+                    ),
+                    const SizedBox(height: BaraedaSpacing.space4),
+                  ],
+                  BaraedaInput(
+                    label: forced ? '현재 비밀번호(임시)' : '현재 비밀번호',
+                    obscureText: true,
+                    kind: BaraedaInputKind.currentPassword,
+                    error: _currentPasswordError,
+                    controller: _currentPasswordController,
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  const SizedBox(height: BaraedaSpacing.space4),
+                  // 한도(M14) — 서버는 UTF-8 72바이트를 넘으면 422 로 거절한다. 입력하는 동안 미리 알린다.
+                  BaraedaInput(
+                    label: '새 비밀번호',
+                    hint: '영문 72자 · 한글 24자까지',
+                    obscureText: true,
+                    kind: BaraedaInputKind.newPassword,
+                    error: passwordLengthError(_newPasswordController.text),
+                    controller: _newPasswordController,
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  const SizedBox(height: BaraedaSpacing.space4),
+                  BaraedaCard(
+                    tone: BaraedaCardTone.mist,
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        BaraedaIcon('info', color: colors.textBrand),
+                        const SizedBox(width: BaraedaSpacing.space3),
+                        Expanded(
+                          child: WordWrapText(
+                            '바꾸면 이 기기에서 로그아웃돼요. 새 비밀번호로 다시 로그인해 주세요.',
+                            style: BaraedaTypography.body.copyWith(
+                              color: colors.textBrand,
+                              fontWeight: BaraedaFontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (_formError != null) ...[
+                    const SizedBox(height: BaraedaSpacing.space4),
+                    AlertBanner(tone: AlertTone.missed, body: _formError),
+                  ],
+                  if (_submitting) ...[
+                    const SizedBox(height: BaraedaSpacing.space4),
+                    const Center(child: CircularProgressIndicator()),
+                  ],
+                ],
+              ),
+            ),
+          ),
+          BottomActionBar(
             children: [
-              if (forced) ...[
-                const AlertBanner(
-                  tone: AlertTone.info,
-                  body: '관리자가 초기화한 임시 비밀번호입니다. 새 비밀번호로 바꿔야 앱을 계속 쓸 수 있습니다',
-                ),
-                const SizedBox(height: BaraedaSpacing.space4),
-              ],
-              BaraedaInput(
-                label: '현재 비밀번호',
-                required: true,
-                obscureText: true,
-                error: _currentPasswordError,
-                controller: _currentPasswordController,
-              ),
-              const SizedBox(height: BaraedaSpacing.space4),
-              BaraedaInput(
-                label: '새 비밀번호',
-                required: true,
-                obscureText: true,
-                controller: _newPasswordController,
-              ),
-              const SizedBox(height: BaraedaSpacing.space4),
-              const WordWrapText('바꾸면 이 기기에서 로그아웃되고, 새 비밀번호로 다시 로그인해야 합니다'),
-              if (_formError != null) ...[
-                const SizedBox(height: BaraedaSpacing.space4),
-                AlertBanner(tone: AlertTone.missed, body: _formError),
-              ],
-              const SizedBox(height: BaraedaSpacing.space6),
-              if (_submitting) ...[
-                const Center(child: CircularProgressIndicator()),
-                const SizedBox(height: BaraedaSpacing.space4),
-              ],
               BaraedaButton(
                 label: '변경하기',
-                size: BaraedaButtonSize.lg,
-                onPressed: _submitting ? null : _submit,
+                size: BaraedaButtonSize.xl,
+                block: true,
+                onPressed: _submitting || reason != null ? null : _submit,
+                disabledReason: _submitting ? null : reason,
               ),
               if (forced) ...[
-                const SizedBox(height: BaraedaSpacing.space4),
-                TextButton(
+                const SizedBox(height: BaraedaSpacing.space2),
+                BaraedaButton(
+                  label: '로그아웃',
+                  variant: BaraedaButtonVariant.ghost,
+                  block: true,
                   onPressed: _submitting ? null : () => signOut(ref),
-                  child: const Text('로그아웃'),
                 ),
               ],
             ],
           ),
-        ),
+        ],
       ),
     );
   }

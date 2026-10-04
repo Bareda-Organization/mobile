@@ -113,9 +113,11 @@ void main() {
 
     expect(find.byType(PasswordChangeScreen), findsOneWidget);
     expect(find.byType(BackButton), findsNothing);
-    expect(find.textContaining('관리자가 초기화한 임시 비밀번호'), findsOneWidget);
+    expect(find.text('임시 비밀번호로 로그인했어요'), findsOneWidget);
+    // 입력 칸 이름은 RichText 로 그려진다.
+    expect(find.text('현재 비밀번호(임시)', findRichText: true), findsOneWidget);
 
-    await tester.tap(find.widgetWithText(TextButton, '로그아웃'));
+    await tester.tap(find.widgetWithText(BaraedaButton, '로그아웃'));
     await tester.pumpAndSettle();
 
     expect(repository.logoutCalls, 1);

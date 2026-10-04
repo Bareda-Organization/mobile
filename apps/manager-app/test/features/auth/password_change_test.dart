@@ -71,6 +71,8 @@ void main() {
     final fields = find.byType(TextField);
     await tester.enterText(fields.at(0), current);
     await tester.enterText(fields.at(1), next);
+    // 단추가 입력에 따라 켜지므로(M15) 다시 그린 뒤에 누른다.
+    await tester.pump();
     await tester.tap(find.widgetWithText(BaraedaButton, '변경하기'));
     await tester.pumpAndSettle();
   }
@@ -122,6 +124,63 @@ void main() {
     await fillAndSubmit(tester, next: '');
 
     expect(repository.changes, isEmpty);
+  });
+
+  BaraedaButton changeButton(WidgetTester tester) =>
+      tester.widget<BaraedaButton>(find.widgetWithText(BaraedaButton, '변경하기'));
+
+  // M15 — 꺼진 단추는 왜 꺼졌는지 단추 아래에 적는다.
+  testWidgets('새 비밀번호가 비어 있으면 [변경하기] 가 꺼지고 이유가 단추 아래에 보인다(M15)', (
+    tester,
+  ) async {
+    await pumpScreen(tester, _RecordingAuthRepository());
+
+    await tester.enterText(find.byType(TextField).at(0), 'old-pass');
+    await tester.pump();
+
+    expect(changeButton(tester).onPressed, isNull);
+    expect(find.text('새 비밀번호를 입력하면 눌러요'), findsOneWidget);
+  });
+
+  testWidgets('현재 비밀번호가 비어 있으면 그것을 이유로 알린다', (tester) async {
+    await pumpScreen(tester, _RecordingAuthRepository());
+
+    await tester.enterText(find.byType(TextField).at(1), 'new-pass-1');
+    await tester.pump();
+
+    expect(changeButton(tester).onPressed, isNull);
+    expect(find.text('현재 비밀번호를 입력하면 눌러요'), findsOneWidget);
+  });
+
+  testWidgets('두 칸이 다 차면 [변경하기] 가 켜지고 이유 글이 사라진다', (tester) async {
+    await pumpScreen(tester, _RecordingAuthRepository());
+
+    await tester.enterText(find.byType(TextField).at(0), 'old-pass');
+    await tester.enterText(find.byType(TextField).at(1), 'new-pass-1');
+    await tester.pump();
+
+    expect(changeButton(tester).onPressed, isNotNull);
+    expect(find.textContaining('입력하면 눌러요'), findsNothing);
+  });
+
+  // M14 — 서버는 UTF-8 72바이트(한글 24자)를 넘으면 422 로 거절한다. 입력할 때 미리 알린다.
+  testWidgets('새 비밀번호 칸에 한도 안내가 있고 넘으면 이유를 보이며 단추가 꺼진다(M14)', (tester) async {
+    final repository = _RecordingAuthRepository();
+    await pumpScreen(tester, repository);
+    expect(find.text('영문 72자 · 한글 24자까지'), findsOneWidget);
+
+    await tester.enterText(find.byType(TextField).at(0), 'old-pass');
+    await tester.enterText(find.byType(TextField).at(1), '가' * 25); // 75바이트
+    await tester.pump();
+
+    expect(find.text('비밀번호는 72바이트(한글 24자) 이하여야 해요'), findsOneWidget);
+    expect(changeButton(tester).onPressed, isNull);
+
+    await tester.enterText(find.byType(TextField).at(1), '가' * 24); // 72바이트
+    await tester.pump();
+
+    expect(find.textContaining('이하여야 해요'), findsNothing);
+    expect(changeButton(tester).onPressed, isNotNull);
   });
 
   testWidgets('내 정보의 [비밀번호 변경] 칸이 이 화면으로 간다', (tester) async {
