@@ -35,6 +35,31 @@ void main() {
       expect(content!.tone, AlertTone.moving);
     });
 
+    // 명단은 재연결 중을 맨 위 연결 끊김 띠로 알려 같은 사건을 두 번 알리지 않는다. 운행 화면 · 노선 지도는 그 띠가
+    // 없어 이 배너가 유일한 알림이다 — 숨김은 호출하는 화면이 고를 때만 켜진다.
+    test('재연결 안내를 숨기라고 고르면 reconnecting 만 사라지고 나머지는 그대로다', () {
+      expect(
+        managerChannelBannerContentFor(
+          ManagerChannelStatus.reconnecting,
+          hideReconnecting: true,
+        ),
+        isNull,
+      );
+      expect(
+        managerChannelBannerContentFor(
+          ManagerChannelStatus.gaveUp,
+          hideReconnecting: true,
+        ),
+        isNotNull,
+        reason: '재연결 포기는 띠가 알리지 못하니 숨기지 않는다',
+      );
+      expect(
+        managerChannelBannerContentFor(ManagerChannelStatus.reconnecting),
+        isNotNull,
+        reason: '고르지 않으면 예전처럼 보인다',
+      );
+    });
+
     test('gaveUp 은 missed 톤 — 자동 복구가 멈춘 상태라 사람이 개입해야 한다', () {
       final content = managerChannelBannerContentFor(
         ManagerChannelStatus.gaveUp,
@@ -55,9 +80,8 @@ void main() {
     // 권한 거부(forbidden)는 이 앱에서 "배정되지 않음" 이라는 업무 의미가 있어 그 문구를 유지한다.
     test('끊김 제목이 웹·학부모 앱과 같은 공용 문구다', () {
       expect(
-        managerChannelBannerContentFor(
-          ManagerChannelStatus.reconnecting,
-        )!.title,
+        managerChannelBannerContentFor(ManagerChannelStatus.reconnecting)!
+            .title,
         WsConnectionNotice.reconnectingTitle,
       );
       expect(

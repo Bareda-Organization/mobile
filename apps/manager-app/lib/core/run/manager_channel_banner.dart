@@ -18,19 +18,22 @@ import 'package:manager_app/core/run/manager_run_channel.dart';
 /// (정상, `data` 분기)와 "연결이 끊겨 아무것도 못 받는다"(비정상, 이
 /// 배너가 다루는 것)가 화면에서 구별되지 않는다(목표 9).
 class ManagerChannelBanner extends ConsumerWidget {
-  const new({required this.runId, super.key});
+  const new({required this.runId, this.hideReconnecting = false, super.key});
 
   final String runId;
+
+  /// 재연결 중 안내를 숨긴다 — 같은 사건을 맨 위 연결 끊김 띠로 알리는
+  /// 화면(명단)이 켠다. 그 띠가 없는 화면은 끄고(기본) 이 배너가 유일한
+  /// 알림이다.
+  final bool hideReconnecting;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final status = ref.watch(managerRunChannelProvider(runId));
-    // 재연결 중은 화면 맨 위 연결 끊김 띠가 맡는다(`managerOfflineSinceProvider`).
-    // 같은 사건을 두 번 알리지 않는다.
-    if (status == ManagerChannelStatus.reconnecting) {
-      return const SizedBox.shrink();
-    }
-    final content = managerChannelBannerContentFor(status);
+    final content = managerChannelBannerContentFor(
+      status,
+      hideReconnecting: hideReconnecting,
+    );
     if (content == null) return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -53,14 +56,16 @@ class ManagerChannelBanner extends ConsumerWidget {
 ///
 /// `null` 은 [ManagerChannelStatus.connected] 하나뿐 — 배너를 그리지 않는다.
 ManagerChannelBannerContent? managerChannelBannerContentFor(
-  ManagerChannelStatus status,
-) => switch (status) {
+  ManagerChannelStatus status, {
+  bool hideReconnecting = false,
+}) => switch (status) {
   ManagerChannelStatus.connected => null,
   ManagerChannelStatus.connecting => const ManagerChannelBannerContent(
     tone: AlertTone.moving,
     title: '실시간 연결 중',
     body: '잠시만 기다려 주세요',
   ),
+  ManagerChannelStatus.reconnecting when hideReconnecting => null,
   ManagerChannelStatus.reconnecting => const ManagerChannelBannerContent(
     tone: AlertTone.moving,
     title: WsConnectionNotice.reconnectingTitle,

@@ -242,7 +242,8 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-          child: ManagerChannelBanner(runId: runId),
+          // 재연결 중은 맨 위 연결 끊김 띠가 알린다 — 같은 사건을 두 번 알리지 않는다.
+          child: ManagerChannelBanner(runId: runId, hideReconnecting: true),
         ),
         Expanded(
           // 갱신이 실패해도 마지막으로 받은 명단을 지우지 않는다 — 오류는 목록 위에 따로 알린다(R46).
