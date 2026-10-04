@@ -1,4 +1,5 @@
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:manager_app/app/app.dart';
@@ -55,6 +56,11 @@ class _StubAuthRepository implements AuthRepository {
       academyCode: 'A-001',
       requestedAt: DateTime(2026, 9),
       academyContact: '02-000-0000',
+      rejectReason:
+          signupStatusCalls > 1 &&
+              statusFromSecondCall == AccountStatus.rejected
+          ? '학원의 기사 명단에서 이름을 찾을 수 없어요.'
+          : null,
     );
   }
 
@@ -125,7 +131,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(repository.signupStatusCalls, 2);
-    expect(find.text('가입이 거절되었습니다'), findsOneWidget);
+    expect(find.text('가입이 거절됐어요'), findsOneWidget);
   });
 
   testWidgets('다시 확인했더니 승인됐으면 홈으로 간다', (tester) async {
@@ -161,5 +167,41 @@ void main() {
 
     expect(find.text('상태를 불러오지 못했습니다'), findsOneWidget);
     expect(find.byType(ManagerHomeScreen), findsNothing);
+  });
+
+  // 시안 `pending--rejected` — 거절 사유 · 신청 정보 표 · 다른 학원으로 다시 신청.
+  group('거절 화면 (시안 pending--rejected)', () {
+    Future<void> pumpRejected(WidgetTester tester) async {
+      await pumpPending(tester, statusFromSecondCall: AccountStatus.rejected);
+      await tester.tap(find.text('상태 다시 확인'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('사유를 띠 본문에 싣고 신청 학원 · 상태 · 문의처 표를 보여준다', (tester) async {
+      await pumpRejected(tester);
+
+      expect(find.text('사유 · 학원의 기사 명단에서 이름을 찾을 수 없어요.'), findsOneWidget);
+      for (final label in ['신청 학원', '신청 일시', '현재 상태', '학원 문의처']) {
+        expect(find.text(label), findsOneWidget, reason: label);
+      }
+      expect(find.text('바래다학원'), findsOneWidget);
+      expect(find.text('거절됨'), findsOneWidget);
+      expect(find.text('02-000-0000'), findsOneWidget);
+      expect(find.widgetWithText(BaraedaButton, '전화'), findsOneWidget);
+    });
+
+    testWidgets('다른 학원으로 다시 신청하는 칸이 처음부터 있고 학원을 고르기 전엔 재신청이 꺼진다', (
+      tester,
+    ) async {
+      await pumpRejected(tester);
+
+      expect(find.text('다른 학원으로 다시 신청'), findsOneWidget);
+      final button = tester.widget<BaraedaButton>(
+        find.widgetWithText(BaraedaButton, '이 학원으로 재신청'),
+      );
+      expect(button.onPressed, isNull);
+      expect(find.text('다시 신청할 학원을 고르면 눌러요'), findsOneWidget);
+      expect(find.widgetWithText(BaraedaButton, '로그아웃'), findsOneWidget);
+    });
   });
 }
