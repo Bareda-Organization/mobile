@@ -218,31 +218,66 @@ class _LoadFailure extends ConsumerWidget {
           icon: 'wifi-off',
           title: '버스 정보를 불러오지 못했어요',
           body: '인터넷 연결을 확인하고 다시 시도해 주세요.\n연결되면 자동으로 다시 불러와요.',
+          // 이 화면에서 할 수 있는 일은 이것 하나다 — 채워진 주 단추로 둔다.
           action: BaraedaButton(
             label: '다시 시도',
-            variant: BaraedaButtonVariant.secondary,
+            icon: 'refresh',
             onPressed: onRetry,
           ),
         ),
         if (phone != null) ...[
           const SizedBox(height: BaraedaSpacing.space4),
-          BaraedaListGroup(
-            children: [
-              BaraedaListRow(
-                leadingIcon: 'phone',
-                title: '버스가 급하게 궁금하면',
-                subtitle: '학원 $phone',
-                trailing: BaraedaButton(
-                  label: '전화',
-                  size: BaraedaButtonSize.sm,
-                  variant: BaraedaButtonVariant.secondary,
-                  onPressed: () => launchUrl(Uri(scheme: 'tel', path: phone)),
-                ),
-              ),
-            ],
-          ),
+          _EmergencyPhone(phone: phone),
         ],
       ],
+    );
+  }
+}
+
+/// 급할 때 거는 학원 전화 — 번호를 줄 때만 나온다(`Ruling 827`). 못 불러온 화면에서도 버스가 궁금한 사람이 갈 곳이 있다.
+class _EmergencyPhone extends StatelessWidget {
+  const new({required this.phone});
+
+  final String phone;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+
+    return BaraedaCard(
+      tone: BaraedaCardTone.mist,
+      child: Row(
+        children: [
+          ExcludeSemantics(
+            child: BaraedaIcon('phone', color: colors.accentPrimary),
+          ),
+          const SizedBox(width: BaraedaSpacing.space3),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const WordWrapText(
+                  '버스가 급하게 궁금하면',
+                  style: TextStyle(fontWeight: BaraedaFontWeight.bold),
+                ),
+                WordWrapText(
+                  '학원 $phone',
+                  style: BaraedaTypography.bodySm.copyWith(
+                    color: colors.accentPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: BaraedaSpacing.space2),
+          BaraedaButton(
+            label: '전화',
+            size: BaraedaButtonSize.sm,
+            variant: BaraedaButtonVariant.secondary,
+            onPressed: () => launchUrl(Uri(scheme: 'tel', path: phone)),
+          ),
+        ],
+      ),
     );
   }
 }
