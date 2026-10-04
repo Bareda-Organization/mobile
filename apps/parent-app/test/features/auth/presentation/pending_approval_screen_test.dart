@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:parent_app/app/di.dart';
+import 'package:parent_app/core/auth/academy_contact.dart';
 import 'package:parent_app/core/auth/account_session.dart';
 import 'package:parent_app/core/auth/domain/auth_repository.dart';
 import 'package:parent_app/core/devices/presentation/device_registration_panel.dart';
@@ -134,14 +135,25 @@ class _FakeDeviceRegistrationStorage extends DeviceRegistrationStorage {
   Future<void> clearToken() async => _token = null;
 }
 
+/// 문의처를 메모리에 남기는 대역 — 차단 화면이 읽을 값이 실제로 저장되는지 본다(`Ruling 825`).
+class _RecordingContactStorage extends AcademyContactStorage {
+  String? saved;
+
+  @override
+  Future<void> save(String contact) async => saved = contact;
+}
+
 Future<void> _pumpPendingApproval(
   WidgetTester tester,
-  AuthRepository authRepository,
-) async {
+  AuthRepository authRepository, {
+  AcademyContactStorage? contactStorage,
+}) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
         authRepositoryProvider.overrideWithValue(authRepository),
+        if (contactStorage != null)
+          academyContactStorageProvider.overrideWithValue(contactStorage),
         deviceRegistrationStorageProvider.overrideWithValue(
           _FakeDeviceRegistrationStorage(),
         ),
@@ -167,6 +179,31 @@ void main() {
 
     expect(find.text('02-000-0000'), findsOneWidget);
     expect(find.text('등록된 문의처 없음'), findsNothing);
+  });
+
+  // R48 Ruling 825 · 827 — 문의처를 기기에 남기고(차단 화면이 쓴다), 번호 모양이 있을 때만 전화 단추를 둔다.
+  testWidgets('문의처에 번호가 있으면 학원에 전화 단추가 있고 그 문의처를 기기에 남긴다', (tester) async {
+    final storage = _RecordingContactStorage();
+    await _pumpPendingApproval(
+      tester,
+      _StubAuthRepository(),
+      contactStorage: storage,
+    );
+
+    expect(find.text('학원에 전화 · 02-000-0000'), findsOneWidget);
+    expect(storage.saved, '02-000-0000');
+  });
+
+  testWidgets('문의처가 null 이면 전화 단추가 없고 아무것도 남기지 않는다', (tester) async {
+    final storage = _RecordingContactStorage();
+    await _pumpPendingApproval(
+      tester,
+      _StubAuthRepository()..academyContactMissing = true,
+      contactStorage: storage,
+    );
+
+    expect(find.textContaining('학원에 전화'), findsNothing);
+    expect(storage.saved, isNull);
   });
 
   // R32 P9 — 상태를 처음 한 번만 조회해, 관리자가 승인·거절해도 앱을 껐다 켜야 알 수 있었다.

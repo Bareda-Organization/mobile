@@ -6,10 +6,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:parent_app/app/di.dart';
+import 'package:parent_app/core/auth/academy_contact.dart';
 import 'package:parent_app/core/auth/account_session.dart';
 import 'package:parent_app/core/devices/presentation/device_registration_panel.dart';
 import 'package:parent_app/core/refresh/visible_poller.dart';
 import 'package:parent_app/features/auth/presentation/widgets/academy_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// 승인 대기 화면이 상태를 다시 조회하는 간격 — 푸시 SDK 가 없어 이 조회가
 /// 승인·거절을 아는 유일한 길이다(R46 B2 #20). 홈의 `pollInterval`(90초)보다 짧게 둔다:
@@ -41,6 +43,16 @@ class PendingApprovalScreen extends ConsumerStatefulWidget {
 
 class _PendingApprovalScreenState extends ConsumerState<PendingApprovalScreen> {
   Future<SignupStatusResponse>? _statusFuture;
+
+  /// 가입 상태를 받고, 학원 문의처를 기기에 남긴다 — 차단 화면이 소속 학원을 모를 때 쓴다(`Ruling 825`).
+  Future<SignupStatusResponse> _loadStatus() async {
+    final status = await ref.read(authRepositoryProvider).signupStatus();
+    final contact = status.academyContact;
+    if (contact != null) {
+      unawaited(ref.read(academyContactStorageProvider).save(contact));
+    }
+    return status;
+  }
   bool _reapplying = false;
   AcademySummary? _newAcademy;
   bool _submittingReapply = false;
@@ -55,7 +67,7 @@ class _PendingApprovalScreenState extends ConsumerState<PendingApprovalScreen> {
   @override
   void initState() {
     super.initState();
-    _statusFuture = ref.read(authRepositoryProvider).signupStatus();
+    _statusFuture = _loadStatus();
     _poller.start();
   }
 
@@ -69,7 +81,7 @@ class _PendingApprovalScreenState extends ConsumerState<PendingApprovalScreen> {
   /// 승인(`active`)이면 계정 상태를 바꿔 라우터가 홈으로 보내게 한다.
   Future<void> _pollQuietly() async {
     try {
-      final status = await ref.read(authRepositoryProvider).signupStatus();
+      final status = await _loadStatus();
       if (!mounted) return;
       setState(() {
         _statusFuture = Future.value(status);
@@ -92,7 +104,7 @@ class _PendingApprovalScreenState extends ConsumerState<PendingApprovalScreen> {
   /// [상태 다시 확인] — 서버에서 다시 받아 화면에 반영한다. 승인(`active`)이 났으면 계정 상태를
   /// 바꿔 라우터가 홈으로 보내게 한다(안 바꾸면 승인된 뒤에도 이 화면이 대기 중으로 남는다, R32 P9).
   Future<void> _refreshStatus() async {
-    final future = ref.read(authRepositoryProvider).signupStatus();
+    final future = _loadStatus();
     setState(() {
       _statusFuture = future;
     });
@@ -121,7 +133,7 @@ class _PendingApprovalScreenState extends ConsumerState<PendingApprovalScreen> {
       setState(() {
         _submittingReapply = false;
         _reapplying = false;
-        _statusFuture = ref.read(authRepositoryProvider).signupStatus();
+        _statusFuture = _loadStatus();
       });
     } on Failure catch (failure) {
       if (!mounted) return;
@@ -259,6 +271,17 @@ class _StatusBody extends StatelessWidget {
           ),
           _InfoRow(label: '현재 상태', value: _isRejected ? '거절됨' : '승인 대기'),
           _InfoRow(label: '학원 문의처', value: status.academyContactText),
+          // 번호 모양이 있을 때만 전화 단추를 둔다(`Ruling 827`).
+          if (phoneNumberOf(status.academyContact) case final phone?) ...[
+            const SizedBox(height: BaraedaSpacing.space2),
+            BaraedaButton(
+              label: '학원에 전화 · $phone',
+              icon: 'phone',
+              variant: BaraedaButtonVariant.secondary,
+              block: true,
+              onPressed: () => launchUrl(Uri(scheme: 'tel', path: phone)),
+            ),
+          ],
           const SizedBox(height: BaraedaSpacing.space4),
           // R32 P9 — 상태를 처음 한 번만 조회해, 승인·거절이 나도 앱을 껐다 켜야 알 수 있었다.
           BaraedaButton(
