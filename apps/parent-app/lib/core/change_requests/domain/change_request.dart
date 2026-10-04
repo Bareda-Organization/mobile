@@ -1,4 +1,5 @@
 import 'package:parent_app/core/common/json_id.dart';
+import 'package:parent_app/core/common/run_direction.dart';
 
 /// `POST`·`GET /students/{id}/change-requests` 모델 (API_SPEC §3.8·§3.9).
 enum ChangeRequestType {
@@ -39,6 +40,8 @@ class ChangeRequest {
     this.runId,
     this.requestedAt,
     this.decidedAt,
+    this.serviceDate,
+    this.direction,
   });
 
   factory fromJson(Map<String, dynamic> json) => ChangeRequest(
@@ -53,6 +56,12 @@ class ChangeRequest {
     decidedAt: json['decided_at'] == null
         ? null
         : DateTime.parse(json['decided_at'] as String),
+    serviceDate: json['service_date'] == null
+        ? null
+        : DateTime.parse('${json['service_date']}T00:00:00Z'),
+    direction: json['direction'] == null
+        ? null
+        : RunDirection.fromWireValue(json['direction'] as String),
   );
 
   final String changeRequestId;
@@ -64,6 +73,11 @@ class ChangeRequest {
   final String? runId;
   final DateTime? requestedAt;
   final DateTime? decidedAt;
+
+  /// 대상 회차의 운행일(날짜만, UTC 0시) · 방향 — 이력에 "오늘 하원" 처럼 쓴다(§3.9, `Ruling 824`).
+  /// 서버가 아직 안 주면 `null` 이고 화면은 그 말을 뺀다.
+  final DateTime? serviceDate;
+  final RunDirection? direction;
 }
 
 /// §3.9 응답 봉투 — 홈 배지용 `pending_count` 를 함께 담는다.
@@ -94,15 +108,14 @@ class ChangeRequestCreateResult {
     this.deadlineAt,
   });
 
-  factory fromJson(Map<String, dynamic> json) =>
-      ChangeRequestCreateResult(
-        changeRequestId: asIdString(json['change_request_id']),
-        status: ChangeRequestStatus.fromWireValue(json['status'] as String),
-        result: json['result'] as String,
-        deadlineAt: json['deadline_at'] == null
-            ? null
-            : DateTime.parse(json['deadline_at'] as String),
-      );
+  factory fromJson(Map<String, dynamic> json) => ChangeRequestCreateResult(
+    changeRequestId: asIdString(json['change_request_id']),
+    status: ChangeRequestStatus.fromWireValue(json['status'] as String),
+    result: json['result'] as String,
+    deadlineAt: json['deadline_at'] == null
+        ? null
+        : DateTime.parse(json['deadline_at'] as String),
+  );
 
   final String changeRequestId;
   final ChangeRequestStatus status;

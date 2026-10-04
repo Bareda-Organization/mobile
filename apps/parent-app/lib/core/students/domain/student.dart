@@ -10,6 +10,7 @@ class Student {
     required this.name,
     required this.linkedAt,
     this.className,
+    this.grade,
   });
 
   factory fromJson(Map<String, dynamic> json) => Student(
@@ -17,6 +18,7 @@ class Student {
     name: json['name'] as String,
     linkedAt: DateTime.parse(json['linked_at'] as String),
     className: json['class_name'] as String?,
+    grade: json['grade'] as String?,
   );
 
   /// 학생 식별자.
@@ -30,4 +32,7 @@ class Student {
 
   /// 반 — 선택값.
   final String? className;
+
+  /// 학년("초5") — 선택값(`Ruling 824`). 서버가 아직 안 주면 `null` 이고 화면은 그 줄을 숨긴다.
+  final String? grade;
 }

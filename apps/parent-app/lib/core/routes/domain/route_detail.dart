@@ -35,6 +35,7 @@ class RouteStop {
     required this.lat,
     required this.lng,
     this.change,
+    this.arrivedAt,
   });
 
   factory fromJson(Map<String, dynamic> json) => RouteStop(
@@ -45,6 +46,9 @@ class RouteStop {
     lat: (json['lat'] as num?)?.toDouble(),
     lng: (json['lng'] as num?)?.toDouble(),
     change: RouteStopChange.fromWireValue(json['change'] as String?),
+    arrivedAt: json['arrived_at'] == null
+        ? null
+        : DateTime.parse(json['arrived_at'] as String),
   );
 
   final String stopId;
@@ -54,6 +58,10 @@ class RouteStop {
   final double? lat;
   final double? lng;
   final RouteStopChange? change;
+
+  /// 그 승하차지의 도착 처리 시각(§3.10 `stops[].arrived_at`, `Ruling 824`) — 지나간 곳에만 있다.
+  /// 지난 사실이라 ETA 비노출(C-08)과 무관하다. 아직이거나 서버가 안 주면 `null`.
+  final DateTime? arrivedAt;
 }
 
 /// 기사 이름만 — 기사는 연락처가 부재하다(학부모 → 기사 직접 연락은

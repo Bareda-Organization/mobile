@@ -1,6 +1,23 @@
 import 'package:parent_app/core/common/json_id.dart';
 import 'package:parent_app/core/runs/domain/student_run.dart';
 
+/// 그 회차의 마지막 지연 알림(§3.11 `delay`, `Ruling 821`) — 지연 안내 띠의 원천.
+///
+/// ETA 가 아니라 학원이 보낸 지연 알림(NTF-07)이다. 없거나 회차가 끝났거나 미등원이면 서버가 `null`.
+class BusDelay {
+  const new({required this.minutes, required this.sentAt, this.reason});
+
+  factory fromJson(Map<String, dynamic> json) => BusDelay(
+    minutes: json['minutes'] as int,
+    reason: json['reason'] as String?,
+    sentAt: DateTime.parse(json['sent_at'] as String),
+  );
+
+  final int minutes;
+  final String? reason;
+  final DateTime sentAt;
+}
+
 /// `GET /students/{id}/bus-position` 응답 — API_SPEC §3.11.
 ///
 /// `lat`·`lng`·`received_at`·`last_seen_at`·`current_stop_name` 전부
@@ -20,6 +37,10 @@ class BusPosition {
     this.receivedAt,
     this.lastSeenAt,
     this.currentStopName,
+    this.currentStopArrivedAt,
+    this.startedAt,
+    this.finishedAt,
+    this.delay,
   });
 
   factory fromJson(Map<String, dynamic> json) => BusPosition(
@@ -35,7 +56,16 @@ class BusPosition {
         ? null
         : DateTime.parse(json['last_seen_at'] as String),
     currentStopName: json['current_stop_name'] as String?,
+    currentStopArrivedAt: _optionalTime(json['current_stop_arrived_at']),
+    startedAt: _optionalTime(json['started_at']),
+    finishedAt: _optionalTime(json['finished_at']),
+    delay: json['delay'] == null
+        ? null
+        : BusDelay.fromJson(json['delay'] as Map<String, dynamic>),
   );
+
+  static DateTime? _optionalTime(Object? value) =>
+      value == null ? null : DateTime.parse(value as String);
 
   final String runId;
   final String busNo;
@@ -49,4 +79,14 @@ class BusPosition {
   /// (`live_map_screen.dart` 참고).
   final DateTime? lastSeenAt;
   final String? currentStopName;
+
+  /// "마지막으로 지난 곳 · 12:09" 의 시각(`Ruling 821`). 이름과 같은 조건에서만 채워진다.
+  final DateTime? currentStopArrivedAt;
+
+  /// 실제 운행 시작 · 종료 시각 — 지나기 전이면 `null`. WebSocket 이벤트를 놓치고 들어와도 그린다.
+  final DateTime? startedAt;
+  final DateTime? finishedAt;
+
+  /// 마지막 지연 알림 — 지연 띠. `null` 이면 띠를 그리지 않는다.
+  final BusDelay? delay;
 }
