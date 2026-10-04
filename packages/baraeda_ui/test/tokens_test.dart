@@ -146,6 +146,11 @@ void main() {
       expect(BaraedaDuration.toast, const Duration(milliseconds: 220));
     });
 
+    test('누름은 0.97 배로 줄고 6% 어두워진다', () {
+      expect(BaraedaMotionValue.pressScale, 0.97);
+      expect(BaraedaMotionValue.pressDim, 0.06);
+    });
+
     test('ease-out cubic-bezier(.23,1,.32,1) · 서랍 곡선(.32,.72,0,1)', () {
       expect(BaraedaCurve.easeOut, const Cubic(0.23, 1, 0.32, 1));
       expect(BaraedaCurve.drawer, const Cubic(0.32, 0.72, 0, 1));
