@@ -62,8 +62,9 @@ class ManagerHeader extends ConsumerWidget implements PreferredSizeWidget {
     // 머리줄 높이는 고정이다(제목만 56, 부제까지 64) — 공용 머리줄이 글자를 늘리는 한도(부제 있으면 1.1배, 없으면
     // 1.6배)까지 가면 반올림으로 1px 넘친다(시험으로 확인). 그래서 부제가 있으면 1.0배, 없으면 1.5배로 묶는다.
     // 제목 · 부제는 한 줄 `…` 이고 전체 내용은 본문에 다시 나온다.
-    // 글자 배율 묶음은 **안쪽 context** 에서 읽는다 — 바깥 context 의 MediaQuery 를 복사하면 아래에서 지운 상태 표시줄
-    // 여백(`removePadding`)이 되살아나 머리줄이 같은 여백을 두 번 비킨다.
+    // 글자 배율 묶음은 **안쪽 context** 에서 읽는다 — 바깥 context 의
+    // MediaQuery 를 복사하면 아래에서 지운 상태 표시줄 여백(`removePadding`)이
+    // 되살아나 머리줄이 같은 여백을 두 번 비킨다.
     final scaled = Builder(
       builder: (inner) => MediaQuery(
         data: MediaQuery.of(inner).copyWith(
