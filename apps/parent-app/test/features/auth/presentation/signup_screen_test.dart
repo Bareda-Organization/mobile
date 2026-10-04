@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:parent_app/app/di.dart';
 import 'package:parent_app/core/auth/domain/auth_repository.dart';
+import 'package:parent_app/core/ui/sticky_action_bar.dart';
 import 'package:parent_app/features/auth/presentation/signup_screen.dart';
 
 class _Repository implements AuthRepository {
@@ -49,7 +50,28 @@ void main() {
     await tester.enterText(find.byType(TextField).at(1), '가' * 24);
     await tester.pump();
 
+    // 입력칸 아래 보조 설명(`50자 이하`)은 늘 보인다 — 한도를 넘었을 때의 오류 문장만 없어야 한다.
     expect(find.textContaining('72바이트'), findsNothing);
-    expect(find.textContaining('50자'), findsNothing);
+    expect(find.textContaining('50자 이하여야'), findsNothing);
+  });
+
+  // R48 시안 `signup` — 승인이 필요하다는 안내를 맨 위에(가입한 뒤에야 알게 되던 것), 주 단추는 맨 아래에 고정.
+  testWidgets('승인 안내가 폼 맨 위에 있고 [가입 신청하기] 는 아래 고정 줄에 있다', (tester) async {
+    await pumpSignup(tester);
+
+    const notice = '가입을 신청하면 학원 관계자가 승인한 뒤에 쓸 수 있어요.';
+    expect(find.text(notice), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.text(notice)).dy,
+      lessThan(tester.getTopLeft(find.byType(TextField).first).dy),
+      reason: '안내가 첫 입력칸보다 위에 있어야 가입 전에 읽힌다',
+    );
+    expect(
+      find.ancestor(
+        of: find.text('가입 신청하기'),
+        matching: find.byType(StickyActionBar),
+      ),
+      findsOneWidget,
+    );
   });
 }

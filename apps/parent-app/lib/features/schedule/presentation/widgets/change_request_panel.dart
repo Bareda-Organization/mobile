@@ -14,9 +14,9 @@ import 'package:parent_app/core/runs/presentation/run_providers.dart';
 import 'package:parent_app/core/time/service_date.dart';
 import 'package:parent_app/core/ui/failure_message.dart';
 import 'package:parent_app/core/ui/format_date_time.dart';
+import 'package:parent_app/core/ui/sticky_action_bar.dart';
 import 'package:parent_app/features/schedule/presentation/schedule_providers.dart';
 import 'package:parent_app/features/schedule/presentation/unsaved_edits.dart';
-import 'package:parent_app/features/schedule/presentation/widgets/sticky_action_bar.dart';
 
 /// 회차 선택 목록에 쓰는 표시 문구 — `방향 · 버스번호번`. 위젯 시험이
 /// 이 문구를 직접 적어 두면 라벨 문구(`RunDirection.label`)가 바뀔 때

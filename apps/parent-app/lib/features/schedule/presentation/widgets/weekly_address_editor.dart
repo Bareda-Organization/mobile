@@ -9,10 +9,10 @@ import 'package:parent_app/app/app_routes.dart';
 import 'package:parent_app/app/di.dart';
 import 'package:parent_app/core/common/run_direction.dart';
 import 'package:parent_app/core/ui/failure_message.dart';
+import 'package:parent_app/core/ui/sticky_action_bar.dart';
 import 'package:parent_app/features/schedule/domain/weekly_address_entry.dart';
 import 'package:parent_app/features/schedule/presentation/schedule_providers.dart';
 import 'package:parent_app/features/schedule/presentation/unsaved_edits.dart';
-import 'package:parent_app/features/schedule/presentation/widgets/sticky_action_bar.dart';
 
 /// §3.7 요일×방향 주소 편집기 — 요일 알약(월~일) 하나를 고르면 그 요일의 등원 · 하원 두 칸이 나온다(R48).
 ///
