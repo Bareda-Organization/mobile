@@ -9,6 +9,7 @@ import 'package:parent_app/core/auth/account_session.dart';
 import 'package:parent_app/core/auth/auth_providers.dart';
 import 'package:parent_app/core/auth/credential_limits.dart';
 import 'package:parent_app/core/auth/domain/auth_repository.dart';
+import 'package:parent_app/core/ui/sticky_action_bar.dart';
 import 'package:parent_app/features/auth/presentation/widgets/academy_picker.dart';
 
 /// UF-X-01 — 회원가입: 아이디·비밀번호·이름·연락처 → 역할 선택(학부모·학생) →
@@ -153,87 +154,133 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     final emptyFields = _emptyFields;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('회원가입')),
+      appBar: const AppHeader(title: '회원가입'),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(BaraedaSpacing.gutterMobile),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              BaraedaSegmentedControl(
-                options: const [
-                  BaraedaSegmentedOption('parent', label: '학부모'),
-                  BaraedaSegmentedOption('student', label: '학생'),
-                ],
-                value: _role,
-                block: true,
-                onChanged: (value) => setState(() => _role = value),
-              ),
-              const SizedBox(height: BaraedaSpacing.space5),
-              BaraedaInput(
-                label: '아이디',
-                required: true,
-                controller: _loginIdController,
-                error:
-                    _loginIdError ??
-                    loginIdLengthError(_loginIdController.text),
-                onChanged: (_) {
-                  if (_loginIdError != null) {
-                    setState(() => _loginIdError = null);
-                  }
-                  setState(() {});
-                },
-              ),
-              const SizedBox(height: BaraedaSpacing.space4),
-              BaraedaInput(
-                label: '비밀번호',
-                required: true,
-                obscureText: true,
-                error: passwordLengthError(_passwordController.text),
-                controller: _passwordController,
-                onChanged: (_) => setState(() {}),
-              ),
-              const SizedBox(height: BaraedaSpacing.space4),
-              BaraedaInput(
-                label: '이름',
-                required: true,
-                controller: _nameController,
-                onChanged: (_) => setState(() {}),
-              ),
-              const SizedBox(height: BaraedaSpacing.space4),
-              BaraedaInput(
-                label: '연락처',
-                required: true,
-                keyboardType: TextInputType.phone,
-                controller: _phoneController,
-                onChanged: (_) => setState(() {}),
-              ),
-              const SizedBox(height: BaraedaSpacing.space5),
-              AcademyPicker(
-                onSearch: repository.searchAcademies,
-                selected: _academy,
-                onSelected: (academy) => setState(() => _academy = academy),
-              ),
-              if (_formError != null) ...[
-                const SizedBox(height: BaraedaSpacing.space4),
-                AlertBanner(tone: AlertTone.missed, body: _formError),
-              ],
-              const SizedBox(height: BaraedaSpacing.space6),
-              BaraedaButton(
-                label: '가입 신청하기',
-                size: BaraedaButtonSize.lg,
-                block: true,
-                onPressed: _canSubmit ? _submit : null,
-              ),
-              if (!_submitting && emptyFields.isNotEmpty) ...[
-                const SizedBox(height: BaraedaSpacing.space2),
-                WordWrapText(
-                  '아직 채우지 않은 항목 · ${emptyFields.join(' · ')}',
-                  style: BaraedaTypography.bodySm,
+        child: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(BaraedaSpacing.gutterMobile),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // 승인이 필요하다는 것을 가입 전에 먼저 알린다(가입한 뒤에야 알게 되던 것).
+                    const AlertBanner(
+                      tone: AlertTone.info,
+                      title: '가입을 신청하면 학원 관계자가 승인한 뒤에 쓸 수 있어요.',
+                    ),
+                    const SizedBox(height: BaraedaSpacing.space4),
+                    const _SectionLabel('누구세요?'),
+                    BaraedaSegmentedControl(
+                      options: const [
+                        BaraedaSegmentedOption('parent', label: '학부모'),
+                        BaraedaSegmentedOption('student', label: '학생'),
+                      ],
+                      value: _role,
+                      block: true,
+                      onChanged: (value) => setState(() => _role = value),
+                    ),
+                    const SizedBox(height: BaraedaSpacing.space5),
+                    const _SectionLabel('계정 정보'),
+                    BaraedaInput(
+                      label: '아이디',
+                      hint: '$loginIdMaxLength자 이하',
+                      controller: _loginIdController,
+                      error:
+                          _loginIdError ??
+                          loginIdLengthError(_loginIdController.text),
+                      onChanged: (_) {
+                        if (_loginIdError != null) {
+                          setState(() => _loginIdError = null);
+                        }
+                        setState(() {});
+                      },
+                    ),
+                    const SizedBox(height: BaraedaSpacing.space4),
+                    BaraedaInput(
+                      label: '비밀번호',
+                      obscureText: true,
+                      hint: passwordLimitHint,
+                      error: passwordLengthError(_passwordController.text),
+                      controller: _passwordController,
+                      onChanged: (_) => setState(() {}),
+                    ),
+                    const SizedBox(height: BaraedaSpacing.space4),
+                    BaraedaInput(
+                      label: '이름',
+                      placeholder: '실명을 입력해 주세요',
+                      controller: _nameController,
+                      onChanged: (_) => setState(() {}),
+                    ),
+                    const SizedBox(height: BaraedaSpacing.space4),
+                    BaraedaInput(
+                      label: '연락처',
+                      placeholder: '010-0000-0000',
+                      keyboardType: TextInputType.phone,
+                      controller: _phoneController,
+                      onChanged: (_) => setState(() {}),
+                    ),
+                    const SizedBox(height: BaraedaSpacing.space5),
+                    const _SectionLabel('다니는 학원'),
+                    AcademyPicker(
+                      onSearch: repository.searchAcademies,
+                      selected: _academy,
+                      onSelected: (academy) =>
+                          setState(() => _academy = academy),
+                    ),
+                    if (_formError != null) ...[
+                      const SizedBox(height: BaraedaSpacing.space4),
+                      AlertBanner(tone: AlertTone.missed, body: _formError),
+                    ],
+                  ],
                 ),
-              ],
-            ],
-          ),
+              ),
+            ),
+            // 주 행동은 엄지가 닿는 맨 아래에 고정한다 — 꺼져 있으면 무엇이 비었는지를 단추 바로 아래에 적는다.
+            StickyActionBar(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  BaraedaButton(
+                    label: '가입 신청하기',
+                    size: BaraedaButtonSize.xl,
+                    block: true,
+                    onPressed: _canSubmit ? _submit : null,
+                  ),
+                  if (!_submitting && emptyFields.isNotEmpty) ...[
+                    const SizedBox(height: BaraedaSpacing.space2),
+                    WordWrapText(
+                      '아직 채우지 않은 항목 · ${emptyFields.join(' · ')}',
+                      textAlign: TextAlign.center,
+                      style: BaraedaTypography.bodySm,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// 입력 묶음 머리글 — `누구세요?` · `계정 정보` · `다니는 학원`.
+class _SectionLabel extends StatelessWidget {
+  const new(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: BaraedaSpacing.space2),
+      child: Text(
+        text,
+        style: BaraedaTypography.caption.copyWith(
+          color: context.colors.textSecondary,
+          fontWeight: BaraedaFontWeight.bold,
         ),
       ),
     );

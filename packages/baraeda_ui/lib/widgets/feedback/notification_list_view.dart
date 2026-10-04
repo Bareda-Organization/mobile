@@ -1,17 +1,30 @@
 import 'dart:async';
 
 import 'package:baraeda_ui/theme/baraeda_colors.dart';
+import 'package:baraeda_ui/tokens/shape.dart';
 import 'package:baraeda_ui/tokens/spacing.dart';
 import 'package:baraeda_ui/tokens/typography.dart';
 import 'package:baraeda_ui/widgets/core/button.dart';
+import 'package:baraeda_ui/widgets/core/filter_pill.dart';
 import 'package:baraeda_ui/widgets/feedback/alert_banner.dart';
 import 'package:baraeda_ui/widgets/feedback/empty_state.dart';
 import 'package:baraeda_ui/widgets/feedback/notification_time.dart';
+import 'package:baraeda_ui/widgets/feedback/skeleton.dart';
 import 'package:baraeda_ui/widgets/forms/segmented_control.dart';
 import 'package:flutter/material.dart';
 
 /// 스크롤이 끝에서 이만큼(px) 안으로 들어오면 다음 쪽을 미리 받는다.
 const double _loadMoreExtent = 300;
+
+/// 걸러 보기와 빈 · 오류 · 불러오는 화면의 모양.
+enum NotificationListStyle {
+  /// `[전체] | [안 읽음]` 두 칸 전환 + 한 줄 안내(기본 — 매니저 앱).
+  segmented,
+
+  /// `[전체]` `[안 읽음 N]` 두 알약 + 큰 그림의 빈 · 오류 화면 + 목록 모양 뼈대(시안 학부모·학생
+  /// `notifications*`).
+  pills,
+}
 
 /// 알림 목록 화면의 본문 — `[전체]` `[안 읽음]` 걸러 보기 · 날짜 머리 · 스크롤 끝에서 다음 쪽 자동 받기 ·
 /// 당겨서 새로고침 · 빈/오류 화면. 학부모·학생 앱과 매니저 앱이 함께 쓴다(R44 · R46).
@@ -30,6 +43,8 @@ class NotificationListView<T> extends StatefulWidget {
     required this.onUnreadOnlyChanged,
     required this.onRefresh,
     required this.onLoadMore,
+    this.style = NotificationListStyle.segmented,
+    this.unreadCount = 0,
     super.key,
     this.isLoading = false,
     this.onRetry,
@@ -61,6 +76,13 @@ class NotificationListView<T> extends StatefulWidget {
 
   /// 끝에 가까워졌다 — 다음 쪽을 받는다.
   final VoidCallback onLoadMore;
+
+  /// 걸러 보기 · 빈 · 오류 · 불러오는 화면의 모양. 기본은 [NotificationListStyle.segmented].
+  final NotificationListStyle style;
+
+  /// 서버가 세는 안 읽은 수(§3.12 `unread_count`) — [NotificationListStyle.pills] 의 `안
+  /// 읽음 N` 에 쓴다.
+  final int unreadCount;
 
   /// 첫 쪽을 받는 중 — 스피너.
   final bool isLoading;
@@ -120,15 +142,32 @@ class _NotificationListViewState<T> extends State<NotificationListView<T>> {
             BaraedaSpacing.gutterMobile,
             BaraedaSpacing.space3,
           ),
-          child: BaraedaSegmentedControl(
-            block: true,
-            options: const [
-              BaraedaSegmentedOption('all', label: '전체'),
-              BaraedaSegmentedOption('unread', label: '안 읽음'),
-            ],
-            value: w.unreadOnly ? 'unread' : 'all',
-            onChanged: (value) => w.onUnreadOnlyChanged(value == 'unread'),
-          ),
+          child: w.style == NotificationListStyle.pills
+              ? Row(
+                  children: [
+                    BaraedaFilterPill(
+                      label: '전체',
+                      selected: !w.unreadOnly,
+                      onTap: () => w.onUnreadOnlyChanged(false),
+                    ),
+                    const SizedBox(width: BaraedaSpacing.space2),
+                    BaraedaFilterPill(
+                      label: '안 읽음 ${w.unreadCount}',
+                      selected: w.unreadOnly,
+                      onTap: () => w.onUnreadOnlyChanged(true),
+                    ),
+                  ],
+                )
+              : BaraedaSegmentedControl(
+                  block: true,
+                  options: const [
+                    BaraedaSegmentedOption('all', label: '전체'),
+                    BaraedaSegmentedOption('unread', label: '안 읽음'),
+                  ],
+                  value: w.unreadOnly ? 'unread' : 'all',
+                  onChanged: (value) =>
+                      w.onUnreadOnlyChanged(value == 'unread'),
+                ),
         ),
         Expanded(child: _body(context)),
       ],
@@ -137,8 +176,29 @@ class _NotificationListViewState<T> extends State<NotificationListView<T>> {
 
   Widget _body(BuildContext context) {
     final w = widget;
-    if (w.isLoading) return const Center(child: CircularProgressIndicator());
+    final pills = w.style == NotificationListStyle.pills;
+    if (w.isLoading) {
+      return pills
+          ? const _SkeletonBody()
+          : const Center(child: CircularProgressIndicator());
+    }
     final onRetry = w.onRetry;
+    if (onRetry != null && pills) {
+      return ListView(
+        children: [
+          EmptyState(
+            icon: 'wifi-off',
+            title: '알림을 불러오지 못했어요',
+            body: '인터넷 연결을 확인하고 다시 시도해 주세요. 새 알림은 푸시로는 계속 와요.',
+            action: BaraedaButton(
+              label: '다시 시도',
+              icon: 'refresh',
+              onPressed: onRetry,
+            ),
+          ),
+        ],
+      );
+    }
     if (onRetry != null) {
       return Padding(
         padding: const EdgeInsets.all(BaraedaSpacing.gutterMobile),
@@ -165,10 +225,26 @@ class _NotificationListViewState<T> extends State<NotificationListView<T>> {
           ? ListView(
               physics: const AlwaysScrollableScrollPhysics(),
               children: [
-                EmptyState(
-                  icon: 'bell',
-                  title: w.unreadOnly ? '안 읽은 알림이 없습니다' : '새 알림이 없습니다',
-                ),
+                if (pills)
+                  EmptyState(
+                    icon: w.unreadOnly ? 'circle-check' : 'bell',
+                    title: w.unreadOnly ? '안 읽은 알림이 없어요' : '새 알림이 없어요',
+                    body: w.unreadOnly
+                        ? '모두 확인했어요. 새 알림은 푸시로도 알려 드려요.'
+                        : '최근 14일 동안 받은 알림이 여기에 모여요.',
+                    action: w.unreadOnly
+                        ? BaraedaButton(
+                            label: '전체 알림 보기',
+                            variant: BaraedaButtonVariant.secondary,
+                            onPressed: () => w.onUnreadOnlyChanged(false),
+                          )
+                        : null,
+                  )
+                else
+                  EmptyState(
+                    icon: 'bell',
+                    title: w.unreadOnly ? '안 읽은 알림이 없습니다' : '새 알림이 없습니다',
+                  ),
               ],
             )
           : ListView.builder(
@@ -183,19 +259,42 @@ class _NotificationListViewState<T> extends State<NotificationListView<T>> {
 
   bool get _hasFooter => widget.loadingMore || widget.loadMoreFailed;
 
-  /// 날짜 머리와 알림 행을 한 줄씩 만드는 빌더 목록.
+  /// 날짜 머리와 알림 행을 한 줄씩 만드는 빌더 목록. [NotificationListStyle.pills] 는 한 날의 행을 흰 카드
+  /// 하나로 묶는다.
   List<Widget Function()> _rows() {
     final w = widget;
+    final pills = w.style == NotificationListStyle.pills;
     final rows = <Widget Function()>[];
     String? lastHeader;
+    var group = <T>[];
+
+    void flushGroup() {
+      if (group.isEmpty) return;
+      final items = group;
+      rows.add(
+        () => _DayCard(
+          children: [for (final item in items) w.itemBuilder(context, item)],
+        ),
+      );
+      group = <T>[];
+    }
+
     for (final item in w.items) {
-      final header = dayHeader(w.sentAtOf(item), w.now);
+      final sentAt = w.sentAtOf(item);
+      final header = dayHeader(sentAt, w.now);
       if (header != lastHeader) {
-        rows.add(() => _DayHeader(label: header));
+        flushGroup();
+        final date = pills ? dayHeaderDate(sentAt, w.now) : null;
+        rows.add(() => _DayHeader(label: header, date: date));
         lastHeader = header;
       }
-      rows.add(() => w.itemBuilder(context, item));
+      if (pills) {
+        group.add(item);
+      } else {
+        rows.add(() => w.itemBuilder(context, item));
+      }
     }
+    flushGroup();
     return rows;
   }
 
@@ -231,9 +330,12 @@ class _NotificationListViewState<T> extends State<NotificationListView<T>> {
 }
 
 class _DayHeader extends StatelessWidget {
-  const new({required this.label});
+  const new({required this.label, this.date});
 
   final String label;
+
+  /// 머리 오른쪽의 날짜(`10월 3일 (토)`) — 없으면 머리만.
+  final String? date;
 
   @override
   Widget build(BuildContext context) {
@@ -246,10 +348,91 @@ class _DayHeader extends StatelessWidget {
           BaraedaSpacing.gutterMobile,
           BaraedaSpacing.space2,
         ),
-        child: Text(
-          label,
-          style: BaraedaTypography.label.copyWith(
-            color: context.colors.textSecondary,
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                style: BaraedaTypography.label.copyWith(
+                  color: context.colors.textSecondary,
+                ),
+              ),
+            ),
+            if (date != null)
+              Text(
+                date!,
+                style: BaraedaTypography.caption.copyWith(
+                  color: context.colors.textSecondary,
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// 한 날의 알림 행을 묶는 흰 카드 — 행 사이에 가는 선.
+class _DayCard extends StatelessWidget {
+  const new({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final radius = BorderRadius.circular(BaraedaRadius.card);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: BaraedaSpacing.gutterMobile,
+      ),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: colors.surfaceCard,
+          borderRadius: radius,
+          border: Border.all(color: colors.borderSubtle),
+        ),
+        child: ClipRRect(
+          borderRadius: radius,
+          child: Column(
+            children: [
+              for (var i = 0; i < children.length; i++) ...[
+                if (i > 0) Divider(height: 1, color: colors.borderSubtle),
+                children[i],
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 불러오는 중 뼈대 — 날짜 머리 자리 + 알림 행 모양 네 줄(시안 `notifications--loading`).
+class _SkeletonBody extends StatelessWidget {
+  const new();
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      liveRegion: true,
+      label: '알림을 불러오는 중',
+      child: const ExcludeSemantics(
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(
+            BaraedaSpacing.gutterMobile,
+            BaraedaSpacing.space4,
+            BaraedaSpacing.gutterMobile,
+            0,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              BaraedaSkeleton(width: 40),
+              SizedBox(height: BaraedaSpacing.space3),
+              BaraedaSkeletonList(count: 4),
+            ],
           ),
         ),
       ),

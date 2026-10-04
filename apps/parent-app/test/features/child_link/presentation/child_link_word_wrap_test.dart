@@ -29,7 +29,7 @@ void main() {
       ),
     );
 
-    final paragraph = paragraphContaining(tester, '일정 시간이 지나면 만료됩니다');
+    final paragraph = paragraphContaining(tester, '부모님 앱에서 내 버스를 볼 수 있어요');
     expect(
       layoutLike(paragraph).computeLineMetrics().length,
       greaterThan(1),

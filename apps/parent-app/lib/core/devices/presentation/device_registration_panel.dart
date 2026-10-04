@@ -29,7 +29,13 @@ import 'package:parent_app/core/ui/failure_message.dart';
 /// 로그인 뒤 자동 등록은 `AuthApi` 가 하므로, 사용자가 여기서 끈 기기는
 /// `saveOptedOut` 으로 기억해 다음 로그인·앱 실행이 다시 켜지 않게 한다.
 class DeviceRegistrationPanel extends ConsumerStatefulWidget {
-  const new({super.key});
+  const new({
+    super.key,
+    this.sublabel = '꺼두면 이 기기로는 푸시 알림이 오지 않습니다',
+  });
+
+  /// 스위치 아래 설명 — 화면마다 이 알림이 무엇을 알려 주는지 다르게 적는다.
+  final String sublabel;
 
   @override
   ConsumerState<DeviceRegistrationPanel> createState() =>
@@ -135,7 +141,7 @@ class _DeviceRegistrationPanelState
         BaraedaSwitch(
           checked: registered,
           label: '이 기기에서 알림 받기',
-          sublabel: '꺼두면 이 기기로는 푸시 알림이 오지 않습니다',
+          sublabel: widget.sublabel,
           disabled: _submitting,
           onChanged: _toggle,
         ),

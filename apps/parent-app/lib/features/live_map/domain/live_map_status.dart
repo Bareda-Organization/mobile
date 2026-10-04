@@ -1,6 +1,7 @@
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:parent_app/core/runs/domain/bus_position.dart';
+import 'package:parent_app/core/runs/domain/student_run.dart';
 
 /// 화면이 실제로 그리는 연결 판정 — `WsConnectionState` 를 화면 관점으로
 /// 좁힌 것. "데이터 없음"과 "연결 끊김"을 구별하는 것이 이 화면의 완료
@@ -55,6 +56,7 @@ class LiveMapState {
     this.runEnded,
     this.restPosition,
     this.isAbsent = false,
+    this.run,
   });
 
   final LiveMapConnection connection;
@@ -75,6 +77,11 @@ class LiveMapState {
   /// `restPosition.runId` 를 맞춰 본다) — §3.11 응답 자체에는 결석 여부
   /// 필드가 없어 별도로 들고 있어야 한다.
   final bool isAbsent;
+
+  /// 스냅샷의 `run_id` 와 맞는 오늘 회차(§3.5) — 시트 제목(방향 · 호차)과
+  /// 운행 전 안내(출발 시각 · 확정 여부)의 원천.
+  /// 스냅샷이 없거나(`404 RUN_NOT_FOUND`) 회차 목록을 못 받으면 `null` — 그때 시트는 스냅샷이 준 호차만 쓴다.
+  final StudentRun? run;
 
   /// "표시할 이벤트가 아직 하나도 없다" — 4종 이벤트(`position`·
   /// `stop_arrived`·`run_started`·`run_ended`) 전부가 비어야 참이다.
@@ -97,6 +104,7 @@ class LiveMapState {
     WsRunEndedPayload? runEnded,
     AsyncValue<BusPosition>? restPosition,
     bool? isAbsent,
+    StudentRun? run,
   }) {
     return LiveMapState(
       connection: connection ?? this.connection,
@@ -106,6 +114,7 @@ class LiveMapState {
       runEnded: runEnded ?? this.runEnded,
       restPosition: restPosition ?? this.restPosition,
       isAbsent: isAbsent ?? this.isAbsent,
+      run: run ?? this.run,
     );
   }
 }

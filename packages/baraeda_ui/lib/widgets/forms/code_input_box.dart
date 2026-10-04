@@ -16,11 +16,15 @@ class BaraedaCodeInputBox extends StatelessWidget {
     required this.active,
     required this.hasError,
     super.key,
+    this.width = 44,
   });
 
   final String char;
   final bool active;
   final bool hasError;
+
+  /// 칸 너비 — 기본 44. 줄을 채우려면 `double.infinity` 를 주고 부모에서 `Expanded` 로 감싼다.
+  final double width;
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +39,7 @@ class BaraedaCodeInputBox extends StatelessWidget {
     }
 
     return Container(
-      width: 44,
+      width: width,
       height: 52,
       alignment: Alignment.center,
       decoration: BoxDecoration(

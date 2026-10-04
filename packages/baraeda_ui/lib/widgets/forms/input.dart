@@ -76,6 +76,7 @@ class BaraedaInput extends StatelessWidget {
     super.key,
     this.label,
     this.hint,
+    this.placeholder,
     this.error,
     this.icon,
     this.suffix,
@@ -90,6 +91,10 @@ class BaraedaInput extends StatelessWidget {
 
   final String? label;
   final String? hint;
+
+  /// 칸이 비어 있을 때만 칸 안에 흐리게 보이는 입력 예시(시안 `실명을 입력해 주세요`). 값이 아니라 안내라 [hint] 와 따로
+  /// 둔다.
+  final String? placeholder;
   final String? error;
 
   /// 필드 왼쪽 Lucide 아이콘.
@@ -148,6 +153,7 @@ class BaraedaInput extends StatelessWidget {
                 horizontal: 14,
                 vertical: 13,
               ),
+              hintText: placeholder,
               hintStyle: BaraedaTypography.body.copyWith(
                 color: colors.textTertiary,
               ),

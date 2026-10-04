@@ -51,7 +51,7 @@ Future<void> _pumpCode(
       child: const MaterialApp(home: ChildLinkScreen()),
     ),
   );
-  await tester.tap(find.text('코드 생성하기'));
+  await tester.tap(find.text('코드 만들기'));
   await tester.pumpAndSettle();
 }
 
@@ -62,27 +62,46 @@ void main() {
   testWidgets('만료까지 남은 시간을 분 단위로 보이고 1분마다 줄어든다', (tester) async {
     final clock = _MutableClock(now);
     await _pumpCode(tester, expiresAt: expiresAt, clock: clock);
-    expect(find.text('남은 시간 10분'), findsOneWidget);
+    expect(find.textContaining('남은 시간 10분'), findsOneWidget);
 
     clock.value = now.add(const Duration(minutes: 1));
     await tester.pump(const Duration(minutes: 1));
-    expect(find.text('남은 시간 9분'), findsOneWidget);
+    expect(find.textContaining('남은 시간 9분'), findsOneWidget);
   });
 
-  testWidgets('만료되면 코드를 못 쓴다고 알리고 복사 버튼을 끈다', (tester) async {
+  testWidgets('만료되면 코드를 못 쓴다고 알리고 복사 단추를 끄고 새 코드를 주 행동으로 둔다', (tester) async {
     final clock = _MutableClock(now);
     await _pumpCode(tester, expiresAt: expiresAt, clock: clock);
+    // 살아 있는 동안은 안내 문구 복사가 주 행동이고 만료 띠는 없다.
+    expect(find.text('코드가 만료됐어요'), findsNothing);
+    expect(
+      tester
+          .widget<BaraedaCodeDisplay>(find.byType(BaraedaCodeDisplay))
+          .expired,
+      isFalse,
+    );
 
     clock.value = expiresAt;
     await tester.pump(const Duration(minutes: 1));
 
-    expect(find.text('코드가 만료됐습니다 · 새 코드를 만들어 주세요'), findsOneWidget);
+    expect(find.text('코드가 만료됐어요'), findsOneWidget);
+    expect(find.textContaining('지금은 쓸 수 없어요'), findsOneWidget);
     expect(
       tester
-          .widget<BaraedaButton>(find.widgetWithText(BaraedaButton, '코드 복사'))
-          .onPressed,
-      isNull,
+          .widget<BaraedaCodeDisplay>(find.byType(BaraedaCodeDisplay))
+          .expired,
+      isTrue,
     );
+    for (final label in ['코드만 복사', '안내 문구 복사']) {
+      expect(
+        tester
+            .widget<BaraedaButton>(find.widgetWithText(BaraedaButton, label))
+            .onPressed,
+        isNull,
+        reason: label,
+      );
+    }
+    expect(find.text('새 코드 만들기'), findsOneWidget);
   });
 
   group('복사', () {
@@ -104,14 +123,14 @@ void main() {
           .setMockMethodCallHandler(SystemChannels.platform, null);
     });
 
-    testWidgets('[코드 복사] 는 6자리 코드만 복사한다', (tester) async {
+    testWidgets('[코드만 복사] 는 6자리 코드만 복사한다', (tester) async {
       await _pumpCode(tester, expiresAt: expiresAt, clock: _MutableClock(now));
 
-      await tester.tap(find.text('코드 복사'));
+      await tester.tap(find.text('코드만 복사'));
       await tester.pump();
 
       expect(copied, '482913');
-      expect(find.text('코드를 복사했습니다'), findsOneWidget);
+      expect(find.text('코드를 복사했어요'), findsOneWidget);
     });
 
     testWidgets('[안내 문구 복사] 는 어디에 입력하는지와 남은 시간을 함께 복사한다', (tester) async {
@@ -123,7 +142,7 @@ void main() {
       expect(copied, contains('482913'));
       expect(copied, contains('자녀 연결'));
       expect(copied, contains('7:10'));
-      expect(find.text('안내 문구를 복사했습니다'), findsOneWidget);
+      expect(find.text('안내 문구를 복사했어요'), findsOneWidget);
     });
   });
 }

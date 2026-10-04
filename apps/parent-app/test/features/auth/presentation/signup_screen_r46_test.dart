@@ -102,11 +102,10 @@ Future<void> _fillAllButAcademy(WidgetTester tester) async {
 
 Future<void> _pickAcademy(WidgetTester tester) async {
   await tester.enterText(find.byType(TextField).at(4), '바래다');
-  await tester.tap(find.text('검색하기'));
+  await tester.tap(find.text('검색'));
   await tester.pumpAndSettle();
-  await tester.tap(find.byType(DropdownButtonFormField<String>));
-  await tester.pumpAndSettle();
-  await tester.tap(find.text('바래다학원 · 서울 · A-001').last);
+  // 결과는 라디오 목록이다 — 학원명 줄을 누르면 고른다.
+  await tester.tap(find.text('바래다학원'));
   await tester.pumpAndSettle();
 }
 

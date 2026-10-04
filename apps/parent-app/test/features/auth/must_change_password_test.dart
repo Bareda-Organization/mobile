@@ -151,9 +151,10 @@ void main() {
 
     expect(find.byType(PasswordChangeScreen), findsOneWidget);
     expect(find.byTooltip('뒤로'), findsNothing);
-    expect(find.textContaining('관리자가 초기화한 임시 비밀번호'), findsOneWidget);
+    // 안내는 "임시 비밀번호로 로그인했어요" — 관리자가 초기화한 비밀번호라 새 비밀번호로 바꿔야 한다는 뜻이다.
+    expect(find.text('임시 비밀번호로 로그인했어요'), findsOneWidget);
 
-    await tester.tap(find.widgetWithText(TextButton, '로그아웃'));
+    await tester.tap(find.widgetWithText(BaraedaButton, '로그아웃'));
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(BaraedaButton, '로그아웃하기'));
     await tester.pumpAndSettle();
@@ -172,6 +173,8 @@ void main() {
     final fields = find.byType(TextField);
     await tester.enterText(fields.at(0), 'temp-pass');
     await tester.enterText(fields.at(1), 'new-password-1');
+    // 두 칸을 다 채우면 다음 프레임에 단추가 켜진다 — 그 프레임을 그린 뒤 누른다.
+    await tester.pump();
     await tester.tap(find.widgetWithText(BaraedaButton, '변경하기'));
     await tester.pumpAndSettle();
 

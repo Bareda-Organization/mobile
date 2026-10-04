@@ -29,6 +29,8 @@ const Map<String, IconData> _kBaraedaIconGlyphs = {
   'chevron-right': Icons.chevron_right,
   'chevron-left': Icons.chevron_left,
   'chevron-down': Icons.expand_more,
+  // 지도 아래 시트의 "노선 자세히 보기" 끝 표시(시안 `live-map`).
+  'chevron-up': Icons.expand_less,
   'search': Icons.search,
   'settings': Icons.settings,
   'plus': Icons.add,
@@ -74,6 +76,8 @@ const Map<String, IconData> _kBaraedaIconGlyphs = {
   'shield': Icons.shield_outlined,
   'copy': Icons.content_copy,
   'map': Icons.map_outlined,
+  // 계정 찾기의 "문자로 찾기" 줄(시안 `recovery`).
+  'message-square': Icons.chat_bubble_outline,
 };
 
 /// Lucide 아이콘 래퍼 — 바래다의 모든 아이콘은 이걸 통해 쓴다.

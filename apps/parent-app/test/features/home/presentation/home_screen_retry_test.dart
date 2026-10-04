@@ -1,6 +1,8 @@
+import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:parent_app/core/auth/academy_contact.dart';
 import 'package:parent_app/core/auth/auth_providers.dart';
 import 'package:parent_app/core/auth/role_policy.dart';
 import 'package:parent_app/core/auth/user_role.dart';
@@ -33,6 +35,7 @@ Future<_Calls> _pump(
   bool failStudents = false,
   bool failStudentId = false,
   bool failRuns = false,
+  String? savedContact,
 }) async {
   final calls = _Calls();
   await tester.pumpWidget(
@@ -41,6 +44,7 @@ Future<_Calls> _pump(
       retry: (_, _) => null,
       overrides: [
           noBusPositionOverride,
+        savedAcademyContactProvider.overrideWith((ref) async => savedContact),
         roleCapabilitiesProvider.overrideWithValue(RoleCapabilities.of(role)),
         myStudentsProvider.overrideWith((ref) async {
           calls.students++;
@@ -119,5 +123,50 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(calls.runs, 2);
+  });
+
+  // R48 시안 `home-parent--error` — 못 불러왔을 때는 큰 그림 + 안내 + 채워진 [다시 시도],
+  // 그 아래에 급할 때 거는 전화.
+  group('R48 홈 오류 화면', () {
+    BaraedaButton retryButton(WidgetTester tester) => tester
+        .widget<BaraedaButton>(find.widgetWithText(BaraedaButton, '다시 시도'));
+
+    testWidgets('[다시 시도] 는 화면의 주 단추(채움)이고 다시 불러오기 아이콘이 있다', (tester) async {
+      await _pump(tester, role: UserRole.parent, failStudents: true);
+
+      final button = retryButton(tester);
+      expect(button.variant, BaraedaButtonVariant.primary);
+      expect(button.icon, 'refresh');
+      expect(
+        find.textContaining('연결되면 자동으로 다시 불러와요'),
+        findsOneWidget,
+        reason: '왜 기다리면 되는지를 안내가 말한다',
+      );
+    });
+
+    testWidgets('기기에 남긴 학원 문의처에 번호가 있으면 급할 때 거는 전화 줄이 있다', (tester) async {
+      await _pump(
+        tester,
+        role: UserRole.parent,
+        failStudents: true,
+        savedContact: '학원 데스크 032-000-1100',
+      );
+
+      expect(find.text('버스가 급하게 궁금하면'), findsOneWidget);
+      expect(find.text('학원 032-000-1100'), findsOneWidget);
+      expect(find.text('전화'), findsOneWidget);
+    });
+
+    testWidgets('문의처가 없거나 번호 모양이 아니면 전화 줄이 없다', (tester) async {
+      await _pump(
+        tester,
+        role: UserRole.parent,
+        failStudents: true,
+        savedContact: '학원에 직접 문의',
+      );
+
+      expect(find.text('버스가 급하게 궁금하면'), findsNothing);
+      expect(find.text('전화'), findsNothing);
+    });
   });
 }

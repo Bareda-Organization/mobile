@@ -120,6 +120,7 @@ class LiveMapNotifier extends StateNotifier<LiveMapState> {
     if (!mounted) return;
 
     var isAbsent = false;
+    StudentRun? run;
     final position = result.value;
     if (position != null) {
       final runsResult = await AsyncValue.guard(
@@ -127,16 +128,13 @@ class LiveMapNotifier extends StateNotifier<LiveMapState> {
       );
       final runs = runsResult.value;
       if (runs != null) {
-        isAbsent = runs.any(
-          (run) =>
-              run.runId == position.runId &&
-              run.riderStatus == RiderStatus.absent,
-        );
+        run = runs.where((r) => r.runId == position.runId).firstOrNull;
+        isAbsent = run?.riderStatus == RiderStatus.absent;
       }
     }
 
     if (!mounted) return;
-    state = state.copyWith(restPosition: result, isAbsent: isAbsent);
+    state = state.copyWith(restPosition: result, isAbsent: isAbsent, run: run);
 
     final current = state.position;
     final receivedAt = position?.receivedAt;

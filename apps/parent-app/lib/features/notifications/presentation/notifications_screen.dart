@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:parent_app/app/di.dart';
+import 'package:parent_app/core/auth/auth_providers.dart';
+import 'package:parent_app/core/students/presentation/student_providers.dart';
 import 'package:parent_app/core/ui/failure_message.dart';
 import 'package:parent_app/features/notifications/presentation/notification_kind.dart';
 import 'package:parent_app/features/notifications/presentation/notification_providers.dart';
@@ -26,9 +28,11 @@ class NotificationsScreen extends ConsumerWidget {
     final feed = feedAsync.value;
 
     return Scaffold(
-      appBar: const AppHeader(title: '알림'),
+      appBar: AppHeader(title: '알림', subtitle: _subtitle(ref)),
       body: SafeArea(
         child: NotificationListView<NotificationItem>(
+          style: NotificationListStyle.pills,
+          unreadCount: feed?.unreadCount ?? 0,
           items: feed?.items ?? const [],
           sentAtOf: (item) => item.sentAt,
           now: ref.watch(clockProvider).now(),
@@ -53,6 +57,17 @@ class NotificationsScreen extends ConsumerWidget {
   }
 }
 
+/// 머리 아래 한 줄 — 서버가 보관하는 14일(§3.12)과, 학부모는 연결된 자녀 이름(알림이 누구 것인지 한눈에).
+/// 학생은 본인뿐이라 이름을 덧붙이지 않는다. 자녀 목록은 못 받아도 이 줄에서 이름만 빠질 뿐이다.
+String _subtitle(WidgetRef ref) {
+  const base = '최근 14일';
+  final isParent =
+      ref.watch(roleCapabilitiesProvider)?.canToggleAttendance ?? false;
+  if (!isParent) return base;
+  final names = ref.watch(myStudentsProvider).value?.map((s) => s.name) ?? [];
+  return [base, ...names].join(' · ');
+}
+
 class _ItemRow extends ConsumerWidget {
   const new({required this.item});
 
@@ -61,14 +76,19 @@ class _ItemRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final kind = kindOf(item.type);
+    // 자녀 이름(ATT-03)은 제목이 아니라 종류 · 시각 줄 끝에 붙는다 — 학생은 본인뿐이라 붙이지 않는다.
+    final isParent =
+        ref.watch(roleCapabilitiesProvider)?.canToggleAttendance ?? false;
     return NotificationTile(
+      style: NotificationTileStyle.card,
       icon: kind.icon,
       status: kind.status,
       kindLabel: kind.label,
-      title: _titleOf(item),
+      title: item.title,
       body: item.body.isEmpty ? null : item.body,
       time: clockLabel(item.sentAt),
       timeSpoken: spokenClock(item.sentAt),
+      who: isParent ? item.studentName : null,
       unread: item.isUnread,
       important: kind.important,
       onTap: item.isUnread || kind.route != null
@@ -78,16 +98,6 @@ class _ItemRow extends ConsumerWidget {
   }
 }
 
-/// 자녀 이름(ATT-03)이 제목에도 본문에도 없으면 제목 뒤에 붙인다 — 자녀가 여럿일 때 누구 알림인지 알 수 있어야 한다.
-String _titleOf(NotificationItem item) {
-  final name = item.studentName;
-  if (name == null || item.title.contains(name) || item.body.contains(name)) {
-    return item.title;
-  }
-  return '${item.title} · $name';
-}
-
-/// 안 읽은 알림이면 읽음 처리하고, 종류에 맞는 화면이 있으면 그리로 간다(R32 P10).
 Future<void> _open(
   BuildContext context,
   WidgetRef ref,

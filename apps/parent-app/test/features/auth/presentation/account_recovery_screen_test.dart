@@ -134,12 +134,17 @@ class _StallingAuthRepository implements AuthRepository {
 class _OkAuthRepository extends _FailingAuthRepository {
   new() : super('');
 
+  /// `(type, phone, verificationCode)` — 인증번호 요청과 확인이 각각 한 번씩 기록된다.
+  final calls = <(String, String, String?)>[];
+
   @override
   Future<void> recover({
     required String type,
     required String phone,
     String? verificationCode,
-  }) async {}
+  }) async {
+    calls.add((type, phone, verificationCode));
+  }
 }
 
 const _expectedSharedMessage = '휴대폰 번호 또는 인증번호를 확인할 수 없습니다';
@@ -160,9 +165,18 @@ Future<void> _pumpAndRequestCode(
   );
   await tester.pumpAndSettle();
 
-  await tester.enterText(find.byType(TextField).first, '01000000000');
-  await tester.tap(find.text('인증번호 받기'));
+  await tester.tap(find.text('문자로 찾기'));
   await tester.pumpAndSettle();
+  await tester.enterText(find.byType(TextField).first, '01000000000');
+  await _tapVisible(tester, find.text('인증번호 받기'));
+  await tester.pumpAndSettle();
+}
+
+/// 화면 밖에 밀린 단추도 스크롤해서 누른다 — 실제 폰의 손가락과 같다.
+Future<void> _tapVisible(WidgetTester tester, Finder finder) async {
+  await tester.ensureVisible(finder);
+  await tester.pumpAndSettle();
+  await tester.tap(finder);
 }
 
 void main() {
@@ -177,8 +191,10 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    await tester.tap(find.text('문자로 찾기'));
+    await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField).first, '01000000000');
-    await tester.tap(find.text('인증번호 받기'));
+    await _tapVisible(tester, find.text('인증번호 받기'));
     await tester.pumpAndSettle();
 
     expect(find.textContaining('가입된 번호라면'), findsOneWidget);
@@ -195,13 +211,102 @@ void main() {
     expect(find.text('서버 원본 메시지(VERIFICATION_CODE_INVALID)'), findsNothing);
   });
 
-  // Ruling 329 — SMS 연동 전까지 서버가 503 RECOVERY_UNAVAILABLE 을 낸다. 원문 메시지나 일반 오류가
-  // 아니라 "학원에 요청" 이라는 다음 행동을 알려야 복구가 막힌 채 끝나지 않는다.
-  testWidgets('RECOVERY_UNAVAILABLE 은 학원에 초기화를 요청하라고 안내한다', (tester) async {
+  // Ruling 329 · 829 — SMS 연동 전까지 서버가 503 RECOVERY_UNAVAILABLE 을
+  // 낸다. 원문 메시지나 일반 오류가 아니라 "준비 중" 이라는 상태와 "학원에
+  // 요청" 이라는 다음 행동을 알려야 복구가 막힌 채 끝나지 않는다.
+  testWidgets('RECOVERY_UNAVAILABLE(503) 이면 문자로 찾기가 "준비 중" 이 된다', (
+    tester,
+  ) async {
     await _pumpAndRequestCode(tester, 'RECOVERY_UNAVAILABLE');
 
-    expect(find.textContaining('학원에 비밀번호 초기화를 요청'), findsWidgets);
+    expect(find.text('준비 중'), findsOneWidget);
+    expect(find.text('학원에 요청하는 방법'), findsOneWidget);
+    expect(find.text('다니는 학원에 연락해요'), findsOneWidget);
+    // 열려 있던 입력 폼은 닫힌다 — 해도 같은 결과인 일을 다시 시키지 않는다.
+    expect(find.byType(TextField), findsNothing);
+    expect(find.text('인증번호 받기'), findsNothing);
     expect(find.text('서버 원본 메시지(RECOVERY_UNAVAILABLE)'), findsNothing);
+
+    // 꺼진 줄이다 — 눌러도 폼이 다시 열리지 않는다.
+    await tester.tap(find.text('문자로 찾기'));
+    await tester.pumpAndSettle();
+    expect(find.byType(TextField), findsNothing);
+  });
+
+  testWidgets('요청 전에는 학원에 요청하는 방법이 먼저 보이고 입력 폼과 "준비 중" 표시는 없다', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [currentUserRoleProvider.overrideWith((ref) => null)],
+        child: const MaterialApp(home: AccountRecoveryScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('학원에 요청하는 방법'), findsOneWidget);
+    expect(find.text('다니는 학원에 연락해요'), findsOneWidget);
+    expect(find.text('임시 비밀번호를 받아요'), findsOneWidget);
+    expect(find.text('로그인하고 새 비밀번호로 바꿔요'), findsOneWidget);
+    expect(find.text('문자로 찾기'), findsOneWidget);
+    expect(find.text('준비 중'), findsNothing, reason: '서버가 503 을 주기 전에는 모른다');
+    expect(find.byType(TextField), findsNothing);
+    expect(find.text('로그인 화면으로'), findsOneWidget);
+  });
+
+  group('인증번호 칸 — 요청이 성공한 뒤', () {
+    Future<_OkAuthRepository> pumpAtCodeStep(WidgetTester tester) async {
+      final repository = _OkAuthRepository();
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [authRepositoryProvider.overrideWithValue(repository)],
+          child: const MaterialApp(home: AccountRecoveryScreen()),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('문자로 찾기'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField).first, '01000000000');
+      await _tapVisible(tester, find.text('인증번호 받기'));
+      await tester.pumpAndSettle();
+      return repository;
+    }
+
+    BaraedaButton confirmButton(WidgetTester tester) => tester
+        .widget<BaraedaButton>(find.widgetWithText(BaraedaButton, '확인하기'));
+
+    testWidgets('6칸이 뜨고 6자리를 다 채우기 전에는 [확인하기] 가 꺼져 있다 — 이유가 단추 아래에 있다', (
+      tester,
+    ) async {
+      await pumpAtCodeStep(tester);
+
+      final codeInput = tester.widget<BaraedaCodeInput>(
+        find.byType(BaraedaCodeInput),
+      );
+      expect(codeInput.length, 6);
+      expect(codeInput.numeric, isTrue, reason: '문자로 오는 인증번호는 숫자다');
+      expect(confirmButton(tester).onPressed, isNull);
+      expect(find.text('인증번호 6자리를 모두 입력해 주세요'), findsOneWidget);
+      // 학원에 요청하는 방법 · 문자로 찾기 줄은 이 단계에서 보이지 않는다(시안 `recovery--code`).
+      expect(find.text('학원에 요청하는 방법'), findsNothing);
+
+      // 5자리까지는 여전히 꺼져 있다.
+      await tester.enterText(find.byType(TextField).last, '51724');
+      await tester.pump();
+      expect(confirmButton(tester).onPressed, isNull);
+    });
+
+    testWidgets('6자리를 채우면 켜지고, 누르면 그 번호로 확인한다', (tester) async {
+      final repository = await pumpAtCodeStep(tester);
+
+      await tester.enterText(find.byType(TextField).last, '517249');
+      await tester.pump();
+      expect(confirmButton(tester).onPressed, isNotNull);
+      expect(find.text('인증번호 6자리를 모두 입력해 주세요'), findsNothing);
+
+      await tester.tap(find.text('확인하기'));
+      await tester.pumpAndSettle();
+
+      expect(repository.calls.last, ('login_id', '01000000000', '517249'));
+    });
   });
 
   testWidgets('요청 전에도 관리자 경유 안내가 보인다', (tester) async {
@@ -213,7 +318,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('학원에 비밀번호 초기화를 요청'), findsOneWidget);
+    expect(find.text('지금은 학원을 통해 찾아요'), findsOneWidget);
   });
 
   // 이 화면은 비로그인 진입점이다(클래스 문서 참고) — `router.dart` 의
@@ -232,6 +337,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('아이디·비밀번호 찾기'), findsOneWidget);
+    await tester.tap(find.text('문자로 찾기'));
+    await tester.pumpAndSettle();
     // 라벨은 필수 표시(`*`)가 별도 TextSpan 으로 붙는 RichText 라
     // (`input.dart` 의 `_InputLabel`) 렌더 문자열이 아니라 위젯 속성으로
     // 확인한다.
@@ -259,8 +366,10 @@ void main() {
 
     expect(find.byType(CircularProgressIndicator), findsNothing);
 
+    await tester.tap(find.text('문자로 찾기'));
+    await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField).first, '01000000000');
-    await tester.tap(find.text('인증번호 받기'));
+    await _tapVisible(tester, find.text('인증번호 받기'));
     // API 호출이 나갔지만 아직 응답이 오지 않은 시점까지만 프레임을 민다.
     await tester.pump();
     await repository.recoverCalled.future;

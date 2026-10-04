@@ -7,6 +7,10 @@ const int passwordMaxBytes = 72;
 const int loginIdMaxLength = 50;
 
 /// 비밀번호가 한도를 넘으면 입력란 옆에 보일 이유, 아니면 `null`(F05-11).
+/// 입력칸 아래 상시 안내 — 한도를 넘으면 [passwordLengthError] 가 이 자리를 대신한다.
+const String passwordLimitHint =
+    '영문 $passwordMaxBytes자 · 한글 ${passwordMaxBytes ~/ 3}자까지';
+
 String? passwordLengthError(String password) =>
     utf8.encode(password).length > passwordMaxBytes
     ? '비밀번호는 72바이트(한글 24자) 이하여야 합니다'

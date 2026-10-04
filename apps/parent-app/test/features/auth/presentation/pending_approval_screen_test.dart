@@ -8,6 +8,7 @@ import 'package:parent_app/core/auth/academy_contact.dart';
 import 'package:parent_app/core/auth/account_session.dart';
 import 'package:parent_app/core/auth/domain/auth_repository.dart';
 import 'package:parent_app/core/devices/presentation/device_registration_panel.dart';
+import 'package:parent_app/core/ui/sticky_action_bar.dart';
 import 'package:parent_app/features/auth/presentation/pending_approval_screen.dart';
 
 /// Ruling 267(P2 게이트 조건 ②) — `pending` 계정 화면에 심은 단말 등록
@@ -33,8 +34,15 @@ class _StubAuthRepository implements AuthRepository {
   /// (`academy_contact: null` — API_SPEC §2.3, Ruling 781).
   bool academyContactMissing = false;
 
+  /// 첫 조회가 돌려줄 상태 — 거절 화면 시험이 쓴다. 두 번째 조회부터는 [statusFromSecondCall] 이다
+  /// (재신청하면 서버도 다시 대기로 돌려놓는다).
+  AccountStatus firstStatus = AccountStatus.pending;
+  String? rejectReason;
+  List<AcademySummary> academies = const [];
+  String? reappliedWith;
+
   @override
-  Future<List<AcademySummary>> searchAcademies(String query) async => [];
+  Future<List<AcademySummary>> searchAcademies(String query) async => academies;
 
   @override
   Future<SignupResponse> signup(SignupRequest request) =>
@@ -58,7 +66,8 @@ class _StubAuthRepository implements AuthRepository {
     return SignupStatusResponse(
       status: signupStatusCalls > 1
           ? statusFromSecondCall ?? AccountStatus.pending
-          : AccountStatus.pending,
+          : firstStatus,
+      rejectReason: signupStatusCalls > 1 ? null : rejectReason,
       academyName: '바래다학원',
       academyRegion: '서울',
       academyCode: 'A-001',
@@ -68,8 +77,13 @@ class _StubAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<ReapplyResponse> reapply({required String academyId}) =>
-      throw UnimplementedError();
+  Future<ReapplyResponse> reapply({required String academyId}) async {
+    reappliedWith = academyId;
+    return ReapplyResponse(
+      status: AccountStatus.pending,
+      requestedAt: DateTime(2026, 9),
+    );
+  }
 
   @override
   Future<LoginResponse> login({
@@ -164,6 +178,13 @@ Future<void> _pumpPendingApproval(
   await tester.pumpAndSettle();
 }
 
+/// 화면 밖에 밀린 단추도 스크롤해서 누른다 — 실제 폰의 손가락과 같다.
+Future<void> _scrollAndTap(WidgetTester tester, Finder finder) async {
+  await tester.ensureVisible(finder);
+  await tester.pumpAndSettle();
+  await tester.tap(finder);
+}
+
 void main() {
   // BR-301(Ruling 781) — 학원이 연락처를 등록하지 않아 academy_contact 가 null 이어도 화면이 뜬다.
   testWidgets('학원 문의처가 null 이면 대체 문구를 보여준다', (tester) async {
@@ -190,7 +211,7 @@ void main() {
       contactStorage: storage,
     );
 
-    expect(find.text('학원에 전화 · 02-000-0000'), findsOneWidget);
+    expect(find.text('전화'), findsOneWidget);
     expect(storage.saved, '02-000-0000');
   });
 
@@ -202,7 +223,7 @@ void main() {
       contactStorage: storage,
     );
 
-    expect(find.textContaining('학원에 전화'), findsNothing);
+    expect(find.text('전화'), findsNothing);
     expect(storage.saved, isNull);
   });
 
@@ -211,13 +232,13 @@ void main() {
     final authRepository = _StubAuthRepository()
       ..statusFromSecondCall = AccountStatus.rejected;
     await _pumpPendingApproval(tester, authRepository);
-    expect(find.text('가입 승인을 기다리고 있습니다'), findsOneWidget);
+    expect(find.text('학원이 확인하고 있어요'), findsOneWidget);
 
-    await tester.tap(find.text('상태 다시 확인'));
+    await _scrollAndTap(tester, find.text('상태 다시 확인'));
     await tester.pumpAndSettle();
 
     expect(authRepository.signupStatusCalls, 2);
-    expect(find.text('가입이 거절되었습니다'), findsOneWidget);
+    expect(find.text('가입이 거절되었어요'), findsOneWidget);
   });
 
   // 승인이 났는데 대기 화면에 남아 있으면 안 된다 — 계정 상태를 갱신해 라우터가 홈으로 보내게 한다.
@@ -230,7 +251,7 @@ void main() {
     );
     expect(container.read(currentAccountStatusProvider), isNull);
 
-    await tester.tap(find.text('상태 다시 확인'));
+    await _scrollAndTap(tester, find.text('상태 다시 확인'));
     await tester.pumpAndSettle();
 
     expect(container.read(currentAccountStatusProvider), AccountStatus.active);
@@ -296,7 +317,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(authRepository.signupStatusCalls, 2);
-      expect(find.text('가입 승인을 기다리고 있습니다'), findsOneWidget);
+      expect(find.text('학원이 확인하고 있어요'), findsOneWidget);
       expect(find.text('상태를 불러오지 못했습니다'), findsNothing);
     });
   });
@@ -315,7 +336,7 @@ void main() {
 
     expect(authRepository.registeredWith, isNull);
 
-    await tester.tap(find.byType(BaraedaSwitch));
+    await _scrollAndTap(tester, find.byType(BaraedaSwitch));
     await tester.pumpAndSettle();
 
     expect(authRepository.registeredWith, isNotNull);
@@ -324,13 +345,13 @@ void main() {
 
   // F2 — `settings_screen.dart` 의 확인 대화를 그대로 재사용하는지 검사한다.
   // 지금 코드는 확인 대화 없이 바로 logout() 을 부른다 — 버튼 라벨
-  // '로그아웃하기' 가 대화의 확정 버튼 라벨과 같아 `find.widgetWithText`
-  // 로 `BaraedaDialog` 안쪽만 짚어 원래 화면 버튼과 가른다.
+  // 대화의 확정 버튼 라벨('로그아웃하기')은 `find.descendant` 로
+  // `BaraedaDialog` 안쪽만 짚는다.
   group('F2 — 로그아웃 확인 대화(P 의 확인 대화 재사용)', () {
     // 로그아웃 버튼은 스크롤 목록 맨 아래라 기본 시험 화면(800x600) 밖에
     // 있다 — `ensureVisible` 로 먼저 스크롤한다.
     Future<void> tapLogoutButton(WidgetTester tester) async {
-      final button = find.text('로그아웃하기');
+      final button = find.text('로그아웃');
       await tester.ensureVisible(button);
       await tester.pumpAndSettle();
       await tester.tap(button);
@@ -377,6 +398,135 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(authRepository.logoutCallCount, 1);
+    });
+  });
+
+  // R48 시안 `pending*` — 상태를 칩 + 큰 제목 + 3단계 진행 막대로 먼저 보여 준다.
+  group('R48 승인 대기 · 거절 구성', () {
+    testWidgets('승인 대기 — 대기 칩 · 확인 중 제목 · 단계 셋 · 30초 자동 확인 안내', (tester) async {
+      await _pumpPendingApproval(tester, _StubAuthRepository());
+
+      expect(find.text('승인 대기'), findsOneWidget);
+      expect(find.textContaining(RegExp(r'\d{2}:\d{2} 확인')), findsOneWidget);
+      expect(find.text('학원이 확인하고 있어요'), findsOneWidget);
+      expect(find.textContaining('30초마다 저절로 확인해요'), findsOneWidget);
+      expect(find.text('신청 접수'), findsOneWidget);
+      expect(find.text('학원 확인'), findsOneWidget);
+      expect(find.text('진행 중'), findsOneWidget);
+      expect(find.text('사용 시작'), findsOneWidget);
+      // 상태는 칩 하나로 말한다 — 옛 "현재 상태" 줄은 없다.
+      expect(find.text('현재 상태'), findsNothing);
+      expect(find.text('가입이 거절되었어요'), findsNothing);
+      expect(find.text('학원 다시 골라 재신청'), findsNothing);
+    });
+
+    testWidgets('거절 — 사유 띠 · 마지막 단계가 "거절" · 주 행동은 아래 고정 단추', (tester) async {
+      final repository = _StubAuthRepository()
+        ..firstStatus = AccountStatus.rejected
+        ..rejectReason = '재원생 명단에서 자녀 이름을 찾을 수 없습니다.';
+      await _pumpPendingApproval(tester, repository);
+
+      expect(find.text('거절됨'), findsOneWidget);
+      expect(find.text('가입이 거절되었어요'), findsOneWidget);
+      expect(find.text('학원이 남긴 사유'), findsOneWidget);
+      expect(find.text('재원생 명단에서 자녀 이름을 찾을 수 없습니다.'), findsOneWidget);
+      expect(find.text('거절'), findsOneWidget);
+      // 거절 카드에는 "12:14 확인" 이 없다 — 대기 카드에만 마지막 확인 시각이 붙는다.
+      expect(find.textContaining(RegExp(r'\d{2}:\d{2} 확인')), findsNothing);
+      expect(find.text('사용 시작'), findsNothing);
+      expect(find.text('학원이 확인하고 있어요'), findsNothing);
+      expect(
+        find.ancestor(
+          of: find.text('학원 다시 골라 재신청'),
+          matching: find.byType(StickyActionBar),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    group('재신청 — 학원을 고른 뒤 확인 대화상자 한 단계(UF-X-02)', () {
+      const academy = AcademySummary(
+        id: 'a-2',
+        name: '하늘수학 상동분원',
+        region: '부천시 원미구',
+        code: 'A1204',
+      );
+
+      Future<_StubAuthRepository> pumpToPickedAcademy(
+        WidgetTester tester,
+      ) async {
+        final repository = _StubAuthRepository()
+          ..firstStatus = AccountStatus.rejected
+          ..rejectReason = '사유'
+          ..academies = [academy];
+        await _pumpPendingApproval(tester, repository);
+        await tester.tap(find.text('학원 다시 골라 재신청'));
+        await tester.pumpAndSettle();
+        await tester.enterText(find.byType(TextField), '하늘');
+        await tester.tap(find.text('검색'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('하늘수학 상동분원'));
+        await tester.pumpAndSettle();
+        return repository;
+      }
+
+      testWidgets('학원을 고르기 전에는 [재신청하기] 가 꺼져 있다', (tester) async {
+        final repository = _StubAuthRepository()
+          ..firstStatus = AccountStatus.rejected
+          ..rejectReason = '사유';
+        await _pumpPendingApproval(tester, repository);
+        await tester.tap(find.text('학원 다시 골라 재신청'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('다니는 학원을 다시 골라 주세요'), findsOneWidget);
+        expect(
+          tester
+              .widget<BaraedaButton>(
+                find.widgetWithText(BaraedaButton, '재신청하기'),
+              )
+              .onPressed,
+          isNull,
+        );
+      });
+
+      testWidgets('[재신청하기] 는 곧바로 보내지 않고 확인 대화상자를 먼저 연다', (tester) async {
+        final repository = await pumpToPickedAcademy(tester);
+
+        await tester.tap(find.widgetWithText(BaraedaButton, '재신청하기'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(BaraedaDialog), findsOneWidget);
+        expect(find.text('하늘수학 상동분원으로 다시 신청할까요?'), findsOneWidget);
+        expect(repository.reappliedWith, isNull, reason: '확인 전에는 서버에 보내지 않는다');
+      });
+
+      testWidgets('대화상자에서 [학원 다시 고르기] 를 누르면 보내지 않고 닫힌다', (tester) async {
+        final repository = await pumpToPickedAcademy(tester);
+        await tester.tap(find.widgetWithText(BaraedaButton, '재신청하기'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('학원 다시 고르기'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(BaraedaDialog), findsNothing);
+        expect(repository.reappliedWith, isNull);
+      });
+
+      testWidgets('대화상자에서 [재신청하기] 를 누르면 그 학원으로 보낸다', (tester) async {
+        final repository = await pumpToPickedAcademy(tester);
+        await tester.tap(find.widgetWithText(BaraedaButton, '재신청하기'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(
+          find.descendant(
+            of: find.byType(BaraedaDialog),
+            matching: find.text('재신청하기'),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(repository.reappliedWith, 'a-2');
+      });
     });
   });
 }

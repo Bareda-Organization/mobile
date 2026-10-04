@@ -6,6 +6,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:parent_app/app/app_routes.dart';
 import 'package:parent_app/app/di.dart';
+import 'package:parent_app/core/auth/auth_providers.dart';
+import 'package:parent_app/core/auth/role_policy.dart';
+import 'package:parent_app/core/auth/user_role.dart';
+import 'package:parent_app/core/students/domain/student.dart';
+import 'package:parent_app/core/students/presentation/student_providers.dart';
 import 'package:parent_app/features/notifications/presentation/notification_providers.dart';
 import 'package:parent_app/features/notifications/presentation/notifications_screen.dart';
 
@@ -60,6 +65,7 @@ Future<({List<String> pushed, ProviderContainer container})> _pump(
   WidgetTester tester,
   FakeNotificationRepository repository, {
   ThemeData? theme,
+  UserRole? role,
 }) async {
   final pushed = <String>[];
   final router = GoRouter(
@@ -82,6 +88,8 @@ Future<({List<String> pushed, ProviderContainer container})> _pump(
       overrides: [
         notificationRepositoryProvider.overrideWithValue(repository),
         clockProvider.overrideWithValue(_FixedClock(_now)),
+        if (role != null)
+          roleCapabilitiesProvider.overrideWithValue(RoleCapabilities.of(role)),
       ],
       child: MaterialApp.router(
         theme: theme ?? BaraedaTheme.light(),
@@ -111,6 +119,9 @@ void main() {
       expect(find.text('오늘'), findsOneWidget);
       expect(find.text('어제'), findsOneWidget);
       expect(find.text('9월 28일(월)'), findsOneWidget);
+      // 머리 오른쪽에 날짜 — 오늘은 요일까지, 어제는 날짜만(시안).
+      expect(find.text('9월 30일 (수)'), findsOneWidget);
+      expect(find.text('9월 29일'), findsOneWidget);
       expect(find.text('8:37'), findsOneWidget);
       expect(find.text('14:05'), findsOneWidget);
       // 위에서 아래로 오늘 → 어제 → 지난 날짜 순서.
@@ -124,7 +135,9 @@ void main() {
       );
     });
 
-    testWidgets('같은 말을 두 번 하지 않는다 — 종류 알약 문구가 화면에 없다', (tester) async {
+    // 시안 `notifications` — 행마다 종류 알약(▶ 지연 · ● 하차 …)이 시각 옆에 있다. 제목과 같은 말이 겹치지 않게
+    // 알림 제목은 서버 문구 그대로 두고 알약만 짧은 종류 이름이다.
+    testWidgets('종류 알약이 제목과 따로 있고 제목은 서버 문구 그대로다', (tester) async {
       final repository = FakeNotificationRepository([
         _item(
           '1',
@@ -136,22 +149,31 @@ void main() {
       await _pump(tester, repository);
 
       expect(find.text('곧 도착합니다'), findsOneWidget);
-      expect(find.text('곧 도착'), findsNothing);
+      expect(find.text('곧 도착'), findsOneWidget, reason: '종류 알약');
     });
 
-    testWidgets('제목·본문에 자녀 이름이 없으면 제목 뒤에 붙인다(ATT-03)', (tester) async {
+    // ATT-03 — 알림에는 자녀 이름이 반드시 보여야 한다. 시안은 제목 뒤가 아니라 종류 · 시각 줄 끝에 둔다.
+    testWidgets('학부모는 자녀 이름이 종류 · 시각 줄 끝에 붙는다 — 이름이 없는 알림은 그 칸이 없다(ATT-03)', (
+      tester,
+    ) async {
       final repository = FakeNotificationRepository([
         _item('1', title: '미승차 안내', body: '버스가 출발했습니다.', studentName: '김철수'),
-        _item(
-          '2',
-          title: '승하차 안내',
-          body: '김영희 학생이 버스에 탑승했습니다.',
-        ),
+        _item('2', title: '승하차 안내', body: '버스에 탑승했습니다.'),
       ]);
-      await _pump(tester, repository);
+      await _pump(tester, repository, role: UserRole.parent);
 
-      expect(find.text('미승차 안내 · 김철수'), findsOneWidget);
-      expect(find.text('승하차 안내'), findsOneWidget); // 본문에 이미 있으면 그대로
+      expect(find.text('미승차 안내'), findsOneWidget, reason: '제목은 그대로');
+      expect(find.text('· 김철수'), findsOneWidget);
+      expect(find.textContaining('· '), findsOneWidget, reason: '이름 없는 행에는 없다');
+    });
+
+    testWidgets('학생은 본인 알림이라 이름을 붙이지 않는다', (tester) async {
+      final repository = FakeNotificationRepository([
+        _item('1', title: '곧 도착', body: '곧 도착합니다.', studentName: '김철수'),
+      ]);
+      await _pump(tester, repository, role: UserRole.student);
+
+      expect(find.text('· 김철수'), findsNothing);
     });
 
     testWidgets('낭독 — 안 읽음 · 중요 · 종류 · 제목 · 본문 · 시각을 한 번에', (tester) async {
@@ -183,7 +205,7 @@ void main() {
       expect(repository.requests.last.unreadOnly, isFalse);
       expect(find.text('알림 n-1'), findsOneWidget); // 읽음
 
-      await tester.tap(find.text('안 읽음'));
+      await tester.tap(find.textContaining('안 읽음'));
       await tester.pumpAndSettle();
 
       expect(repository.requests.last.unreadOnly, isTrue);
@@ -355,7 +377,7 @@ void main() {
     testWidgets('알림이 없으면 빈 화면이다', (tester) async {
       await _pump(tester, FakeNotificationRepository(const []));
 
-      expect(find.text('새 알림이 없습니다'), findsOneWidget);
+      expect(find.text('새 알림이 없어요'), findsOneWidget);
     });
 
     testWidgets('안 읽은 알림이 없으면 그 걸러 보기에 맞는 빈 화면이다', (tester) async {
@@ -363,26 +385,92 @@ void main() {
         tester,
         FakeNotificationRepository([_item('1', unread: false)]),
       );
-      await tester.tap(find.text('안 읽음'));
+      await tester.tap(find.textContaining('안 읽음'));
       await tester.pumpAndSettle();
 
-      expect(find.text('안 읽은 알림이 없습니다'), findsOneWidget);
+      expect(find.text('안 읽은 알림이 없어요'), findsOneWidget);
       expect(find.text('알림 1'), findsNothing);
     });
 
-    testWidgets('처음 받기가 실패하면 오류 띠와 [다시 시도] 가 나오고 다시 받는다', (tester) async {
+    testWidgets('처음 받기가 실패하면 오류 화면과 [다시 시도] 가 나오고 다시 받는다', (tester) async {
       final repository = FakeNotificationRepository(_many(2))
         ..getFailure = const Failure.network();
       await _pump(tester, repository);
 
-      expect(find.text('알림을 불러오지 못했습니다'), findsOneWidget);
+      expect(find.text('알림을 불러오지 못했어요'), findsOneWidget);
 
       repository.getFailure = null;
       await tester.tap(find.text('다시 시도'));
       await tester.pumpAndSettle();
 
-      expect(find.text('알림을 불러오지 못했습니다'), findsNothing);
+      expect(find.text('알림을 불러오지 못했어요'), findsNothing);
       expect(find.text('알림 n-0'), findsOneWidget);
+    });
+  });
+  // R48 시안 `notifications*` — 머리 아래 "최근 14일 · 자녀 이름들"
+  // (학생은 "최근 14일"), 안 읽음 알약에는 서버가 센 수.
+  group('R48 구성', () {
+    Future<void> pumpAs(
+      WidgetTester tester,
+      FakeNotificationRepository repository, {
+      required bool parent,
+    }) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          key: UniqueKey(),
+          overrides: [
+            notificationRepositoryProvider.overrideWithValue(repository),
+            clockProvider.overrideWithValue(_FixedClock(_now)),
+            roleCapabilitiesProvider.overrideWithValue(
+              RoleCapabilities.of(parent ? UserRole.parent : UserRole.student),
+            ),
+            myStudentsProvider.overrideWith(
+              (ref) async => [
+                Student(
+                  studentId: 's-1',
+                  name: '이하준',
+                  linkedAt: DateTime(2026),
+                ),
+                Student(
+                  studentId: 's-2',
+                  name: '이서연',
+                  linkedAt: DateTime(2026),
+                ),
+              ],
+            ),
+          ],
+          child: MaterialApp(
+            theme: BaraedaTheme.light(),
+            home: const NotificationsScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('학부모는 머리 아래에 최근 14일과 연결된 자녀 이름이 있다', (tester) async {
+      await pumpAs(tester, FakeNotificationRepository(_many(2)), parent: true);
+
+      expect(find.text('최근 14일 · 이하준 · 이서연'), findsOneWidget);
+    });
+
+    testWidgets('학생은 자녀 이름 없이 최근 14일만 있다', (tester) async {
+      await pumpAs(
+        tester,
+        FakeNotificationRepository(_many(2)),
+        parent: false,
+      );
+
+      expect(find.text('최근 14일'), findsOneWidget);
+      expect(find.textContaining('이하준'), findsNothing);
+    });
+
+    testWidgets('[안 읽음] 알약에 서버가 센 안 읽은 수가 붙는다', (tester) async {
+      await pumpAs(tester, FakeNotificationRepository(_many(4)), parent: true);
+
+      // `_many(4)` 는 짝수 번째 둘이 안 읽음이다.
+      expect(find.text('안 읽음 2'), findsOneWidget);
+      expect(find.text('전체'), findsOneWidget);
     });
   });
 }
