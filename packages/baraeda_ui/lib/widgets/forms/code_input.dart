@@ -21,6 +21,7 @@ class BaraedaCodeInput extends StatefulWidget {
     required this.onChanged,
     super.key,
     this.length = 6,
+    this.numeric = false,
     this.label,
     this.hint,
     this.error,
@@ -31,6 +32,10 @@ class BaraedaCodeInput extends StatefulWidget {
 
   /// 칸 수. 원본 기본값 6.
   final int length;
+
+  /// 숫자만 받는다 — 숫자 자판이 뜨고 영문자는 걸러진다(문자로 오는 인증번호).
+  /// 끄면 영문 · 숫자를 받고 대문자로 바꾼다(연결 코드).
+  final bool numeric;
   final String? label;
   final String? hint;
   final String? error;
@@ -111,10 +116,13 @@ class _BaraedaCodeInputState extends State<BaraedaCodeInput> {
                       controller: _controller,
                       focusNode: _focusNode,
                       maxLength: widget.length,
+                      keyboardType: widget.numeric
+                          ? TextInputType.number
+                          : null,
                       textCapitalization: TextCapitalization.characters,
                       inputFormatters: [
                         FilteringTextInputFormatter.allow(
-                          RegExp('[a-zA-Z0-9]'),
+                          RegExp(widget.numeric ? '[0-9]' : '[a-zA-Z0-9]'),
                         ),
                         BaraedaUpperCaseTextFormatter(),
                       ],
