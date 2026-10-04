@@ -13,6 +13,7 @@ import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/core/ui/manager_header.dart';
 import 'package:manager_app/features/notifications/presentation/notification_kind.dart';
 import 'package:manager_app/features/notifications/presentation/notification_providers.dart';
+import 'package:manager_app/features/notifications/presentation/widgets/manager_notification_row.dart';
 
 /// 알림 목록(NTF-08 · §3.12) — 홈 머리말 [알림] 에서 들어온다. 운행 중 화면(운전 화면·명단)에는 진입점이 없다.
 ///
@@ -66,9 +67,8 @@ class _ItemRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final kind = kindOf(item.type);
-    return NotificationTile(
+    return ManagerNotificationRow(
       icon: kind.icon,
-      status: kind.status,
       kindLabel: kind.label,
       title: item.title,
       body: item.body.isEmpty ? null : item.body,
@@ -112,9 +112,9 @@ class _ItemRow extends ConsumerWidget {
           .markRead(item.notificationId);
     } on Failure catch (failure) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: WordWrapText(describeFailure(failure))),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: WordWrapText(describeFailure(failure))));
     }
   }
 }

@@ -11,7 +11,9 @@ import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/core/auth/user_role.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/features/notifications/presentation/notification_providers.dart';
+import 'package:manager_app/features/notifications/presentation/widgets/manager_notification_row.dart';
 import 'package:manager_app/features/notifications/presentation/notifications_screen.dart';
+
 import '../../support/fake_notification_repository.dart';
 
 class _FixedClock implements Clock {
@@ -100,8 +102,18 @@ void main() {
     ]);
 
     expect(find.text('오늘'), findsOneWidget);
-    expect(find.byType(NotificationTile), findsNWidgets(3));
-    expect(find.byKey(NotificationTile.importantBarKey), findsOneWidget);
+    expect(find.byType(ManagerNotificationRow), findsNWidgets(3));
+    // 시안 `notifications` — 중요는 왼쪽 막대가 아니라 제목 옆 `중요` 칩이다.
+    expect(find.text('중요'), findsOneWidget);
+  });
+
+  testWidgets('안 읽은 행에만 초록 점이 있고 읽은 행에는 없다', (tester) async {
+    await _pump(tester, [
+      _item('1', type: 'route_changed'),
+      _item('2', type: 'signup_decided', unread: false),
+    ]);
+
+    expect(find.byKey(ManagerNotificationRow.unreadDotKey), findsOneWidget);
   });
 
   testWidgets('안 읽은 행을 누르면 읽음 처리하고 안 읽은 수가 준다', (tester) async {
@@ -237,11 +249,9 @@ void main() {
     });
 
     testWidgets('회차 식별자가 없는 알림은 읽음 처리만 하고 이동하지 않는다', (tester) async {
-      final fake = await _pump(
-        tester,
-        [_item('1', type: 'route_changed')],
-        extraRoutes: marker.values.toList(),
-      );
+      final fake = await _pump(tester, [
+        _item('1', type: 'route_changed'),
+      ], extraRoutes: marker.values.toList());
 
       await tester.tap(find.text('알림 1'));
       await tester.pumpAndSettle();
