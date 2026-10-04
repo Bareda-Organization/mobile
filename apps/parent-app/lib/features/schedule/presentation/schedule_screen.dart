@@ -137,7 +137,8 @@ class _ScheduleBodyState extends ConsumerState<_ScheduleBody> {
     if (target == null) return;
     Scrollable.ensureVisible(
       target,
-      duration: BaraedaDuration.sheet,
+      // 움직임 줄이기가 켜져 있으면 애니메이션 없이 바로 간다.
+      duration: BaraedaDuration.resolve(context, BaraedaDuration.sheet),
       curve: BaraedaCurve.drawer,
     );
   }
