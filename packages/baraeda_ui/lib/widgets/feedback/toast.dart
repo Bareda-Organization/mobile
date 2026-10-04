@@ -179,6 +179,8 @@ void showBaraedaToast(
 }) {
   final overlay = Overlay.of(context, rootOverlay: true);
   final motion = BaraedaOpenMotion.of(context);
+  // 오버레이가 다시 그려질 때 호출 위치가 이미 비활성일 수 있어 지금 읽어 둔다.
+  final zone = BaraedaDriveZone.capture(context);
   final bottom =
       MediaQuery.paddingOf(context).bottom +
       (aboveTabBar ? BaraedaSpacing.tabBarHeight + BaraedaSpacing.space4 : 16);
@@ -203,7 +205,7 @@ void showBaraedaToast(
       right: BaraedaSpacing.gutterMobile,
       bottom: bottom,
       child: BaraedaDriveZone.carry(
-        context,
+        zone,
         Material(
           type: MaterialType.transparency,
           child: BaraedaToast(

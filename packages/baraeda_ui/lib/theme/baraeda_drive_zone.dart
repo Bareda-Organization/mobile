@@ -37,12 +37,19 @@ class BaraedaDriveZone extends StatelessWidget {
   static bool isIn(BuildContext context) =>
       context.getInheritedWidgetOfExactType<_DriveZoneScope>() != null;
 
-  /// 라우트 · 오버레이처럼 구역 밖에서 그려지는 것이 구역 안에서 호출됐을 때,
-  /// 같은 구역(테마 + 움직임 없음)을 다시 씌운다.
-  static Widget carry(BuildContext from, Widget child) {
-    final theme = Theme.of(from);
-    final wrapped = Theme(data: theme, child: child);
-    return isIn(from) ? _DriveZoneScope(child: wrapped) : wrapped;
+  /// 라우트 · 오버레이를 **열기 전에** 호출한 자리의 테마와 구역 여부를 지금 한 번 읽어 둔다.
+  ///
+  /// 읽는 것을 경로 빌더 안으로 미루면 안 된다 — 호출한 화면이 닫히는 중에도 열려 있던 경로는
+  /// 다시 그려지는데, 그때 호출 위치는 이미 비활성이라 `Theme.of` 가 예외를 던진다
+  /// (2026-10-04 학부모 앱 일정 화면 `[나가기]` 시험에서 확인).
+  static ({ThemeData theme, bool inZone}) capture(BuildContext from) =>
+      (theme: Theme.of(from), inZone: isIn(from));
+
+  /// [capture] 로 읽어 둔 값을 구역 밖에서 그려지는 경로 · 오버레이에 다시 씌운다 —
+  /// 같은 테마 + (구역 안이었다면) 움직임 없음.
+  static Widget carry(({ThemeData theme, bool inZone}) zone, Widget child) {
+    final wrapped = Theme(data: zone.theme, child: child);
+    return zone.inZone ? _DriveZoneScope(child: wrapped) : wrapped;
   }
 
   @override

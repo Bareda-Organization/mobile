@@ -24,11 +24,7 @@ class DevAccount {
 /// [onPick] 은 아이디·비밀번호를 받아 **곧바로 로그인까지** 수행한다 — 채워 넣기만 하면
 /// 결국 제출 버튼을 또 눌러야 해서 문제가 반쯤만 풀린다.
 class DevQuickLogin extends StatelessWidget {
-  const new({
-    required this.accounts,
-    required this.onPick,
-    super.key,
-  });
+  const new({required this.accounts, required this.onPick, super.key});
 
   /// 로컬 Flyway 시드(`V2__seed_data.sql`)가 심는 비밀번호. 전 계정 공통이다.
   static const String seedPassword = 'password';

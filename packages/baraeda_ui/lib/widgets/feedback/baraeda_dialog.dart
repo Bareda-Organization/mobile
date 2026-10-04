@@ -216,6 +216,8 @@ Future<T?> showBaraedaActionDialog<T>({
   bool dismissible = true,
 }) {
   final motion = BaraedaOpenMotion.of(context);
+  // 경로가 다시 그려질 때 호출 위치가 이미 비활성일 수 있어 지금 읽어 둔다.
+  final zone = BaraedaDriveZone.capture(context);
   return showGeneralDialog<T>(
     context: context,
     barrierLabel: title,
@@ -235,7 +237,7 @@ Future<T?> showBaraedaActionDialog<T>({
             child: child,
           ),
     pageBuilder: (dialogContext, animation, _) => BaraedaDriveZone.carry(
-      context,
+      zone,
       Stack(
         children: [
           BaraedaDialog(

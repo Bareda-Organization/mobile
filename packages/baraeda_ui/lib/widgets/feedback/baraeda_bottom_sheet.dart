@@ -205,6 +205,8 @@ Future<T?> showBaraedaBottomSheet<T>({
   bool showCloseButton = false,
 }) {
   final motion = BaraedaOpenMotion.of(context);
+  // 경로가 다시 그려질 때 호출 위치가 이미 비활성일 수 있어 지금 읽어 둔다.
+  final zone = BaraedaDriveZone.capture(context);
   return showGeneralDialog<T>(
     context: context,
     barrierLabel: title,
@@ -216,7 +218,7 @@ Future<T?> showBaraedaBottomSheet<T>({
     // 막 · 시트의 움직임은 BaraedaBottomSheet 가 직접 정한다.
     transitionBuilder: (context, animation, _, child) => child,
     pageBuilder: (sheetContext, animation, _) => BaraedaDriveZone.carry(
-      context,
+      zone,
       Stack(
         children: [
           BaraedaBottomSheet(
