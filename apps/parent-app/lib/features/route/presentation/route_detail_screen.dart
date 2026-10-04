@@ -10,6 +10,7 @@ import 'package:parent_app/core/routes/presentation/route_providers.dart';
 import 'package:parent_app/core/students/presentation/selected_student.dart';
 import 'package:parent_app/core/students/presentation/student_providers.dart';
 import 'package:parent_app/core/students/presentation/student_switcher.dart';
+import 'package:parent_app/core/runs/presentation/run_display.dart';
 import 'package:parent_app/core/ui/failure_message.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -27,7 +28,7 @@ class RouteDetailScreen extends ConsumerWidget {
     final isParent = capabilities?.canToggleAttendance ?? false;
 
     return Scaffold(
-      appBar: const AppHeader(title: '노선 상세'),
+      appBar: const AppHeader(title: '노선 자세히'),
       body: SafeArea(
         child: isParent
             ? const _ParentRouteDetail()
@@ -149,64 +150,109 @@ class _RouteDetailView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     final departTimeText = DateFormat(
       'HH:mm',
     ).format(route.departTime.toLocal());
+    final hasSkipped = route.stops.any(
+      (s) => s.change == RouteStopChange.skipped,
+    );
 
     // F05-06 — 당겨서 새로고침. 내용이 짧아도 당겨지도록 항상 스크롤 가능하게 둔다.
     return RefreshIndicator(
       onRefresh: onRefresh,
       child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(BaraedaSpacing.gutterMobile),
         children: [
-          BaraedaCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Text(
-                        '${route.busNo} · $departTimeText 출발',
-                        style: BaraedaTypography.h3,
+                    Text(route.busNo, style: BaraedaTypography.h3),
+                    Text(
+                      '$departTimeText 출발',
+                      style: BaraedaTypography.caption.copyWith(
+                        color: colors.textSecondary,
                       ),
                     ),
-                    // 배차가 아직 안 됐어도(P-08) 에러가 아니라 이 배지만
-                    // 얹고 고정 노선을 그대로 보여준다(위 클래스 문서 참고).
-                    if (!route.confirmed)
-                      const BaraedaBadge(
-                        label: '확정 전',
-                        tone: BaraedaBadgeTone.amber,
-                      ),
                   ],
                 ),
-                const SizedBox(height: BaraedaSpacing.space4),
-                _DriverEscortSection(
-                  driver: route.driver,
-                  escort: route.escort,
+              ),
+              // 배차가 아직 안 됐어도(P-08) 에러가 아니라 이 칩만 얹고 고정 노선을 그대로 보여준다(위 클래스 문서 참고).
+              if (!route.confirmed)
+                const BaraedaStatusPill(
+                  status: BaraedaStatus.waiting,
+                  label: '확정 전',
                 ),
-              ],
-            ),
+            ],
           ),
-          const SizedBox(height: BaraedaSpacing.sectionGap),
-          const Text('경유 승하차지', style: BaraedaTypography.h3),
+          const SizedBox(height: BaraedaSpacing.space4),
+          if (!route.confirmed) ...[
+            const AlertBanner(
+              tone: AlertTone.info,
+              title: '아직 확정 전이에요',
+              body: '지금은 기본 노선이에요. 새로 생긴 곳은 초록색이에요.',
+            ),
+            const SizedBox(height: BaraedaSpacing.space4),
+          ],
+          const Text('내 승하차지 앞 2곳과 도착지', style: BaraedaTypography.h3),
           const SizedBox(height: BaraedaSpacing.space2),
-          // 서버가 이미 §3.10 범위로 좁혀 보낸 stops 를 그대로 그린다
-          // (route_detail.dart 의 `RouteDetail.stops` 문서 참고, 목표 2).
-          ...route.stops.map(
-            (stop) => _RouteStopTile(
-              stop: stop,
-              isMyStop: stop.stopId == route.myStopId,
-            ),
+          // 서버가 이미 §3.10 범위로 좁혀 보낸 stops 를 그대로 그린다(route_detail.dart 의 `RouteDetail.stops` 문서 참고).
+          // 지난 곳은 `arrived_at` 으로 "12:09 지남" 을 단다 — 지난 사실이라 ETA 비노출(C-08)과 무관하다.
+          StopTimeline(
+            stops: [
+              for (final stop in route.stops)
+                _timelineStop(stop, isMyStop: stop.stopId == route.myStopId),
+            ],
           ),
+          if (hasSkipped) ...[
+            const SizedBox(height: BaraedaSpacing.space2),
+            Text(
+              '빨간 취소선은 이번 운행에서 서지 않는 곳이에요.',
+              style: BaraedaTypography.bodySm.copyWith(
+                color: colors.textSecondary,
+              ),
+            ),
+          ],
+          const SizedBox(height: BaraedaSpacing.sectionGap),
+          const Text('이 버스에 타는 분', style: BaraedaTypography.h3),
+          const SizedBox(height: BaraedaSpacing.space2),
+          _DriverEscortSection(driver: route.driver, escort: route.escort),
         ],
       ),
     );
   }
 }
 
-/// 기사·동승자 — 연락 버튼은 동승자만 갖는다. 기사는 연락처 필드 자체가
-/// 서버 응답에 없다(`RouteDriver` 에 `phone` 이 부재 — API_SPEC §3.10).
+/// 승하차지 한 곳 → 타임라인 한 줄. 지난 곳은 `12:09 지남`, 정차 안 함은 취소선 + `제외`, 추가는 `추가`.
+Stop _timelineStop(RouteStop stop, {required bool isMyStop}) {
+  final arrived = stop.arrivedAt;
+  final state = switch (stop.change) {
+    RouteStopChange.skipped => StopState.skipped,
+    RouteStopChange.added => StopState.added,
+    null => arrived != null ? StopState.done : StopState.upcoming,
+  };
+  final (String? tag, BaraedaBadgeTone tone) = switch (stop.change) {
+    RouteStopChange.skipped => ('제외', BaraedaBadgeTone.removed),
+    RouteStopChange.added => ('추가', BaraedaBadgeTone.added),
+    null when isMyStop => ('내 승하차지', BaraedaBadgeTone.brand),
+    null => (null, BaraedaBadgeTone.neutral),
+  };
+  return Stop(
+    name: stop.name,
+    address: stop.address,
+    time: arrived == null ? null : '${formatClock(arrived)} 지남',
+    state: state,
+    tag: tag,
+    tagTone: tone,
+  );
+}
+
+/// 기사·동승자 — 연락 버튼은 동승자만 갖는다. 기사는 연락처 필드 자체가 서버 응답에 없다
+/// (`RouteDriver` 에 `phone` 이 부재 — API_SPEC §3.10). 운전 중이라 연락은 동승자에게 한다.
 class _DriverEscortSection extends StatelessWidget {
   const new({required this.driver, required this.escort});
 
@@ -215,28 +261,29 @@ class _DriverEscortSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return BaraedaListGroup(
       children: [
-        Text('기사 ${driver.name ?? '미배치'}', style: BaraedaTypography.body),
-        const SizedBox(height: BaraedaSpacing.space2),
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                '동승자 ${escort.name ?? '미배치'}',
-                style: BaraedaTypography.body,
-              ),
-            ),
-            if (escort.phone case final phone?)
-              BaraedaButton(
-                label: '전화하기',
-                size: BaraedaButtonSize.sm,
-                variant: BaraedaButtonVariant.secondary,
-                icon: 'phone',
-                onPressed: () => _callEscort(phone),
-              ),
-          ],
+        BaraedaListRow(
+          leadingIcon: 'bus',
+          title: '기사 ${driver.name ?? '미배치'}',
+          titleIsPersonName: true,
+          subtitle: '운전 중이라 연락은 동승자에게',
+        ),
+        BaraedaListRow(
+          leadingIcon: 'user-round',
+          title: '동승자 ${escort.name ?? '미배치'}',
+          titleIsPersonName: true,
+          subtitle: '궁금한 건 동승자에게 전화해요',
+          trailing: escort.phone == null
+              ? null
+              : BaraedaButton(
+                  label: '전화',
+                  size: BaraedaButtonSize.sm,
+                  variant: BaraedaButtonVariant.secondary,
+                  icon: 'phone',
+                  name: '동승자에게',
+                  onPressed: () => _callEscort(escort.phone!),
+                ),
         ),
       ],
     );
@@ -245,64 +292,5 @@ class _DriverEscortSection extends StatelessWidget {
   Future<void> _callEscort(String phone) async {
     final uri = Uri(scheme: 'tel', path: phone);
     await launchUrl(uri);
-  }
-}
-
-class _RouteStopTile extends StatelessWidget {
-  const new({required this.stop, required this.isMyStop});
-
-  final RouteStop stop;
-  final bool isMyStop;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: BaraedaSpacing.space2),
-      child: BaraedaCard(
-        tone: isMyStop ? BaraedaCardTone.mist : BaraedaCardTone.base,
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Text(stop.name, style: BaraedaTypography.body),
-                      if (isMyStop) ...[
-                        const SizedBox(width: BaraedaSpacing.space2),
-                        const BaraedaBadge(
-                          label: '내 승하차지',
-                          tone: BaraedaBadgeTone.brand,
-                        ),
-                      ],
-                      if (stop.change != null) ...[
-                        const SizedBox(width: BaraedaSpacing.space2),
-                        BaraedaBadge(
-                          label: stop.change == RouteStopChange.added
-                              ? '추가'
-                              : '제외',
-                          tone: stop.change == RouteStopChange.added
-                              ? BaraedaBadgeTone.added
-                              : BaraedaBadgeTone.removed,
-                        ),
-                      ],
-                    ],
-                  ),
-                  // 학원 합성 항목(Ruling 288)은 address 가 없을 수
-                  // 있다(academy.address nullable) — 그 경우 줄 자체를
-                  // 비운다.
-                  if (stop.address != null)
-                    WordWrapText(
-                      stop.address!,
-                      style: BaraedaTypography.bodySm,
-                    ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }

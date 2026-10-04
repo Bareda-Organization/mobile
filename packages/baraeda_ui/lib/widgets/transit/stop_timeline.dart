@@ -11,6 +11,7 @@
 import 'package:baraeda_ui/theme/baraeda_colors.dart';
 import 'package:baraeda_ui/tokens/spacing.dart';
 import 'package:baraeda_ui/tokens/typography.dart';
+import 'package:baraeda_ui/widgets/core/badge.dart';
 import 'package:baraeda_ui/widgets/core/icon.dart';
 import 'package:baraeda_ui/widgets/core/word_wrap_text.dart';
 import 'package:flutter/material.dart';
@@ -29,6 +30,8 @@ class Stop {
     this.state = StopState.upcoming,
     this.riders,
     this.missed,
+    this.tag,
+    this.tagTone = BaraedaBadgeTone.neutral,
   });
 
   final String name;
@@ -44,6 +47,10 @@ class Stop {
 
   /// 미탑승 인원.
   final int? missed;
+
+  /// 이름 옆에 붙는 꼬리표 — `내 승하차지` · `제외` · `추가` 같은 짧은 글자(시안 `.m-stop` 의 칩). 없으면 안 붙는다.
+  final String? tag;
+  final BaraedaBadgeTone tagTone;
 }
 
 /// 노선 승하차지 순서 타임라인 — 세 제품 공통. 번호 원에 순서가 적히고 지금 곳은 앰버로 크다.
@@ -164,22 +171,33 @@ class _StopTimelineRow extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        // 승하차지 이름은 두 줄까지 보이고 그 뒤는 `…`.
-                        Text(
-                          stop.name,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: BaraedaTypography.body.copyWith(
-                            height: 1.3,
-                            fontWeight: current
-                                ? BaraedaFontWeight.bold
-                                : BaraedaFontWeight.medium,
-                            color: titleColor,
-                            decoration: skipped
-                                ? TextDecoration.lineThrough
-                                : null,
-                            decorationColor: titleColor,
-                          ),
+                        // 승하차지 이름은 두 줄까지 보이고 그 뒤는 `…`. 꼬리표는 이름 옆에 붙는다.
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Flexible(
+                              child: Text(
+                                stop.name,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: BaraedaTypography.body.copyWith(
+                                  height: 1.3,
+                                  fontWeight: current
+                                      ? BaraedaFontWeight.bold
+                                      : BaraedaFontWeight.medium,
+                                  color: titleColor,
+                                  decoration: skipped
+                                      ? TextDecoration.lineThrough
+                                      : null,
+                                  decorationColor: titleColor,
+                                ),
+                              ),
+                            ),
+                            if (stop.tag != null) ...[
+                              const SizedBox(width: BaraedaSpacing.space2),
+                              BaraedaBadge(label: stop.tag!, tone: stop.tagTone),
+                            ],
+                          ],
                         ),
                         if (stop.address != null)
                           Padding(

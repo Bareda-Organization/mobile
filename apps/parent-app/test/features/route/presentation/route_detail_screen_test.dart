@@ -1,3 +1,4 @@
+import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -54,14 +55,21 @@ Map<String, dynamic> _stopJson({
   Object? address = _unset,
   Object? lat = _unset,
   Object? lng = _unset,
+  String? arrivedAt,
+  String? change,
 }) => {
   'stop_id': stopId,
+  if (arrivedAt != null) 'arrived_at': arrivedAt,
+  if (change != null) 'change': change,
   'seq': seq,
   'name': name,
   'address': identical(address, _unset) ? '$name 주소' : address,
   'lat': identical(lat, _unset) ? 37.5 + seq * 0.001 : lat,
   'lng': identical(lng, _unset) ? 127.0 + seq * 0.001 : lng,
 };
+
+/// 동승자 `전화` 단추 — 기사에게는 연락처가 없어 이 단추는 많아야 1개다.
+Finder _callButtons() => find.widgetWithText(BaraedaButton, '전화');
 
 /// `_stopJson` 의 선택 인자가 "안 줬다" 와 "명시적으로 null 을 줬다" 를
 /// 가르기 위한 표식.
@@ -135,7 +143,7 @@ void main() {
       );
       await pumpScreen(tester, response: route);
 
-      expect(find.textContaining('7호차 · '), findsOneWidget);
+      expect(find.text('7호차'), findsOneWidget);
       expect(
         find.textContaining('7호차호차'),
         findsNothing,
@@ -245,7 +253,7 @@ void main() {
 
       await pumpScreen(tester, response: route);
 
-      expect(find.text('전화하기'), findsOneWidget);
+      expect(_callButtons(), findsOneWidget);
     });
   });
 
@@ -263,7 +271,77 @@ void main() {
 
       expect(find.text('기사 미배치'), findsOneWidget);
       expect(find.text('동승자 미배치'), findsOneWidget);
-      expect(find.text('전화하기'), findsNothing);
+      expect(_callButtons(), findsNothing);
+    });
+  });
+
+  // R48 `Ruling 824` — 타임라인의 "12:09 지남" 은 §3.10 `stops[].arrived_at` 이 그린다.
+  group('⑤지난 시각 · 꼬리표 — 타임라인', () {
+    testWidgets('도착 처리된 곳에만 "시각 지남" 이 붙고, 아직인 곳에는 없다', (tester) async {
+      final route = RouteDetail.fromJson(
+        _routeJson(
+          stops: [
+            // 지난 곳 — 벽시계로 읽으려면 기기 표준시로 옮긴 값이다(12:09 로컬).
+            _stopJson(
+              stopId: 's-1',
+              seq: 1,
+              name: '중앙공원 앞',
+              arrivedAt: DateTime(2026, 10, 3, 12, 9).toUtc().toIso8601String(),
+            ),
+            _stopJson(stopId: 's-2', seq: 2, name: '행복마을 입구'),
+          ],
+          myStopId: 's-2',
+        ),
+      );
+      await pumpScreen(tester, response: route);
+
+      expect(find.text('12:09 지남'), findsOneWidget);
+      expect(find.textContaining('지남'), findsOneWidget);
+    });
+
+    testWidgets('서버가 arrived_at 을 안 주면 "지남" 이 하나도 없다 — 짐작해 채우지 않는다', (tester) async {
+      final route = RouteDetail.fromJson(
+        _routeJson(
+          stops: [_stopJson(stopId: 's-1', seq: 1, name: '중앙공원 앞')],
+          myStopId: 's-1',
+        ),
+      );
+      await pumpScreen(tester, response: route);
+
+      expect(find.textContaining('지남'), findsNothing);
+    });
+
+    testWidgets('내 승하차지 · 제외(취소선) · 추가 꼬리표와 빨간 취소선 설명이 나온다', (tester) async {
+      final route = RouteDetail.fromJson(
+        _routeJson(
+          stops: [
+            _stopJson(stopId: 's-1', seq: 1, name: '새솔초 정문', change: 'skipped'),
+            _stopJson(stopId: 's-2', seq: 2, name: '행복마을 입구'),
+            _stopJson(stopId: 's-3', seq: 3, name: '새로 생긴 곳', change: 'added'),
+          ],
+          myStopId: 's-2',
+        ),
+      );
+      await pumpScreen(tester, response: route);
+
+      expect(find.text('제외'), findsOneWidget);
+      expect(find.text('내 승하차지'), findsOneWidget);
+      expect(find.text('추가'), findsOneWidget);
+      expect(find.text('빨간 취소선은 이번 운행에서 서지 않는 곳이에요.'), findsOneWidget);
+    });
+
+    testWidgets('확정 전이면 "확정 전" 칩과 기본 노선 안내가 나온다', (tester) async {
+      final route = RouteDetail.fromJson({
+        ..._routeJson(
+          stops: [_stopJson(stopId: 's-1', seq: 1, name: '중앙공원 앞')],
+          myStopId: 's-1',
+        ),
+        'confirmed': false,
+      });
+      await pumpScreen(tester, response: route);
+
+      expect(find.text('확정 전'), findsOneWidget);
+      expect(find.text('지금은 기본 노선이에요. 새로 생긴 곳은 초록색이에요.'), findsOneWidget);
     });
   });
 
@@ -302,7 +380,7 @@ void main() {
       await pumpScreen(tester, response: sample(), repository: repository);
 
       // 뷰포트가 2400 이라 당김 기준(높이의 1/4)을 넘기려면 크게 당긴다.
-      await tester.drag(find.byType(ListView), const Offset(0, 2000));
+      await tester.drag(find.byType(ListView).first, const Offset(0, 2000));
       await tester.pumpAndSettle();
 
       expect(repository.calls, 2);

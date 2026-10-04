@@ -9,6 +9,7 @@ Widget _host(Widget child) => MaterialApp(
 );
 
 void main() {
+  _tagTests();
   const colors = BaraedaColors.light;
 
   testWidgets('번호 원: 지난 곳은 체크, 나머지는 순서 번호', (tester) async {
@@ -105,5 +106,31 @@ void main() {
       expect(box.size.width, 2);
       expect(box.size.height, greaterThan(0));
     }
+  });
+}
+
+// R48 — 이름 옆 꼬리표(`내 승하차지` · `제외`). 없으면 그리지 않는다(기존 호출은 그대로).
+void _tagTests() {
+  testWidgets('꼬리표가 있으면 이름 옆에 칩으로 보이고, 없으면 칩이 없다', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: BaraedaTheme.light(),
+        home: const Scaffold(
+          body: StopTimeline(
+            stops: [
+              Stop(name: '중앙공원 앞'),
+              Stop(
+                name: '행복마을 입구',
+                tag: '내 승하차지',
+                tagTone: BaraedaBadgeTone.brand,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('내 승하차지'), findsOneWidget);
+    expect(find.byType(BaraedaBadge), findsOneWidget);
   });
 }
