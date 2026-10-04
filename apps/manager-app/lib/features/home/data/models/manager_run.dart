@@ -10,7 +10,6 @@ class ManagerRun {
     required this.departTime,
     required this.origin,
     required this.destination,
-    required this.estDurationMin,
     required this.runStatus,
     required this.confirmed,
     required this.startWindowFrom,
@@ -18,8 +17,13 @@ class ManagerRun {
     required this.addedCount,
     required this.removedCount,
     required this.ackRequired,
+    this.estDurationMin,
     this.roleInRun,
     this.confirmAt,
+    this.plateNo,
+    this.riderCount,
+    this.absentCount,
+    this.stopCount,
   });
 
   factory fromJson(Map<String, dynamic> json) {
@@ -33,7 +37,7 @@ class ManagerRun {
       departTime: DateTime.parse(json['depart_time'] as String),
       origin: json['origin'] as String,
       destination: json['destination'] as String,
-      estDurationMin: json['est_duration_min'] as int,
+      estDurationMin: json['est_duration_min'] as int?,
       runStatus:
           RunStatus.fromWireValueOrNull(json['run_status'] as String?) ??
           RunStatus.idle,
@@ -47,6 +51,11 @@ class ManagerRun {
       removedCount: json['removed_count'] as int,
       ackRequired: json['ack_required'] as bool,
       roleInRun: UserRole.fromWireValueOrNull(json['role_in_run'] as String),
+      // R48 Ruling 822 — 서버가 아직 안 주거나 확정 전이면 `null`. 값이 없으면 화면은 그 줄을 숨긴다.
+      plateNo: json['plate_no'] as String?,
+      riderCount: json['rider_count'] as int?,
+      absentCount: json['absent_count'] as int?,
+      stopCount: json['stop_count'] as int?,
     );
   }
 
@@ -58,7 +67,8 @@ class ManagerRun {
   final DateTime departTime;
   final String origin;
   final String destination;
-  final int estDurationMin;
+  /// 스케줄이 값을 안 적었으면 `null`(§4.1) — 화면은 소요 시간 줄을 그리지 않는다.
+  final int? estDurationMin;
   final RunStatus runStatus;
 
   /// `false` 면 명단 진입 불가(§4.2 `409 RUN_NOT_CONFIRMED`).
@@ -83,4 +93,13 @@ class ManagerRun {
   /// `roleCapabilitiesProvider`(로그인 시점 값)를 따로 쓰므로 이 필드
   /// 자체가 화면 분기에 쓰이지는 않는다.
   final UserRole? roleInRun;
+
+  /// 차량번호 — 내 정보의 "담당 차량"(`Ruling 822`). 서버가 아직 안 주면 `null`.
+  final String? plateNo;
+
+  /// 탑승 예정 인원(`absent` 제외) · 미등원 인원 · 승하차지 수(경유 지점·도착지 제외, `Ruling 822`).
+  /// 확정 전(`confirmed=false`)이면 셋 다 `null` — 화면은 숫자 줄 전체를 숨긴다.
+  final int? riderCount;
+  final int? absentCount;
+  final int? stopCount;
 }
