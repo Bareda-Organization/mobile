@@ -49,16 +49,74 @@ void main() {
   });
 
   group('타이포그래피 — typography.css', () {
-    test('본문은 16px / line-height 1.75 / Noto Sans KR', () {
+    test('본문은 16px / line-height 1.5 / Noto Sans KR', () {
       expect(BaraedaTypography.body.fontSize, 16);
-      expect(BaraedaTypography.body.height, 1.75);
+      expect(BaraedaTypography.body.height, 1.5);
       expect(BaraedaTypography.body.fontFamily, 'Noto Sans KR');
+    });
+
+    test('글자 크기는 시안 8단계(13·14·16·20·24·30·40·52)뿐이다', () {
+      expect(BaraedaFontSize.scale, [13, 14, 16, 20, 24, 30, 40, 52]);
+      final styles = <String, TextStyle>{
+        'display': BaraedaTypography.display,
+        'h1': BaraedaTypography.h1,
+        'h2': BaraedaTypography.h2,
+        'h3': BaraedaTypography.h3,
+        'title': BaraedaTypography.title,
+        'bodyLg': BaraedaTypography.bodyLg,
+        'body': BaraedaTypography.body,
+        'bodySm': BaraedaTypography.bodySm,
+        'caption': BaraedaTypography.caption,
+        'micro': BaraedaTypography.micro,
+        'label': BaraedaTypography.label,
+        'labelSm': BaraedaTypography.labelSm,
+        'numeric': BaraedaTypography.numeric,
+      };
+      for (final MapEntry(key: name, value: style) in styles.entries) {
+        expect(
+          BaraedaFontSize.scale,
+          contains(style.fontSize),
+          reason: '$name 의 크기 ${style.fontSize} 가 8단계 밖이다',
+        );
+      }
+    });
+
+    test('시트·대화상자 제목은 나눔명조 700 / 20px', () {
+      expect(BaraedaTypography.title.fontFamily, 'Nanum Myeongjo');
+      expect(BaraedaTypography.title.fontWeight, FontWeight.w700);
+      expect(BaraedaTypography.title.fontSize, 20);
     });
 
     test('h1 은 나눔명조 700 / 40px', () {
       expect(BaraedaTypography.h1.fontFamily, 'Nanum Myeongjo');
       expect(BaraedaTypography.h1.fontWeight, FontWeight.w700);
       expect(BaraedaTypography.h1.fontSize, 40);
+    });
+  });
+
+  group('시안 색 — mkit `:root`', () {
+    test('꺼진 단추 글자는 기존 보조 글자색 #5C665F 다(새 색 #636D69 금지, Ruling 829)', () {
+      expect(BaraedaColors.light.disabledText, const Color(0xFF5C665F));
+      expect(
+        BaraedaColors.light.disabledText,
+        BaraedaColors.light.textSecondary,
+      );
+      expect(BaraedaColors.light.disabledText, isNot(const Color(0xFF636D69)));
+    });
+
+    test('위험 단추 면 #C93F2C · 위험 글자 #A8301F · 이동 중 글자 #8A560C', () {
+      expect(BaraedaColors.light.dangerSolid, const Color(0xFFC93F2C));
+      expect(BaraedaColors.light.statusMissed, const Color(0xFFA8301F));
+      expect(BaraedaColors.light.statusMoving, const Color(0xFF8A560C));
+    });
+
+    test('칩 모양 색 5종(라이트): 종료 #6B7672 · 이동 #C77E12 · 확정 #1F5C4D · 대기 #7BBAA6 · 위험 #C93F2C', () {
+      const c = BaraedaColors.light;
+      expect(c.shapeIdle, const Color(0xFF6B7672));
+      expect(c.shapeMoving, const Color(0xFFC77E12));
+      expect(c.shapeBoarded, const Color(0xFF1F5C4D));
+      expect(c.shapeWait, const Color(0xFF7BBAA6));
+      expect(c.dangerSolid, const Color(0xFFC93F2C));
     });
   });
 
@@ -76,6 +134,21 @@ void main() {
   group('모양 — shape.css', () {
     test('카드 반경은 16px', () {
       expect(BaraedaRadius.card, 16);
+    });
+  });
+
+  group('모션 — 시안 움직임 약속', () {
+    test('누름 120ms · 일반 180ms · 시트 240ms · 대화상자 200ms · 토스트 220ms', () {
+      expect(BaraedaDuration.press, const Duration(milliseconds: 120));
+      expect(BaraedaDuration.ui, const Duration(milliseconds: 180));
+      expect(BaraedaDuration.sheet, const Duration(milliseconds: 240));
+      expect(BaraedaDuration.dialog, const Duration(milliseconds: 200));
+      expect(BaraedaDuration.toast, const Duration(milliseconds: 220));
+    });
+
+    test('ease-out cubic-bezier(.23,1,.32,1) · 서랍 곡선(.32,.72,0,1)', () {
+      expect(BaraedaCurve.easeOut, const Cubic(0.23, 1, 0.32, 1));
+      expect(BaraedaCurve.drawer, const Cubic(0.32, 0.72, 0, 1));
     });
   });
 

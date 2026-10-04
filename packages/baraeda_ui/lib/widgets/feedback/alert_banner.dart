@@ -2,6 +2,7 @@
 // 원본: `frontend/design-system/components/feedback/AlertBanner.jsx`.
 
 import 'package:baraeda_ui/theme/baraeda_colors.dart';
+import 'package:baraeda_ui/tokens/shape.dart';
 import 'package:baraeda_ui/tokens/spacing.dart';
 import 'package:baraeda_ui/tokens/typography.dart';
 import 'package:baraeda_ui/widgets/core/icon.dart';
@@ -17,6 +18,7 @@ class _AlertToneStyle {
     required this.icon,
     required this.foreground,
     required this.background,
+    this.stroke,
   });
 
   factory of(BuildContext context, AlertTone tone) {
@@ -24,13 +26,15 @@ class _AlertToneStyle {
     return switch (tone) {
       AlertTone.info => _AlertToneStyle(
         icon: 'info',
-        foreground: colors.textBrand,
-        background: colors.accentPrimarySoft,
+        foreground: colors.statusWait,
+        background: colors.statusWaitSoft,
+        stroke: colors.shapeWait,
       ),
       AlertTone.moving => _AlertToneStyle(
         icon: 'bus',
         foreground: colors.statusMoving,
         background: colors.statusMovingSoft,
+        stroke: colors.shapeMoving,
       ),
       AlertTone.missed => _AlertToneStyle(
         icon: 'triangle-alert',
@@ -48,6 +52,9 @@ class _AlertToneStyle {
   final String icon;
   final Color foreground;
   final Color background;
+
+  /// 안쪽 1px 테두리 — 이동 중(앰버) · 안내(대기)만 있다(시안 `--k-*`).
+  final Color? stroke;
 }
 
 /// 화면 상단 상황 안내 배너. 느낌표·이모지는 쓰지 않는다(카피 규칙).
@@ -58,6 +65,7 @@ class AlertBanner extends StatelessWidget {
     this.title,
     this.body,
     this.action,
+    this.inlineAction = false,
   });
 
   /// 상태 컬러 규칙을 그대로 따른다.
@@ -72,6 +80,9 @@ class AlertBanner extends StatelessWidget {
   /// 하단 버튼 영역 — 문제 상황이면 다음 행동을 함께 둔다.
   final Widget? action;
 
+  /// true 면 [action] 을 글 아래가 아니라 오른쪽 끝에 둔다(시안 `.m-banner--act`).
+  final bool inlineAction;
+
   @override
   Widget build(BuildContext context) {
     final style = _AlertToneStyle.of(context, tone);
@@ -80,27 +91,28 @@ class AlertBanner extends StatelessWidget {
       container: true,
       child: Container(
         padding: const EdgeInsets.symmetric(
-          horizontal: BaraedaSpacing.space4,
-          vertical: 14,
+          horizontal: 14,
+          vertical: BaraedaSpacing.space3,
         ),
         decoration: BoxDecoration(
           color: style.background,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(BaraedaRadius.card),
+          border: style.stroke == null
+              ? null
+              : Border.all(color: style.stroke!),
         ),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: inlineAction
+              ? CrossAxisAlignment.center
+              : CrossAxisAlignment.start,
           children: [
             Padding(
               padding: const EdgeInsets.only(top: 2),
               child: ExcludeSemantics(
-                child: BaraedaIcon(
-                  style.icon,
-                  size: 18,
-                  color: style.foreground,
-                ),
+                child: BaraedaIcon(style.icon, color: style.foreground),
               ),
             ),
-            const SizedBox(width: BaraedaSpacing.space3),
+            const SizedBox(width: 10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -109,9 +121,10 @@ class AlertBanner extends StatelessWidget {
                   if (title != null)
                     WordWrapText(
                       title!,
-                      style: BaraedaTypography.labelSm.copyWith(
+                      style: BaraedaTypography.body.copyWith(
                         fontWeight: BaraedaFontWeight.bold,
                         color: style.foreground,
+                        height: 1.45,
                       ),
                     ),
                   if (body != null)
@@ -119,19 +132,25 @@ class AlertBanner extends StatelessWidget {
                       padding: EdgeInsets.only(top: title != null ? 4 : 0),
                       child: WordWrapText(
                         body!,
-                        style: BaraedaTypography.bodySm.copyWith(
+                        style: BaraedaTypography.caption.copyWith(
                           color: context.colors.textPrimary,
                         ),
                       ),
                     ),
-                  if (action != null)
+                  if (action != null && !inlineAction)
                     Padding(
-                      padding: const EdgeInsets.only(top: 10),
+                      padding: const EdgeInsets.only(
+                        top: BaraedaSpacing.space2,
+                      ),
                       child: action,
                     ),
                 ],
               ),
             ),
+            if (action != null && inlineAction) ...[
+              const SizedBox(width: BaraedaSpacing.space2),
+              action!,
+            ],
           ],
         ),
       ),

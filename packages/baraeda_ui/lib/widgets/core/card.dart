@@ -24,6 +24,7 @@ class BaraedaCard extends StatelessWidget {
     super.key,
     this.tone = BaraedaCardTone.base,
     this.accent,
+    this.highlight = false,
     this.padding = const EdgeInsets.all(BaraedaSpacing.cardPadding),
   });
 
@@ -32,6 +33,10 @@ class BaraedaCard extends StatelessWidget {
 
   /// 카드 위쪽 3px 상태 액센트 라인. null이면 라인 없음.
   final BaraedaStatus? accent;
+
+  /// 위쪽 3px **초록** 선 — 지금 가장 중요한 카드 하나(시안 `.m-card--hero`).
+  /// [accent] 와 함께 주면 [accent] 가 이긴다.
+  final bool highlight;
   final EdgeInsetsGeometry padding;
 
   @override
@@ -41,42 +46,54 @@ class BaraedaCard extends StatelessWidget {
     final border = tone == BaraedaCardTone.outline
         ? Border.all(color: colors.borderDefault)
         : null;
+    final dark = Theme.of(context).brightness == Brightness.dark;
     final shadow =
         tone == BaraedaCardTone.outline || tone == BaraedaCardTone.inverse
         ? const <BoxShadow>[]
-        : BaraedaShadows.cardLight;
+        : (dark ? BaraedaShadows.cardDark : BaraedaShadows.cardLight);
+    final radius = BorderRadius.circular(BaraedaRadius.card);
 
-    final content = Container(
-      padding: padding,
-      decoration: BoxDecoration(
-        color: background,
-        border: border,
-        borderRadius: BorderRadius.circular(BaraedaRadius.card),
-        boxShadow: shadow,
-      ),
-      child: child,
-    );
+    final lineColor = accent != null
+        ? _accentColorFor(accent!, colors)
+        : (highlight ? colors.accentPrimary : null);
 
-    if (accent == null) return content;
+    if (lineColor == null) {
+      return Container(
+        padding: padding,
+        decoration: BoxDecoration(
+          color: background,
+          border: border,
+          borderRadius: radius,
+          boxShadow: shadow,
+        ),
+        child: child,
+      );
+    }
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(BaraedaRadius.card),
-      child: Stack(
-        // 기본(loose)이면 부모가 폭을 정해 줘도 본체가 자식 폭으로 줄어든다
-        // (R46-SCREEN — 비상 발신 이력 카드가 화면 폭의 ~30%).
-        fit: StackFit.passthrough,
-        children: [
-          content,
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: Container(
-              height: 3,
-              color: _accentColorFor(accent!, colors),
+    // 위쪽 선은 모서리에 맞춰 잘려야 해서 안쪽을 자르고, 그림자는 바깥 상자가 그린다
+    // (안에서 그리면 그림자가 같이 잘린다).
+    return DecoratedBox(
+      decoration: BoxDecoration(borderRadius: radius, boxShadow: shadow),
+      child: ClipRRect(
+        borderRadius: radius,
+        child: Stack(
+          // 기본(loose)이면 부모가 폭을 정해 줘도 본체가 자식 폭으로 줄어든다
+          // (R46-SCREEN — 비상 발신 이력 카드가 화면 폭의 ~30%).
+          fit: StackFit.passthrough,
+          children: [
+            Container(
+              padding: padding,
+              decoration: BoxDecoration(color: background, border: border),
+              child: child,
             ),
-          ),
-        ],
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: Container(height: 3, color: lineColor),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -105,5 +122,7 @@ Color _accentColorFor(BaraedaStatus status, BaraedaColors c) {
       return c.statusMissed;
     case BaraedaStatus.idle:
       return c.statusIdle;
+    case BaraedaStatus.waiting:
+      return c.shapeWait;
   }
 }

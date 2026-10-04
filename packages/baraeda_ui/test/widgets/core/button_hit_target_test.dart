@@ -1,6 +1,6 @@
-// `BaraedaButton.sm` — 보이는 크기는 36 으로 두고
-// 누르는 영역만 48 이상으로 넓힌다(F07-10 · Ruling 404).
-// 이웃 버튼과 누르는 영역이 겹치면 오조작이므로 그것도 함께 고정한다.
+// `BaraedaButton.sm` — 시안(R48)에서 보이는 크기가 곧 누르는 면(높이 44 = `--tap`)이다.
+// 예전에는 보이는 36 + 누르는 48 이었다(F07-10 · Ruling 404) — 보이는 크기를 44 로 키워
+// 숨은 영역이 필요 없어졌다. 이웃 버튼과 누르는 영역이 겹치면 오조작이므로 그것도 함께 고정한다.
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -19,24 +19,24 @@ void main() {
     onPressed: onPressed,
   );
 
-  testWidgets('sm 버튼의 누르는 영역은 48×48 이상이다', (tester) async {
+  testWidgets('sm 버튼의 누르는 영역은 44×44 이상이다', (tester) async {
     await pump(tester, sm('가', () {}));
     final size = tester.getSize(find.byType(BaraedaButton));
-    expect(size.height, greaterThanOrEqualTo(48));
-    expect(size.width, greaterThanOrEqualTo(48));
+    expect(size.height, greaterThanOrEqualTo(BaraedaSpacing.tap));
+    expect(size.width, greaterThanOrEqualTo(BaraedaSpacing.tap));
   });
 
-  testWidgets('sm 버튼의 보이는 크기는 36 그대로다', (tester) async {
+  testWidgets('sm 버튼의 보이는 크기는 44 다', (tester) async {
     await pump(tester, sm('확인', () {}));
-    expect(tester.getSize(find.byType(Ink)).height, 36);
+    expect(tester.getSize(find.byType(Ink)).height, 44);
   });
 
-  testWidgets('보이는 윗변보다 위 · 아랫변보다 아래를 눌러도 눌린다(누르는 영역 안)', (tester) async {
+  testWidgets('보이는 면의 윗변 · 아랫변 안쪽을 눌러도 눌린다', (tester) async {
     var pressed = 0;
     await pump(tester, sm('확인', () => pressed++));
     final visual = tester.getRect(find.byType(Ink));
-    await tester.tapAt(visual.topCenter - const Offset(0, 5));
-    await tester.tapAt(visual.bottomCenter + const Offset(0, 5));
+    await tester.tapAt(visual.topCenter + const Offset(0, 2));
+    await tester.tapAt(visual.bottomCenter - const Offset(0, 2));
     expect(pressed, 2);
   });
 
@@ -76,11 +76,11 @@ void main() {
       const BaraedaButton(label: '확인', size: BaraedaButtonSize.sm),
     );
     final visual = tester.getRect(find.byType(Ink));
-    await tester.tapAt(visual.topCenter - const Offset(0, 5)); // 던지지 않으면 통과
+    await tester.tapAt(visual.topCenter + const Offset(0, 5)); // 던지지 않으면 통과
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('md·lg 는 그대로 48·52 이다', (tester) async {
+  testWidgets('md·lg 는 48, xl 은 64 다(시안에 52 가 없다)', (tester) async {
     await pump(
       tester,
       Column(
@@ -92,10 +92,16 @@ void main() {
             size: BaraedaButtonSize.lg,
             onPressed: () {},
           ),
+          BaraedaButton(
+            label: 'xl',
+            size: BaraedaButtonSize.xl,
+            onPressed: () {},
+          ),
         ],
       ),
     );
     expect(tester.getSize(find.widgetWithText(BaraedaButton, 'md')).height, 48);
-    expect(tester.getSize(find.widgetWithText(BaraedaButton, 'lg')).height, 52);
+    expect(tester.getSize(find.widgetWithText(BaraedaButton, 'lg')).height, 48);
+    expect(tester.getSize(find.widgetWithText(BaraedaButton, 'xl')).height, 64);
   });
 }

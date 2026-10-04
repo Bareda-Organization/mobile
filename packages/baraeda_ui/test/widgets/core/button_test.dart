@@ -63,15 +63,15 @@ void main() {
     expect(bg, Colors.transparent);
   });
 
-  testWidgets('danger 배경은 statusMissed', (tester) async {
+  testWidgets('danger 배경은 dangerSolid(#C93F2C)', (tester) async {
     final bg = await buttonBackground(
       tester,
       variant: BaraedaButtonVariant.danger,
     );
-    expect(bg, colors.statusMissed);
+    expect(bg, colors.dangerSolid);
   });
 
-  testWidgets('onPressed가 null이면 비활성 투명도를 적용한다', (tester) async {
+  testWidgets('onPressed가 null이면 흐리게 하지 않고 꺼진 면·글자를 쓴다', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
         theme: BaraedaTheme.light(),
@@ -79,7 +79,13 @@ void main() {
       ),
     );
 
-    final opacity = tester.widget<Opacity>(find.byType(Opacity));
-    expect(opacity.opacity, 0.42);
+    // 예전에는 전체를 0.42 로 흐렸다 — 시안은 꺼진 면(#ECEEED) 위에 글자를 읽을 수 있게 둔다.
+    expect(find.byType(Opacity), findsNothing);
+    final ink = tester.widget<Ink>(find.byType(Ink));
+    expect((ink.decoration! as BoxDecoration).color, colors.disabledSurface);
+    expect(
+      tester.widget<Text>(find.text('확인하기')).style!.color,
+      colors.disabledText,
+    );
   });
 }

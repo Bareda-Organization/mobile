@@ -31,20 +31,46 @@ abstract final class BaraedaFontWeight {
   static const FontWeight black = FontWeight.w800;
 }
 
-/// 글자 크기 — CSS `--fs-*` 를 논리 픽셀로 그대로 옮긴 값.
+/// 글자 크기 — **시안 8단계**(`mkit` `--t-cap` ~ `--t-count`)만 쓴다. 이 밖의 크기는 만들지 않는다.
+///
+/// 13 칩·힌트·탭 이름 · 14 보조 줄·작은 단추 · 16 본문·목록 제목·단추·입력 · 20 시트·대화상자·빈 상태 제목·큰 단추 ·
+/// 24 화면 제목 · 30 숫자 칸·운행 중 다음 승하차지 · 40 큰 숫자(출발 시각) · 52 카운트다운.
+/// 예전 15·18·32 는 가까운 단계로 옮겼다(15→14·16, 18→16, 32→30).
 abstract final class BaraedaFontSize {
-  static const double display = 52;
-  static const double h1 = 40;
-  static const double h2 = 32;
-  static const double h3 = 24;
-  static const double bodyLg = 18;
-  static const double body = 16;
-  static const double bodySm = 15;
-  static const double caption = 14;
-  static const double micro = 13;
-  static const double label = 15;
-  static const double labelSm = 13;
-  static const double numeric = 20;
+  static const double cap = 13;
+  static const double sub = 14;
+  static const double bodyBase = 16;
+  static const double title = 20;
+  static const double h1Screen = 24;
+  static const double disp = 30;
+  static const double num = 40;
+  static const double count = 52;
+
+  /// 8단계 전체 — 시험이 모든 [BaraedaTypography] 스타일의 크기가 여기에 속하는지 본다.
+  static const List<double> scale = [
+    cap,
+    sub,
+    bodyBase,
+    title,
+    h1Screen,
+    disp,
+    num,
+    count,
+  ];
+
+  // 예전 이름 — 같은 8단계 값을 가리킨다. 위젯 쪽 호출부를 안 깨려고 이름을 남겼다.
+  static const double display = count;
+  static const double h1 = num;
+  static const double h2 = disp;
+  static const double h3 = h1Screen;
+  static const double bodyLg = bodyBase;
+  static const double body = bodyBase;
+  static const double bodySm = bodyBase;
+  static const double caption = sub;
+  static const double micro = cap;
+  static const double label = sub;
+  static const double labelSm = cap;
+  static const double numeric = title;
 }
 
 /// 완성된 텍스트 스타일 — 위젯은 이 클래스만 참조한다.
@@ -75,60 +101,66 @@ abstract final class BaraedaTypography {
     fontWeight: BaraedaFontWeight.bold,
     fontSize: BaraedaFontSize.h2,
     height: 1.2,
-    letterSpacing: -0.48,
+    letterSpacing: -0.6,
   );
 
   static const TextStyle h3 = TextStyle(
     fontFamily: BaraedaFontFamily.serif,
     fontWeight: BaraedaFontWeight.bold,
     fontSize: BaraedaFontSize.h3,
+    height: 1.25,
+    letterSpacing: -0.36,
+  );
+
+  /// 시트·대화상자·빈 상태 제목(20) — 시안 `.m-sheet__h h2` · `.m-dialog h2`.
+  static const TextStyle title = TextStyle(
+    fontFamily: BaraedaFontFamily.serif,
+    fontWeight: BaraedaFontWeight.bold,
+    fontSize: BaraedaFontSize.title,
     height: 1.3,
-    letterSpacing: -0.24,
+    letterSpacing: -0.2,
   );
 
   static const TextStyle bodyLg = TextStyle(
     fontFamily: BaraedaFontFamily.sans,
     fontWeight: BaraedaFontWeight.regular,
     fontSize: BaraedaFontSize.bodyLg,
-    height: 1.7,
+    height: 1.5,
   );
 
   static const TextStyle body = TextStyle(
     fontFamily: BaraedaFontFamily.sans,
     fontWeight: BaraedaFontWeight.regular,
     fontSize: BaraedaFontSize.body,
-    height: 1.75,
+    height: 1.5,
   );
 
   static const TextStyle bodySm = TextStyle(
     fontFamily: BaraedaFontFamily.sans,
     fontWeight: BaraedaFontWeight.regular,
     fontSize: BaraedaFontSize.bodySm,
-    height: 1.7,
+    height: 1.45,
   );
 
   static const TextStyle caption = TextStyle(
     fontFamily: BaraedaFontFamily.sans,
-    fontWeight: BaraedaFontWeight.light,
+    fontWeight: BaraedaFontWeight.regular,
     fontSize: BaraedaFontSize.caption,
-    height: 1.55,
-    letterSpacing: -0.14,
+    height: 1.4,
   );
 
   static const TextStyle micro = TextStyle(
     fontFamily: BaraedaFontFamily.sans,
-    fontWeight: BaraedaFontWeight.light,
+    fontWeight: BaraedaFontWeight.regular,
     fontSize: BaraedaFontSize.micro,
-    height: 1.5,
-    letterSpacing: -0.13,
+    height: 1.3,
   );
 
   static const TextStyle label = TextStyle(
     fontFamily: BaraedaFontFamily.sans,
     fontWeight: BaraedaFontWeight.medium,
     fontSize: BaraedaFontSize.label,
-    height: 1.2,
-    letterSpacing: -0.15,
+    height: 1.3,
   );
 
   static const TextStyle labelSm = TextStyle(

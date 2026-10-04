@@ -16,18 +16,28 @@ abstract final class BaraedaSpacing {
   static const double space16 = 64;
   static const double space20 = 80;
 
-  /// 앱 화면 좌우 여백.
-  static const double gutterMobile = 20;
+  /// 앱 화면 좌우 여백(시안 `--g`).
+  static const double gutterMobile = 16;
 
   /// 관계자 웹 좌우 여백 (매니저 앱이 데스크톱 폭으로 뜰 때 참조).
   static const double gutterDesktop = 32;
 
-  static const double cardPadding = 20;
+  static const double cardPadding = 16;
   static const double cardGap = 12;
   static const double sectionGap = 32;
 
   /// 최소 터치 영역 — 버튼 등 탭 가능한 요소의 하한.
   static const double tapMin = 48;
+
+  /// 시안 `--tap` — 누르는 면의 하한. 작은 단추 · 알약 · 아이콘 단추 · 스위치 줄이 이 높이다.
+  static const double tap = 44;
+
+  // 컨트롤 높이 — 시안 부품 견본(`mkit/kit.html`) 의 값.
+  static const double controlSm = 44;
+  static const double controlMd = 48;
+  static const double controlXl = 64;
+  static const double inputHeight = 52;
+  static const double rowMinHeight = 56;
 
   static const double headerHeight = 56;
   static const double tabBarHeight = 64;

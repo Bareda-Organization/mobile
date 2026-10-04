@@ -6,6 +6,7 @@ library;
 
 // 테마 — ThemeData 라이트/다크 + 의미 색 ThemeExtension.
 export 'theme/baraeda_colors.dart';
+export 'theme/baraeda_drive_zone.dart';
 export 'theme/baraeda_theme.dart';
 // 토큰 — 색 · 타입 · 여백 · 모양 · 모션.
 export 'tokens/colors.dart';

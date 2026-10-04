@@ -11,7 +11,7 @@ import 'package:baraeda_ui/widgets/core/icon.dart';
 import 'package:baraeda_ui/widgets/core/status_pill.dart';
 import 'package:flutter/material.dart';
 
-const double _avatarWidth = 38;
+const double _avatarWidth = 44;
 
 /// 이름·번호 칸의 최소 폭 — 13자리 번호가 한 줄에 들어가는 폭이다.
 const double _nameMinWidth = 140;
@@ -30,7 +30,7 @@ class _RideMeta {
     RideStatus.alighted: _RideMeta('하차 완료', BaraedaStatus.boarded),
     RideStatus.absent: _RideMeta('미등원', BaraedaStatus.idle),
     RideStatus.missed: _RideMeta('미승차', BaraedaStatus.missed),
-    RideStatus.waiting: _RideMeta('대기', BaraedaStatus.idle),
+    RideStatus.waiting: _RideMeta('대기', BaraedaStatus.waiting),
   };
 
   static _RideMeta of(RideStatus ride) => _table[ride]!;
@@ -92,7 +92,7 @@ class StudentRow extends StatelessWidget {
           onTap: onSelect,
           focusColor: colors.focusRing.withValues(alpha: 0.32),
           child: Container(
-            constraints: const BoxConstraints(minHeight: 64),
+            constraints: const BoxConstraints(minHeight: 72),
             padding: const EdgeInsets.symmetric(
               horizontal: BaraedaSpacing.space4,
               vertical: 10,
@@ -109,7 +109,7 @@ class StudentRow extends StatelessWidget {
                     alignment: Alignment.center,
                     clipBehavior: Clip.antiAlias,
                     decoration: BoxDecoration(
-                      color: colors.bgSubtle,
+                      color: colors.statusIdleSoft,
                       shape: BoxShape.circle,
                     ),
                     // 이니셜은 이름을 줄인 그림일 뿐이라 낭독하지 않는다 — 이름 Text 가 읽는다(F07-10).
@@ -131,9 +131,10 @@ class StudentRow extends StatelessWidget {
                         if (name != null)
                           Text(
                             name!,
-                            style: BaraedaTypography.bodySm.copyWith(
-                              height: 1.4,
-                              fontWeight: BaraedaFontWeight.medium,
+                            // 사람 이름은 자르지 않고 줄을 바꾼다(시안 ⑤-4).
+                            style: BaraedaTypography.body.copyWith(
+                              height: 1.3,
+                              fontWeight: BaraedaFontWeight.bold,
                             ),
                           ),
                         if (meta != null)
@@ -178,7 +179,6 @@ class StudentRow extends StatelessWidget {
                           BaraedaStatusPill(
                             status: rideMeta.status,
                             label: rideMeta.label,
-                            dot: false,
                           ),
                     ),
                   ),
@@ -218,10 +218,10 @@ class _StudentAvatar extends StatelessWidget {
     return Image.network(
       url,
       headers: photoHeaders,
-      width: 38,
-      height: 38,
+      width: 44,
+      height: 44,
       // 38px 자리에 원본(수 MP)을 그대로 디코딩하면 행 수만큼 메모리가 오른다.
-      cacheWidth: (38 * MediaQuery.devicePixelRatioOf(context)).round(),
+      cacheWidth: (44 * MediaQuery.devicePixelRatioOf(context)).round(),
       fit: BoxFit.cover,
       // `loadingBuilder` 의 progress 는 "시작 전"과 "다 됨"이 똑같이 null
       // 이라 두 상태를 못 가른다. `frameBuilder` 의 frame 은 프레임이 실제로
@@ -236,8 +236,7 @@ class _StudentAvatar extends StatelessWidget {
   Widget _initials() {
     return Text(
       initials,
-      style: BaraedaTypography.labelSm.copyWith(
-        fontSize: 14,
+      style: BaraedaTypography.body.copyWith(
         height: 1,
         fontWeight: BaraedaFontWeight.bold,
         color: textColor,

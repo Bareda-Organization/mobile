@@ -120,7 +120,7 @@ void main() {
       expect(find.text('로그아웃'), findsOneWidget);
     });
 
-    testWidgets('취소·확인 버튼은 한 줄에 나란히 놓이고 내용 너비만 차지한다', (tester) async {
+    testWidgets('확인(위) · 취소(아래)가 세로로 쌓이고 폭이 같다(시안 대화상자 단추)', (tester) async {
       await pumpHost(
         tester,
         (context) => showBaraedaConfirmDialog(
@@ -134,9 +134,9 @@ void main() {
       await tester.pumpAndSettle();
       final cancel = tester.getRect(find.widgetWithText(BaraedaButton, '취소'));
       final confirm = tester.getRect(find.widgetWithText(BaraedaButton, '확인'));
-      expect(cancel.center.dy, confirm.center.dy);
-      expect(cancel.right, lessThanOrEqualTo(confirm.left));
-      expect(confirm.width, lessThan(200));
+      expect(confirm.bottom, lessThanOrEqualTo(cancel.top));
+      expect(confirm.left, cancel.left);
+      expect(confirm.width, cancel.width);
     });
 
     testWidgets('content 위젯을 본문으로 그린다', (tester) async {

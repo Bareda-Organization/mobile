@@ -107,7 +107,9 @@ void main() {
   });
 
   group('상태를 색이 아닌 말로도 전한다', () {
-    testWidgets('StopTimeline 은 지남·현재·다음·이후를 낭독 문구에 싣는다', (tester) async {
+    testWidgets('StopTimeline 은 지남·지금·다음·이후·건너뜀·추가를 낭독 문구에 싣는다', (
+      tester,
+    ) async {
       final handle = tester.ensureSemantics();
       await _pump(
         tester,
@@ -117,14 +119,18 @@ void main() {
             Stop(name: 'B역', state: StopState.current),
             Stop(name: 'C역', state: StopState.next),
             Stop(name: 'D역'), // 기본 상태 = upcoming
+            Stop(name: 'E역', state: StopState.skipped),
+            Stop(name: 'F역', state: StopState.added),
           ],
         ),
       );
 
       expect(find.bySemanticsLabel(RegExp('A역.*지남')), findsOneWidget);
-      expect(find.bySemanticsLabel(RegExp('B역.*현재')), findsOneWidget);
+      expect(find.bySemanticsLabel(RegExp('B역.*지금')), findsOneWidget);
       expect(find.bySemanticsLabel(RegExp('C역.*다음')), findsOneWidget);
       expect(find.bySemanticsLabel(RegExp('D역.*이후')), findsOneWidget);
+      expect(find.bySemanticsLabel(RegExp('E역.*건너뜀')), findsOneWidget);
+      expect(find.bySemanticsLabel(RegExp('F역.*추가')), findsOneWidget);
       handle.dispose();
     });
 

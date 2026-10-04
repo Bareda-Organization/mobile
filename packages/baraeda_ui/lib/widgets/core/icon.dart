@@ -60,6 +60,18 @@ const Map<String, IconData> _kBaraedaIconGlyphs = {
   'log-in': Icons.login,
   'user-x': Icons.person_off,
   'calendar-check': Icons.event_available,
+  // R48 시안 부품 견본(`mkit/kit.html` "아이콘")에 있고 위에 없던 것들 —
+  // 연결 끊김 띠 · 지도 단추 · 되돌리기 · 목록 행이 쓴다.
+  'wifi-off': Icons.wifi_off,
+  'crosshair': Icons.my_location,
+  'refresh': Icons.refresh,
+  'inbox': Icons.inbox,
+  'school': Icons.school,
+  'undo': Icons.undo,
+  'eye': Icons.visibility,
+  'eye-off': Icons.visibility_off,
+  'shield': Icons.shield_outlined,
+  'copy': Icons.content_copy,
 };
 
 /// Lucide 아이콘 래퍼 — 바래다의 모든 아이콘은 이걸 통해 쓴다.

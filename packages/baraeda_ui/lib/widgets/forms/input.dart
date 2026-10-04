@@ -5,10 +5,67 @@
 
 import 'package:baraeda_ui/theme/baraeda_colors.dart';
 import 'package:baraeda_ui/tokens/shape.dart';
+import 'package:baraeda_ui/tokens/spacing.dart';
 import 'package:baraeda_ui/tokens/typography.dart';
 import 'package:baraeda_ui/widgets/core/icon.dart';
 import 'package:baraeda_ui/widgets/core/word_wrap_text.dart';
 import 'package:flutter/material.dart';
+
+/// 입력 칸의 종류 — 종류마다 자동 완성 · 자판 · 철자 교정 속성이 정해진다(시안 C4).
+enum BaraedaInputKind {
+  /// 일반 글자.
+  text,
+
+  /// 아이디 — 자동 완성 `username`, 철자 교정 · 단어 추천 끔.
+  username,
+
+  /// 로그인 비밀번호 — `password`.
+  currentPassword,
+
+  /// 새 비밀번호 — `newPassword`.
+  newPassword,
+
+  /// 연락처 — 전화 자판 + `telephoneNumber`.
+  phone,
+
+  /// 인증번호 — 숫자 자판 + `oneTimeCode`(문자 인증 번호 자동 채움).
+  oneTimeCode,
+}
+
+class _InputAttributes {
+  const new({this.keyboardType, this.autofillHints, this.correct = true});
+
+  final TextInputType? keyboardType;
+  final List<String>? autofillHints;
+
+  /// false 면 철자 교정 · 단어 추천을 끈다.
+  final bool correct;
+}
+
+_InputAttributes _attributesOf(BaraedaInputKind kind) => switch (kind) {
+  BaraedaInputKind.text => const _InputAttributes(),
+  BaraedaInputKind.username => const _InputAttributes(
+    autofillHints: [AutofillHints.username],
+    correct: false,
+  ),
+  BaraedaInputKind.currentPassword => const _InputAttributes(
+    autofillHints: [AutofillHints.password],
+    correct: false,
+  ),
+  BaraedaInputKind.newPassword => const _InputAttributes(
+    autofillHints: [AutofillHints.newPassword],
+    correct: false,
+  ),
+  BaraedaInputKind.phone => const _InputAttributes(
+    keyboardType: TextInputType.phone,
+    autofillHints: [AutofillHints.telephoneNumber],
+  ),
+  BaraedaInputKind.oneTimeCode => const _InputAttributes(
+    keyboardType: TextInputType.number,
+    autofillHints: [AutofillHints.oneTimeCode],
+    correct: false,
+  ),
+};
 
 /// 바래다 기본 텍스트 입력.
 ///
@@ -28,6 +85,7 @@ class BaraedaInput extends StatelessWidget {
     this.controller,
     this.onChanged,
     this.keyboardType,
+    this.kind = BaraedaInputKind.text,
   });
 
   final String? label;
@@ -48,17 +106,21 @@ class BaraedaInput extends StatelessWidget {
   final ValueChanged<String>? onChanged;
   final TextInputType? keyboardType;
 
+  /// 입력 종류 — 자동 완성 · 자판 · 철자 교정 속성을 정한다. [keyboardType] 을 따로 주면 그쪽이 이긴다.
+  final BaraedaInputKind kind;
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     final hasError = error != null && error!.isNotEmpty;
+    final attributes = _attributesOf(kind);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
         if (label != null) ...[
-          _InputLabel(label: label!, required: required),
+          _InputLabel(label: label!, required: required, error: hasError),
           const SizedBox(height: 6),
         ],
         Semantics(
@@ -70,14 +132,24 @@ class BaraedaInput extends StatelessWidget {
             onChanged: onChanged,
             enabled: enabled,
             obscureText: obscureText,
-            keyboardType: keyboardType,
+            keyboardType: keyboardType ?? attributes.keyboardType,
+            autofillHints: attributes.autofillHints,
+            autocorrect: attributes.correct,
+            enableSuggestions: attributes.correct,
             style: BaraedaTypography.body.copyWith(color: colors.textPrimary),
             decoration: InputDecoration(
               filled: true,
               fillColor: enabled ? colors.surfaceCard : colors.bgSubtle,
+              // 시안 입력 칸 높이 52.
+              constraints: const BoxConstraints(
+                minHeight: BaraedaSpacing.inputHeight,
+              ),
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 14,
                 vertical: 13,
+              ),
+              hintStyle: BaraedaTypography.body.copyWith(
+                color: colors.textTertiary,
               ),
               prefixIcon: icon == null
                   ? null
@@ -88,11 +160,15 @@ class BaraedaInput extends StatelessWidget {
               prefixIconConstraints: const BoxConstraints(),
               suffixIcon: suffix,
               border: _borderFor(colors.borderControl),
-              enabledBorder: _borderFor(
-                hasError ? colors.statusMissed : colors.borderControl,
-              ),
+              // 오류는 위험 면 색 2px 테두리(시안 `.m-field.err`).
+              enabledBorder: hasError
+                  ? _borderFor(
+                      colors.dangerSolid,
+                      width: BaraedaBorderWidth.strong,
+                    )
+                  : _borderFor(colors.borderControl),
               focusedBorder: _borderFor(
-                hasError ? colors.statusMissed : colors.accentPrimary,
+                hasError ? colors.dangerSolid : colors.accentPrimary,
                 width: BaraedaBorderWidth.strong,
               ),
               disabledBorder: _borderFor(colors.borderSubtle),
@@ -101,12 +177,38 @@ class BaraedaInput extends StatelessWidget {
         ),
         if (hasError || (hint != null && hint!.isNotEmpty)) ...[
           const SizedBox(height: 6),
-          WordWrapText(
-            hasError ? error! : hint!,
-            style: BaraedaTypography.caption.copyWith(
-              color: hasError ? colors.statusMissed : colors.textTertiary,
+          if (hasError)
+            // 색만으로 오류를 알리지 않는다 — 경고 아이콘을 앞에 둔다(시안 `.m-err`).
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: BaraedaIcon(
+                    'triangle-alert',
+                    size: 16,
+                    color: colors.statusMissed,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: WordWrapText(
+                    error!,
+                    style: BaraedaTypography.caption.copyWith(
+                      color: colors.statusMissed,
+                      fontWeight: BaraedaFontWeight.medium,
+                    ),
+                  ),
+                ),
+              ],
+            )
+          else
+            WordWrapText(
+              hint!,
+              style: BaraedaTypography.caption.copyWith(
+                color: colors.textSecondary,
+              ),
             ),
-          ),
         ],
       ],
     );
@@ -121,17 +223,21 @@ OutlineInputBorder _borderFor(Color color, {double width = 1}) {
 }
 
 class _InputLabel extends StatelessWidget {
-  const new({required this.label, required this.required});
+  const new({required this.label, required this.required, required this.error});
 
   final String label;
   final bool required;
+  final bool error;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     return RichText(
       text: TextSpan(
-        style: BaraedaTypography.label.copyWith(color: colors.textPrimary),
+        style: BaraedaTypography.label.copyWith(
+          color: error ? colors.statusMissed : colors.textPrimary,
+          fontWeight: BaraedaFontWeight.medium,
+        ),
         children: [
           TextSpan(text: label),
           if (required)

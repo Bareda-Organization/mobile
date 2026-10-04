@@ -50,7 +50,9 @@ void main() {
         expect(enabledBorderColor(tester), colors.borderControl);
       });
 
-      testWidgets('스위치 꺼짐 트랙은 borderControl', (tester) async {
+      // 시안은 꺼짐 트랙을 더 어두운 회색(`--c-end`)으로 둔다 — 이 시험이 지키던 것은
+      // 색 이름이 아니라 "꺼짐 트랙이 인접 면과 3:1 이상" 이라는 조건(WCAG 1.4.11)이다.
+      testWidgets('스위치 꺼짐 트랙은 shapeIdle 이고 카드 · 바탕과 3:1 이상이다', (tester) async {
         await pump(
           tester,
           BaraedaSwitch(checked: false, label: '알림', onChanged: (_) {}),
@@ -60,7 +62,19 @@ void main() {
             .map((c) => c.decoration)
             .whereType<BoxDecoration>()
             .firstWhere((d) => d.shape == BoxShape.rectangle);
-        expect(track.color, colors.borderControl);
+        expect(track.color, colors.shapeIdle);
+        double lum(Color c) => c.computeLuminance();
+        double ratio(Color a, Color b) {
+          final hi = lum(a) > lum(b) ? lum(a) : lum(b);
+          final lo = lum(a) > lum(b) ? lum(b) : lum(a);
+          return (hi + 0.05) / (lo + 0.05);
+        }
+
+        expect(
+          ratio(track.color!, colors.surfaceCard),
+          greaterThanOrEqualTo(3),
+        );
+        expect(ratio(track.color!, colors.bgBase), greaterThanOrEqualTo(3));
       });
 
       testWidgets('보조 버튼 윤곽은 borderControl', (tester) async {

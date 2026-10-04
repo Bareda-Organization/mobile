@@ -3,6 +3,7 @@
 
 import 'package:baraeda_ui/theme/baraeda_colors.dart';
 import 'package:baraeda_ui/tokens/shape.dart';
+import 'package:baraeda_ui/tokens/spacing.dart';
 import 'package:baraeda_ui/tokens/typography.dart';
 import 'package:baraeda_ui/widgets/core/icon.dart';
 import 'package:flutter/material.dart';
@@ -52,7 +53,7 @@ class StatCard extends StatelessWidget {
       // 합친 라벨이 있으니 자식 Text 는 가린다 — 두 번 읽히지 않게(F07-10).
       excludeSemantics: true,
       child: Container(
-        padding: const EdgeInsets.all(18),
+        padding: const EdgeInsets.all(BaraedaSpacing.cardPadding),
         decoration: BoxDecoration(
           color: colors.surfaceCard,
           borderRadius: BorderRadius.circular(BaraedaRadius.card),
@@ -89,19 +90,18 @@ class StatCard extends StatelessWidget {
                 children: [
                   Text(
                     value ?? '',
-                    // 원본 30px 은 BaraedaFontSize 프리셋과 정확히 맞는 값이 없어
-                    // (numeric=20 · h2=32) numeric 을 베이스로 크기만 보정한다.
-                    style: BaraedaTypography.numeric.copyWith(
-                      fontSize: 30,
-                      height: 1,
+                    // 시안 `.m-stat b` — 30px 나눔명조 700 · 숫자 폭 고정.
+                    style: BaraedaTypography.h2.copyWith(
+                      height: 1.1,
                       color: toneColor,
+                      fontFeatures: const [FontFeature.tabularFigures()],
                     ),
                   ),
                   if (unit != null) ...[
                     const SizedBox(width: 4),
                     Text(
                       unit!,
-                      style: BaraedaTypography.bodySm.copyWith(
+                      style: BaraedaTypography.caption.copyWith(
                         height: 1,
                         fontWeight: BaraedaFontWeight.medium,
                         color: colors.textSecondary,
@@ -118,8 +118,7 @@ class StatCard extends StatelessWidget {
                   sub!,
                   style: BaraedaTypography.micro.copyWith(
                     height: 1.4,
-                    fontWeight: BaraedaFontWeight.light,
-                    color: colors.textTertiary,
+                    color: colors.textSecondary,
                   ),
                 ),
               ),

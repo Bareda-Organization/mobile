@@ -136,6 +136,7 @@ class NotificationTile extends StatelessWidget {
   BaraedaStatus.moving => (c.statusMoving, c.statusMovingSoft),
   BaraedaStatus.missed => (c.statusMissed, c.statusMissedSoft),
   BaraedaStatus.idle => (c.statusIdle, c.statusIdleSoft),
+  BaraedaStatus.waiting => (c.statusWait, c.statusWaitSoft),
 };
 
 /// 종류 아이콘 원 — 안 읽음이면 꽉 찬 색에 반전 글리프, 읽음이면 옅은 색에 상태 색 글리프.

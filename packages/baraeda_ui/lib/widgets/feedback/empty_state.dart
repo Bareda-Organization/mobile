@@ -12,13 +12,7 @@ import 'package:flutter/material.dart';
 /// 예: `EmptyState(icon: 'clock', title: '오늘 운행이 아직 시작되지 않았어요',
 /// body: '등원 운행은 8:10에 시작됩니다.')`.
 class EmptyState extends StatelessWidget {
-  const new({
-    super.key,
-    this.icon = 'bus',
-    this.title,
-    this.body,
-    this.action,
-  });
+  const new({super.key, this.icon = 'bus', this.title, this.body, this.action});
 
   /// Lucide 아이콘 이름.
   final String icon;
@@ -36,29 +30,29 @@ class EmptyState extends StatelessWidget {
       // 제목·본문을 자식이 각자 읽는다 — 합친 라벨을 또 얹으면 두 번 읽힌다(F07-10).
       container: true,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
+        padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 56,
-              height: 56,
+              width: 64,
+              height: 64,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: colors.bgSubtle,
+                color: colors.statusIdleSoft,
                 shape: BoxShape.circle,
               ),
-              child: BaraedaIcon(icon, size: 26, color: colors.textBrand),
+              child: BaraedaIcon(icon, size: 28, color: colors.textSecondary),
             ),
             if (title != null)
               Padding(
-                padding: const EdgeInsets.only(top: 16),
+                padding: const EdgeInsets.only(top: 12),
                 child: WordWrapText(
                   title!,
                   textAlign: TextAlign.center,
-                  style: BaraedaTypography.h3.copyWith(
-                    fontSize: 20,
-                    height: 1.4,
+                  style: BaraedaTypography.title.copyWith(
+                    height: 1.35,
+                    color: colors.textPrimary,
                   ),
                 ),
               ),
@@ -68,15 +62,13 @@ class EmptyState extends StatelessWidget {
                 child: WordWrapText(
                   body!,
                   textAlign: TextAlign.center,
-                  style: BaraedaTypography.caption.copyWith(
-                    fontWeight: BaraedaFontWeight.light,
-                    height: 1.7,
+                  style: BaraedaTypography.body.copyWith(
                     color: colors.textSecondary,
                   ),
                 ),
               ),
             if (action != null)
-              Padding(padding: const EdgeInsets.only(top: 20), child: action),
+              Padding(padding: const EdgeInsets.only(top: 16), child: action),
           ],
         ),
       ),

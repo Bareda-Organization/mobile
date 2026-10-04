@@ -132,8 +132,8 @@ void main() {
     }
   });
 
-  // F07-12 — 38px 아바타인데 원본 해상도로 디코딩하면 행 수만큼 메모리가 오른다.
-  testWidgets('사진은 표시 크기(38px × 기기 픽셀 비율)로 줄여 디코딩한다', (tester) async {
+  // F07-12 — 44px 아바타인데 원본 해상도로 디코딩하면 행 수만큼 메모리가 오른다.
+  testWidgets('사진은 표시 크기(44px × 기기 픽셀 비율)로 줄여 디코딩한다', (tester) async {
     final httpClient = _FakeHttpClient()
       ..response.contentLength = _transparentPng.length
       ..response.content = [_transparentPng];
@@ -152,7 +152,7 @@ void main() {
       expect(image, isA<ResizeImage>());
       expect(
         (image as ResizeImage).width,
-        (38 * tester.view.devicePixelRatio).round(),
+        (44 * tester.view.devicePixelRatio).round(),
       );
     } finally {
       restore();

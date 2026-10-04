@@ -66,7 +66,7 @@ void main() {
     });
   }
 
-  testWidgets('block 이 아닌 sm 버튼도 누르는 영역은 48 이다', (tester) async {
+  testWidgets('block 이 아닌 sm 버튼도 누르는 영역은 44 다', (tester) async {
     await pump(
       tester,
       Column(
@@ -80,7 +80,7 @@ void main() {
       ),
     );
     final size = tester.getSize(find.byType(BaraedaButton));
-    expect(size.height, greaterThanOrEqualTo(48));
-    expect(size.width, greaterThanOrEqualTo(48));
+    expect(size.height, greaterThanOrEqualTo(44));
+    expect(size.width, greaterThanOrEqualTo(44));
   });
 }

@@ -58,6 +58,23 @@ class BaraedaColors extends ThemeExtension<BaraedaColors> {
     required this.overlayScrim,
     required this.mapRoute,
     required this.mapBus,
+    required this.statusWait,
+    required this.statusWaitSoft,
+    required this.shapeIdle,
+    required this.shapeMoving,
+    required this.shapeBoarded,
+    required this.shapeWait,
+    required this.dangerSolid,
+    required this.onDangerSolid,
+    required this.disabledSurface,
+    required this.disabledText,
+    required this.inkSurface,
+    required this.onInkSurface,
+    required this.inkAction,
+    required this.onNow,
+    required this.mapControlSurface,
+    required this.onMapControl,
+    required this.mapControlLine,
   });
 
   // 면
@@ -120,6 +137,59 @@ class BaraedaColors extends ThemeExtension<BaraedaColors> {
   final Color mapRoute;
   final Color mapBus;
 
+  // ── R48 시안(`mkit`) 부품용 ──
+  /// 대기 칩 글자(시안 `--t-wait`)
+  final Color statusWait;
+
+  /// 대기 칩 면(`--b-wait`) — 다크는 투명(테두리만)
+  final Color statusWaitSoft;
+
+  /// 종료 칩 ■ 의 색(`--c-end`)
+  final Color shapeIdle;
+
+  /// 이동 중 칩 ▶ 와 테두리 색(`--c-move`)
+  final Color shapeMoving;
+
+  /// 확정 칩 ● 의 색(`--c-conf`)
+  final Color shapeBoarded;
+
+  /// 대기 칩 ○ 와 테두리 색(`--c-wait`)
+  final Color shapeWait;
+
+  /// 위험 단추 면 · 위험 칩 ▲ (`--bad-solid`)
+  final Color dangerSolid;
+
+  /// 위험 단추 면 위 글자(`--on-bad`)
+  final Color onDangerSolid;
+
+  /// 꺼진 단추 · 만료 코드 면(`--disabled-bg`)
+  final Color disabledSurface;
+
+  /// 꺼진 단추 글자(`--disabled-tx`) — 기존 보조 글자색 `#5C665F` 다.
+  /// 새 색 `#636D69` 는 쓰지 않는다(Ruling 829).
+  final Color disabledText;
+
+  /// 토스트 · 오프라인 띠 면(밝은 화면에선 어둡게, 다크 구역에선 밝게)
+  final Color inkSurface;
+
+  /// [inkSurface] 위 글자
+  final Color onInkSurface;
+
+  /// [inkSurface] 위 단추 글자(토스트 `되돌리기`)
+  final Color inkAction;
+
+  /// 지금 승하차지 · 버스 마커(앰버) 위 글자와 고리(`--on-now`)
+  final Color onNow;
+
+  /// 지도 위 단추 면 — 다크 구역에서도 밝은 지도 위라 흰색 고정
+  final Color mapControlSurface;
+
+  /// 지도 위 단추 글자 — 잉크 고정
+  final Color onMapControl;
+
+  /// 지도 위 단추 테두리
+  final Color mapControlLine;
+
   /// `semantic.css` `:root` — 라이트.
   static const BaraedaColors light = BaraedaColors(
     bgBase: BaraedaPalette.pageTint,
@@ -169,6 +239,23 @@ class BaraedaColors extends ThemeExtension<BaraedaColors> {
     overlayScrim: Color(0x7A12211C), // rgba(18,33,28,.48)
     mapRoute: BaraedaPalette.green600,
     mapBus: BaraedaPalette.amber500,
+    statusWait: Color(0xFF1A4A3E),
+    statusWaitSoft: BaraedaPalette.green50,
+    shapeIdle: BaraedaPalette.stone500,
+    shapeMoving: BaraedaPalette.amber600,
+    shapeBoarded: BaraedaPalette.green600,
+    shapeWait: BaraedaPalette.green300,
+    dangerSolid: BaraedaPalette.redSolid,
+    onDangerSolid: BaraedaPalette.white,
+    disabledSurface: BaraedaPalette.stone100,
+    disabledText: Color(0xFF5C665F),
+    inkSurface: BaraedaPalette.ink,
+    onInkSurface: BaraedaPalette.white,
+    inkAction: BaraedaPalette.green200,
+    onNow: BaraedaPalette.ink,
+    mapControlSurface: BaraedaPalette.white,
+    onMapControl: BaraedaPalette.ink,
+    mapControlLine: BaraedaPalette.stone300,
   );
 
   /// `semantic.css` `[data-theme="dark"]` — 매니저 앱 기본값 · 야간 하원 화면.
@@ -218,6 +305,23 @@ class BaraedaColors extends ThemeExtension<BaraedaColors> {
     overlayScrim: Color(0xA9040807), // rgba(4,8,7,.66)
     mapRoute: Color(0xFF5FD0AC),
     mapBus: BaraedaPalette.amber500,
+    statusWait: Color(0xFF7BBAA6),
+    statusWaitSoft: Color(0x00000000),
+    shapeIdle: Color(0xFF93A09B),
+    shapeMoving: BaraedaPalette.amber500,
+    shapeBoarded: Color(0xFF5FD0AC),
+    shapeWait: Color(0xFF3B8F7A),
+    dangerSolid: BaraedaPalette.red300,
+    onDangerSolid: Color(0xFF1A1206),
+    disabledSurface: Color(0x17EDF2EF),
+    disabledText: Color(0xFF7D8884),
+    inkSurface: Color(0xFFEDF2EF),
+    onInkSurface: BaraedaPalette.ink,
+    inkAction: Color(0xFF8A560C),
+    onNow: Color(0xFF1A1206),
+    mapControlSurface: BaraedaPalette.white,
+    onMapControl: BaraedaPalette.ink,
+    mapControlLine: BaraedaPalette.stone300,
   );
 
   @override
@@ -266,6 +370,23 @@ class BaraedaColors extends ThemeExtension<BaraedaColors> {
     Color? overlayScrim,
     Color? mapRoute,
     Color? mapBus,
+    Color? statusWait,
+    Color? statusWaitSoft,
+    Color? shapeIdle,
+    Color? shapeMoving,
+    Color? shapeBoarded,
+    Color? shapeWait,
+    Color? dangerSolid,
+    Color? onDangerSolid,
+    Color? disabledSurface,
+    Color? disabledText,
+    Color? inkSurface,
+    Color? onInkSurface,
+    Color? inkAction,
+    Color? onNow,
+    Color? mapControlSurface,
+    Color? onMapControl,
+    Color? mapControlLine,
   }) {
     return BaraedaColors(
       bgBase: bgBase ?? this.bgBase,
@@ -312,6 +433,23 @@ class BaraedaColors extends ThemeExtension<BaraedaColors> {
       overlayScrim: overlayScrim ?? this.overlayScrim,
       mapRoute: mapRoute ?? this.mapRoute,
       mapBus: mapBus ?? this.mapBus,
+      statusWait: statusWait ?? this.statusWait,
+      statusWaitSoft: statusWaitSoft ?? this.statusWaitSoft,
+      shapeIdle: shapeIdle ?? this.shapeIdle,
+      shapeMoving: shapeMoving ?? this.shapeMoving,
+      shapeBoarded: shapeBoarded ?? this.shapeBoarded,
+      shapeWait: shapeWait ?? this.shapeWait,
+      dangerSolid: dangerSolid ?? this.dangerSolid,
+      onDangerSolid: onDangerSolid ?? this.onDangerSolid,
+      disabledSurface: disabledSurface ?? this.disabledSurface,
+      disabledText: disabledText ?? this.disabledText,
+      inkSurface: inkSurface ?? this.inkSurface,
+      onInkSurface: onInkSurface ?? this.onInkSurface,
+      inkAction: inkAction ?? this.inkAction,
+      onNow: onNow ?? this.onNow,
+      mapControlSurface: mapControlSurface ?? this.mapControlSurface,
+      onMapControl: onMapControl ?? this.onMapControl,
+      mapControlLine: mapControlLine ?? this.mapControlLine,
     );
   }
 
@@ -399,6 +537,27 @@ class BaraedaColors extends ThemeExtension<BaraedaColors> {
       overlayScrim: Color.lerp(overlayScrim, other.overlayScrim, t)!,
       mapRoute: Color.lerp(mapRoute, other.mapRoute, t)!,
       mapBus: Color.lerp(mapBus, other.mapBus, t)!,
+      statusWait: Color.lerp(statusWait, other.statusWait, t)!,
+      statusWaitSoft: Color.lerp(statusWaitSoft, other.statusWaitSoft, t)!,
+      shapeIdle: Color.lerp(shapeIdle, other.shapeIdle, t)!,
+      shapeMoving: Color.lerp(shapeMoving, other.shapeMoving, t)!,
+      shapeBoarded: Color.lerp(shapeBoarded, other.shapeBoarded, t)!,
+      shapeWait: Color.lerp(shapeWait, other.shapeWait, t)!,
+      dangerSolid: Color.lerp(dangerSolid, other.dangerSolid, t)!,
+      onDangerSolid: Color.lerp(onDangerSolid, other.onDangerSolid, t)!,
+      disabledSurface: Color.lerp(disabledSurface, other.disabledSurface, t)!,
+      disabledText: Color.lerp(disabledText, other.disabledText, t)!,
+      inkSurface: Color.lerp(inkSurface, other.inkSurface, t)!,
+      onInkSurface: Color.lerp(onInkSurface, other.onInkSurface, t)!,
+      inkAction: Color.lerp(inkAction, other.inkAction, t)!,
+      onNow: Color.lerp(onNow, other.onNow, t)!,
+      mapControlSurface: Color.lerp(
+        mapControlSurface,
+        other.mapControlSurface,
+        t,
+      )!,
+      onMapControl: Color.lerp(onMapControl, other.onMapControl, t)!,
+      mapControlLine: Color.lerp(mapControlLine, other.mapControlLine, t)!,
     );
   }
 }

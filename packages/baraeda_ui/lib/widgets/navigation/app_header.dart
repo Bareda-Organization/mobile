@@ -1,7 +1,11 @@
-// 앱 상단 바 — 홈은 brand(그린), 설정·상세는 plain.
+// 앱 머리줄 — 화면 제목 24(나눔명조) + 부제 한 줄 + 오른쪽 행동(시안 `.m-appbar`).
 // 원본: `frontend/design-system/components/navigation/AppHeader.jsx`.
+//
+// 긴 이름 규칙(시안 ⑤-4): 부제는 **한 줄에서 `…`** 로 자른다 — 비상 버튼 밑으로 흘러들지 않게.
+// 부제가 잘려도 전체 이름은 내 정보 탭에 있다. 제목도 한 줄이다.
 
 import 'package:baraeda_ui/theme/baraeda_colors.dart';
+import 'package:baraeda_ui/tokens/shape.dart';
 import 'package:baraeda_ui/tokens/spacing.dart';
 import 'package:baraeda_ui/tokens/typography.dart';
 import 'package:baraeda_ui/widgets/core/icon.dart';
@@ -9,8 +13,9 @@ import 'package:flutter/material.dart';
 
 /// [AppHeader] 의 배경 톤.
 ///
-/// brand=크롬 면(오프화이트 + 하단 선, 다크에선 딥) · plain=본문과 같은 바탕.
-enum AppHeaderTone { brand, plain }
+/// brand=크롬 면(오프화이트 + 하단 선, 다크에선 딥) · plain=본문과 같은 바탕 ·
+/// floating=지도 위에 떠 있는 줄(면 없음 + 제목은 흰 알약 안, 부제 없음).
+enum AppHeaderTone { brand, plain, floating }
 
 /// 앱 상단 바.
 class AppHeader extends StatelessWidget implements PreferredSizeWidget {
@@ -25,7 +30,7 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
 
   final String? title;
 
-  /// 호차·매니저 등 메타 한 줄.
+  /// 호차·매니저 등 메타 한 줄. 한 줄이 넘으면 `…` 로 자른다.
   final String? subtitle;
 
   /// 뒤로가기 동작. 비우면 뒤에 화면이 있을 때만 돌아가는 버튼을 그린다
@@ -33,24 +38,67 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
   /// 2026-09-29, 화면마다 넘기게 두었더니 학부모 앱 5개 화면이 빠뜨렸다).
   final VoidCallback? onBack;
 
-  /// 오른쪽 아이콘 버튼 영역.
+  /// 오른쪽 아이콘 버튼 영역(예: 비상 버튼).
   final Widget? actions;
 
   final AppHeaderTone tone;
 
   @override
-  Size get preferredSize => const Size.fromHeight(BaraedaSpacing.headerHeight);
+  Size get preferredSize => Size.fromHeight(
+    // 부제가 있으면 제목 24 + 부제 14 가 56 에 들어가지 않는다.
+    subtitle != null && tone != AppHeaderTone.floating
+        ? BaraedaSpacing.headerHeight + 8
+        : BaraedaSpacing.headerHeight,
+  );
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final inverse = tone == AppHeaderTone.brand;
-    final background = inverse ? colors.surfaceChrome : colors.bgBase;
-    final foreground = inverse ? colors.textOnChrome : colors.textPrimary;
-    final borderColor = inverse ? colors.borderChrome : colors.borderSubtle;
+    final floating = tone == AppHeaderTone.floating;
+    final chrome = tone == AppHeaderTone.brand;
+    final background = floating
+        ? Colors.transparent
+        : (chrome ? colors.surfaceChrome : colors.bgBase);
+    final foreground = chrome ? colors.textOnChrome : colors.textPrimary;
+    final borderColor = chrome ? colors.borderChrome : colors.borderSubtle;
     final back =
         onBack ??
         (Navigator.canPop(context) ? () => Navigator.maybePop(context) : null);
+
+    final titleWidget = title == null
+        ? null
+        : (floating
+              // 지도 위: 흰 알약 안의 16px 제목(지도 위 글자는 잉크 고정).
+              ? DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: colors.mapControlSurface.withValues(alpha: 0.94),
+                    borderRadius: BorderRadius.circular(BaraedaRadius.pill),
+                    border: Border.all(color: colors.mapControlLine),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 6,
+                    ),
+                    child: Text(
+                      title!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: BaraedaTypography.label.copyWith(
+                        fontSize: BaraedaFontSize.bodyBase,
+                        fontWeight: BaraedaFontWeight.bold,
+                        color: colors.onMapControl,
+                        height: 1.25,
+                      ),
+                    ),
+                  ),
+                )
+              : Text(
+                  title!,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: BaraedaTypography.h3.copyWith(color: foreground),
+                ));
 
     return Semantics(
       header: true,
@@ -65,13 +113,19 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
       child: SafeArea(
         bottom: false,
         child: Container(
-          constraints: const BoxConstraints(
-            minHeight: BaraedaSpacing.headerHeight,
+          constraints: BoxConstraints(minHeight: preferredSize.height),
+          // 뒤로 버튼이 있으면 왼쪽을 4 로 줄여 쉐브론이 가장자리에 붙는다(시안 `.has-back`).
+          padding: EdgeInsets.fromLTRB(
+            back != null ? 6 : BaraedaSpacing.gutterMobile,
+            BaraedaSpacing.space1,
+            BaraedaSpacing.space2,
+            BaraedaSpacing.space1,
           ),
-          padding: const EdgeInsets.fromLTRB(6, 0, 12, 0),
           decoration: BoxDecoration(
             color: background,
-            border: Border(bottom: BorderSide(color: borderColor)),
+            border: floating
+                ? null
+                : Border(bottom: BorderSide(color: borderColor)),
           ),
           child: Row(
             children: [
@@ -81,40 +135,26 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
                   tooltip: '뒤로',
                   icon: BaraedaIcon(
                     'chevron-left',
-                    size: 22,
-                    color: foreground,
+                    size: 24,
+                    color: floating ? colors.onMapControl : foreground,
                   ),
-                )
-              else
-                const SizedBox(width: 12),
+                ),
               Expanded(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: floating
+                      ? CrossAxisAlignment.center
+                      : CrossAxisAlignment.start,
                   children: [
-                    if (title != null)
-                      Text(
-                        title!,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        // 원본 17px/1.3 은 BaraedaTypography 프리셋과 정확히 맞는 값이
-                        // 없어(label=15/h3=24) label 을 베이스로 크기만 보정한다.
-                        style: BaraedaTypography.label.copyWith(
-                          fontWeight: BaraedaFontWeight.bold,
-                          fontSize: 17,
-                          height: 1.3,
-                          letterSpacing: -0.17,
-                          color: foreground,
-                        ),
-                      ),
-                    if (subtitle != null)
+                    ?titleWidget,
+                    if (subtitle != null && !floating)
                       Text(
                         subtitle!,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: BaraedaTypography.micro.copyWith(
-                          height: 1.4,
-                          color: inverse
+                        style: BaraedaTypography.caption.copyWith(
+                          height: 1.3,
+                          color: chrome
                               ? colors.textOnChromeMuted
                               : colors.textSecondary,
                         ),
