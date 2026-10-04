@@ -244,6 +244,7 @@ class _AccountRecoveryScreenState extends ConsumerState<AccountRecoveryScreen> {
     const SizedBox(height: BaraedaSpacing.space4),
     BaraedaInput(
       label: '가입 시 등록한 휴대폰 번호',
+      announceRequired: true,
       enabled: !_codeRequested,
       keyboardType: TextInputType.phone,
       controller: _phoneController,
