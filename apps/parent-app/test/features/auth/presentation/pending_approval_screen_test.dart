@@ -407,6 +407,7 @@ void main() {
       await _pumpPendingApproval(tester, _StubAuthRepository());
 
       expect(find.text('승인 대기'), findsOneWidget);
+      expect(find.textContaining(RegExp(r'\d{2}:\d{2} 확인')), findsOneWidget);
       expect(find.text('학원이 확인하고 있어요'), findsOneWidget);
       expect(find.textContaining('30초마다 저절로 확인해요'), findsOneWidget);
       expect(find.text('신청 접수'), findsOneWidget);
@@ -430,6 +431,8 @@ void main() {
       expect(find.text('학원이 남긴 사유'), findsOneWidget);
       expect(find.text('재원생 명단에서 자녀 이름을 찾을 수 없습니다.'), findsOneWidget);
       expect(find.text('거절'), findsOneWidget);
+      // 거절 카드에는 "12:14 확인" 이 없다 — 대기 카드에만 마지막 확인 시각이 붙는다.
+      expect(find.textContaining(RegExp(r'\d{2}:\d{2} 확인')), findsNothing);
       expect(find.text('사용 시작'), findsNothing);
       expect(find.text('학원이 확인하고 있어요'), findsNothing);
       expect(

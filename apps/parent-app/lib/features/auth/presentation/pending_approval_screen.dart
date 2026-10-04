@@ -390,7 +390,9 @@ class _StatusCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final checked = checkedAt;
+    // 거절 카드에는 확인 시각을 달지 않는다(시안 `pending--rejected`) — 이미 끝난 일이라 "방금 확인" 이 뜻이
+    // 없다.
+    final checked = rejected ? null : checkedAt;
 
     return BaraedaCard(
       highlight: true,
@@ -560,7 +562,10 @@ class _DeviceCard extends StatelessWidget {
         border: Border.all(color: colors.borderSubtle),
       ),
       child: const Padding(
-        padding: EdgeInsets.symmetric(horizontal: BaraedaSpacing.space4),
+        padding: EdgeInsets.symmetric(
+          horizontal: BaraedaSpacing.space4,
+          vertical: BaraedaSpacing.space2,
+        ),
         child: DeviceRegistrationPanel(
           sublabel: '승인 · 거절 결과를 바로 알려 드려요',
         ),

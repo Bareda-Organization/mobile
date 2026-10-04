@@ -184,7 +184,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                     const _SectionLabel('계정 정보'),
                     BaraedaInput(
                       label: '아이디',
-                      required: true,
                       hint: '$loginIdMaxLength자 이하',
                       controller: _loginIdController,
                       error:
@@ -200,7 +199,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                     const SizedBox(height: BaraedaSpacing.space4),
                     BaraedaInput(
                       label: '비밀번호',
-                      required: true,
                       obscureText: true,
                       hint: passwordLimitHint,
                       error: passwordLengthError(_passwordController.text),
@@ -210,7 +208,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                     const SizedBox(height: BaraedaSpacing.space4),
                     BaraedaInput(
                       label: '이름',
-                      required: true,
                       placeholder: '실명을 입력해 주세요',
                       controller: _nameController,
                       onChanged: (_) => setState(() {}),
@@ -218,7 +215,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                     const SizedBox(height: BaraedaSpacing.space4),
                     BaraedaInput(
                       label: '연락처',
-                      required: true,
                       placeholder: '010-0000-0000',
                       keyboardType: TextInputType.phone,
                       controller: _phoneController,

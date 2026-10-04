@@ -162,7 +162,6 @@ class _PasswordChangeScreenState extends ConsumerState<PasswordChangeScreen> {
                     const SizedBox(height: BaraedaSpacing.space4),
                     BaraedaInput(
                       label: '현재 비밀번호',
-                      required: true,
                       kind: BaraedaInputKind.currentPassword,
                       obscureText: !_showCurrent,
                       suffix: _EyeButton(
@@ -177,7 +176,6 @@ class _PasswordChangeScreenState extends ConsumerState<PasswordChangeScreen> {
                     const SizedBox(height: BaraedaSpacing.space4),
                     BaraedaInput(
                       label: '새 비밀번호',
-                      required: true,
                       kind: BaraedaInputKind.newPassword,
                       placeholder: '새 비밀번호',
                       hint: passwordLimitHint,
