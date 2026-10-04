@@ -22,6 +22,7 @@ class BaraedaCodeInput extends StatefulWidget {
     super.key,
     this.length = 6,
     this.numeric = false,
+    this.invalid = false,
     this.label,
     this.hint,
     this.error,
@@ -36,6 +37,9 @@ class BaraedaCodeInput extends StatefulWidget {
   /// 숫자만 받는다 — 숫자 자판이 뜨고 영문자는 걸러진다(문자로 오는 인증번호).
   /// 끄면 영문 · 숫자를 받고 대문자로 바꾼다(연결 코드).
   final bool numeric;
+
+  /// 틀린 코드다 — 글자 없이도 칸 테두리와 이름이 빨개진다([error] 문장은 따로 붙는다).
+  final bool invalid;
   final String? label;
   final String? hint;
   final String? error;
@@ -78,7 +82,9 @@ class _BaraedaCodeInputState extends State<BaraedaCodeInput> {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final hasError = widget.error != null && widget.error!.isNotEmpty;
+    final hasError =
+        widget.invalid || (widget.error != null && widget.error!.isNotEmpty);
+    final hasErrorText = widget.error != null && widget.error!.isNotEmpty;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -87,7 +93,9 @@ class _BaraedaCodeInputState extends State<BaraedaCodeInput> {
         if (widget.label != null) ...[
           Text(
             widget.label!,
-            style: BaraedaTypography.label.copyWith(color: colors.textPrimary),
+            style: BaraedaTypography.label.copyWith(
+              color: hasError ? colors.statusMissed : colors.textPrimary,
+            ),
           ),
           const SizedBox(height: 6),
         ],
@@ -138,12 +146,13 @@ class _BaraedaCodeInputState extends State<BaraedaCodeInput> {
             ),
           ),
         ),
-        if (hasError || (widget.hint != null && widget.hint!.isNotEmpty)) ...[
+        if (hasErrorText ||
+            (widget.hint != null && widget.hint!.isNotEmpty)) ...[
           const SizedBox(height: 6),
           WordWrapText(
-            hasError ? widget.error! : widget.hint!,
+            hasErrorText ? widget.error! : widget.hint!,
             style: BaraedaTypography.caption.copyWith(
-              color: hasError ? colors.statusMissed : colors.textTertiary,
+              color: hasErrorText ? colors.statusMissed : colors.textTertiary,
             ),
           ),
         ],

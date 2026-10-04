@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:parent_app/app/app_routes.dart';
 import 'package:parent_app/core/runs/domain/student_run.dart';
 import 'package:parent_app/core/runs/presentation/run_display.dart';
+import 'package:parent_app/core/ui/word_span.dart';
 import 'package:parent_app/features/live_map/presentation/live_map_view.dart';
 
 /// 운행 전 화면(시안 `live-map--before`) — 좌표가 없는데 지도를 그릴 근거가 없으므로 지도 대신
@@ -61,14 +62,6 @@ class LiveMapBefore extends StatelessWidget {
   }
 }
 
-/// 낱말 단위로만 줄을 바꾸되(`WordWrapText` 와 같은 규칙) 굵게 칠할 조각을 섞을 수 있는 글자 조각.
-/// 낭독기와 시험이 원문을 읽도록 `semanticsLabel` 을 같이 둔다.
-TextSpan _words(String text, {TextStyle? style}) => TextSpan(
-  text: WordWrapText.keepWords(text),
-  semanticsLabel: text,
-  style: style,
-);
-
 /// 시계 그림 + "버스가 아직 출발 전이에요" + 출발 시각 안내.
 class _Hero extends StatelessWidget {
   const new({required this.run});
@@ -116,17 +109,17 @@ class _Hero extends StatelessWidget {
           Text.rich(
             TextSpan(
               children: [
-                _words('${run.direction.label} 버스는 ', style: bodyStyle),
-                _words(
+                wordSpan('${run.direction.label} 버스는 ', style: bodyStyle),
+                wordSpan(
                   formatClock(run.departTime),
                   style: bodyStyle.copyWith(
                     color: colors.textPrimary,
                     fontWeight: BaraedaFontWeight.bold,
                   ),
                 ),
-                _words('에 출발해요.', style: bodyStyle),
+                wordSpan('에 출발해요.', style: bodyStyle),
                 const TextSpan(text: '\n'),
-                _words('출발하면 이 화면에서 위치를 볼 수 있어요.', style: bodyStyle),
+                wordSpan('출발하면 이 화면에서 위치를 볼 수 있어요.', style: bodyStyle),
               ],
             ),
             textAlign: TextAlign.center,

@@ -11,6 +11,8 @@ Widget _host(Widget child) => MaterialApp(
 );
 
 void main() {
+  invalidTests();
+
   testWidgets('numeric 이면 숫자 자판이 뜨고 영문자는 입력되지 않는다', (tester) async {
     var value = '';
     await tester.pumpWidget(
@@ -39,5 +41,30 @@ void main() {
 
     await tester.enterText(find.byType(TextField), 'a1b!');
     expect(value, 'A1B');
+  });
+}
+
+// 틀린 코드 — 글자(error)가 없어도 칸 테두리와 이름이 빨개진다(시안 `child-link--error`).
+void invalidTests() {
+  testWidgets('invalid 이면 이름이 빨간색이 된다 — 아니면 평소 색이다', (tester) async {
+    Color? labelColor() =>
+        tester.widget<Text>(find.text('연결 코드 6자리')).style?.color;
+
+    await tester.pumpWidget(
+      _host(BaraedaCodeInput(value: '', onChanged: (_) {}, label: '연결 코드 6자리')),
+    );
+    final normal = labelColor();
+
+    await tester.pumpWidget(
+      _host(
+        BaraedaCodeInput(
+          value: '',
+          onChanged: (_) {},
+          label: '연결 코드 6자리',
+          invalid: true,
+        ),
+      ),
+    );
+    expect(labelColor(), isNot(normal));
   });
 }

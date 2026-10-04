@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:parent_app/app/di.dart';
+import 'package:parent_app/core/ui/numbered_steps.dart';
 import 'package:parent_app/core/ui/sticky_action_bar.dart';
 
 /// AUTH-08 · API_SPEC §2.9 — 아이디·비밀번호 복구. **비인증 진입점**(로그인
@@ -288,75 +289,28 @@ class _AccountRecoveryScreenState extends ConsumerState<AccountRecoveryScreen> {
 class _AcademySteps extends StatelessWidget {
   const new();
 
-  static const _steps = [
-    ('다니는 학원에 연락해요', '비밀번호 초기화를 요청하면 아이디도 알려 줘요'),
-    ('임시 비밀번호를 받아요', '학원 관계자가 초기화해 줘요'),
-    ('로그인하고 새 비밀번호로 바꿔요', '바꾸기 전에는 다른 화면을 쓸 수 없어요'),
-  ];
-
   @override
   Widget build(BuildContext context) {
-    final colors = context.colors;
-
-    return BaraedaCard(
+    return const BaraedaCard(
       highlight: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text('학원에 요청하는 방법', style: BaraedaTypography.h3),
-          const SizedBox(height: BaraedaSpacing.space3),
-          for (var i = 0; i < _steps.length; i++) ...[
-            if (i > 0) const SizedBox(height: BaraedaSpacing.space3),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                ExcludeSemantics(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: colors.accentPrimary,
-                    ),
-                    child: SizedBox(
-                      width: 36,
-                      height: 36,
-                      child: Center(
-                        child: Text(
-                          '${i + 1}',
-                          style: BaraedaTypography.body.copyWith(
-                            color: colors.textInverse,
-                            fontWeight: BaraedaFontWeight.bold,
-                            height: 1,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: BaraedaSpacing.space3),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      WordWrapText(
-                        _steps[i].$1,
-                        style: BaraedaTypography.body.copyWith(
-                          fontWeight: BaraedaFontWeight.bold,
-                          height: 1.3,
-                        ),
-                      ),
-                      WordWrapText(
-                        _steps[i].$2,
-                        style: BaraedaTypography.caption.copyWith(
-                          color: colors.textSecondary,
-                          height: 1.3,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ],
+          Text('학원에 요청하는 방법', style: BaraedaTypography.h3),
+          SizedBox(height: BaraedaSpacing.space3),
+          NumberedSteps(
+            steps: [
+              (
+                title: '다니는 학원에 연락해요',
+                caption: '비밀번호 초기화를 요청하면 아이디도 알려 줘요',
+              ),
+              (title: '임시 비밀번호를 받아요', caption: '학원 관계자가 초기화해 줘요'),
+              (
+                title: '로그인하고 새 비밀번호로 바꿔요',
+                caption: '바꾸기 전에는 다른 화면을 쓸 수 없어요',
+              ),
+            ],
+          ),
         ],
       ),
     );
