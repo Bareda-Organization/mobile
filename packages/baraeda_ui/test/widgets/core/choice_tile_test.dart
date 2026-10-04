@@ -14,6 +14,7 @@ Widget _host(Widget child) => MaterialApp(
 );
 
 void main() {
+  _listRowWrapTests();
   testWidgets('누르면 콜백이 불리고 선택 상태가 낭독에 실린다', (tester) async {
     var taps = 0;
     await tester.pumpWidget(
@@ -105,3 +106,28 @@ void main() {
 }
 
 void _noop() {}
+
+// R48 — 목록 칸 보조 줄의 낱말 단위 줄바꿈(기본은 예전 그대로).
+void _listRowWrapTests() {
+  testWidgets('wrapSubtitleByWord 를 켜면 보조 줄이 WordWrapText 이고, 기본은 그냥 Text 다', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _host(
+        const Column(
+          children: [
+            BaraedaListRow(title: '가', subtitle: '기본 줄'),
+            BaraedaListRow(
+              title: '나',
+              subtitle: '낱말 줄',
+              wrapSubtitleByWord: true,
+            ),
+          ],
+        ),
+      ),
+    );
+
+    expect(find.byType(WordWrapText), findsOneWidget);
+    expect(find.text('기본 줄'), findsOneWidget);
+  });
+}

@@ -224,7 +224,7 @@ void main() {
     expect(find.text('전체 지도'), findsOneWidget);
   });
 
-  testWidgets('오늘 회차가 없으면(404 RUN_NOT_FOUND) 미리보기 카드 대신 안내가 나온다', (
+  testWidgets('오늘 회차가 없으면(404 RUN_NOT_FOUND) 미리보기 카드를 그리지 않는다', (
     tester,
   ) async {
     await _pumpHome(
@@ -240,7 +240,8 @@ void main() {
 
     expect(find.text('2호차'), findsNothing);
     expect(find.byType(BaraedaMapButton), findsNothing);
-    expect(find.text('오늘은 운행이 없어요'), findsOneWidget);
+    // 같은 안내를 두 번 쓰지 않는다 — 회차 목록 쪽 문구가 이미 있다(시뮬레이터에서 겹쳐 보였던 결함).
+    expect(find.text('오늘은 운행이 없어요'), findsNothing);
   });
 
   group('머리줄', () {

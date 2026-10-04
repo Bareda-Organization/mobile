@@ -8,6 +8,7 @@ import 'package:baraeda_ui/tokens/shape.dart';
 import 'package:baraeda_ui/tokens/spacing.dart';
 import 'package:baraeda_ui/tokens/typography.dart';
 import 'package:baraeda_ui/widgets/core/icon.dart';
+import 'package:baraeda_ui/widgets/core/word_wrap_text.dart';
 import 'package:flutter/material.dart';
 
 /// 목록 칸 한 줄. 여러 줄은 [BaraedaListGroup] 안에 둔다.
@@ -23,6 +24,7 @@ class BaraedaListRow extends StatefulWidget {
     this.done = false,
     this.unread = false,
     this.titleIsPersonName = false,
+    this.wrapSubtitleByWord = false,
   });
 
   final String title;
@@ -49,6 +51,10 @@ class BaraedaListRow extends StatefulWidget {
   /// 사람 이름이면 자르지 않고 줄을 바꾼다. 아니면 두 줄에서 `…`.
   final bool titleIsPersonName;
 
+  /// 참이면 보조 줄을 낱말 단위로만 줄바꿈한다(`WordWrapText`). 기본(거짓)은 예전 그대로다 — 한글이 음절마다
+  /// 끊겨 `탑 / 승` 처럼 낱말 한가운데서 줄이 바뀌는 곳(칩이 오른쪽에 붙어 폭이 좁은 칸)에서 켠다.
+  final bool wrapSubtitleByWord;
+
   @override
   State<BaraedaListRow> createState() => _BaraedaListRowState();
 }
@@ -59,6 +65,26 @@ class _BaraedaListRowState extends State<BaraedaListRow> {
   void _set(bool v) {
     if (widget.onTap == null || _pressed == v) return;
     setState(() => _pressed = v);
+  }
+
+  Widget _subtitle(BaraedaColors colors) {
+    final style = BaraedaTypography.caption.copyWith(
+      color: colors.textSecondary,
+      height: 1.35,
+    );
+    return widget.wrapSubtitleByWord
+        ? WordWrapText(
+            widget.subtitle!,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: style,
+          )
+        : Text(
+            widget.subtitle!,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: style,
+          );
   }
 
   @override
@@ -144,15 +170,7 @@ class _BaraedaListRowState extends State<BaraedaListRow> {
                           if (widget.subtitle != null)
                             Padding(
                               padding: const EdgeInsets.only(top: 1),
-                              child: Text(
-                                widget.subtitle!,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: BaraedaTypography.caption.copyWith(
-                                  color: colors.textSecondary,
-                                  height: 1.35,
-                                ),
-                              ),
+                              child: _subtitle(colors),
                             ),
                         ],
                       ),

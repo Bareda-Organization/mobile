@@ -205,6 +205,7 @@ class _ScheduleBodyState extends ConsumerState<_ScheduleBody> {
             BaraedaListRow(
               leadingIcon: 'calendar',
               title: '요일별 등하원 주소',
+              wrapSubtitleByWord: true,
               subtitle: _weeklySummary(
                 ref.watch(weeklyAddressProvider(studentId)).value,
               ),
@@ -321,6 +322,7 @@ Widget _runRow(StudentRun run, DateTime now, {required bool showCountdown}) {
     leadingIcon: 'bus',
     title: '${run.direction.label} · ${formatClock(run.departTime)} 출발',
     subtitle: parts.join(' · '),
+    wrapSubtitleByWord: true,
     trailing: BaraedaStatusPill(status: status.status, label: status.label),
   );
 }

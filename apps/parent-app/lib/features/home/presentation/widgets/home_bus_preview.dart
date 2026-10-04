@@ -124,14 +124,14 @@ class _PreviewSkeleton extends StatelessWidget {
   }
 }
 
-/// 오늘 그 학생의 회차가 없다 — 지도 카드를 그릴 근거가 없어 한 줄 안내만 둔다.
+/// 오늘 그 학생의 회차가 없다 — 지도 카드를 그릴 근거가 없어 아무것도 그리지 않는다.
+/// 아래 회차 목록이 "오늘 예정된 회차가 없습니다" 를 이미 말하므로 같은 안내를 두 번 쓰지 않는다
+/// (시뮬레이터에서 두 안내가 겹쳐 보였다).
 class _NoRunToday extends StatelessWidget {
   const new();
 
   @override
-  Widget build(BuildContext context) {
-    return const EmptyState(title: '오늘은 운행이 없어요');
-  }
+  Widget build(BuildContext context) => const SizedBox.shrink();
 }
 
 class _PreviewBody extends StatelessWidget {

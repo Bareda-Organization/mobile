@@ -70,6 +70,7 @@ Widget _row(ChangeRequest item, DateTime today) {
     leadingIcon: item.type == ChangeRequestType.cancel ? 'x' : 'route',
     title: historyTitle(item, today),
     subtitle: historySubtitle(item),
+    wrapSubtitleByWord: true,
     trailing: BaraedaStatusPill(status: chip.status, label: chip.label),
   );
 }
