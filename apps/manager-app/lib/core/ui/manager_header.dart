@@ -20,6 +20,7 @@ class ManagerHeader extends ConsumerWidget implements PreferredSizeWidget {
     this.showSos = true,
     this.homeRuns,
     this.onBack,
+    this.strip,
   });
 
   final String title;
@@ -31,9 +32,19 @@ class ManagerHeader extends ConsumerWidget implements PreferredSizeWidget {
   final List<ManagerRun>? homeRuns;
   final VoidCallback? onBack;
 
+  /// 머리줄 **위**에 붙는 한 줄 띠(시안 `.m-strip` — 연결 끊김
+  /// `BaraedaConnectionStrip`). 상태 표시줄은 띠가 비키고 머리줄은 그 아래에서
+  /// 시작한다. 없으면 예전과 같다.
+  final Widget? strip;
+
+  /// 띠 한 줄의 높이 — `BaraedaConnectionStrip` 의 최소 높이(40)와 같다.
+  static const double stripHeight = 40;
+
   @override
   Size get preferredSize => Size.fromHeight(
-    BaraedaSpacing.headerHeight + (subtitle != null || dateSubtitle ? 8 : 0),
+    BaraedaSpacing.headerHeight +
+        (subtitle != null || dateSubtitle ? 8 : 0) +
+        (strip == null ? 0 : stripHeight),
   );
 
   @override
@@ -51,12 +62,43 @@ class ManagerHeader extends ConsumerWidget implements PreferredSizeWidget {
     // 머리줄 높이는 고정이다(제목만 56, 부제까지 64) — 공용 머리줄이 글자를 늘리는 한도(부제 있으면 1.1배, 없으면
     // 1.6배)까지 가면 반올림으로 1px 넘친다(시험으로 확인). 그래서 부제가 있으면 1.0배, 없으면 1.5배로 묶는다.
     // 제목 · 부제는 한 줄 `…` 이고 전체 내용은 본문에 다시 나온다.
-    return MediaQuery(
+    final scaled = MediaQuery(
       data: MediaQuery.of(context).copyWith(
         textScaler: MediaQuery.textScalerOf(context)
             .clamp(maxScaleFactor: hasSubtitle ? 1 : 1.5),
       ),
       child: header,
+    );
+    final stripWidget = strip;
+    if (stripWidget == null) return scaled;
+    // 띠가 상태 표시줄 아래를 차지하므로 머리줄은 안전 영역(위)을 다시 비키지 않는다. 띠 글자는 한 줄 높이를 넘지
+    // 않게 1.3배로 묶는다.
+    return Column(
+      children: [
+        ColoredBox(
+          color: context.colors.bgBase,
+          child: SafeArea(
+            bottom: false,
+            child: SizedBox(
+              height: stripHeight,
+              child: MediaQuery(
+                data: MediaQuery.of(context).copyWith(
+                  textScaler: MediaQuery.textScalerOf(context)
+                      .clamp(maxScaleFactor: 1.3),
+                ),
+                child: stripWidget,
+              ),
+            ),
+          ),
+        ),
+        Expanded(
+          child: MediaQuery.removePadding(
+            context: context,
+            removeTop: true,
+            child: scaled,
+          ),
+        ),
+      ],
     );
   }
 }

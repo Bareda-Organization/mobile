@@ -10,16 +10,21 @@ import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/core/launcher/device_launchers.dart';
 import 'package:manager_app/core/location/position_source.dart';
+import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
+import 'package:manager_app/core/ui/countdown_tick.dart';
 import 'package:manager_app/features/emergency/data/models/emergency_item.dart';
 import 'package:manager_app/features/emergency/data/models/emergency_raise_request.dart';
 import 'package:manager_app/features/emergency/data/models/emergency_raise_result.dart';
 import 'package:manager_app/features/emergency/data/models/emergency_type.dart';
 import 'package:manager_app/features/emergency/domain/emergency_repository.dart';
 import 'package:manager_app/features/emergency/presentation/emergency_screen.dart';
+import 'package:manager_app/features/home/presentation/home_providers.dart';
 import 'package:manager_app/features/offline_queue/data/models/pending_request_summary.dart';
 import 'package:manager_app/features/offline_queue/domain/send_outcome.dart';
 import 'package:manager_app/features/offline_queue/presentation/offline_queue_providers.dart';
+
+import '../../support/manager_run_fixture.dart';
 
 /// 시각을 고정해 취소 가능 창 판정을 결정적으로 만드는 가짜 시계
 /// (`drive_mode_screen_test.dart` 와 같은 패턴, 이월 11 · Ruling 266).
@@ -141,7 +146,7 @@ Widget _wrap(Widget child, List<Override> overrides) {
 }
 
 /// Ruling 616 — 비상 신고가 큐에서 계속 다시 보내지는 동안 화면이 보이는 안내.
-const _failureNotice = '전송 실패 — 계속 다시 보내는 중 · 급하면 학원에 전화';
+const _failureNotice = '전송 실패 — 계속 다시 보내는 중';
 
 /// 오프라인 큐에 남은 비상 신고 한 건 — `OfflineQueueRepositoryImpl` 이 쌓는 모양 그대로.
 final _queuedEmergency = PendingRequestSummary(
@@ -172,6 +177,12 @@ void main() {
     List<PendingRequestSummary> Function()? pendingNow,
   }) {
     return [
+      // 남은 시간 글자를 뛰게 하는 1초 신호 — 시험에서는 시계가 흐르지 않게 비운다.
+      countdownTickProvider.overrideWith((ref) => const Stream<int>.empty()),
+      // 머리줄 · 정보 표가 회차를 읽는다 — 실제 서버로 나가지 않게 막는다.
+      todayRunsProvider.overrideWith(
+        (ref) async => [managerRunFixture(status: RunStatus.moving)],
+      ),
       pendingRequestsProvider.overrideWith(
         (ref) async => pendingNow?.call() ?? pending,
       ),
@@ -240,238 +251,226 @@ void main() {
     expect(fakeRepo.lastRequest?.clientKey, isNotEmpty);
   });
 
-  testWidgets(
-    '발신 요청에 occurred_at 이 clockProvider 가 준 시각 그대로 실린다',
-    (tester) async {
-      // §4.14 는 occurred_at 을 "오프라인 발신분의 실제 시각"으로 규정하고
-      // 비상 발신은 §1.7 오프라인 큐 대상이다 — 통신이 끊겼다 복구됐을 때
-      // 서버가 실제 발생 시각을 알 수 있어야 한다. `clockProvider` 를
-      // `raisedAt` 으로 고정해 그 값이 그대로(가짜 시계 값과 다른 값이
-      // 아니라) 나가는지 본다.
-      final fakeRepo = _FakeEmergencyRepository(
-        raiseOutcome: Sent(
-          EmergencyRaiseResult(
-            emergencyId: 'e1',
-            raisedAt: raisedAt,
-            cancelableUntil: cancelableUntil,
-            notified: 1,
-          ),
+  testWidgets('발신 요청에 occurred_at 이 clockProvider 가 준 시각 그대로 실린다', (
+    tester,
+  ) async {
+    // §4.14 는 occurred_at 을 "오프라인 발신분의 실제 시각"으로 규정하고
+    // 비상 발신은 §1.7 오프라인 큐 대상이다 — 통신이 끊겼다 복구됐을 때
+    // 서버가 실제 발생 시각을 알 수 있어야 한다. `clockProvider` 를
+    // `raisedAt` 으로 고정해 그 값이 그대로(가짜 시계 값과 다른 값이
+    // 아니라) 나가는지 본다.
+    final fakeRepo = _FakeEmergencyRepository(
+      raiseOutcome: Sent(
+        EmergencyRaiseResult(
+          emergencyId: 'e1',
+          raisedAt: raisedAt,
+          cancelableUntil: cancelableUntil,
+          notified: 1,
         ),
-        list: const EmergencyListResponse(items: []),
-      );
+      ),
+      list: const EmergencyListResponse(items: []),
+    );
 
-      await tester.pumpWidget(
-        _wrap(const EmergencyScreen(), overridesFor(fakeRepo: fakeRepo)),
-      );
-      await tester.pumpAndSettle();
+    await tester.pumpWidget(
+      _wrap(const EmergencyScreen(), overridesFor(fakeRepo: fakeRepo)),
+    );
+    await tester.pumpAndSettle();
 
-      await tester.tap(find.text('비상 알림 보내기'));
-      await tester.pumpAndSettle();
+    await tester.tap(find.text('비상 알림 보내기'));
+    await tester.pumpAndSettle();
 
-      expect(fakeRepo.lastRequest?.occurredAt, raisedAt);
-    },
-  );
+    expect(fakeRepo.lastRequest?.occurredAt, raisedAt);
+  });
 
-  testWidgets(
-    '위치 소스가 좌표를 주면 발신 요청에 lat·lng 가 실린다 (F1)',
-    (tester) async {
-      // 비상은 기사·동승자 둘 다 발신한다(ARCHITECTURE §3.3·EXC-04) —
-      // 이 시험은 역할을 override 하지 않는다(역할 무관 동작을 확인).
-      final fakeRepo = _FakeEmergencyRepository(
-        raiseOutcome: Sent(
-          EmergencyRaiseResult(
-            emergencyId: 'e1',
-            raisedAt: raisedAt,
-            cancelableUntil: cancelableUntil,
-            notified: 1,
-          ),
+  testWidgets('위치 소스가 좌표를 주면 발신 요청에 lat·lng 가 실린다 (F1)', (tester) async {
+    // 비상은 기사·동승자 둘 다 발신한다(ARCHITECTURE §3.3·EXC-04) —
+    // 이 시험은 역할을 override 하지 않는다(역할 무관 동작을 확인).
+    final fakeRepo = _FakeEmergencyRepository(
+      raiseOutcome: Sent(
+        EmergencyRaiseResult(
+          emergencyId: 'e1',
+          raisedAt: raisedAt,
+          cancelableUntil: cancelableUntil,
+          notified: 1,
         ),
-        list: const EmergencyListResponse(items: []),
-      );
-      final sample = PositionSample(
-        lat: 37.5,
-        lng: 127,
-        recordedAt: DateTime(2026, 9, 12, 8, 59),
-      );
+      ),
+      list: const EmergencyListResponse(items: []),
+    );
+    final sample = PositionSample(
+      lat: 37.5,
+      lng: 127,
+      recordedAt: DateTime(2026, 9, 12, 8, 59),
+    );
 
-      await tester.pumpWidget(
-        _wrap(
-          const EmergencyScreen(),
-          overridesFor(
-            fakeRepo: fakeRepo,
-            positionSource: _FakePositionSource(sample),
-          ),
+    await tester.pumpWidget(
+      _wrap(
+        const EmergencyScreen(),
+        overridesFor(
+          fakeRepo: fakeRepo,
+          positionSource: _FakePositionSource(sample),
         ),
-      );
-      await tester.pumpAndSettle();
+      ),
+    );
+    await tester.pumpAndSettle();
 
-      await tester.tap(find.text('비상 알림 보내기'));
-      await tester.pumpAndSettle();
+    await tester.tap(find.text('비상 알림 보내기'));
+    await tester.pumpAndSettle();
 
-      expect(fakeRepo.lastRequest?.lat, 37.5);
-      expect(fakeRepo.lastRequest?.lng, 127);
-    },
-  );
+    expect(fakeRepo.lastRequest?.lat, 37.5);
+    expect(fakeRepo.lastRequest?.lng, 127);
+  });
 
-  testWidgets(
-    '위치 소스가 null 이면 발신 요청에서 lat·lng 를 생략한다(서버가 최신 수신 좌표로 대체) (F1)',
-    (tester) async {
-      final fakeRepo = _FakeEmergencyRepository(
-        raiseOutcome: Sent(
-          EmergencyRaiseResult(
-            emergencyId: 'e1',
-            raisedAt: raisedAt,
-            cancelableUntil: cancelableUntil,
-            notified: 1,
-          ),
+  testWidgets('위치 소스가 null 이면 발신 요청에서 lat·lng 를 생략한다(서버가 최신 수신 좌표로 대체) (F1)', (
+    tester,
+  ) async {
+    final fakeRepo = _FakeEmergencyRepository(
+      raiseOutcome: Sent(
+        EmergencyRaiseResult(
+          emergencyId: 'e1',
+          raisedAt: raisedAt,
+          cancelableUntil: cancelableUntil,
+          notified: 1,
         ),
-        list: const EmergencyListResponse(items: []),
-      );
+      ),
+      list: const EmergencyListResponse(items: []),
+    );
 
-      await tester.pumpWidget(
-        _wrap(
-          const EmergencyScreen(),
-          overridesFor(
-            fakeRepo: fakeRepo,
-            positionSource: _FakePositionSource(null),
-          ),
+    await tester.pumpWidget(
+      _wrap(
+        const EmergencyScreen(),
+        overridesFor(
+          fakeRepo: fakeRepo,
+          positionSource: _FakePositionSource(null),
         ),
-      );
-      await tester.pumpAndSettle();
+      ),
+    );
+    await tester.pumpAndSettle();
 
-      await tester.tap(find.text('비상 알림 보내기'));
-      await tester.pumpAndSettle();
+    await tester.tap(find.text('비상 알림 보내기'));
+    await tester.pumpAndSettle();
 
-      expect(fakeRepo.lastRequest?.lat, isNull);
-      expect(fakeRepo.lastRequest?.lng, isNull);
-    },
-  );
+    expect(fakeRepo.lastRequest?.lat, isNull);
+    expect(fakeRepo.lastRequest?.lng, isNull);
+  });
 
   // BRIEF-BG2 — Ruling 360 이후 위치 스트림이 기사 운행 화면에서만 열려
   // (`positionSourceProvider.sample()`), 스트림이 없을 때(동승자 단말·송신
   // 두절 기사 단말)는 발신 시점에 1회만 좌표를 측정해 보완한다.
-  testWidgets(
-    '스트림 좌표가 없으면(sample() null) 1회 측정 좌표를 요청에 싣는다 (BG2)',
-    (tester) async {
-      final fakeRepo = _FakeEmergencyRepository(
-        raiseOutcome: Sent(
-          EmergencyRaiseResult(
-            emergencyId: 'e1',
-            raisedAt: raisedAt,
-            cancelableUntil: cancelableUntil,
-            notified: 1,
-          ),
-        ),
-        list: const EmergencyListResponse(items: []),
-      );
-      final onceSample = PositionSample(
-        lat: 37.6,
-        lng: 127.1,
-        recordedAt: DateTime(2026, 9, 12, 8, 59, 55),
-      );
-      final fakeSource = _FakePositionSource(null, onceSample: onceSample);
-
-      await tester.pumpWidget(
-        _wrap(
-          const EmergencyScreen(),
-          overridesFor(fakeRepo: fakeRepo, positionSource: fakeSource),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.text('비상 알림 보내기'));
-      await tester.pumpAndSettle();
-
-      expect(fakeRepo.lastRequest?.lat, 37.6);
-      expect(fakeRepo.lastRequest?.lng, 127.1);
-      expect(fakeSource.sampleOnceCallCount, 1);
-    },
-  );
-
-  testWidgets(
-    '1회 측정이 실패(null)해도 좌표 없이 발신은 그대로 진행한다 (BG2)',
-    (tester) async {
-      final fakeRepo = _FakeEmergencyRepository(
-        raiseOutcome: Sent(
-          EmergencyRaiseResult(
-            emergencyId: 'e1',
-            raisedAt: raisedAt,
-            cancelableUntil: cancelableUntil,
-            notified: 1,
-          ),
-        ),
-        list: const EmergencyListResponse(items: []),
-      );
-      // onceSample 을 안 주면 sampleOnce() 는 null 을 낸다 — 제한 시간 초과·
-      // 권한 거부와 같은 결과(호출부 관점에서는 구별할 필요가 없다).
-      final fakeSource = _FakePositionSource(null);
-
-      await tester.pumpWidget(
-        _wrap(
-          const EmergencyScreen(),
-          overridesFor(fakeRepo: fakeRepo, positionSource: fakeSource),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.text('비상 알림 보내기'));
-      await tester.pumpAndSettle();
-
-      expect(fakeRepo.lastRequest?.lat, isNull);
-      expect(fakeRepo.lastRequest?.lng, isNull);
-      expect(fakeRepo.raiseCallCount, 1);
-      expect(find.textContaining('보냈습니다'), findsOneWidget);
-    },
-  );
-
-  testWidgets(
-    '스트림 좌표가 있으면(sample() 값 있음) 1회 측정을 부르지 않는다 (BG2)',
-    (tester) async {
-      final fakeRepo = _FakeEmergencyRepository(
-        raiseOutcome: Sent(
-          EmergencyRaiseResult(
-            emergencyId: 'e1',
-            raisedAt: raisedAt,
-            cancelableUntil: cancelableUntil,
-            notified: 1,
-          ),
-        ),
-        list: const EmergencyListResponse(items: []),
-      );
-      final streamSample = PositionSample(
-        lat: 37.5,
-        lng: 127,
-        recordedAt: DateTime(2026, 9, 12, 8, 59),
-      );
-      final fakeSource = _FakePositionSource(
-        streamSample,
-        onceSample: PositionSample(
-          lat: 0,
-          lng: 0,
-          recordedAt: DateTime(2026, 9, 12, 8, 59),
-        ),
-      );
-
-      await tester.pumpWidget(
-        _wrap(
-          const EmergencyScreen(),
-          overridesFor(fakeRepo: fakeRepo, positionSource: fakeSource),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.text('비상 알림 보내기'));
-      await tester.pumpAndSettle();
-
-      expect(fakeRepo.lastRequest?.lat, 37.5);
-      expect(fakeRepo.lastRequest?.lng, 127);
-      expect(fakeSource.sampleOnceCallCount, 0);
-    },
-  );
-
-  testWidgets('측정을 기다리는 동안 두 번째 탭은 새 발신을 만들지 않는다 (BG2)', (
+  testWidgets('스트림 좌표가 없으면(sample() null) 1회 측정 좌표를 요청에 싣는다 (BG2)', (
     tester,
   ) async {
+    final fakeRepo = _FakeEmergencyRepository(
+      raiseOutcome: Sent(
+        EmergencyRaiseResult(
+          emergencyId: 'e1',
+          raisedAt: raisedAt,
+          cancelableUntil: cancelableUntil,
+          notified: 1,
+        ),
+      ),
+      list: const EmergencyListResponse(items: []),
+    );
+    final onceSample = PositionSample(
+      lat: 37.6,
+      lng: 127.1,
+      recordedAt: DateTime(2026, 9, 12, 8, 59, 55),
+    );
+    final fakeSource = _FakePositionSource(null, onceSample: onceSample);
+
+    await tester.pumpWidget(
+      _wrap(
+        const EmergencyScreen(),
+        overridesFor(fakeRepo: fakeRepo, positionSource: fakeSource),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('비상 알림 보내기'));
+    await tester.pumpAndSettle();
+
+    expect(fakeRepo.lastRequest?.lat, 37.6);
+    expect(fakeRepo.lastRequest?.lng, 127.1);
+    expect(fakeSource.sampleOnceCallCount, 1);
+  });
+
+  testWidgets('1회 측정이 실패(null)해도 좌표 없이 발신은 그대로 진행한다 (BG2)', (tester) async {
+    final fakeRepo = _FakeEmergencyRepository(
+      raiseOutcome: Sent(
+        EmergencyRaiseResult(
+          emergencyId: 'e1',
+          raisedAt: raisedAt,
+          cancelableUntil: cancelableUntil,
+          notified: 1,
+        ),
+      ),
+      list: const EmergencyListResponse(items: []),
+    );
+    // onceSample 을 안 주면 sampleOnce() 는 null 을 낸다 — 제한 시간 초과·
+    // 권한 거부와 같은 결과(호출부 관점에서는 구별할 필요가 없다).
+    final fakeSource = _FakePositionSource(null);
+
+    await tester.pumpWidget(
+      _wrap(
+        const EmergencyScreen(),
+        overridesFor(fakeRepo: fakeRepo, positionSource: fakeSource),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('비상 알림 보내기'));
+    await tester.pumpAndSettle();
+
+    expect(fakeRepo.lastRequest?.lat, isNull);
+    expect(fakeRepo.lastRequest?.lng, isNull);
+    expect(fakeRepo.raiseCallCount, 1);
+    expect(find.text('비상 알림을 보냈어요'), findsOneWidget);
+  });
+
+  testWidgets('스트림 좌표가 있으면(sample() 값 있음) 1회 측정을 부르지 않는다 (BG2)', (
+    tester,
+  ) async {
+    final fakeRepo = _FakeEmergencyRepository(
+      raiseOutcome: Sent(
+        EmergencyRaiseResult(
+          emergencyId: 'e1',
+          raisedAt: raisedAt,
+          cancelableUntil: cancelableUntil,
+          notified: 1,
+        ),
+      ),
+      list: const EmergencyListResponse(items: []),
+    );
+    final streamSample = PositionSample(
+      lat: 37.5,
+      lng: 127,
+      recordedAt: DateTime(2026, 9, 12, 8, 59),
+    );
+    final fakeSource = _FakePositionSource(
+      streamSample,
+      onceSample: PositionSample(
+        lat: 0,
+        lng: 0,
+        recordedAt: DateTime(2026, 9, 12, 8, 59),
+      ),
+    );
+
+    await tester.pumpWidget(
+      _wrap(
+        const EmergencyScreen(),
+        overridesFor(fakeRepo: fakeRepo, positionSource: fakeSource),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('비상 알림 보내기'));
+    await tester.pumpAndSettle();
+
+    expect(fakeRepo.lastRequest?.lat, 37.5);
+    expect(fakeRepo.lastRequest?.lng, 127);
+    expect(fakeSource.sampleOnceCallCount, 0);
+  });
+
+  testWidgets('측정을 기다리는 동안 두 번째 탭은 새 발신을 만들지 않는다 (BG2)', (tester) async {
     // 1회 측정이 끝나기 전까지는 버튼이 다시 그려지기 전이라(pump 없이
     // 연속 탭) onPressed 가 아직 살아 있는 옛 위젯을 그대로 다시 호출할 수
     // 있다 — `_submit` 자체의 재진입 가드가 없으면 두 번째 호출도 끝까지
@@ -522,7 +521,10 @@ void main() {
     await tester.tap(find.text('비상 알림 보내기'));
     await tester.pumpAndSettle();
 
-    expect(find.text('처리되지 않았습니다 · 대기 중'), findsOneWidget);
+    // 시안 `emergency--failed` — 전송 실패 화면으로 바뀌고 정보 표의 상태가 `전송 대기` 다.
+    expect(find.text(_failureNotice), findsOneWidget);
+    expect(find.text('전송 대기'), findsOneWidget);
+    expect(find.text('비상 알림 보내기'), findsNothing);
   });
 
   testWidgets('비상이 큐에 쌓이면 학원에 전화하라고 알리고 [학원에 전화]가 학원 번호를 tel: 로 연다 (R46)', (
@@ -545,11 +547,11 @@ void main() {
       ]),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('비상 알림 보내기'));
+    // 큐에 이미 쌓인 신고가 있으면 작성 화면 대신 전송 실패 화면이 바로 뜬다.
     await tester.pumpAndSettle();
 
     expect(find.text(_failureNotice), findsOneWidget);
-    await tester.tap(find.text('학원에 전화'));
+    await tester.tap(find.textContaining('학원에 전화'));
     await tester.pump();
 
     expect(opened, [Uri(scheme: 'tel', path: '02-555-0101')]);
@@ -568,11 +570,11 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('비상 알림 보내기'));
+    // 큐에 이미 쌓인 신고가 있으면 작성 화면 대신 전송 실패 화면이 바로 뜬다.
     await tester.pumpAndSettle();
 
     expect(find.text(_failureNotice), findsOneWidget);
-    expect(find.text('학원에 전화'), findsNothing);
+    expect(find.textContaining('학원에 전화'), findsNothing);
   });
 
   testWidgets('학원 번호가 공백뿐이어도 전화 버튼은 없다 — 걸리지 않는 버튼을 그리지 않는다 (R46)', (
@@ -590,11 +592,11 @@ void main() {
       ]),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('비상 알림 보내기'));
+    // 큐에 이미 쌓인 신고가 있으면 작성 화면 대신 전송 실패 화면이 바로 뜬다.
     await tester.pumpAndSettle();
 
     expect(find.text(_failureNotice), findsOneWidget);
-    expect(find.text('학원에 전화'), findsNothing);
+    expect(find.textContaining('학원에 전화'), findsNothing);
   });
 
   // Ruling 616 — 비상 신고는 서버가 5분 넘게 못 받아도 영구 실패로 빠지지
@@ -733,11 +735,14 @@ void main() {
 
     await tester.tap(find.text('비상 알림 보내기'));
     await tester.pumpAndSettle();
+    // 보낸 뒤에는 결과 화면 — 상황이 바뀌면 `새 상황으로 다시 보내기` 로 작성 화면에 돌아와 또 보낸다.
+    await tester.tap(find.text('새 상황으로 다시 보내기'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('비상 알림 보내기'));
     await tester.pumpAndSettle();
 
     expect(fakeRepo.raiseCallCount, 2);
-    expect(find.textContaining('보냈습니다'), findsOneWidget);
+    expect(find.text('비상 알림을 보냈어요'), findsOneWidget);
   });
 
   testWidgets('취소 가능 창은 서버가 준 cancelable_until 만으로 판단한다', (tester) async {
@@ -766,7 +771,7 @@ void main() {
     await tester.tap(find.text('비상 알림 보내기'));
     await tester.pumpAndSettle();
 
-    expect(find.text('취소'), findsOneWidget);
+    expect(find.text('보낸 알림 취소'), findsOneWidget);
 
     // 시계를 45초 뒤로 되감아 다시 그린다 — Provider override 는 위젯
     // 재생성이 필요하니 pumpWidget 을 다시 호출한다.
@@ -780,10 +785,10 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('비상 알림 보내기'));
+    // 화면 상태(방금 보낸 알림)는 그대로 — 시계만 45초 뒤라 서버가 준 30초 창은 닫혔다.
     await tester.pumpAndSettle();
 
-    expect(find.text('취소'), findsNothing);
+    expect(find.text('보낸 알림 취소'), findsNothing);
   });
 
   testWidgets('발신 이력이 없으면 빈 상태를 보여준다', (tester) async {
@@ -855,13 +860,14 @@ void main() {
     await tester.pumpAndSettle();
 
     // 눈에 보이는 카드 본체(배경이 칠해진 상자)의 폭을 잰다 — 바깥 BaraedaCard 상자만 재면 본체가 줄어든 결함을 놓친다.
+    final historyCard = find.ancestor(
+      of: find.text('확인 대기 중'),
+      matching: find.byType(BaraedaCard),
+    );
     final cardWidth = tester
         .getSize(
           find
-              .descendant(
-                of: find.byType(BaraedaCard),
-                matching: find.byType(Container),
-              )
+              .descendant(of: historyCard, matching: find.byType(Container))
               .first,
         )
         .width;
@@ -993,10 +999,104 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(
-      find.text('이력을 불러오지 못했습니다: 네트워크 상태를 확인해 주세요'),
-      findsOneWidget,
-    );
+    expect(find.text('이력을 불러오지 못했습니다: 네트워크 상태를 확인해 주세요'), findsOneWidget);
     expect(find.textContaining('SocketException'), findsNothing);
+  });
+
+  // 시안 `emergency--sent` — 취소 창이 열려 있는 동안 남은 시간을 보여 주고, 취소 가능 시각은 서버가 준 값이다.
+  testWidgets('발신 뒤에는 취소할 수 있는 남은 시간과 취소 단추를 보여준다', (tester) async {
+    final fakeRepo = _FakeEmergencyRepository(
+      raiseOutcome: Sent(
+        EmergencyRaiseResult(
+          emergencyId: 'e1',
+          raisedAt: raisedAt,
+          cancelableUntil: cancelableUntil,
+          notified: 2,
+        ),
+      ),
+      list: const EmergencyListResponse(items: []),
+    );
+    await tester.pumpWidget(
+      _wrap(const EmergencyScreen(), overridesFor(fakeRepo: fakeRepo)),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('비상 알림 보내기'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('취소할 수 있는 시간'), findsOneWidget);
+    expect(find.text('1:00 남음'), findsOneWidget);
+    expect(find.text('보낸 알림 취소'), findsOneWidget);
+    expect(find.text('학원이 확인하면 여기에 표시돼요'), findsOneWidget);
+  });
+
+  // 시안 `emergency--ack` — 학원이 확인하면 결과 화면이 확인 화면으로 바뀐다(취소 단추 · 재전송 단추는 없다).
+  testWidgets('학원이 확인한 알림은 확인한 사람과 시각을 보여주고 취소 단추를 없앤다', (tester) async {
+    final fakeRepo = _FakeEmergencyRepository(
+      raiseOutcome: Sent(
+        EmergencyRaiseResult(
+          emergencyId: 'e1',
+          raisedAt: raisedAt,
+          cancelableUntil: cancelableUntil,
+          notified: 2,
+        ),
+      ),
+      list: EmergencyListResponse(
+        items: [
+          EmergencyItem(
+            emergencyId: 'e1',
+            type: EmergencyType.accident,
+            raisedAt: raisedAt,
+            cancelableUntil: cancelableUntil,
+            acked: true,
+            ackedAt: raisedAt.add(const Duration(minutes: 2)),
+            ackedByName: '최은영',
+          ),
+        ],
+      ),
+    );
+    await tester.pumpWidget(
+      _wrap(const EmergencyScreen(), overridesFor(fakeRepo: fakeRepo)),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('비상 알림 보내기'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('학원이 확인했어요'), findsOneWidget);
+    expect(find.textContaining('최은영 관계자'), findsWidgets);
+    expect(find.text('09:02:00'), findsNothing, reason: '시각은 다른 문구와 한 줄로 나온다');
+    expect(find.textContaining('09:02:00'), findsWidgets);
+    expect(find.text('보낸 알림 취소'), findsNothing);
+    expect(find.text('새 상황으로 다시 보내기'), findsNothing);
+  });
+
+  // 시안 `emergency--failed` — 서버에 닿지 못한 신고가 있으면 맨 위에 연결 끊김 띠가 붙는다.
+  testWidgets('서버에 닿지 못한 신고가 있으면 맨 위에 연결 끊김 띠가 보인다', (tester) async {
+    final fakeRepo = _FakeEmergencyRepository(
+      list: const EmergencyListResponse(items: []),
+    );
+    await tester.pumpWidget(
+      _wrap(
+        const EmergencyScreen(),
+        overridesFor(fakeRepo: fakeRepo, pending: [_queuedEmergency]),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('인터넷 연결 없음 · 연결되면 자동으로 보내요'), findsOneWidget);
+    expect(find.text('사고'), findsOneWidget, reason: '큐 본문의 type 으로 유형을 보여준다');
+  });
+
+  testWidgets('큐가 비어 있으면 연결 끊김 띠가 없다', (tester) async {
+    final fakeRepo = _FakeEmergencyRepository(
+      list: const EmergencyListResponse(items: []),
+    );
+    await tester.pumpWidget(
+      _wrap(const EmergencyScreen(), overridesFor(fakeRepo: fakeRepo)),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(BaraedaConnectionStrip), findsNothing);
   });
 }
