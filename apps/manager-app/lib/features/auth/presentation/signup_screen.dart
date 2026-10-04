@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:manager_app/app/app_routes.dart';
 import 'package:manager_app/app/di.dart';
+import 'package:manager_app/core/ui/manager_header.dart';
 import 'package:manager_app/features/auth/presentation/widgets/academy_picker.dart';
 
 /// UF-X-01 — 회원가입: 아이디·비밀번호·이름·연락처 → 역할 선택(버스기사·동승자) →
@@ -112,7 +113,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     final repository = ref.watch(authRepositoryProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('회원가입')),
+      appBar: const ManagerHeader(title: '회원가입', showSos: false),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(BaraedaSpacing.gutterMobile),

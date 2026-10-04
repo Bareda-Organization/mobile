@@ -12,6 +12,14 @@ ManagerRun managerRunFixture({
   DateTime? departTime,
   bool ackRequired = false,
   UserRole? roleInRun,
+  int addedCount = 0,
+  int removedCount = 0,
+  int? riderCount,
+  int? absentCount,
+  int? stopCount,
+  String? plateNo,
+  DateTime? startWindowFrom,
+  DateTime? startWindowTo,
 }) {
   final depart = departTime ?? DateTime(2026, 9, 30, 8);
   return ManagerRun(
@@ -24,11 +32,16 @@ ManagerRun managerRunFixture({
     estDurationMin: 30,
     runStatus: status,
     confirmed: confirmed,
-    startWindowFrom: depart.subtract(const Duration(minutes: 10)),
-    startWindowTo: depart.add(const Duration(minutes: 10)),
-    addedCount: 0,
-    removedCount: 0,
+    startWindowFrom:
+        startWindowFrom ?? depart.subtract(const Duration(minutes: 10)),
+    startWindowTo: startWindowTo ?? depart.add(const Duration(minutes: 10)),
+    addedCount: addedCount,
+    removedCount: removedCount,
     ackRequired: ackRequired,
     roleInRun: roleInRun,
+    riderCount: riderCount,
+    absentCount: absentCount,
+    stopCount: stopCount,
+    plateNo: plateNo,
   );
 }

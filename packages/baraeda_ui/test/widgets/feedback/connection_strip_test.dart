@@ -232,4 +232,28 @@ void main() {
       expect(slide.position.value.dy, 0); // 끝: 제자리
     });
   });
+
+  testWidgets('AlertBanner 는 icon 을 주면 그 아이콘을, 안 주면 톤의 기본 아이콘을 그린다', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: BaraedaTheme.light(),
+        home: const Scaffold(
+          body: Column(
+            children: [
+              AlertBanner(tone: AlertTone.moving, title: '기본'),
+              AlertBanner(tone: AlertTone.moving, icon: 'route', title: '노선'),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    final icons = tester
+        .widgetList<BaraedaIcon>(find.byType(BaraedaIcon))
+        .map((icon) => icon.name)
+        .toList();
+    expect(icons, ['bus', 'route']);
+  });
 }

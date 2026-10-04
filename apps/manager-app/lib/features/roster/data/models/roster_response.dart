@@ -1,5 +1,6 @@
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:manager_app/core/run/run_enums.dart';
+import 'package:manager_app/features/roster/data/models/no_show_contact_request.dart';
 
 /// 승하차지 정류장 `change` 표시 — §4.2. `added`(초록) · `skipped`(빨강
 /// 취소선, 순번 유지). 값이 없으면 변경 없음.
@@ -36,6 +37,34 @@ enum RiderChange {
   }
 }
 
+/// 미승차 연락 기록 한 건 — `no_show_case.contacts[]`(§4.2, `Ruling 823`). 시각 · 수단 ·
+/// 결과뿐이다.
+class NoShowContact {
+  const new({
+    required this.attemptType,
+    required this.result,
+    required this.attemptedAt,
+  });
+
+  factory fromJson(Map<String, dynamic> json) {
+    return NoShowContact(
+      attemptType:
+          NoShowAttemptType.fromWireValueOrNull(
+            json['attempt_type'] as String?,
+          ) ??
+          NoShowAttemptType.call,
+      result:
+          NoShowContactResult.fromWireValueOrNull(json['result'] as String?) ??
+          NoShowContactResult.noAnswer,
+      attemptedAt: DateTime.parse(json['attempted_at'] as String),
+    );
+  }
+
+  final NoShowAttemptType attemptType;
+  final NoShowContactResult result;
+  final DateTime attemptedAt;
+}
+
 /// `no_show_case` — §4.2·§4.6. `expires_at` 은 3분 카운트다운 만료 시각을
 /// 절대 시각으로 표시한다(core/run/run_enums.dart 주석 · Clock 미도입 판단
 /// 근거 참고, 보고서에 기록).
@@ -44,21 +73,31 @@ class NoShowCase {
     required this.caseId,
     required this.startedAt,
     required this.expiresAt,
+    this.contacts = const [],
   });
 
   factory fromJson(Map<String, dynamic> json) {
+    final contactsJson = json['contacts'] as List<dynamic>? ?? const [];
     return NoShowCase(
       // M2(BR-054, Ruling 332) — 서버가 아직 숫자로 보낸다(`Long caseId`).
       // `rider_id`(rider_update_result.dart)와 같은 방식으로 흡수한다.
       caseId: asIdString(json['case_id']),
       startedAt: DateTime.parse(json['started_at'] as String),
       expiresAt: DateTime.parse(json['expires_at'] as String),
+      // `Ruling 823` — 서버가 아직 안 주거나 기록이 없으면 빈 목록. 시각순으로 온다.
+      contacts: contactsJson
+          .cast<Map<String, dynamic>>()
+          .map(NoShowContact.fromJson)
+          .toList(),
     );
   }
 
   final String caseId;
   final DateTime startedAt;
   final DateTime expiresAt;
+
+  /// 이 케이스의 연락 기록(시각순). 시각 · 수단 · 결과만 있고 메모는 없다.
+  final List<NoShowContact> contacts;
 }
 
 /// `stops[].students[]` 항목 — §4.2.

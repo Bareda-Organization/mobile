@@ -62,7 +62,7 @@ void main() {
     final fields = find.byType(TextField);
     await tester.enterText(fields.at(0), 'driverA1');
     await tester.enterText(fields.at(1), 'temp-pass');
-    await tester.tap(find.widgetWithText(BaraedaButton, '로그인하기'));
+    await tester.tap(find.widgetWithText(BaraedaButton, '로그인'));
     await tester.pumpAndSettle();
 
     expect(find.byType(PasswordChangeScreen), findsOneWidget);
@@ -86,7 +86,7 @@ void main() {
     final fields = find.byType(TextField);
     await tester.enterText(fields.at(0), 'driverA1');
     await tester.enterText(fields.at(1), 'password');
-    await tester.tap(find.widgetWithText(BaraedaButton, '로그인하기'));
+    await tester.tap(find.widgetWithText(BaraedaButton, '로그인'));
     await tester.pumpAndSettle();
 
     expect(find.byType(ManagerHomeScreen), findsOneWidget);

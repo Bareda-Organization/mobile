@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:manager_app/app/app_routes.dart';
 import 'package:manager_app/app/di.dart';
+import 'package:manager_app/core/auth/academy_contact_store.dart';
 import 'package:manager_app/core/auth/account_session.dart';
 import 'package:manager_app/core/auth/auth_providers.dart';
 
@@ -40,6 +41,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   String? _passwordError;
   String? _formError;
 
+  /// 서버가 알려 준 남은 시도 횟수(`remaining_attempts`) — 한도 안내(M14)에 쓴다. 모르면 `null`.
+  int? _remainingAttempts;
+  bool _showPassword = false;
+
   @override
   void dispose() {
     _loginIdController.dispose();
@@ -56,6 +61,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       _submitting = true;
       _passwordError = null;
       _formError = null;
+      _remainingAttempts = null;
     });
 
     final repository = ref.read(authRepositoryProvider);
@@ -76,6 +82,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           response.mustChangePassword;
       ref.read(academyContactProvider.notifier).state =
           response.academy?.contact;
+      // 계정이 잠기면 서버에서 번호를 못 받는다 — 성공한 로그인의 번호를 기기에 남겨 둔다(`Ruling 825`).
+      unawaited(
+        ref.read(academyContactStoreProvider).save(response.academy?.contact),
+      );
 
       if (ref.read(unsupportedRoleProvider)) {
         // 로그인 자체는 서버 기준 성공이라 토큰이 이미 저장돼 있다 —
@@ -98,10 +108,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         _submitting = false;
         switch (failure) {
           case ApiFailure(code: 'INVALID_CREDENTIALS', :final details):
+            _passwordError = '아이디 또는 비밀번호가 올바르지 않아요';
             final remaining = details?['remaining_attempts'];
-            _passwordError = remaining == null
-                ? '아이디 또는 비밀번호가 올바르지 않습니다'
-                : '아이디 또는 비밀번호가 올바르지 않습니다 (잔여 시도 $remaining회)';
+            _remainingAttempts = remaining is int ? remaining : null;
           case ApiFailure(code: 'AUTH_ACCOUNT_BLOCKED'):
             _formError = null;
             _passwordError = null;
@@ -127,81 +136,183 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     // 로그인이 만료돼 돌아왔다면 이유를 알린다(R46) — 이유 없이 로그인 화면만 나오면 오류인 줄 안다.
     final expiredNotice = ref.watch(sessionExpiredNoticeProvider);
+    final remaining = _remainingAttempts;
     return Scaffold(
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(BaraedaSpacing.gutterMobile),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: BaraedaSpacing.space16),
-              const Text('바래다 매니저', style: BaraedaTypography.h1),
-              const SizedBox(height: BaraedaSpacing.space8),
-              if (expiredNotice != null) ...[
-                AlertBanner(tone: AlertTone.moving, body: expiredNotice),
-                const SizedBox(height: BaraedaSpacing.space4),
-              ],
-              BaraedaInput(
-                label: '아이디',
-                required: true,
-                controller: _loginIdController,
+        child: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 56,
+                          height: 56,
+                          decoration: BoxDecoration(
+                            color: colors.accentPrimary,
+                            borderRadius: BorderRadius.circular(
+                              BaraedaRadius.card,
+                            ),
+                          ),
+                          child: BaraedaIcon(
+                            'bus',
+                            size: 28,
+                            color: colors.textInverse,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '바래다 매니저',
+                                style: BaraedaTypography.h3.copyWith(
+                                  color: colors.textPrimary,
+                                ),
+                              ),
+                              Text(
+                                '기사 · 동승자',
+                                style: BaraedaTypography.body.copyWith(
+                                  color: colors.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    if (expiredNotice != null) ...[
+                      AlertBanner(tone: AlertTone.moving, body: expiredNotice),
+                      const SizedBox(height: 16),
+                    ],
+                    BaraedaInput(
+                      label: '아이디',
+                      kind: BaraedaInputKind.username,
+                      controller: _loginIdController,
+                    ),
+                    const SizedBox(height: 16),
+                    BaraedaInput(
+                      label: '비밀번호',
+                      kind: BaraedaInputKind.currentPassword,
+                      obscureText: !_showPassword,
+                      error: _passwordError,
+                      controller: _passwordController,
+                      suffix: IconButton(
+                        tooltip: _showPassword ? '비밀번호 숨기기' : '비밀번호 보기',
+                        onPressed: () =>
+                            setState(() => _showPassword = !_showPassword),
+                        icon: BaraedaIcon(
+                          _showPassword ? 'eye-off' : 'eye',
+                          color: colors.textSecondary,
+                        ),
+                      ),
+                    ),
+                    if (remaining != null) ...[
+                      const SizedBox(height: 12),
+                      AlertBanner(
+                        tone: AlertTone.missed,
+                        title: '$remaining번 더 틀리면 계정이 잠겨요',
+                        body:
+                            '5번 연속 실패하면 학원 관리자가 풀어 줄 때까지 '
+                            '로그인할 수 없어요.',
+                      ),
+                    ],
+                    if (_formError != null) ...[
+                      const SizedBox(height: 12),
+                      AlertBanner(tone: AlertTone.missed, body: _formError),
+                    ],
+                    const SizedBox(height: 12),
+                    Text(
+                      '한 번 로그인하면 이 기기에서 자동으로 로그인돼요. 다른 사람과 같이 쓰는 '
+                      '폰이면 사용 후 로그아웃해 주세요.',
+                      style: BaraedaTypography.caption.copyWith(
+                        color: colors.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    // M5(Ruling 329 · UF-X-04) — 매니저(기사·동승자)도 학부모·학생과 같은 "학원
+                    // 관계자 경유"
+                    // 복구만 연다. 전화번호 복구 화면(SMS 연동 전 503, §5.22)은 만들지 않고 안내만 둔다.
+                    Text.rich(
+                      const TextSpan(
+                        children: [
+                          TextSpan(
+                            text: '비밀번호를 잊으셨나요? ',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          TextSpan(text: '다니는 학원에 초기화를 요청해 주세요. '),
+                          TextSpan(
+                            text: '임시 비밀번호',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          TextSpan(text: '를 받아 로그인할 수 있어요.'),
+                        ],
+                      ),
+                      style: BaraedaTypography.caption.copyWith(
+                        color: colors.textSecondary,
+                      ),
+                    ),
+                    DevQuickLogin(
+                      accounts: const [
+                        DevAccount('기사', 'driverA1'),
+                        DevAccount('동승자', 'escortA1'),
+                        // 시드에서 **운행 중(moving)** 인 회차 3의 동승자 — 승하차 처리를 눈으로 보려면 이
+                        // 계정이어야 한다(다른 동승자의 회차는 출발 전이다).
+                        DevAccount('동승자(운행중)', 'escortA2'),
+                        DevAccount('기사(타 학원)', 'driverB1'),
+                        DevAccount('차단됨', 'driverBlocked'),
+                        // V14 데모 학원(목동) 1호차 — 승하차지 15곳 · 학생 20명 명단.
+                        DevAccount('데모 기사', 'driver011'),
+                        DevAccount('데모 동승자', 'escort011'),
+                      ],
+                      onPick: (loginId, password) {
+                        _loginIdController.text = loginId;
+                        _passwordController.text = password;
+                        unawaited(_submit());
+                      },
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: BaraedaSpacing.space4),
-              BaraedaInput(
-                label: '비밀번호',
-                required: true,
-                obscureText: true,
-                error: _passwordError,
-                controller: _passwordController,
+            ),
+            DecoratedBox(
+              decoration: BoxDecoration(
+                color: colors.bgBase,
+                border: Border(top: BorderSide(color: colors.borderSubtle)),
               ),
-              if (_formError != null) ...[
-                const SizedBox(height: BaraedaSpacing.space4),
-                AlertBanner(tone: AlertTone.missed, body: _formError),
-              ],
-              const SizedBox(height: BaraedaSpacing.space6),
-              BaraedaButton(
-                label: '로그인하기',
-                size: BaraedaButtonSize.lg,
-                onPressed: _submitting ? null : _submit,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    BaraedaButton(
+                      label: '로그인',
+                      size: BaraedaButtonSize.xl,
+                      block: true,
+                      onPressed: _submitting ? null : _submit,
+                    ),
+                    const SizedBox(height: 8),
+                    BaraedaButton(
+                      label: '처음이세요? 회원가입',
+                      variant: BaraedaButtonVariant.secondary,
+                      block: true,
+                      onPressed: () => context.push(AppRoutes.signup),
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: BaraedaSpacing.space4),
-              BaraedaButton(
-                label: '회원가입하기',
-                size: BaraedaButtonSize.lg,
-                variant: BaraedaButtonVariant.ghost,
-                onPressed: () => context.push(AppRoutes.signup),
-              ),
-              const SizedBox(height: BaraedaSpacing.space4),
-              // M5(Ruling 329 · UF-X-04) — 매니저(기사·동승자)도 학부모·
-              // 학생과 같은 "학원 관계자 경유" 복구만 연다. 전화번호 복구
-              // 화면(SMS 연동 전 503, §5.22)은 만들지 않고 안내만 둔다.
-              const WordWrapText(
-                '비밀번호를 잊으셨나요? 다니는 학원에 초기화를 요청해 주세요.',
-                textAlign: TextAlign.center,
-              ),
-              DevQuickLogin(
-                accounts: const [
-                  DevAccount('기사', 'driverA1'),
-                  DevAccount('동승자', 'escortA1'),
-                  // 시드에서 **운행 중(moving)** 인 회차 3의 동승자 — 승하차 처리를
-                  // 눈으로 보려면 이 계정이어야 한다(다른 동승자의 회차는 출발 전이다).
-                  DevAccount('동승자(운행중)', 'escortA2'),
-                  DevAccount('기사(타 학원)', 'driverB1'),
-                  DevAccount('차단됨', 'driverBlocked'),
-                  // V14 데모 학원(목동) 1호차 — 승하차지 15곳 · 학생 20명 명단.
-                  DevAccount('데모 기사', 'driver011'),
-                  DevAccount('데모 동승자', 'escort011'),
-                ],
-                onPick: (loginId, password) {
-                  _loginIdController.text = loginId;
-                  _passwordController.text = password;
-                  unawaited(_submit());
-                },
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

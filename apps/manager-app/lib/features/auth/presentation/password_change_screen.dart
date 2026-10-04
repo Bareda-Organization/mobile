@@ -2,11 +2,11 @@ import 'package:baraeda_core/baraeda_core.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/auth/account_session.dart';
 import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/core/network/failure_messages.dart';
+import 'package:manager_app/core/ui/manager_header.dart';
 
 /// AUTH-07 · API_SPEC §2.8 — 비밀번호 변경(기사·동승자 공통, R32 M13).
 ///
@@ -87,11 +87,8 @@ class _PasswordChangeScreenState extends ConsumerState<PasswordChangeScreen> {
   Widget build(BuildContext context) {
     final forced = ref.watch(mustChangePasswordProvider);
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('비밀번호 변경'),
-        automaticallyImplyLeading: false,
-        leading: forced ? null : BackButton(onPressed: () => context.pop()),
-      ),
+      // 강제 변경(임시 비밀번호)은 뒤로 갈 곳이 없다 — 라우터가 이 화면에 고정한다.
+      appBar: const ManagerHeader(title: '비밀번호 변경', showSos: false),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(BaraedaSpacing.gutterMobile),

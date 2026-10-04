@@ -2,11 +2,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/auth/user_role.dart';
 import 'package:manager_app/core/run/run_enums.dart';
+import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/features/home/data/models/manager_run.dart';
 
 /// §4.1 오늘의 담당 회차 목록 — `date` 미전달로 서버 기본값(`today`)을 쓴다.
 /// `.autoDispose` 를 쓰지 않는다 — 화면을 떠났다 돌아와도(예: DriveMode →
-/// 뒤로가기) 목록을 다시 부르지 않고 유지하는 편이 낫다고 판단(docs/archive/rounds/fe-phases-f2-f5.md §5.2 목표
+/// 뒤로가기) 목록을 다시 부르지 않고 유지하는 편이 낫다고 판단(docs/archive/rounds/fe-phases-f2-f5.md
+/// §5.2 목표
 /// 표에 폴링·자동 새로고침 요건이 없어 수동 `ref.refresh` 만 지원).
 final todayRunsProvider = FutureProvider<List<ManagerRun>>((ref) {
   return ref.watch(managerRunRepositoryProvider).fetchRuns();
@@ -29,3 +31,35 @@ ManagerRun? pickResumableRun(List<ManagerRun> runs) {
   }
   return picked;
 }
+
+/// 홈 큰 카드에 올릴 회차 — 진행 중 > 확정된 가장 이른 > 없음(시안 `home-escort` 자동 선택).
+/// 확정 전 · 이미 끝난 회차는 큰 카드가 되지 않고 "다른 회차" 목록에만 있다.
+ManagerRun? pickFeaturedRun(List<ManagerRun> runs) {
+  ManagerRun? earliest(bool Function(ManagerRun) test) {
+    ManagerRun? picked;
+    for (final run in runs) {
+      if (!test(run)) continue;
+      if (picked == null || run.departTime.isBefore(picked.departTime)) {
+        picked = run;
+      }
+    }
+    return picked;
+  }
+
+  return earliest((run) => run.runStatus == RunStatus.moving) ??
+      earliest((run) => run.confirmed && run.runStatus == RunStatus.confirmed);
+}
+
+/// 지금 화면들이 다루는 회차 — 사용자가 목록에서 고른 회차([selectedRunIdProvider])가 아직 유효하면 그것,
+/// 아니면 [pickFeaturedRun] 의 자동 선택. 목록을 아직 못 받았으면 `null`.
+final focusRunProvider = Provider<ManagerRun?>((ref) {
+  final runs = ref.watch(todayRunsProvider).value;
+  if (runs == null) return null;
+  final selectedId = ref.watch(selectedRunIdProvider);
+  for (final run in runs) {
+    if (run.runId == selectedId && run.runStatus != RunStatus.finished) {
+      return run;
+    }
+  }
+  return pickFeaturedRun(runs);
+});

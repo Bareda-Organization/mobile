@@ -244,6 +244,9 @@ void main() {
     await tester.pump(_interval);
     expect(repository.calls, hasLength(1));
 
+    // 로그아웃은 내 정보 탭 맨 아래에만 있다(`Ruling 826`).
+    await tester.tap(find.text('내 정보'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('로그아웃'));
     await tester.pumpAndSettle();
     await tester.tap(
@@ -269,7 +272,7 @@ void main() {
 
     await tester.tap(find.text('도착 처리'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('도착했습니다'));
+    await tester.tap(find.text('도착했어요 · 운행 종료'));
     await tester.pumpAndSettle();
     final afterArrive = repository.calls.length;
 
@@ -368,7 +371,7 @@ void main() {
 
     await tester.tap(find.text('도착 처리'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('도착했습니다'));
+    await tester.tap(find.text('도착했어요 · 운행 종료'));
     await tester.pump();
     await goTo(tester, container, AppRoutes.home);
 

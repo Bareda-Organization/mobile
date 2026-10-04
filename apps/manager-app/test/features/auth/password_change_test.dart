@@ -8,11 +8,12 @@ import 'package:manager_app/app/app_routes.dart';
 import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/auth/account_session.dart';
 import 'package:manager_app/core/auth/auth_providers.dart';
+import 'package:manager_app/core/auth/me_provider.dart';
 import 'package:manager_app/core/auth/user_role.dart';
 import 'package:manager_app/features/auth/domain/auth_repository.dart';
 import 'package:manager_app/features/auth/presentation/password_change_screen.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
-import 'package:manager_app/features/home/presentation/home_screen.dart';
+import 'package:manager_app/features/home/presentation/me_screen.dart';
 
 /// R32 M13 — 매니저 앱에는 비밀번호를 바꿀 길이 없었다(AUTH-07 · UF-X-09 — 전 역할). 학부모 앱
 /// 화면을 본보기로 만들었다. 성공하면 서버가 refresh 토큰을 전량 무효화하므로 이 기기도
@@ -123,10 +124,10 @@ void main() {
     expect(repository.changes, isEmpty);
   });
 
-  testWidgets('홈 머리말의 비밀번호 변경 버튼이 이 화면으로 간다', (tester) async {
+  testWidgets('내 정보의 [비밀번호 변경] 칸이 이 화면으로 간다', (tester) async {
     final router = GoRouter(
       routes: [
-        GoRoute(path: '/', builder: (_, _) => const ManagerHomeScreen()),
+        GoRoute(path: '/', builder: (_, _) => const MeScreen()),
         GoRoute(
           path: AppRoutes.passwordChange,
           builder: (_, _) => const Text('PASSWORD_CHANGE_MARKER'),
@@ -137,6 +138,7 @@ void main() {
       ProviderScope(
         overrides: [
           todayRunsProvider.overrideWith((ref) async => []),
+          meProvider.overrideWith((ref) async => throw StateError('내 정보 미사용')),
           currentUserRoleProvider.overrideWith((ref) => UserRole.escort),
         ],
         child: MaterialApp.router(routerConfig: router),
@@ -144,9 +146,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(
-      find.widgetWithIcon(BaraedaIconButton, Icons.lock_outline),
-    );
+    await tester.tap(find.text('비밀번호 변경'));
     await tester.pumpAndSettle();
 
     expect(find.text('PASSWORD_CHANGE_MARKER'), findsOneWidget);

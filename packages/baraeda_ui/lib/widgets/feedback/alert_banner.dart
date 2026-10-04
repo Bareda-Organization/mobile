@@ -66,10 +66,14 @@ class AlertBanner extends StatelessWidget {
     this.body,
     this.action,
     this.inlineAction = false,
+    this.icon,
   });
 
   /// 상태 컬러 규칙을 그대로 따른다.
   final AlertTone tone;
+
+  /// 비우면 [tone] 의 기본 아이콘. 시안이 상황에 맞는 아이콘(`route` · `wifi-off`)을 쓰는 자리에서만 준다.
+  final String? icon;
 
   /// 결론 한 줄.
   final String? title;
@@ -109,7 +113,7 @@ class AlertBanner extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(top: 2),
               child: ExcludeSemantics(
-                child: BaraedaIcon(style.icon, color: style.foreground),
+                child: BaraedaIcon(icon ?? style.icon, color: style.foreground),
               ),
             ),
             const SizedBox(width: 10),

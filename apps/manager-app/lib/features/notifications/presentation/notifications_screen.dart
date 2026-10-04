@@ -5,10 +5,12 @@ import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:manager_app/app/app_routes.dart';
 import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/core/network/failure_messages.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
+import 'package:manager_app/core/ui/manager_header.dart';
 import 'package:manager_app/features/notifications/presentation/notification_kind.dart';
 import 'package:manager_app/features/notifications/presentation/notification_providers.dart';
 
@@ -29,7 +31,7 @@ class NotificationsScreen extends ConsumerWidget {
     final feed = feedAsync.value;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('알림')),
+      appBar: const ManagerHeader(title: '알림'),
       body: SafeArea(
         child: NotificationListView<NotificationItem>(
           items: feed?.items ?? const [],
@@ -92,7 +94,12 @@ class _ItemRow extends ConsumerWidget {
       if (item.isUnread) unawaited(_markRead(context, ref));
       if (destination != null) {
         ref.read(selectedRunIdProvider.notifier).state = item.runId;
-        unawaited(context.push(destination));
+        // 명단은 동승자의 탭이라 탭을 바꿔 가고, 운행 준비는 위에 덮어 연다.
+        if (destination == AppRoutes.roster) {
+          context.go(destination);
+        } else {
+          unawaited(context.push(destination));
+        }
       }
     };
   }

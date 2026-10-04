@@ -11,17 +11,27 @@ import 'package:manager_app/features/home/presentation/home_providers.dart';
 /// (R32 M4 — 기사는 명단에 가지 않아 운행 화면에도 있어야 한다).
 ///
 /// 노출 여부는 §4.1 `ack_required` 가 정하고([ackRequired]), 확인이 성공하면
-/// `todayRunsProvider` 를 다시 받아 서버 값으로 바꾼다. 다시 받기 전 깜빡이지
-/// 않도록 성공 즉시 스스로 숨긴다.
+/// `todayRunsProvider` 를 다시 받아 서버 값으로 바꾼다. 확인한 뒤에는 초록 "확인했어요" 로 바뀐다.
 class ChangeAckBanner extends ConsumerStatefulWidget {
   const new({
     required this.runId,
     required this.ackRequired,
     super.key,
+    this.addedCount = 0,
+    this.removedCount = 0,
+    this.bottomGap = 0,
   });
 
   final String runId;
   final bool ackRequired;
+
+  /// §4.1 `added_count` · `removed_count` — 띠에 `추가 1곳 · 삭제 1곳` 으로 적는다. 둘 다 0
+  /// 이면 일반 문구.
+  final int addedCount;
+  final int removedCount;
+
+  /// 띠가 보일 때만 아래에 두는 간격 — 안 보일 때(확인할 변경이 없을 때)는 자리를 차지하지 않는다.
+  final double bottomGap;
 
   @override
   ConsumerState<ChangeAckBanner> createState() => _ChangeAckBannerState();
@@ -37,7 +47,9 @@ class _ChangeAckBannerState extends ConsumerState<ChangeAckBanner> {
     super.didUpdateWidget(oldWidget);
     // 서버 값(`ack_required`)이 바뀌면 이 화면이 기억한 "확인했음" 은 그 변경에 대한 것이었다 —
     // 다음 노선 변경으로 다시 켜질 때 띠가 뜨도록 지운다(F06-08).
-    if (oldWidget.ackRequired != widget.ackRequired) _acked = false;
+    // 확인한 뒤 서버가 `ack_required=false` 로 돌려줘도 "확인했어요" 는 화면이 떠 있는 동안 남긴다 —
+    // 새 변경으로 다시 켜질 때(false → true)만 지운다.
+    if (!oldWidget.ackRequired && widget.ackRequired) _acked = false;
   }
 
   Future<void> _ack() async {
@@ -59,27 +71,53 @@ class _ChangeAckBannerState extends ConsumerState<ChangeAckBanner> {
     }
   }
 
+  /// `추가 1곳 · 삭제 1곳` — 0 인 쪽은 적지 않는다. 둘 다 0 이면 일반 문구.
+  String get _countsLabel {
+    final parts = [
+      if (widget.addedCount > 0) '추가 ${widget.addedCount}곳',
+      if (widget.removedCount > 0) '삭제 ${widget.removedCount}곳',
+    ];
+    return parts.isEmpty ? '승하차지·명단이 바뀌었어요' : parts.join(' · ');
+  }
+
   @override
   Widget build(BuildContext context) {
-    if (!widget.ackRequired || _acked) return const SizedBox.shrink();
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const AlertBanner(
-          tone: AlertTone.moving,
-          body: '승하차지·명단이 변경됐습니다 — 확인 후 계속 진행하세요',
+    if (_acked) {
+      return Padding(
+        padding: EdgeInsets.only(bottom: widget.bottomGap),
+        child: AlertBanner(
+          tone: AlertTone.boarded,
+          icon: 'check',
+          title: '노선 변경을 확인했어요',
+          body: _countsLabel,
         ),
-        const SizedBox(height: 8),
-        BaraedaButton(
-          label: '변경 목록 확인',
-          onPressed: _acking ? null : _ack,
-        ),
-        if (_errorMessage != null) ...[
-          const SizedBox(height: 8),
-          AlertBanner(tone: AlertTone.missed, body: _errorMessage),
+      );
+    }
+    if (!widget.ackRequired) return const SizedBox.shrink();
+    return Padding(
+      padding: EdgeInsets.only(bottom: widget.bottomGap),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AlertBanner(
+            tone: AlertTone.moving,
+            icon: 'route',
+            title: '노선이 바뀌었어요',
+            body: _countsLabel,
+            inlineAction: true,
+            action: BaraedaButton(
+              label: '변경 확인',
+              size: BaraedaButtonSize.sm,
+              variant: BaraedaButtonVariant.secondary,
+              onPressed: _acking ? null : _ack,
+            ),
+          ),
+          if (_errorMessage != null) ...[
+            const SizedBox(height: 8),
+            AlertBanner(tone: AlertTone.missed, body: _errorMessage),
+          ],
         ],
-        const SizedBox(height: 16),
-      ],
+      ),
     );
   }
 }

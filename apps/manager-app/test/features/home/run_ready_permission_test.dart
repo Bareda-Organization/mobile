@@ -11,9 +11,9 @@ import 'package:manager_app/core/location/position_source.dart';
 import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/features/drive_mode/presentation/drive_mode_providers.dart';
-import 'package:manager_app/features/drive_mode/presentation/drive_mode_screen.dart';
 import 'package:manager_app/features/home/data/models/manager_run.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
+import 'package:manager_app/features/home/presentation/run_ready_screen.dart';
 import 'package:manager_app/features/roster/data/models/roster_response.dart';
 import 'package:manager_app/features/route_map/data/models/route_response.dart';
 import 'package:manager_app/features/route_map/presentation/route_providers.dart';
@@ -85,10 +85,11 @@ ManagerRun _confirmedRun(DateTime now) => ManagerRun(
   roleInRun: UserRole.driver,
 );
 
-/// M2-02(F06-03 나머지) — 운행 시작 전(`confirmed`)에도 위치 권한·서비스가 꺼져 있으면 기사에게 알린다.
+/// M2-02(F06-03 나머지) — 운행 준비 화면에서도(운행 시작 전, `confirmed`)
+/// 위치 권한·서비스가 꺼져 있으면 기사에게 알린다.
 /// 출발 뒤에야 송신 실패를 아는 것을 막는다. 알리려고 스트림(포그라운드 서비스 알림)을 켜지는 않는다.
 void main() {
-  const permissionMessage = '위치 권한이 없어 위치를 보낼 수 없습니다';
+  const permissionMessage = '위치 권한이 없어 위치를 보낼 수 없어요';
   final now = DateTime(2026, 9, 12, 8);
 
   Future<_SwitchablePositionSource> pump(
@@ -110,7 +111,7 @@ void main() {
           driveModeRosterProvider.overrideWith((ref) async => _emptyRoster),
           positionSourceProvider.overrideWithValue(source),
         ],
-        child: const MaterialApp(home: DriveModeScreen()),
+        child: const MaterialApp(home: RunReadyScreen()),
       ),
     );
     await tester.pump();
@@ -136,7 +137,7 @@ void main() {
     expect(find.textContaining(permissionMessage), findsNothing);
   });
 
-  testWidgets('작은 화면에서도 권한 배너가 아래 고정 [운행 시작] 버튼보다 위에 온다', (tester) async {
+  testWidgets('작은 화면에서도 권한 배너가 아래 고정 [운행 시작] 단추보다 위에 온다', (tester) async {
     // 본문이 스크롤돼야 하는 높이 — 지도(화면의 30%)·요약 카드 아래 배너가 접힌 곳에 놓이면 버튼에 잘린다.
     tester.view
       ..physicalSize = const Size(360, 640)

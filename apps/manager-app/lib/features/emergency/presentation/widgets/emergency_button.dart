@@ -31,13 +31,7 @@ class EmergencyButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return TextButton(
-      style: TextButton.styleFrom(
-        foregroundColor: Theme.of(context).colorScheme.error,
-      ),
-      onPressed: () => unawaited(_open(context, ref)),
-      child: const Text('비상'),
-    );
+    return BaraedaSosButton(onPressed: () => unawaited(_open(context, ref)));
   }
 
   Future<void> _open(BuildContext context, WidgetRef ref) async {

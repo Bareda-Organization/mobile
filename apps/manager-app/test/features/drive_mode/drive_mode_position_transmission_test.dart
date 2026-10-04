@@ -390,7 +390,7 @@ void main() {
     await tester.pump(PositionConstants.transmissionInterval);
 
     expect(
-      find.textContaining('위치 권한이 없어 위치를 보낼 수 없습니다'),
+      find.textContaining('위치 권한이 꺼져 있어요'),
       findsOneWidget,
     );
     expect(repository.calls, isEmpty);
@@ -418,7 +418,7 @@ void main() {
     await tester.pump(PositionConstants.transmissionInterval);
 
     expect(
-      find.textContaining('기기 위치 서비스가 꺼져 있어 위치를 보낼 수 없습니다'),
+      find.textContaining('기기 위치 서비스가 꺼져 있어요'),
       findsOneWidget,
     );
     expect(repository.calls, isEmpty);

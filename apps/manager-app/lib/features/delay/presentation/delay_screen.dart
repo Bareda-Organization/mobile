@@ -7,6 +7,7 @@ import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/core/network/failure_messages.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/core/ui/limited_text_controller.dart';
+import 'package:manager_app/core/ui/manager_header.dart';
 import 'package:manager_app/features/delay/data/models/delay_request.dart';
 import 'package:manager_app/features/delay/data/models/delay_result.dart';
 
@@ -84,7 +85,7 @@ class _DelayScreenState extends ConsumerState<DelayScreen> {
     final canSend = capabilities?.canSendDelayNotification ?? false;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('지연 알림')),
+      appBar: const ManagerHeader(title: '지연 알림'),
       body: runId == null
           ? const Center(child: WordWrapText('선택된 운행이 없습니다 — 홈에서 운행을 선택하세요'))
           : !canSend

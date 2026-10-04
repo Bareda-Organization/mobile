@@ -6,8 +6,8 @@ import 'package:manager_app/core/auth/account_session.dart';
 import 'package:manager_app/features/offline_queue/presentation/offline_queue_auto_sync.dart';
 import 'package:manager_app/features/position/presentation/position_transmitter.dart';
 
-/// 기사·동승자 앱 진입점. **다크 고정** — `ThemeMode.system`·`.light` 은 쓰지
-/// 않는다(CONVENTIONS_FLUTTER.md §3, 운행 시간대 특성).
+/// 기사·동승자 앱 진입점. **라이트 기본** — 운행 중 화면(`drive*` · 마지막 정차 · 외부 내비 · 오프라인)만
+/// `BaraedaDriveZone` 이 다크로 감싼다(`Ruling 830`, CONVENTIONS_FLUTTER.md §3).
 ///
 /// `authBootstrapProvider` 가 끝날 때까지는 라우터를 만들지 않는다 —
 /// 자동 로그인(목표 표 5항) 판정 전에 `redirect` 가 먼저 돌면 저장된
@@ -27,10 +27,8 @@ class BaraedaManagerApp extends ConsumerWidget {
       return MaterialApp(
         title: '바래다 매니저',
         debugShowCheckedModeBanner: false,
-        theme: BaraedaTheme.dark(),
-        home: const Scaffold(
-          body: Center(child: CircularProgressIndicator()),
-        ),
+        theme: BaraedaTheme.light(),
+        home: const Scaffold(body: Center(child: CircularProgressIndicator())),
       );
     }
 
@@ -38,7 +36,7 @@ class BaraedaManagerApp extends ConsumerWidget {
       return MaterialApp(
         title: '바래다 매니저',
         debugShowCheckedModeBanner: false,
-        theme: BaraedaTheme.dark(),
+        theme: BaraedaTheme.light(),
         home: Scaffold(
           body: Center(
             child: Padding(
@@ -68,9 +66,7 @@ class BaraedaManagerApp extends ConsumerWidget {
       child: MaterialApp.router(
         title: '바래다 매니저',
         debugShowCheckedModeBanner: false,
-        theme: BaraedaTheme.dark(),
-        darkTheme: BaraedaTheme.dark(),
-        themeMode: ThemeMode.dark,
+        theme: BaraedaTheme.light(),
         routerConfig: router,
       ),
     );

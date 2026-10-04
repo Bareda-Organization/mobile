@@ -12,6 +12,7 @@ import 'package:manager_app/features/auth/domain/auth_repository.dart';
 import 'package:manager_app/features/auth/presentation/login_screen.dart';
 import 'package:manager_app/features/home/data/models/manager_run.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
+import 'package:manager_app/features/home/presentation/me_screen.dart';
 import 'package:manager_app/features/offline_queue/data/models/pending_request_summary.dart';
 import 'package:manager_app/features/offline_queue/domain/offline_queue_repository.dart';
 
@@ -81,7 +82,7 @@ ManagerRun _run({required RunStatus runStatus}) {
   );
 }
 
-/// 로그아웃(AUTH-09) — 기사·동승자 둘 다 닿는 홈 화면 앱바 진입점.
+/// 로그아웃(AUTH-09) — 기사·동승자 둘 다 닿는 내 정보 탭 맨 아래 단추(`Ruling 826`).
 /// `BaraedaManagerApp` 전체를 띄워 실제 `routerProvider` 의 redirect 가
 /// 로그인 화면으로 보내는지까지 확인한다(`router_redirect_test.dart` 와
 /// 같은 이유 — 확인 대화만 위젯 트리 일부로 시험하면 "그래서 실제로 로그인
@@ -115,6 +116,9 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    // 로그아웃은 내 정보 탭 맨 아래에만 있다(`Ruling 826`).
+    await tester.tap(find.text('내 정보'));
+    await tester.pumpAndSettle();
   }
 
   Finder dialogButton(String text) => find.descendant(
@@ -134,7 +138,7 @@ void main() {
     expect(find.byType(BaraedaDialog), findsOneWidget);
     expect(repository.logoutCalls, 0);
 
-    await tester.tap(dialogButton('취소'));
+    await tester.tap(dialogButton('닫기'));
     await tester.pumpAndSettle();
 
     expect(find.byType(BaraedaDialog), findsNothing);
@@ -153,7 +157,7 @@ void main() {
 
     expect(find.byType(BaraedaDialog), findsNothing);
     expect(repository.logoutCalls, 0);
-    expect(find.text('오늘 운행'), findsOneWidget);
+    expect(find.byType(MeScreen), findsOneWidget);
   });
 
   testWidgets('확인하면 로그아웃하고 로그인 화면으로 이동한다', (tester) async {
@@ -218,6 +222,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.textContaining('아직 보내지 못한 처리 2건은 버려집니다'), findsOneWidget);
+    // 대기열을 먼저 볼 길이 맨 위에 있다(M8).
+    expect(find.text('대기열 2건 먼저 보기'), findsOneWidget);
   });
 
   testWidgets('미전송 대기 요청이 없으면 버려진다는 경고가 없다', (tester) async {

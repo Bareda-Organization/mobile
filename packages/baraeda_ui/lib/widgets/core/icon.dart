@@ -72,6 +72,7 @@ const Map<String, IconData> _kBaraedaIconGlyphs = {
   'eye-off': Icons.visibility_off,
   'shield': Icons.shield_outlined,
   'copy': Icons.content_copy,
+  'map': Icons.map_outlined,
 };
 
 /// Lucide 아이콘 래퍼 — 바래다의 모든 아이콘은 이걸 통해 쓴다.

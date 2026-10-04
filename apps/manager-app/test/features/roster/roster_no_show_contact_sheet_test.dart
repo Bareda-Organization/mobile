@@ -12,9 +12,8 @@ import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
 import 'package:manager_app/features/roster/data/models/roster_response.dart';
+import 'package:manager_app/features/roster/presentation/no_show_screen.dart';
 import 'package:manager_app/features/roster/presentation/roster_providers.dart';
-import 'package:manager_app/features/roster/presentation/roster_screen.dart';
-
 import '../../support/manager_run_fixture.dart';
 
 /// R32 M12 — 미승차 연락 시트의 최종 판단은 대기 시간이 끝난 뒤에만 고를 수 있다. 대기 시간은
@@ -72,11 +71,23 @@ RosterResponse _roster({DateTime? expiresAt}) => RosterResponse(
   ],
 );
 
-bool _chipEnabled(WidgetTester tester, String label) =>
-    tester
-        .widget<ChoiceChip>(find.widgetWithText(ChoiceChip, label))
-        .onSelected !=
-    null;
+/// 최종 판단 선택지가 눌리는가 — 대기 시간 안에는 `미정` 밖을 눌러도 선택이 바뀌지 않는다.
+/// 구간 선택은 칸마다 켜짐 여부를 갖지 않으므로 눌러 본 뒤 선택된 칸이 바뀌었는지로 판정한다.
+Future<bool> _selectable(WidgetTester tester, String label) async {
+  final control = find.byWidgetPredicate(
+    (widget) =>
+        widget is BaraedaSegmentedControl &&
+        widget.options.any((o) => o.label == label),
+  );
+  await tester.tap(find.descendant(of: control, matching: find.text(label)));
+  await tester.pump();
+  return tester.widget<BaraedaSegmentedControl>(control).value ==
+      tester
+          .widget<BaraedaSegmentedControl>(control)
+          .options
+          .firstWhere((o) => o.label == label)
+          .value;
+}
 
 void main() {
   final start = DateTime(2026, 9, 30, 8);
@@ -98,11 +109,11 @@ void main() {
             (ref) async => _roster(expiresAt: expiresAt),
           ),
         ],
-        child: const MaterialApp(home: RosterScreen()),
+        child: const MaterialApp(home: NoShowScreen(riderId: 'r1')),
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(BaraedaButton, '연락 기록'));
+    await tester.tap(find.widgetWithText(BaraedaButton, '연락 기록 남기기'));
     await tester.pumpAndSettle();
     return clock;
   }
@@ -110,7 +121,8 @@ void main() {
   testWidgets('연락 기록 시트 제목은 사양 용어 "미승차" 를 쓴다 (R46, B2 #25)', (tester) async {
     await openSheet(tester, expiresAt: start.add(const Duration(minutes: 1)));
 
-    expect(find.text('미승차 연락 기록'), findsOneWidget);
+    expect(find.text('연락 기록'), findsWidgets);
+    expect(find.text('미승차 연락'), findsOneWidget);
     expect(find.textContaining('미탑승'), findsNothing);
   });
 
@@ -120,11 +132,10 @@ void main() {
       expiresAt: start.add(const Duration(minutes: 2, seconds: 30)),
     );
 
-    expect(find.textContaining('남은 시간 2분 30초'), findsOneWidget);
-    expect(_chipEnabled(tester, '출발 확정'), isFalse);
-    expect(_chipEnabled(tester, '재시도'), isFalse);
-    expect(_chipEnabled(tester, '미정'), isTrue);
-    expect(find.textContaining('3분'), findsNothing);
+    expect(find.textContaining('2분 30초 남음'), findsOneWidget);
+    expect(await _selectable(tester, '출발 확정'), isFalse);
+    expect(await _selectable(tester, '재시도'), isFalse);
+    expect(await _selectable(tester, '미정'), isTrue);
   });
 
   testWidgets('대기 시간이 끝나면 선택지가 열리고 남은 시간 문구가 사라진다', (tester) async {
@@ -132,20 +143,23 @@ void main() {
       tester,
       expiresAt: start.add(const Duration(seconds: 30)),
     );
-    expect(_chipEnabled(tester, '출발 확정'), isFalse);
+    expect(await _selectable(tester, '출발 확정'), isFalse);
 
     clock.current = start.add(const Duration(seconds: 31));
     await tester.pump(const Duration(seconds: 1));
 
-    expect(_chipEnabled(tester, '출발 확정'), isTrue);
-    expect(_chipEnabled(tester, '재시도'), isTrue);
-    expect(find.textContaining('남은 시간'), findsNothing);
+    expect(await _selectable(tester, '출발 확정'), isTrue);
+    expect(await _selectable(tester, '재시도'), isTrue);
+    expect(find.textContaining('남음'), findsNothing);
   });
 
-  testWidgets('만료 시각을 모르면 막지 않는다(서버가 최종 판정)', (tester) async {
-    await openSheet(tester, expiresAt: null);
+  testWidgets('이미 대기가 끝난 케이스는 처음부터 막지 않는다', (tester) async {
+    await openSheet(
+      tester,
+      expiresAt: start.subtract(const Duration(minutes: 1)),
+    );
 
-    expect(_chipEnabled(tester, '출발 확정'), isTrue);
-    expect(find.textContaining('남은 시간'), findsNothing);
+    expect(await _selectable(tester, '출발 확정'), isTrue);
+    expect(find.textContaining('남음'), findsNothing);
   });
 }

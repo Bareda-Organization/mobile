@@ -12,8 +12,6 @@ import 'package:manager_app/core/auth/user_role.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/features/notifications/presentation/notification_providers.dart';
 import 'package:manager_app/features/notifications/presentation/notifications_screen.dart';
-import 'package:manager_app/features/notifications/presentation/widgets/notification_bell_button.dart';
-
 import '../../support/fake_notification_repository.dart';
 
 class _FixedClock implements Clock {
@@ -165,11 +163,7 @@ void main() {
   // R46-FUFEAT ③(Ruling 542) — 알림에 회차 식별자(run_id)가 실려 와서, 눌러서 관련 화면으로 간다.
   group('알림 눌러 이동', () {
     final marker = <String, GoRoute>{
-      for (final path in [
-        AppRoutes.routeMap,
-        AppRoutes.driveMode,
-        AppRoutes.roster,
-      ])
+      for (final path in [AppRoutes.runReady, AppRoutes.roster])
         path: GoRoute(path: path, builder: (_, _) => Text('MARKER $path')),
     };
     Future<ProviderContainer> pumpWith(
@@ -188,7 +182,7 @@ void main() {
       );
     }
 
-    testWidgets('노선 변경 알림을 누르면 그 회차를 고르고 노선 화면으로 가며 읽음 처리도 한다', (tester) async {
+    testWidgets('노선 변경 알림을 누르면 그 회차를 고르고 운행 준비로 가며 읽음 처리도 한다', (tester) async {
       final container = await pumpWith(tester, [
         _item('1', type: 'route_changed', runId: 'run-7'),
       ]);
@@ -196,18 +190,18 @@ void main() {
       await tester.tap(find.text('알림 1'));
       await tester.pumpAndSettle();
 
-      expect(find.text('MARKER ${AppRoutes.routeMap}'), findsOneWidget);
+      expect(find.text('MARKER ${AppRoutes.runReady}'), findsOneWidget);
       expect(container.read(selectedRunIdProvider), 'run-7');
       expect(container.read(notificationFeedProvider).value!.unreadCount, 0);
     });
 
-    testWidgets('배치 변경 알림은 기사에게 운전 화면으로 간다', (tester) async {
+    testWidgets('배치 변경 알림은 기사에게 운행 준비로 간다', (tester) async {
       await pumpWith(tester, [_item('1', runId: 'run-9')]);
 
       await tester.tap(find.text('알림 1'));
       await tester.pumpAndSettle();
 
-      expect(find.text('MARKER ${AppRoutes.driveMode}'), findsOneWidget);
+      expect(find.text('MARKER ${AppRoutes.runReady}'), findsOneWidget);
     });
 
     testWidgets('배치 변경 알림은 동승자에게 명단 화면으로 간다', (tester) async {
@@ -230,12 +224,15 @@ void main() {
         const [],
         repository: fake,
         extraRoutes: marker.values.toList(),
+        extraOverrides: [
+          currentUserRoleProvider.overrideWith((ref) => UserRole.driver),
+        ],
       );
 
       await tester.tap(find.text('알림 1'));
       await tester.pumpAndSettle();
 
-      expect(find.text('MARKER ${AppRoutes.routeMap}'), findsOneWidget);
+      expect(find.text('MARKER ${AppRoutes.runReady}'), findsOneWidget);
       expect(fake.marked, isEmpty);
     });
 
@@ -251,43 +248,6 @@ void main() {
 
       expect(fake.marked, ['1']);
       expect(find.byType(NotificationsScreen), findsOneWidget);
-    });
-  });
-
-  group('홈 머리말 진입 버튼', () {
-    testWidgets('안 읽은 수를 배지로 보이고 누르면 알림 화면으로 간다', (tester) async {
-      await _pump(
-        tester,
-        [_item('1'), _item('2'), _item('3', unread: false)],
-        home: const Scaffold(body: NotificationBellButton()),
-      );
-      expect(find.text('2'), findsOneWidget);
-
-      await tester.tap(find.byType(BaraedaIconButton));
-      await tester.pumpAndSettle();
-
-      expect(find.byType(NotificationsScreen), findsOneWidget);
-    });
-
-    testWidgets('안 읽은 알림이 없으면 배지가 없다', (tester) async {
-      await _pump(
-        tester,
-        [_item('1', unread: false)],
-        home: const Scaffold(body: NotificationBellButton()),
-      );
-
-      expect(find.byType(Badge), findsOneWidget);
-      expect(tester.widget<Badge>(find.byType(Badge)).isLabelVisible, isFalse);
-    });
-
-    testWidgets('99건이 넘으면 99+ 로 줄인다', (tester) async {
-      await _pump(
-        tester,
-        [for (var i = 0; i < 120; i++) _item('u-$i')],
-        home: const Scaffold(body: NotificationBellButton()),
-      );
-      // 첫 쪽(20건)만 받았어도 배지는 서버가 세는 전체 수를 본다 — 가짜가 전체를 세어 준다.
-      expect(find.text('99+'), findsOneWidget);
     });
   });
 }

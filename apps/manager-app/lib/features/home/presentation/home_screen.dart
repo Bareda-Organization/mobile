@@ -1,34 +1,34 @@
 import 'dart:async';
+
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:manager_app/app/app_routes.dart';
 import 'package:manager_app/app/di.dart';
-import 'package:manager_app/core/auth/account_session.dart';
 import 'package:manager_app/core/auth/auth_providers.dart';
-import 'package:manager_app/core/auth/role_policy.dart';
+import 'package:manager_app/core/launcher/device_launchers.dart';
 import 'package:manager_app/core/network/failure_messages.dart';
 import 'package:manager_app/core/run/manager_run_channel.dart';
 import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
-import 'package:manager_app/features/emergency/presentation/widgets/emergency_button.dart';
+import 'package:manager_app/core/time/run_time_labels.dart';
+import 'package:manager_app/core/ui/academy_call_card.dart';
+import 'package:manager_app/core/ui/manager_header.dart';
 import 'package:manager_app/features/home/data/models/manager_run.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
+import 'package:manager_app/features/home/presentation/widgets/focus_run_card.dart';
 import 'package:manager_app/features/notifications/presentation/notification_providers.dart';
-import 'package:manager_app/features/notifications/presentation/widgets/notification_bell_button.dart';
+import 'package:manager_app/features/roster/presentation/widgets/change_ack_banner.dart';
 
-/// ManagerHome — 오늘의 담당 회차 목록(§4.1, M-02·M-07).
+/// 홈 탭 — 오늘의 담당 회차(§4.1, M-02·M-07). 기사는 `오늘 운행`, 동승자는 `오늘 회차`.
 ///
-/// 세 가지 상태(로딩·성공·실패)를 `AsyncValue.when` 으로 그린다
-/// (CONVENTIONS_FLUTTER.md §6). 탭하면 [selectedRunIdProvider] 에 회차를
-/// 담고 역할에 따라 DriveMode(기사) 또는 StopRoster(동승자)로 이동한다 —
-/// 두 화면 다 "지금 선택된 회차 하나" 만 다루므로 라우터 path parameter
-/// 대신 provider 로 넘긴다(보고서 § 판단 근거 참고).
+/// 큰 카드 하나(진행 중 > 확정된 가장 이른, [focusRunProvider]) + "다른 회차" 목록. 기사는 맨 아래 주 단추
+/// `운행 준비하기` 가 운행 준비 화면으로 간다 — 운행 시작 요청은 그 화면의 확인 창 뒤에만 나간다(`Ruling 799`).
+/// 동승자는 카드 안 `명단 열기` 가 명단 탭으로 간다.
 ///
-/// 열려 있는 동안 [todayRunsRefreshInterval] 마다, 앱이 백그라운드에서 돌아올 때 목록을 다시
-/// 받는다 — 확정은 서버 배치가 시각에 맞춰 바꾸므로(F06-13) 한 번 받은 목록은 곧 낡는다.
+/// 열려 있는 동안 [todayRunsRefreshInterval] 마다, 앱이 백그라운드에서 돌아올 때 목록을 다시 받는다 —
+/// 확정은 서버 배치가 시각에 맞춰 바꾸므로(F06-13) 한 번 받은 목록은 곧 낡는다.
 class ManagerHomeScreen extends ConsumerStatefulWidget {
   const new({super.key});
 
@@ -75,241 +75,334 @@ class _ManagerHomeScreenState extends ConsumerState<ManagerHomeScreen>
   @override
   Widget build(BuildContext context) {
     final runsAsync = ref.watch(todayRunsProvider);
-    final capabilities = ref.watch(roleCapabilitiesProvider);
-    final hasMovingRun =
-        runsAsync.value?.any((run) => run.runStatus == RunStatus.moving) ??
-        false;
+    // 운행을 조작하는 역할(기사)만 `운행 준비하기` 가 보인다 — 역할을 모르면 닫힌 쪽(동승자 화면)이 기본값이다.
+    final canOperate = ref.watch(roleCapabilitiesProvider)?.canOperateRun;
+    final forEscort = !(canOperate ?? false);
+    final noun = forEscort ? '회차' : '운행';
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('오늘 운행'),
-        actions: [
-          // 비상(M-15, R32 M2) — 기사·동승자 모두, 확정된 회차가 있으면 운행 중이 아니어도 보낸다.
-          EmergencyButton(homeRuns: runsAsync.value),
-          // 알림 목록(NTF-08, R46) — 안 읽은 수 배지. 운행 중 화면에는 두지 않는다(운전 중 시선).
-          const NotificationBellButton(),
-          // 비밀번호 변경(AUTH-07 · UF-X-09, R32 M13) — 기사·동승자 공통.
-          BaraedaIconButton(
-            icon: 'lock',
-            label: '비밀번호 변경',
-            onPressed: () => unawaited(context.push(AppRoutes.passwordChange)),
-          ),
-          // 로그아웃(2026-09-23, 확인 대화 2026-09-26 추가·AUTH-09) —
-          // 역할이 비면 라우터가 로그인 화면으로 보낸다. 기사·동승자 둘 다
-          // 이 화면을 거쳐 운행 화면으로 들어가므로(§4.1) 둘 다 닿는 자리다.
-          TextButton(
-            onPressed: () => unawaited(_confirmSignOut(context, hasMovingRun)),
-            child: const Text('로그아웃'),
-          ),
-        ],
+      appBar: ManagerHeader(
+        title: '오늘 $noun',
+        dateSubtitle: true,
+        homeRuns: runsAsync.value,
       ),
-      body: RefreshIndicator(
-        onRefresh: () => ref.refresh(todayRunsProvider.future),
-        child: runsAsync.when(
-          // 주기 갱신 중에는 받아 둔 목록을 그대로 두고 바꿔 그린다 — 30초마다 스피너가 뜨지 않게.
-          skipLoadingOnReload: true,
-          // 갱신이 실패해도 마지막으로 받은 목록을 지우지 않는다 — 오류는 목록 위에 따로 알린다(R46).
-          skipError: true,
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, _) => ListView(
-            children: [
-              const SizedBox(height: 120),
-              Center(
-                child: WordWrapText(
-                  '오늘 운행을 불러오지 못했습니다: ${describeError(error)}',
-                ),
-              ),
-            ],
-          ),
-          data: (runs) {
-            final refreshError = runsAsync.error;
-            final staleBanner = refreshError == null
-                ? null
-                : Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: AlertBanner(
-                      tone: AlertTone.missed,
-                      body:
-                          '최신 운행을 불러오지 못했습니다 · 이전 목록을 보고 있습니다: '
-                          '${describeError(refreshError)}',
-                      action: BaraedaButton(
-                        label: '다시 시도',
-                        size: BaraedaButtonSize.sm,
-                        variant: BaraedaButtonVariant.secondary,
-                        onPressed: () => ref.invalidate(todayRunsProvider),
-                      ),
-                    ),
-                  );
-            if (runs.isEmpty) {
-              return ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  ?staleBanner,
-                  const SizedBox(height: 120),
-                  const Center(child: WordWrapText('오늘 배정된 운행이 없습니다')),
-                ],
-              );
-            }
-            final movingCount = runs
-                .where((run) => run.runStatus == RunStatus.moving)
-                .length;
-            final finishedCount = runs
-                .where((run) => run.runStatus == RunStatus.finished)
-                .length;
-            return ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                ?staleBanner,
-                Row(
-                  children: [
-                    Expanded(
-                      child: StatCard(
-                        label: '오늘 배정',
-                        value: '${runs.length}',
-                        unit: '건',
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: StatCard(
-                        label: '운행 중',
-                        value: '$movingCount',
-                        unit: '건',
-                        tone: StatCardTone.moving,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: StatCard(
-                        label: '종료',
-                        value: '$finishedCount',
-                        unit: '건',
-                        tone: StatCardTone.boarded,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                for (final run in runs) ...[
-                  RunSummaryCard(
-                    bus: run.busNo,
-                    leg: run.direction == RunDirection.toAcademy ? '등원' : '하원',
-                    status: _statusOf(run.runStatus),
-                    statusLabel: _statusLabelOf(run),
-                    eta: _departLabel(run.departTime),
-                    origin: run.origin,
-                    destination: run.destination,
-                    onTap: run.confirmed
-                        ? () => _openRun(context, run, capabilities)
-                        : null,
-                  ),
-                  // 확정 전 카드는 눌러도 반응이 없다 — 이유와 열리는 시각을 알린다(M-02, R32 M9).
-                  if (!run.confirmed)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4, left: 4),
-                      child: WordWrapText(
-                        switch (run.confirmAt) {
-                          null => '출발 30분 전 확정 후 열립니다',
-                          final at =>
-                            '출발 30분 전 확정 후 열립니다 '
-                                '(${DateFormat('HH:mm').format(at.toLocal())})',
-                        },
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                    ),
-                  const SizedBox(height: 12),
-                ],
-              ],
-            );
-          },
+      body: runsAsync.when(
+        // 주기 갱신 중에는 받아 둔 목록을 그대로 두고 바꿔 그린다 — 30초마다 뼈대가 뜨지 않게.
+        skipLoadingOnReload: true,
+        // 갱신이 실패해도 마지막으로 받은 목록을 지우지 않는다 — 오류는 목록 위에 따로 알린다(R46).
+        skipError: true,
+        loading: () => const _HomeSkeleton(),
+        error: (error, _) => _HomeError(
+          nounObject: forEscort ? '회차를' : '운행을',
+          urgent: forEscort ? '명단이 급하면' : '운행 시작이 급하면',
+          onRetry: () => ref.invalidate(todayRunsProvider),
+        ),
+        data: (runs) => _HomeBody(
+          runs: runs,
+          forEscort: forEscort,
+          refreshError: runsAsync.error,
         ),
       ),
     );
-  }
-
-  BaraedaStatus _statusOf(RunStatus status) => switch (status) {
-    RunStatus.idle || RunStatus.confirmed => BaraedaStatus.idle,
-    RunStatus.moving => BaraedaStatus.moving,
-    RunStatus.finished => BaraedaStatus.boarded,
-  };
-
-  String _statusLabelOf(ManagerRun run) {
-    if (!run.confirmed) return '확정 전';
-    return switch (run.runStatus) {
-      RunStatus.idle => '확정 전',
-      RunStatus.confirmed => '확정',
-      RunStatus.moving => '운행 중',
-      RunStatus.finished => '종료',
-    };
-  }
-
-  void _openRun(
-    BuildContext context,
-    ManagerRun run,
-    RoleCapabilities? capabilities,
-  ) {
-    ref.read(selectedRunIdProvider.notifier).state = run.runId;
-    final canOperateRun = capabilities?.canOperateRun ?? false;
-    final destination = canOperateRun ? AppRoutes.driveMode : AppRoutes.roster;
-    unawaited(context.push(destination));
-  }
-
-  /// 아직 서버에 보내지 못한 오프라인 대기 요청 수. 읽지 못하면 0 으로 보고 로그아웃을 막지 않는다.
-  Future<int> _pendingCount() async {
-    try {
-      return (await ref.read(offlineQueueRepositoryProvider).fetchPending())
-          .length;
-    } on Object {
-      return 0;
-    }
-  }
-
-  /// 로그아웃 확인 대화상자(AUTH-09) — [hasMovingRun] 이면 명단·위치 송신이
-  /// 멈춘다는 경고를 덧붙인다(`USER_FLOWS` UF-O-04 와 같은 이유 — 로그인
-  /// 유지 중 로그아웃하면 명단 조회가 끊겨 하차 처리가 중단된다). 확인해야만
-  /// [signOut] 을 부른다 — 그 함수는 서버 성패와 무관하게 토큰을 지우고,
-  /// 라우터가 그 변화를 보고 로그인 화면으로 보낸다(판정은 라우터 한 곳).
-  Future<void> _confirmSignOut(
-    BuildContext context,
-    bool hasMovingRun,
-  ) async {
-    // 창은 바로 띄우고 건수는 읽히는 대로 채운다 — 대기열 읽기가 로그아웃 확인을 막지 않게.
-    final pendingCount = _pendingCount();
-    final confirmed = await showBaraedaConfirmDialog(
-      context: context,
-      title: '로그아웃하시겠습니까?',
-      confirmLabel: '로그아웃',
-      content: FutureBuilder<int>(
-        future: pendingCount,
-        initialData: 0,
-        builder: (context, snapshot) => WordWrapText(
-          [
-            if (hasMovingRun)
-              '운행 중에 로그아웃하면 명단·위치 송신이 멈춥니다'
-            else
-              '다시 로그인해야 이 앱을 계속 쓸 수 있습니다',
-            // M2-01 — 큐에는 계정 열이 없어 로그아웃하면 비운다(F06-02). 있을 때만 알린다.
-            if ((snapshot.data ?? 0) > 0)
-              '아직 보내지 못한 처리 ${snapshot.data}건은 버려집니다',
-          ].join('\n'),
-          style: BaraedaTypography.bodySm.copyWith(
-            color: context.colors.textSecondary,
-          ),
-        ),
-      ),
-    );
-    if (confirmed) {
-      try {
-        await signOut(ref);
-      } on Object {
-        // signOut 은 서버 호출 실패도 그대로 다시 던진다(`account_session.dart`
-        // 문서 — 토큰은 이미 finally 에서 지워졌다). 여기서 보여줄 추가
-        // 동작이 없다 — 라우터가 역할 소실을 보고 로그인 화면으로 보낸다.
-      }
-    }
   }
 }
 
-/// 카드에 적는 출발 시각 — 시각만 크게 있으면 출발인지 도착인지 모른다(R46).
-String _departLabel(DateTime departTime) =>
-    '출발 ${DateFormat('HH:mm').format(departTime.toLocal())}';
+class _HomeBody extends ConsumerWidget {
+  const new({
+    required this.runs,
+    required this.forEscort,
+    required this.refreshError,
+  });
+
+  final List<ManagerRun> runs;
+  final bool forEscort;
+  final Object? refreshError;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final colors = context.colors;
+    final now = ref.watch(clockProvider).now();
+    final focus = ref.watch(focusRunProvider);
+
+    if (runs.isEmpty) {
+      return const _HomeEmpty();
+    }
+
+    final others = [
+      for (final run in runs)
+        if (run.runId != focus?.runId) run,
+    ];
+    final finished = runs
+        .where((run) => run.runStatus == RunStatus.finished)
+        .length;
+
+    final list = RefreshIndicator(
+      onRefresh: () => ref.refresh(todayRunsProvider.future),
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+        children: [
+          if (refreshError != null) ...[
+            AlertBanner(
+              tone: AlertTone.missed,
+              title: '최신 운행을 불러오지 못했어요',
+              body: '이전 목록을 보고 있어요 · ${describeError(refreshError!)}',
+              action: BaraedaButton(
+                label: '다시 시도',
+                size: BaraedaButtonSize.sm,
+                variant: BaraedaButtonVariant.secondary,
+                onPressed: () => ref.invalidate(todayRunsProvider),
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+          if (!forEscort && focus != null)
+            ChangeAckBanner(
+              runId: focus.runId,
+              ackRequired: focus.ackRequired,
+              addedCount: focus.addedCount,
+              removedCount: focus.removedCount,
+              bottomGap: 12,
+            ),
+          if (focus != null)
+            FocusRunCard(
+              run: focus,
+              now: now,
+              forEscort: forEscort,
+              caption: switch ((forEscort, focus.runStatus)) {
+                (true, _) => '지금 명단',
+                (false, RunStatus.moving) => '지금 운행',
+                (false, _) => '다음 운행',
+              },
+              footer: forEscort
+                  ? BaraedaButton(
+                      label: '명단 열기',
+                      icon: 'list',
+                      block: true,
+                      onPressed: () => context.go(AppRoutes.roster),
+                    )
+                  : null,
+            ),
+          if (others.isNotEmpty) ...[
+            const SizedBox(height: 24),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 2),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      focus == null ? '오늘 회차' : '다른 회차',
+                      style: BaraedaTypography.title.copyWith(
+                        color: colors.textPrimary,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    forEscort
+                        ? '오늘 ${runs.length}건'
+                        : '오늘 ${runs.length}건 중 $finished건 종료',
+                    style: BaraedaTypography.caption.copyWith(
+                      color: colors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            BaraedaListGroup(
+              children: [
+                for (final run in others)
+                  _OtherRunRow(run: run, forEscort: forEscort),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+
+    // 기사는 맨 아래 주 단추 — 진행 중이면 운행 화면으로, 확정됐으면 운행 준비로.
+    final action = forEscort || focus == null ? null : _primaryAction(focus);
+    if (action == null) return list;
+    return Column(
+      children: [
+        Expanded(child: list),
+        DecoratedBox(
+          decoration: BoxDecoration(
+            color: colors.bgBase,
+            border: Border(top: BorderSide(color: colors.borderSubtle)),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+            child: action(context, ref),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget Function(BuildContext, WidgetRef)? _primaryAction(ManagerRun focus) {
+    if (focus.runStatus == RunStatus.moving) {
+      return (context, ref) => BaraedaButton(
+        label: '운행 화면으로',
+        icon: 'bus',
+        size: BaraedaButtonSize.xl,
+        block: true,
+        onPressed: () => unawaited(context.push(AppRoutes.driveMode)),
+      );
+    }
+    return (context, ref) => BaraedaButton(
+      label: '운행 준비하기',
+      icon: 'bus',
+      size: BaraedaButtonSize.xl,
+      block: true,
+      onPressed: () => unawaited(context.push(AppRoutes.runReady)),
+    );
+  }
+}
+
+/// "다른 회차" 한 줄 — 확정된 회차를 누르면 그 회차가 큰 카드로 올라온다. 종료 · 확정 전 회차는 누를 곳이 없다.
+class _OtherRunRow extends ConsumerWidget {
+  const new({required this.run, required this.forEscort});
+
+  final ManagerRun run;
+  final bool forEscort;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final colors = context.colors;
+    final (status, label) = runStatusChip(run);
+    final selectable = run.confirmed && run.runStatus != RunStatus.finished;
+    return BaraedaListRow(
+      title:
+          '${hhmm(run.departTime)} · '
+          '${run.busNo} ${directionLabel(run.direction)}',
+      subtitle: _subtitle(),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          BaraedaStatusPill(status: status, label: label),
+          if (selectable) ...[
+            const SizedBox(width: 4),
+            BaraedaIcon('chevron-right', color: colors.textSecondary),
+          ],
+        ],
+      ),
+      onTap: selectable
+          ? () => ref.read(selectedRunIdProvider.notifier).state = run.runId
+          : null,
+    );
+  }
+
+  String _subtitle() {
+    if (run.runStatus == RunStatus.finished) {
+      final riders = run.riderCount;
+      return riders == null ? '종료된 운행' : '종료 · 학생 $riders명';
+    }
+    if (!run.confirmed) {
+      final at = run.confirmAt;
+      return at == null ? '출발 30분 전에 확정되면 열려요' : '${hhmm(at)} 에 확정되면 열려요';
+    }
+    return run.riderCount == null
+        ? '출발 ${hhmm(run.departTime)}'
+        : '탑승 예정 ${run.riderCount}명';
+  }
+}
+
+/// 처음 받는 중 — 큰 카드 · 목록 자리를 뼈대로 잡아 둔다.
+class _HomeSkeleton extends StatelessWidget {
+  const new();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      physics: const NeverScrollableScrollPhysics(),
+      padding: const EdgeInsets.all(16),
+      children: const [
+        BaraedaCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              BaraedaSkeleton(width: 80, height: 14),
+              SizedBox(height: 12),
+              BaraedaSkeleton(width: 160, height: 52),
+              SizedBox(height: 12),
+              BaraedaSkeleton(width: 120, height: 20),
+              SizedBox(height: 16),
+              BaraedaSkeleton(height: 48),
+            ],
+          ),
+        ),
+        SizedBox(height: 24),
+        BaraedaSkeletonList(count: 2),
+      ],
+    );
+  }
+}
+
+/// 오늘 목록을 못 받았다 — 다시 시도 + 학원에 바로 전화(번호가 있을 때).
+class _HomeError extends StatelessWidget {
+  const new({
+    required this.nounObject,
+    required this.urgent,
+    required this.onRetry,
+  });
+
+  /// 조사까지 붙인 말 — `운행을` · `회차를`.
+  final String nounObject;
+  final String urgent;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        const SizedBox(height: 40),
+        EmptyState(
+          icon: 'wifi-off',
+          title: '오늘 $nounObject 불러오지 못했어요',
+          body: '인터넷 연결을 확인하고 다시 시도해 주세요. 연결되면 자동으로 다시 불러와요.',
+          action: BaraedaButton(
+            label: '다시 시도',
+            icon: 'refresh',
+            onPressed: onRetry,
+          ),
+        ),
+        const SizedBox(height: 32),
+        AcademyCallCard(lead: urgent),
+      ],
+    );
+  }
+}
+
+/// 오늘 배정된 운행이 없다.
+class _HomeEmpty extends ConsumerWidget {
+  const new();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final contact = ref.watch(academyContactProvider);
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        const SizedBox(height: 40),
+        EmptyState(
+          icon: 'calendar',
+          title: '오늘 배정된 운행이 없어요',
+          body: '배정이 바뀌면 알림으로 알려 드려요. 잘못 배정된 것 같으면 학원에 문의해 주세요.',
+          action: looksLikePhoneNumber(contact)
+              ? BaraedaButton(
+                  label: '학원에 전화 · ${contact!.trim()}',
+                  icon: 'phone',
+                  variant: BaraedaButtonVariant.secondary,
+                  onPressed: () => unawaited(
+                    ref.read(uriOpenerProvider)(
+                      Uri(scheme: 'tel', path: contact.trim()),
+                    ),
+                  ),
+                )
+              : null,
+        ),
+      ],
+    );
+  }
+}

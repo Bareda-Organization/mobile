@@ -19,7 +19,7 @@ import 'package:manager_app/features/roster/data/models/revert_result.dart';
 import 'package:manager_app/features/roster/data/models/rider_update_result.dart';
 import 'package:manager_app/features/roster/data/models/roster_response.dart';
 import 'package:manager_app/features/roster/domain/roster_repository.dart';
-import 'package:manager_app/features/roster/presentation/roster_screen.dart';
+import 'package:manager_app/features/roster/presentation/no_show_screen.dart';
 
 import '../../support/manager_run_fixture.dart';
 
@@ -82,11 +82,11 @@ class _NeverResolvingTokenStorage extends TokenStorage {
   Future<String?> readAccessToken() => Completer<String?>().future;
 }
 
-const _roster = RosterResponse(
+final _roster = RosterResponse(
   runId: 'run-1',
   busNo: '3호차',
   direction: RunDirection.toAcademy,
-  counts: RosterCounts(boarded: 0, waiting: 0, noShow: 1, absentN: 0),
+  counts: const RosterCounts(boarded: 0, waiting: 0, noShow: 1, absentN: 0),
   stops: [
     RosterStop(
       stopId: 'st1',
@@ -101,6 +101,12 @@ const _roster = RosterResponse(
           guardianPhone: null,
           canGoAlone: false,
           status: RiderStatus.noShow,
+          // 연락 화면은 케이스가 있어야 열린다 — 대기 시간이 한참 남은 케이스.
+          noShowCase: NoShowCase(
+            caseId: 'c1',
+            startedAt: DateTime(2099),
+            expiresAt: DateTime(2099, 1, 1, 0, 3),
+          ),
         ),
       ],
     ),
@@ -121,13 +127,13 @@ void main() {
           todayRunsProvider.overrideWith((ref) async => [managerRunFixture()]),
           rosterRepositoryProvider.overrideWithValue(repository),
         ],
-        child: const MaterialApp(home: RosterScreen()),
+        child: const MaterialApp(home: NoShowScreen(riderId: 'r1')),
       ),
     );
     await tester.pumpAndSettle();
     expect(repository.fetchCount, 1);
 
-    await tester.tap(find.widgetWithText(BaraedaButton, '연락 기록'));
+    await tester.tap(find.widgetWithText(BaraedaButton, '연락 기록 남기기'));
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(BaraedaButton, '기록 저장'));
     await tester.pumpAndSettle();

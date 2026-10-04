@@ -101,7 +101,7 @@ void main() {
   }
 
   Future<void> pressBack(WidgetTester tester) async {
-    await tester.tap(find.byType(BackButton));
+    await tester.tap(find.byTooltip('뒤로'));
     await tester.pumpAndSettle();
   }
 
