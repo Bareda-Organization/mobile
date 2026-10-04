@@ -24,6 +24,7 @@ class NaverMapAdapter extends StatefulWidget {
     this.markers = const [],
     this.polylines = const [],
     this.fitToContent = false,
+    this.fitPadding = const EdgeInsets.all(48),
     this.onReady,
     this.onAuthFailed,
     this.onUserGesture,
@@ -33,6 +34,7 @@ class NaverMapAdapter extends StatefulWidget {
   final List<MapMarker> markers;
   final List<MapPolyline> polylines;
   final bool fitToContent;
+  final EdgeInsets fitPadding;
   final VoidCallback? onReady;
   final void Function(Object exception)? onAuthFailed;
   final VoidCallback? onUserGesture;
@@ -279,7 +281,8 @@ class _NaverMapAdapterState extends State<NaverMapAdapter> {
         caption: marker.label == null
             ? null
             : NOverlayCaption(text: marker.label!),
-        captionAligns: const [NAlign.left],
+        // 왼쪽이 먼저이고, 다른 오버레이와 겹치면 위 · 오른쪽 순으로 옮긴다.
+        captionAligns: const [NAlign.left, NAlign.top, NAlign.right],
       );
     }
     return NMarker(
@@ -361,7 +364,7 @@ class _NaverMapAdapterState extends State<NaverMapAdapter> {
           southWest: NLatLng(bounds.south, bounds.west),
           northEast: NLatLng(bounds.north, bounds.east),
         ),
-        padding: const EdgeInsets.all(48),
+        padding: widget.fitPadding,
       ),
     );
   }

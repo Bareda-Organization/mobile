@@ -159,6 +159,7 @@ class MapSurface extends StatelessWidget {
     this.markers = const [],
     this.polylines = const [],
     this.fitToContent = false,
+    this.fitPadding = const EdgeInsets.all(48),
     this.onReady,
     this.onAuthFailed,
     this.onUserGesture,
@@ -173,6 +174,10 @@ class MapSurface extends StatelessWidget {
   /// `true` 면 카메라를 노선(버스가 아닌 마커 · 선)이 전부 보이게 맞춘다 — 지도가 준비된 직후와 맞춤 대상이 바뀔 때만.
   /// 좌표만 바뀔 때는 맞추지 않는다(사용자가 옮겨 둔 화면을 빼앗지 않는다). [camera] 는 맞추기 전 초기 위치다.
   final bool fitToContent;
+
+  /// [fitToContent] 로 맞출 때 노선 둘레에 비워 둘 여백 — 지도 위를 덮는 머리줄 · 아래 시트만큼 늘려 노선이 가려지지
+  /// 않게 한다.
+  final EdgeInsets fitPadding;
 
   /// 지도가 사용자 조작을 받을 수 있는 시점에 한 번 호출된다.
   final VoidCallback? onReady;
@@ -191,6 +196,7 @@ class MapSurface extends StatelessWidget {
       markers: markers,
       polylines: polylines,
       fitToContent: fitToContent,
+      fitPadding: fitPadding,
       onReady: onReady,
       onAuthFailed: onAuthFailed,
       onUserGesture: onUserGesture,

@@ -341,6 +341,7 @@ class _MapPageState extends ConsumerState<_MapPage> {
                     ],
                     polylines: overlay?.polylines ?? const [],
                     fitToContent: fitRoute,
+                    fitPadding: _fitPadding(context),
                     onUserGesture: () {
                       if (!_following) return;
                       setState(() {
@@ -415,6 +416,15 @@ class _MapPageState extends ConsumerState<_MapPage> {
       ),
     );
   }
+
+  /// 종료 화면이 노선에 맞출 때 비울 여백 — 위는 머리줄, 아래는 시트(화면의 약 4할), 왼쪽은 "내 승하차지" 이름표
+  /// 폭이다. 이만큼 비우지 않으면 시트가 노선의 끝(학원)을 가린다.
+  EdgeInsets _fitPadding(BuildContext context) => EdgeInsets.fromLTRB(
+    120,
+    140,
+    48,
+    MediaQuery.sizeOf(context).height * 0.42,
+  );
 
   /// 지도 위 오른쪽 이름표 — 달리는 중 "12:14 기준" · 종료 "운행 종료".
   Widget? _topTag() {
