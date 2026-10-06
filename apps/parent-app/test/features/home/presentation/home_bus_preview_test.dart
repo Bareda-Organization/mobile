@@ -322,9 +322,7 @@ void main() {
     expect(find.text('전체 지도'), findsOneWidget);
   });
 
-  testWidgets('오늘 회차가 없으면(404 RUN_NOT_FOUND) 미리보기 카드를 그리지 않는다', (
-    tester,
-  ) async {
+  testWidgets('오늘 회차가 없으면(404 RUN_NOT_FOUND) 미리보기 카드를 그리지 않는다', (tester) async {
     await _pumpHome(
       tester,
       position: () => Future.error(
@@ -438,7 +436,10 @@ void main() {
       expect(map.fitToContent, isTrue);
     });
 
-    testWidgets('좌표도 없고 종료도 아닌 회차(운행 전)는 지도를 그리지 않는다 — 기존 동작', (tester) async {
+    // 2026-10-07 사용자 지시(Ruling 842) — 출발 전 카드가 빈 면이라 "지도가 안 보인다" 로 읽혔다.
+    testWidgets('운행 전 회차는 버스 없이 노선(경로선 · 번호)을 미리 그리고 지도를 노선에 맞춘다', (
+      tester,
+    ) async {
       await _pumpHome(
         tester,
         position: () async =>
@@ -446,8 +447,24 @@ void main() {
         route: _route(),
       );
 
+      final map = previewMap(tester);
+      expect(map.polylines.single.passed, isFalse);
+      expect(map.markers.where((m) => m.kind == MapMarkerKind.bus), isEmpty);
+      expect(map.markers.map((m) => m.seq), [3, 4, 5]);
+      expect(map.markers.where((m) => m.mine).map((m) => m.seq), [4]);
+      expect(map.fitToContent, isTrue);
+    });
+
+    testWidgets('운행 전인데 노선도 못 받으면 지도를 그리지 않는다 — 근거 없는 카메라 위치를 잡지 않는다', (
+      tester,
+    ) async {
+      await _pumpHome(
+        tester,
+        position: () async =>
+            _position(status: RunStatus.confirmed, withCoords: false),
+      );
+
       expect(find.byType(MapSurface), findsNothing);
     });
   });
-
 }
