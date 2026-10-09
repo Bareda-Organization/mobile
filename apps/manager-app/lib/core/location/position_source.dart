@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
@@ -109,9 +110,17 @@ PositionSample _toSample(Position position) => PositionSample(
   // iOS 는 측정 불가일 때 속도·방향에 -1 을 준다 — §4.12 범위 밖이라 서버가
   // 거부하므로, 음수면 그 필드를 아예 빼고 보낸다(브리프 §5.8.1.2 마지막
   // 행 근거).
-  speed: position.speed >= 0 ? position.speed : null,
+  speed: position.speed >= 0 ? _toKmh(position.speed) : null,
   heading: position.heading >= 0 ? position.heading : null,
 );
+
+/// §4.12 `speed` 는 km/h(0~999.99)인데 기기(geolocator)는 m/s 로 준다(861 ⑩). 상한을 넘기면 서버가 422 로
+/// 거부해 그 위치가 사라지므로 상한으로 줄인다.
+double _toKmh(double metersPerSecond) =>
+    math.min(metersPerSecond * 3.6, _maxSpeedKmh);
+
+/// §4.12 `speed` 의 사양 상한(km/h).
+const double _maxSpeedKmh = 999.99;
 
 /// [PositionSource] 가 돌려주는 좌표 스냅샷 — §4.12 요청 본문과 거의 1:1.
 ///
