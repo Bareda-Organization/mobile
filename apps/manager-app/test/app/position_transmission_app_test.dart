@@ -23,6 +23,7 @@ import 'package:manager_app/features/drive_mode/domain/drive_mode_repository.dar
 import 'package:manager_app/features/drive_mode/presentation/drive_mode_providers.dart';
 import 'package:manager_app/features/home/data/models/manager_run.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
+import 'package:manager_app/features/offline_queue/domain/send_outcome.dart';
 import 'package:manager_app/features/position/data/models/position_request.dart';
 import 'package:manager_app/features/position/domain/position_repository.dart';
 import 'package:manager_app/features/position/presentation/position_link.dart';
@@ -103,12 +104,12 @@ class _FinalArriveRepository implements DriveModeRepository {
   bool finishPending = true;
 
   @override
-  Future<ArriveStopResult> arriveStop({
+  Future<SendOutcome<ArriveStopResult>> arriveStop({
     required String runId,
     required String stopId,
   }) async {
     await gate?.future;
-    return _finalResult();
+    return Sent(_finalResult());
   }
 
   ArriveStopResult _finalResult() => ArriveStopResult(
@@ -172,8 +173,13 @@ void main() {
           runId: 'run-1',
           busNo: '3호차',
           direction: direction,
-          counts: RosterCounts(boarded: 0, waiting: 0, noShow: 0, absentN: 0),
-          stops: [
+          counts: const RosterCounts(
+            boarded: 0,
+            waiting: 0,
+            noShow: 0,
+            absentN: 0,
+          ),
+          stops: const [
             RosterStop(
               stopId: 's1',
               seq: 1,
@@ -274,7 +280,7 @@ void main() {
     expect(source.stopCalls, greaterThan(0));
   });
 
-  testWidgets('운행이 끝난 마지막 도착 응답이 오면 회차 목록이 아직 moving 이어도 송신이 멈춘다', (tester) async {
+  testWidgets('운행이 끝난 도착 응답이 오면 회차 목록이 moving 이어도 송신이 멈춘다', (tester) async {
     final container = await pumpApp(tester);
     arriveRepository.finishPending = false;
     await goTo(tester, container, AppRoutes.driveMode);
@@ -375,7 +381,7 @@ void main() {
 
   // F06-16 — 마지막 도착 처리 요청 중에 화면이 닫혀도 서버는 이미 운행을 끝냈다. 종료 처리(위치 송신 중단)가
   // 화면 생존에 기대면 송신이 계속되고, 닫힌 화면의 ref 를 써서 처리되지 않은 예외도 남는다.
-  testWidgets('운행이 끝난 마지막 도착 응답 전에 화면이 닫혀도 위치 송신은 멈추고 예외가 남지 않는다', (tester) async {
+  testWidgets('운행이 끝난 도착 응답 전에 화면이 닫혀도 송신은 멈추고 예외가 없다', (tester) async {
     final container = await pumpApp(tester);
     await goTo(tester, container, AppRoutes.driveMode);
     arriveRepository

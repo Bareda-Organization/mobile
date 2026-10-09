@@ -130,7 +130,10 @@ final driveModeApiProvider = Provider<DriveModeApi>((ref) {
 });
 
 final driveModeRepositoryProvider = Provider<DriveModeRepository>((ref) {
-  return DriveModeRepositoryImpl(api: ref.watch(driveModeApiProvider));
+  return DriveModeRepositoryImpl(
+    api: ref.watch(driveModeApiProvider),
+    offlineQueue: ref.watch(offlineQueueRepositoryProvider),
+  );
 });
 
 /// API_SPEC §4.2·§4.6·§4.7·§4.8 — 명단 조회 + 개인별 승하차 처리.

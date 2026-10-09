@@ -21,6 +21,7 @@ import 'package:manager_app/features/navigation/data/kakao_navi_launcher.dart';
 import 'package:manager_app/features/navigation/data/models/navigation_route.dart';
 import 'package:manager_app/features/navigation/data/models/navigation_scope.dart';
 import 'package:manager_app/features/navigation/domain/navigation_repository.dart';
+import 'package:manager_app/features/offline_queue/domain/send_outcome.dart';
 import 'package:manager_app/features/roster/data/models/roster_response.dart';
 import 'package:manager_app/features/route_map/data/models/route_response.dart';
 import 'package:manager_app/features/route_map/presentation/route_providers.dart';
@@ -32,17 +33,19 @@ class _ArriveRecorder implements DriveModeRepository {
   final arrivedStopIds = <String>[];
 
   @override
-  Future<ArriveStopResult> arriveStop({
+  Future<SendOutcome<ArriveStopResult>> arriveStop({
     required String runId,
     required String stopId,
   }) async {
     arrivedStopIds.add(stopId);
-    return ArriveStopResult(
-      arrivedAt: DateTime(2026, 10, 1, 8, 5),
-      isFinal: false,
-      runStatus: RunStatus.moving,
-      finishPending: false,
-      remaining: const [],
+    return Sent(
+      ArriveStopResult(
+        arrivedAt: DateTime(2026, 10, 1, 8, 5),
+        isFinal: false,
+        runStatus: RunStatus.moving,
+        finishPending: false,
+        remaining: const [],
+      ),
     );
   }
 

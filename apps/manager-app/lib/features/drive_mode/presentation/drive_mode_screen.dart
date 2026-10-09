@@ -27,6 +27,8 @@ import 'package:manager_app/features/home/data/models/manager_run.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
 import 'package:manager_app/features/navigation/data/models/navigation_scope.dart';
 import 'package:manager_app/features/navigation/presentation/open_navigation.dart';
+import 'package:manager_app/features/offline_queue/domain/send_outcome.dart';
+import 'package:manager_app/features/offline_queue/presentation/offline_queue_providers.dart';
 import 'package:manager_app/features/position/presentation/position_link.dart';
 import 'package:manager_app/features/position/presentation/position_transmitter.dart';
 import 'package:manager_app/features/roster/data/models/roster_response.dart';
@@ -158,32 +160,51 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
       _errorMessage = null;
     });
     try {
-      final result = await ref
+      final outcome = await ref
           .read(driveModeRepositoryProvider)
           .arriveStop(runId: runId, stopId: stopId);
       // 요청 중에 화면이 닫혀도 서버는 이미 도착을 반영했다 — 화면 생존과 무관한 갱신은 컨테이너로 한다
-      // (닫힌 화면의 `ref` 는 쓸 수 없다, F06-16).
-      container.invalidate(todayRunsProvider);
-      if (result.isFinal) {
-        // 종점에 닿았다 — 운행이 끝났으면 위치 송신은 여기서 끝난다. 하원 잔류로 종료가 보류됐으면 송신은
-        // 계속된다(`Ruling 855`). 송신기가 보류 여부를 스냅샷에서 읽으므로 스냅샷을 먼저 채운다.
-        container.read(lastArriveResultProvider.notifier).state = result;
-        container.read(transmissionEndedRunIdProvider.notifier).state = runId;
-        if (!mounted) return;
-        unawaited(context.push(AppRoutes.runEnd));
-      } else {
-        container.invalidate(driveModeRosterProvider);
-        if (!mounted) return;
-        // 같은 자리 단추의 이름만 다음 승하차지로 바뀌면 처리된 줄 모른다 — 처리 사실을 토스트로 알린다(M6).
-        // 시각은 서버가 적은 도착 시각(§4.5 `arrived_at`)이다.
-        _lockArriveButton();
-        showBaraedaToast(
-          context,
-          message: '$name 도착 처리했어요 · ${hhmm(result.arrivedAt)}',
-          aboveTabBar: false,
-          // 도착 처리 단추 줄(여백 + 단추 64 + 여백) 바로 위 — 토스트가 단추를 가리면 다음 누름을 가로챈다.
-          bottomOffset: _toastAboveActionBar,
-        );
+      // (닫힌 화면의 `ref` 는 쓸 수 없다, F06-16). 큐에 쌓인 도착이 이번 요청 앞에서 비워졌을 수 있다.
+      container.invalidate(pendingRequestsProvider);
+      switch (outcome) {
+        case Queued():
+          // 서버에 닿지 못해 기기에 저장만 됐다(859) — 아직 반영되지 않았으니 서버 응답을 가정한 갱신은 하지 않는다.
+          // 저장된 곳은 다음 곳을 가리키는 데 쓰이고([queuedArrivalStopIdsProvider]),
+          // 연결되면 큐가 순서대로 보낸다.
+          if (!mounted) return;
+          _lockArriveButton();
+          showBaraedaToast(
+            context,
+            message: isLast
+                ? '마지막 승하차지 도착을 저장했어요 · 연결되면 보내고 운행이 끝나요'
+                : '$name 도착을 저장했어요 · 연결되면 보내요',
+            aboveTabBar: false,
+            bottomOffset: _toastAboveActionBar,
+          );
+        case Sent(value: final result):
+          container.invalidate(todayRunsProvider);
+          if (result.isFinal) {
+            // 종점에 닿았다 — 운행이 끝났으면 위치 송신은 여기서 끝난다. 하원 잔류로 종료가 보류됐으면 송신은
+            // 계속된다(`Ruling 855`). 송신기가 보류 여부를 스냅샷에서 읽으므로 스냅샷을 먼저 채운다.
+            container.read(lastArriveResultProvider.notifier).state = result;
+            container.read(transmissionEndedRunIdProvider.notifier).state =
+                runId;
+            if (!mounted) return;
+            unawaited(context.push(AppRoutes.runEnd));
+          } else {
+            container.invalidate(driveModeRosterProvider);
+            if (!mounted) return;
+            // 같은 자리 단추의 이름만 다음 승하차지로 바뀌면 처리된 줄 모른다 — 처리 사실을 토스트로 알린다(M6).
+            // 시각은 서버가 적은 도착 시각(§4.5 `arrived_at`)이다.
+            _lockArriveButton();
+            showBaraedaToast(
+              context,
+              message: '$name 도착 처리했어요 · ${hhmm(result.arrivedAt)}',
+              aboveTabBar: false,
+              // 도착 처리 단추 줄(여백 + 단추 64 + 여백) 바로 위 — 토스트가 단추를 가리면 다음 누름을 가로챈다.
+              bottomOffset: _toastAboveActionBar,
+            );
+          }
       }
     } on Failure catch (failure) {
       if (!mounted) return;
@@ -226,6 +247,14 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // 저장해 둔 도착이 큐에서 빠졌다 — 서버로 나갔거나 영구 실패다. 서버의 도착 시각을 새로 받는다. 안 받으면
+    // "처리한 곳" 에서 빠진 그 곳이 다음 곳으로 되살아난다(859).
+    ref.listen(queuedArrivalStopIdsProvider, (previous, next) {
+      if (previous == null || next.containsAll(previous)) return;
+      ref
+        ..invalidate(driveModeRosterProvider)
+        ..invalidate(todayRunsProvider);
+    });
     final runId = ref.watch(selectedRunIdProvider);
     final run = ref.watch(driveModeRunProvider);
     final transmission = ref.watch(positionTransmitterProvider);
@@ -261,7 +290,10 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
     );
     final roster = rosterAsync.value;
     final moving = run?.runStatus == RunStatus.moving;
-    final nextStop = roster == null ? null : nextUnarrivedStop(roster);
+    final queuedStopIds = ref.watch(queuedArrivalStopIdsProvider);
+    final nextStop = roster == null
+        ? null
+        : nextUnarrivedStop(roster, queuedStopIds: queuedStopIds);
     final navigationEnabled =
         _canUseExternalNavigation(run) && !_navigating && nextStop != null;
 
@@ -320,7 +352,11 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
                     _NextStopCard(
                       stop: nextStop,
                       order: _orderOf(roster, nextStop),
-                      isLast: isLastRemainingStop(roster, nextStop),
+                      isLast: isLastRemainingStop(
+                        roster,
+                        nextStop,
+                        queuedStopIds: queuedStopIds,
+                      ),
                       onRoster: () =>
                           unawaited(context.push(AppRoutes.rosterView)),
                     ),
@@ -336,7 +372,11 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
                         : null,
                   ),
                   const SizedBox(height: 16),
-                  _RemainingStops(roster: roster, colors: colors),
+                  _RemainingStops(
+                    roster: roster,
+                    colors: colors,
+                    queuedStopIds: queuedStopIds,
+                  ),
                 ] else ...[
                   const SizedBox(height: 12),
                   _mapWithControls(context, mapHeight, transmission),
@@ -526,9 +566,14 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
     }
 
     if (run.runStatus == RunStatus.moving) {
-      final nextStop = nextUnarrivedStop(roster);
+      final queuedStopIds = ref.watch(queuedArrivalStopIdsProvider);
+      final nextStop = nextUnarrivedStop(roster, queuedStopIds: queuedStopIds);
       if (nextStop == null) {
-        return const WordWrapText('모든 승하차지 도착 처리가 끝났어요');
+        return WordWrapText(
+          queuedStopIds.isEmpty
+              ? '모든 승하차지 도착 처리가 끝났어요'
+              : '도착 처리를 저장했어요 · 연결되면 서버로 보내요',
+        );
       }
       final lost = judgePositionLink(
         now: ref.read(clockProvider).now(),
@@ -553,7 +598,11 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
                     order: _orderOf(roster, nextStop),
                     name: nextStop.name,
                     direction: roster.direction,
-                    isLast: isLastRemainingStop(roster, nextStop),
+                    isLast: isLastRemainingStop(
+                      roster,
+                      nextStop,
+                      queuedStopIds: queuedStopIds,
+                    ),
                   ),
           ),
           if (lost?.kind == PositionLinkKind.lost)
@@ -659,16 +708,24 @@ class _NextStopCard extends StatelessWidget {
 
 /// `남은 승하차지 3곳 · 미경유 1곳은 건너뛰어요` + 번호 타임라인 — 조회 전용(승하차 처리는 동승자만, M-12).
 class _RemainingStops extends StatelessWidget {
-  const new({required this.roster, required this.colors});
+  const new({
+    required this.roster,
+    required this.colors,
+    required this.queuedStopIds,
+  });
 
   final RosterResponse roster;
   final BaraedaColors colors;
+
+  /// 도착 처리를 기기에 저장해 둔 곳 — 이미 처리한 곳으로 보고 남은 목록에서 뺀다(859).
+  final Set<String> queuedStopIds;
 
   @override
   Widget build(BuildContext context) {
     final remaining = [
       for (final stop in roster.stops)
-        if (stop.arrivedAt == null) stop,
+        if (stop.arrivedAt == null && !queuedStopIds.contains(stop.stopId))
+          stop,
     ];
     if (remaining.isEmpty) return const SizedBox.shrink();
     final skipped = remaining

@@ -19,6 +19,7 @@ import 'package:manager_app/features/drive_mode/domain/drive_mode_repository.dar
 import 'package:manager_app/features/drive_mode/presentation/drive_mode_providers.dart';
 import 'package:manager_app/features/home/data/models/manager_run.dart';
 import 'package:manager_app/features/home/presentation/run_ready_screen.dart';
+import 'package:manager_app/features/offline_queue/domain/send_outcome.dart';
 import 'package:manager_app/features/roster/data/models/roster_response.dart';
 import 'package:manager_app/features/route_map/data/models/route_response.dart';
 import 'package:manager_app/features/route_map/presentation/route_providers.dart';
@@ -45,7 +46,7 @@ class _CountingDriveRepository implements DriveModeRepository {
   }
 
   @override
-  Future<ArriveStopResult> arriveStop({
+  Future<SendOutcome<ArriveStopResult>> arriveStop({
     required String runId,
     required String stopId,
   }) => throw UnimplementedError('이 파일의 시험 대상이 아니다');
