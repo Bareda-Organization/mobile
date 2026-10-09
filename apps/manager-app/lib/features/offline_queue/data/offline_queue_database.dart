@@ -38,7 +38,22 @@ class PendingRequests extends Table {
   IntColumn get attempts => integer().withDefault(const Constant(0))();
 }
 
-@DriftDatabase(tables: [PendingRequests])
+/// 마지막으로 받은 명단(스키마 v5, M-M3 · UF-E-07) — 앱을 다시 켠 뒤 오프라인이어도 명단을 본다.
+/// 회차마다 한 행이고 서버 응답 본문(§4.2)을 그대로 담는다. 계정 소유의 정보라 로그아웃·세션 만료에 비운다.
+class CachedRosters extends Table {
+  TextColumn get runId => text()();
+
+  /// `GET /runs/{runId}/roster` 응답 본문(JSON 직렬화된 문자열).
+  TextColumn get payload => text()();
+
+  /// 서버에서 받은 시각 — 화면이 "N시 N분에 받은 명단" 으로 밝힌다.
+  DateTimeColumn get savedAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {runId};
+}
+
+@DriftDatabase(tables: [PendingRequests, CachedRosters])
 class OfflineQueueDatabase extends _$OfflineQueueDatabase {
   new() : super(_openConnection());
 
@@ -48,7 +63,7 @@ class OfflineQueueDatabase extends _$OfflineQueueDatabase {
   new forTesting(super.e);
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -69,6 +84,10 @@ class OfflineQueueDatabase extends _$OfflineQueueDatabase {
       if (from < 4) {
         // 행별 시도 횟수 — 큐 머리의 한 행이 5xx 를 되풀이해도 뒤를 영구히 막지 않게 한다(R46-FIXRT S-9).
         await m.addColumn(pendingRequests, pendingRequests.attempts);
+      }
+      if (from < 5) {
+        // 명단 로컬 저장 표 — 기존 대기 요청은 건드리지 않는다.
+        await m.createTable(cachedRosters);
       }
     },
   );

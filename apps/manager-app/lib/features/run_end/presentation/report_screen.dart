@@ -18,14 +18,15 @@ import 'package:manager_app/features/run_end/data/models/report_result.dart';
 
 /// 현장 상황 보고(§4.13, M-14) — 도로 통제 · 차량 문제 · 기타([guardianAbsent] 가 아닐 때, 시안
 /// `report`) 또는
-/// 보호자 부재(학생 한 명을 골라 보고, 시안 `guardian-absent`).
+/// 보호자 부재(학생 한 명을 골라 보고, 시안 `guardian-absent`). 하원 회차의 예외 보고 화면에서는 네 번째
+/// 항목으로 보호자 부재를 고를 수도 있다(UF-E-04 — 동승자의 [예외 보고] → [보호자 부재 보고]).
 ///
 /// 보고는 학원 관계자에게만 전달된다 — 학부모에게 알려야 하면 동승자가 지연 알림을 보낸다. 접수된 뒤에는 제출
 /// 단추를 꺼 같은 보고가 두 번 나가지 않게 한다(R32 M11).
 class ReportScreen extends ConsumerStatefulWidget {
   const new({super.key, this.guardianAbsent = false});
 
-  /// 보호자 부재 보고 — 학생 선택이 필수다(`riderId`).
+  /// 보호자 부재 보고로 바로 연다 — 종류 선택 없이 학생 선택이 필수다(`riderId`).
   final bool guardianAbsent;
 
   @override
@@ -47,6 +48,16 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
     BaraedaSegmentedOption('etc', label: '기타'),
   ];
 
+  /// 하원 회차에서만 더해지는 종류 — 보호자 부재는 하원 승하차지의 일이다(EXC-02).
+  static const _guardianAbsentOption = BaraedaSegmentedOption(
+    'guardian_absent',
+    label: '보호자 부재',
+  );
+
+  /// 보호자 부재 보고인가 — 바로 연 화면이거나, 예외 보고 화면에서 그 종류를 골랐다.
+  bool get _isGuardianAbsent =>
+      widget.guardianAbsent || _type == ReportType.guardianAbsent;
+
   @override
   void dispose() {
     _memoController.dispose();
@@ -54,11 +65,11 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
   }
 
   ReportType get _effectiveType =>
-      widget.guardianAbsent ? ReportType.guardianAbsent : _type;
+      _isGuardianAbsent ? ReportType.guardianAbsent : _type;
 
   Future<void> _submit(String runId) async {
     final memo = _memoController.text.trim();
-    if (widget.guardianAbsent && _selectedRiderId == null) {
+    if (_isGuardianAbsent && _selectedRiderId == null) {
       setState(() => _errorMessage = '어느 학생인지 골라 주세요');
       return;
     }
@@ -78,7 +89,7 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
             request: ReportRequest(
               type: _effectiveType,
               memo: memo,
-              riderId: widget.guardianAbsent ? _selectedRiderId : null,
+              riderId: _isGuardianAbsent ? _selectedRiderId : null,
             ),
           );
       if (!mounted) return;
@@ -130,14 +141,14 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
         ? snapshot
         : null;
     final colors = context.colors;
-    final targets = widget.guardianAbsent
+    final targets = _isGuardianAbsent
         ? _targets(termination)
         : const <({String riderId, String name, String meta})>[];
 
     return Scaffold(
       appBar: ManagerHeader(
-        title: widget.guardianAbsent ? '보호자 부재 보고' : '현장 상황 보고',
-        subtitle: widget.guardianAbsent && roster != null
+        title: _isGuardianAbsent ? '보호자 부재 보고' : '현장 상황 보고',
+        subtitle: _isGuardianAbsent && roster != null
             ? '${roster.busNo} · ${directionLabel(roster.direction)}'
             : null,
       ),
@@ -171,7 +182,11 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
                         const Text('어떤 상황이에요?', style: BaraedaTypography.label),
                         const SizedBox(height: 8),
                         BaraedaSegmentedControl(
-                          options: _typeOptions,
+                          options: [
+                            ..._typeOptions,
+                            if (roster?.direction == RunDirection.fromAcademy)
+                              _guardianAbsentOption,
+                          ],
                           value: _type.wireValue,
                           block: true,
                           wrapByWord: true,
@@ -183,7 +198,9 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
                                   ),
                                 ),
                         ),
-                      ] else ...[
+                      ],
+                      if (_isGuardianAbsent) ...[
+                        if (!widget.guardianAbsent) const SizedBox(height: 16),
                         const Text('어느 학생이에요?', style: BaraedaTypography.label),
                         const SizedBox(height: 8),
                         if (targets.isEmpty)
@@ -236,7 +253,7 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
                       const SizedBox(height: 12),
                       AlertBanner(
                         tone: AlertTone.info,
-                        body: widget.guardianAbsent
+                        body: _isGuardianAbsent
                             ? '제출하면 학원 관계자에게 바로 전달되고, 이후는 관계자가 판단해요.'
                             : '보고는 학원 관계자에게 전달돼요. 학부모에게 알려야 하면 '
                                   '동승자가 지연 알림을 보내요.',

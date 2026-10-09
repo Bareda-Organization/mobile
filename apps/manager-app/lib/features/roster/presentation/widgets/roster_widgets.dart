@@ -293,6 +293,8 @@ class RosterStudentTile extends StatelessWidget {
       student.guardianPhone,
       metaExtra,
     ].whereType<String>().join(' · ');
+    final note = student.note?.trim();
+    final hasNote = note != null && note.isNotEmpty;
     final initials = student.name.length >= 2
         ? student.name.substring(student.name.length - 2)
         : student.name;
@@ -359,6 +361,14 @@ class RosterStudentTile extends StatelessWidget {
                           meta,
                           style: BaraedaTypography.caption.copyWith(
                             color: colors.textSecondary,
+                          ),
+                        ),
+                      // 특이사항(RST-02 · M-03) — 학원이 적어 둔 현장 참고 사항.
+                      if (hasNote)
+                        Text(
+                          '특이사항 · $note',
+                          style: BaraedaTypography.caption.copyWith(
+                            color: colors.textPrimary,
                           ),
                         ),
                       if (!student.canGoAlone)

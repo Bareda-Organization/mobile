@@ -27,6 +27,8 @@ import 'package:manager_app/features/home/data/models/manager_run.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
 import 'package:manager_app/features/navigation/data/models/navigation_scope.dart';
 import 'package:manager_app/features/navigation/presentation/open_navigation.dart';
+import 'package:manager_app/features/offline_queue/domain/send_outcome.dart';
+import 'package:manager_app/features/offline_queue/presentation/offline_queue_providers.dart';
 import 'package:manager_app/features/position/presentation/position_link.dart';
 import 'package:manager_app/features/position/presentation/position_transmitter.dart';
 import 'package:manager_app/features/roster/data/models/roster_response.dart';
@@ -76,6 +78,11 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
   PositionAvailability? _recheckedAvailability;
   Timer? _availabilityTimer;
 
+  /// 기기에 저장해 둔 명단(`RosterResponse.cachedAt`)으로 다음 곳을 가리키는 동안 서버에서 다시 받아 보는
+  /// 주기(M-M3) — 연결이 돌아오면 서버 명단으로 바뀐다. 서버에서 받은 명단이면 아무것도 하지 않는다.
+  static const _cachedRetryInterval = Duration(seconds: 15);
+  Timer? _cachedRetryTimer;
+
   /// 위치 송신 상태의 [PositionAvailability] 를 화면 문구로 옮긴다 — 정상(`available`)이거나
   /// 아직 모르면(`null`) 아무것도 보여주지 않는다.
   String? _positionGuidance(PositionAvailability? availability) =>
@@ -97,6 +104,11 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
     // 것이 지금 GPS 송신을 지키는 유일한 수단이다(M-B 2항).
     _wakelockPort = ref.read(wakelockPortProvider);
     unawaited(_wakelockPort.enable());
+    _cachedRetryTimer = Timer.periodic(_cachedRetryInterval, (_) {
+      if (ref.read(driveModeRosterProvider).value?.cachedAt != null) {
+        ref.invalidate(driveModeRosterProvider);
+      }
+    });
     // 권한을 중간에 끄거나 위치 서비스가 꺼져도 주기마다 다시 본다. 스트림은 켜지 않는다.
     if (ref.read(roleCapabilitiesProvider)?.canTransmitPosition ?? false) {
       final source = ref.read(positionSourceProvider);
@@ -117,6 +129,7 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
   @override
   void dispose() {
     _availabilityTimer?.cancel();
+    _cachedRetryTimer?.cancel();
     _arriveLockTimer?.cancel();
     unawaited(_wakelockPort.disable());
     super.dispose();
@@ -127,20 +140,27 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
     String stopId, {
     required int order,
     required String name,
+    required RunDirection direction,
     bool isLast = false,
   }) async {
-    // 마지막 승하차지의 도착 처리는 곧 운행 종료다(C-15) — 되돌릴 수 없어 한 번 묻는다(R32 M6).
-    // 그 앞 승하차지는 운전 중에 자주 누르는 조작이라 묻지 않는다.
+    // 마지막 승하차지의 도착 처리는 등원이면 곧 운행 종료다(C-15) — 되돌릴 수 없어 한 번 묻는다(R32 M6).
+    // 하원은 도착만 기록되고 남은 학생이 있으면 종료가 보류된다. 그 앞 승하차지는 운전 중에 자주 누르는 조작이라
+    // 묻지 않는다.
     if (isLast) {
+      final toAcademy = direction == RunDirection.toAcademy;
       final confirmed = await confirmAction(
         context,
         title: '마지막 승하차지예요',
-        body:
-            '도착 처리가 곧 운행 종료예요. 되돌릴 수 없어요.\n'
-            '· 등원 학생 전원이 자동으로 하차 처리돼요\n'
-            '· 위치 보내기가 멈춰요\n'
-            '· 학원 관계자에게 운행 종료가 전달돼요',
-        confirmLabel: '도착했어요 · 운행 종료',
+        body: toAcademy
+            ? '도착 처리가 곧 운행 종료예요. 되돌릴 수 없어요.\n'
+                  '· 등원 학생 전원이 자동으로 하차 처리돼요\n'
+                  '· 위치 보내기가 멈춰요\n'
+                  '· 학원 관계자에게 운행 종료가 전달돼요'
+            : '도착이 기록돼요. 되돌릴 수 없어요.\n'
+                  '· 아직 버스에 있는 학생이 있으면 운행 종료가 보류돼요\n'
+                  '· 동승자가 마지막 학생을 하차 처리하면 운행이 끝나요\n'
+                  '· 남은 학생이 내릴 때까지 위치는 계속 보내요',
+        confirmLabel: toAcademy ? '도착했어요 · 운행 종료' : '도착했어요',
         cancelLabel: '닫기',
       );
       if (!confirmed || !mounted) return;
@@ -151,31 +171,54 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
       _errorMessage = null;
     });
     try {
-      final result = await ref
+      final outcome = await ref
           .read(driveModeRepositoryProvider)
           .arriveStop(runId: runId, stopId: stopId);
       // 요청 중에 화면이 닫혀도 서버는 이미 도착을 반영했다 — 화면 생존과 무관한 갱신은 컨테이너로 한다
-      // (닫힌 화면의 `ref` 는 쓸 수 없다, F06-16).
-      container.invalidate(todayRunsProvider);
-      if (result.isFinal) {
-        // 종점에 닿았으니 위치 송신은 여기서 끝난다 — 하원 잔류로 서버 회차가 아직 `moving` 이어도 그렇다.
-        container.read(transmissionEndedRunIdProvider.notifier).state = runId;
-        container.read(lastArriveResultProvider.notifier).state = result;
-        if (!mounted) return;
-        unawaited(context.push(AppRoutes.runEnd));
-      } else {
-        container.invalidate(driveModeRosterProvider);
-        if (!mounted) return;
-        // 같은 자리 단추의 이름만 다음 승하차지로 바뀌면 처리된 줄 모른다 — 처리 사실을 토스트로 알린다(M6).
-        // 시각은 서버가 적은 도착 시각(§4.5 `arrived_at`)이다.
-        _lockArriveButton();
-        showBaraedaToast(
-          context,
-          message: '$name 도착 처리했어요 · ${hhmm(result.arrivedAt)}',
-          aboveTabBar: false,
-          // 도착 처리 단추 줄(여백 + 단추 64 + 여백) 바로 위 — 토스트가 단추를 가리면 다음 누름을 가로챈다.
-          bottomOffset: _toastAboveActionBar,
-        );
+      // (닫힌 화면의 `ref` 는 쓸 수 없다, F06-16). 큐에 쌓인 도착이 이번 요청 앞에서 비워졌을 수 있다.
+      container.invalidate(pendingRequestsProvider);
+      switch (outcome) {
+        case Queued():
+          // 서버에 닿지 못해 기기에 저장만 됐다(859) — 아직 반영되지 않았으니 서버 응답을 가정한 갱신은 하지 않는다.
+          // 저장된 곳은 다음 곳을 가리키는 데 쓰이고([queuedArrivalStopIdsProvider]),
+          // 연결되면 큐가 순서대로 보낸다.
+          if (!mounted) return;
+          _lockArriveButton();
+          showBaraedaToast(
+            context,
+            // 하원은 도착이 서버에 닿아도 남은 학생이 있으면 종료가 보류된다 — 운행이 끝난다고 약속하지 않는다.
+            message: isLast && direction == RunDirection.toAcademy
+                ? '마지막 승하차지 도착을 저장했어요 · 연결되면 보내고 운행이 끝나요'
+                : isLast
+                ? '마지막 승하차지 도착을 저장했어요 · 연결되면 보내요'
+                : '$name 도착을 저장했어요 · 연결되면 보내요',
+            aboveTabBar: false,
+            bottomOffset: _toastAboveActionBar,
+          );
+        case Sent(value: final result):
+          container.invalidate(todayRunsProvider);
+          if (result.isFinal) {
+            // 종점에 닿았다 — 운행이 끝났으면 위치 송신은 여기서 끝난다. 하원 잔류로 종료가 보류됐으면 송신은
+            // 계속된다(`Ruling 855`). 송신기가 보류 여부를 스냅샷에서 읽으므로 스냅샷을 먼저 채운다.
+            container.read(lastArriveResultProvider.notifier).state = result;
+            container.read(transmissionEndedRunIdProvider.notifier).state =
+                runId;
+            if (!mounted) return;
+            unawaited(context.push(AppRoutes.runEnd));
+          } else {
+            container.invalidate(driveModeRosterProvider);
+            if (!mounted) return;
+            // 같은 자리 단추의 이름만 다음 승하차지로 바뀌면 처리된 줄 모른다 — 처리 사실을 토스트로 알린다(M6).
+            // 시각은 서버가 적은 도착 시각(§4.5 `arrived_at`)이다.
+            _lockArriveButton();
+            showBaraedaToast(
+              context,
+              message: '$name 도착 처리했어요 · ${hhmm(result.arrivedAt)}',
+              aboveTabBar: false,
+              // 도착 처리 단추 줄(여백 + 단추 64 + 여백) 바로 위 — 토스트가 단추를 가리면 다음 누름을 가로챈다.
+              bottomOffset: _toastAboveActionBar,
+            );
+          }
       }
     } on Failure catch (failure) {
       if (!mounted) return;
@@ -185,17 +228,9 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
     }
   }
 
-  /// `내비 열기` — 범위를 고르는 시트를 띄우고 고른 범위로 카카오내비를 연다(UF-D-02, RUN-08, Ruling 570).
-  Future<void> _chooseNavigation(
-    String runId, {
-    required String nextLabel,
-  }) async {
-    final scope = await showBaraedaBottomSheet<NavigationScope>(
-      context: context,
-      title: '카카오내비로 열기',
-      builder: (sheetContext) => NavigationScopeSheet(nextLabel: nextLabel),
-    );
-    if (scope == null || !mounted) return;
+  /// 지도 위 [다음 목적지] · [남은 전 구간] 단추로 고른 범위의 길안내를 카카오내비로 연다(UF-D-02, RUN-08,
+  /// Ruling 570) — 범위를 고르는 시트는 없다.
+  Future<void> _openNavigation(String runId, NavigationScope scope) async {
     setState(() {
       _navigating = true;
       _errorMessage = null;
@@ -226,6 +261,14 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // 저장해 둔 도착이 큐에서 빠졌다 — 서버로 나갔거나 영구 실패다. 서버의 도착 시각을 새로 받는다. 안 받으면
+    // "처리한 곳" 에서 빠진 그 곳이 다음 곳으로 되살아난다(859).
+    ref.listen(queuedArrivalStopIdsProvider, (previous, next) {
+      if (previous == null || next.containsAll(previous)) return;
+      ref
+        ..invalidate(driveModeRosterProvider)
+        ..invalidate(todayRunsProvider);
+    });
     final runId = ref.watch(selectedRunIdProvider);
     final run = ref.watch(driveModeRunProvider);
     final transmission = ref.watch(positionTransmitterProvider);
@@ -261,7 +304,10 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
     );
     final roster = rosterAsync.value;
     final moving = run?.runStatus == RunStatus.moving;
-    final nextStop = roster == null ? null : nextUnarrivedStop(roster);
+    final queuedStopIds = ref.watch(queuedArrivalStopIdsProvider);
+    final nextStop = roster == null
+        ? null
+        : nextUnarrivedStop(roster, queuedStopIds: queuedStopIds);
     final navigationEnabled =
         _canUseExternalNavigation(run) && !_navigating && nextStop != null;
 
@@ -320,7 +366,11 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
                     _NextStopCard(
                       stop: nextStop,
                       order: _orderOf(roster, nextStop),
-                      isLast: isLastRemainingStop(roster, nextStop),
+                      isLast: isLastRemainingStop(
+                        roster,
+                        nextStop,
+                        queuedStopIds: queuedStopIds,
+                      ),
                       onRoster: () =>
                           unawaited(context.push(AppRoutes.rosterView)),
                     ),
@@ -330,22 +380,17 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
                     context,
                     mapHeight,
                     transmission,
-                    navigationLabel: navigationEnabled || _navigating
-                        ? '내비 열기'
-                        : null,
+                    showNavigation: navigationEnabled || _navigating,
                     onNavigation: navigationEnabled
-                        ? () => unawaited(
-                            _chooseNavigation(
-                              runId,
-                              nextLabel:
-                                  '${_orderOf(roster, nextStop)} '
-                                  '${nextStop.name} 1곳',
-                            ),
-                          )
+                        ? (scope) => unawaited(_openNavigation(runId, scope))
                         : null,
                   ),
                   const SizedBox(height: 16),
-                  _RemainingStops(roster: roster, colors: colors),
+                  _RemainingStops(
+                    roster: roster,
+                    colors: colors,
+                    queuedStopIds: queuedStopIds,
+                  ),
                 ] else ...[
                   const SizedBox(height: 12),
                   _mapWithControls(context, mapHeight, transmission),
@@ -379,26 +424,44 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
     );
   }
 
-  /// 지도 + 왼쪽 위 `내비 열기` · 오른쪽 아래 `크게 보기`(노선 지도 화면, `Ruling 829`).
+  /// 지도 + 왼쪽 위 [다음 목적지] · [남은 전 구간] 두 단추 · 오른쪽 아래 `크게 보기`
+  /// (노선 지도 화면, `Ruling 829`).
   Widget _mapWithControls(
     BuildContext context,
     double height,
     PositionTransmission transmission, {
-    String? navigationLabel,
-    VoidCallback? onNavigation,
+    bool showNavigation = false,
+    void Function(NavigationScope scope)? onNavigation,
   }) {
     return Stack(
       children: [
         DriveMapPanel(height: height, busPosition: transmission.busPosition),
-        if (navigationLabel != null)
+        if (showNavigation)
           Positioned(
             left: 8,
             top: 8,
-            child: BaraedaMapButton(
-              icon: 'navigation',
-              label: navigationLabel,
-              semanticLabel: '카카오내비',
-              onPressed: onNavigation,
+            right: 64,
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                BaraedaMapButton(
+                  icon: 'navigation',
+                  label: '다음 목적지',
+                  semanticLabel: '카카오내비',
+                  onPressed: onNavigation == null
+                      ? null
+                      : () => onNavigation(NavigationScope.next),
+                ),
+                BaraedaMapButton(
+                  icon: 'route',
+                  label: '남은 전 구간',
+                  semanticLabel: '카카오내비',
+                  onPressed: onNavigation == null
+                      ? null
+                      : () => onNavigation(NavigationScope.remaining),
+                ),
+              ],
             ),
           ),
         Positioned(
@@ -517,9 +580,14 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
     }
 
     if (run.runStatus == RunStatus.moving) {
-      final nextStop = nextUnarrivedStop(roster);
+      final queuedStopIds = ref.watch(queuedArrivalStopIdsProvider);
+      final nextStop = nextUnarrivedStop(roster, queuedStopIds: queuedStopIds);
       if (nextStop == null) {
-        return const WordWrapText('모든 승하차지 도착 처리가 끝났어요');
+        return WordWrapText(
+          queuedStopIds.isEmpty
+              ? '모든 승하차지 도착 처리가 끝났어요'
+              : '도착 처리를 저장했어요 · 연결되면 서버로 보내요',
+        );
       }
       final lost = judgePositionLink(
         now: ref.read(clockProvider).now(),
@@ -543,7 +611,12 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
                     nextStop.stopId,
                     order: _orderOf(roster, nextStop),
                     name: nextStop.name,
-                    isLast: isLastRemainingStop(roster, nextStop),
+                    direction: roster.direction,
+                    isLast: isLastRemainingStop(
+                      roster,
+                      nextStop,
+                      queuedStopIds: queuedStopIds,
+                    ),
                   ),
           ),
           if (lost?.kind == PositionLinkKind.lost)
@@ -649,16 +722,24 @@ class _NextStopCard extends StatelessWidget {
 
 /// `남은 승하차지 3곳 · 미경유 1곳은 건너뛰어요` + 번호 타임라인 — 조회 전용(승하차 처리는 동승자만, M-12).
 class _RemainingStops extends StatelessWidget {
-  const new({required this.roster, required this.colors});
+  const new({
+    required this.roster,
+    required this.colors,
+    required this.queuedStopIds,
+  });
 
   final RosterResponse roster;
   final BaraedaColors colors;
+
+  /// 도착 처리를 기기에 저장해 둔 곳 — 이미 처리한 곳으로 보고 남은 목록에서 뺀다(859).
+  final Set<String> queuedStopIds;
 
   @override
   Widget build(BuildContext context) {
     final remaining = [
       for (final stop in roster.stops)
-        if (stop.arrivedAt == null) stop,
+        if (stop.arrivedAt == null && !queuedStopIds.contains(stop.stopId))
+          stop,
     ];
     if (remaining.isEmpty) return const SizedBox.shrink();
     final skipped = remaining
@@ -716,55 +797,6 @@ class _RemainingStops extends StatelessWidget {
                   ),
                 },
             ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-/// `내비 열기` 시트 — 다음 목적지 1곳 / 남은 전 구간(카카오내비 경유지 상한까지, Ruling 570).
-class NavigationScopeSheet extends StatelessWidget {
-  const new({required this.nextLabel, super.key});
-
-  /// `3 새솔초 정문 1곳` — 다음 목적지를 눌렀을 때 넘어가는 곳.
-  final String nextLabel;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        BaraedaListGroup(
-          children: [
-            BaraedaListRow(
-              title: '다음 목적지',
-              subtitle: nextLabel,
-              trailing: BaraedaIcon(
-                'chevron-right',
-                color: colors.textSecondary,
-              ),
-              onTap: () => Navigator.of(context).pop(NavigationScope.next),
-            ),
-            BaraedaListRow(
-              title: '남은 전 구간',
-              subtitle: '앞 4곳까지 넘겨요',
-              trailing: BaraedaIcon(
-                'chevron-right',
-                color: colors.textSecondary,
-              ),
-              onTap: () => Navigator.of(context).pop(NavigationScope.remaining),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Text(
-          '카카오내비는 경유지를 4곳까지 받아요. 남은 곳이 더 많으면 앞쪽만 넘기고 '
-          '알려 드려요. 앱이 없으면 설치 화면으로 이동해요.',
-          style: BaraedaTypography.caption.copyWith(
-            color: colors.textSecondary,
           ),
         ),
       ],

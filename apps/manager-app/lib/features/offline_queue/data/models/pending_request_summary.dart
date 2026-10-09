@@ -34,6 +34,20 @@ class PendingRequestSummary {
   static bool isEmergencyEndpoint(String endpoint) =>
       endpoint.endsWith('/emergency');
 
+  /// 승하차지 도착 처리(`POST /runs/{runId}/stops/{stopId}/arrive`)의 경로인가(859) — 재전송이 `DUPLICATE_ARRIVE`
+  /// 를 성공으로 흡수하는 대상이다.
+  static bool isArriveEndpoint(String endpoint) =>
+      endpoint.contains('/stops/') && endpoint.endsWith('/arrive');
+
+  /// 이 요청이 도착 처리인가 — [isArriveEndpoint].
+  bool get isArrive => isArriveEndpoint(endpoint);
+
+  /// 도착 처리면 그 승하차지 id, 아니면 `null` — 운행 화면이 "도착 처리 저장됨" 인 곳을 가르는 근거다(859).
+  String? get arriveStopId {
+    if (!isArrive) return null;
+    return endpoint.split('/stops/').last.split('/').first;
+  }
+
   /// 이 요청이 비상 신고인가 — [isEmergencyEndpoint].
   bool get isEmergency => isEmergencyEndpoint(endpoint);
 
@@ -51,6 +65,7 @@ class PendingRequestSummary {
       final type = EmergencyType.fromWireValueOrNull(body['type'] as String?);
       return type == null ? '비상 신고' : '비상 신고 · ${type.label}';
     }
+    if (isArrive) return '승하차지 도착 처리';
     if (endpoint.contains('/riders/')) {
       return switch (RiderStatus.fromWireValueOrNull(
         body['status'] as String?,

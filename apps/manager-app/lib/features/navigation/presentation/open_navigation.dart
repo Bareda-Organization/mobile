@@ -20,7 +20,8 @@ class NavigationOpenResult {
 }
 
 /// 서버가 정한 [scope] 범위의 경로(§4.16)를 카카오내비로 넘긴다(RUN-08). 카카오내비는 공식 SDK 가 연다 —
-/// 서버는 딥링크를 만들지 않는다. 운행 준비(`카카오내비로 길 확인`)와 운행 중(`내비 열기`)이 같이 쓴다.
+/// 서버는 딥링크를 만들지 않는다. 운행 준비(`카카오내비로 길 확인`)와 운행 중(지도 위 [다음 목적지] ·
+/// [남은 전 구간])이 같이 쓴다.
 Future<NavigationOpenResult> openExternalNavigation(
   WidgetRef ref, {
   required String runId,

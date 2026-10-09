@@ -246,6 +246,16 @@ class _RunReadyScreenState extends ConsumerState<RunReadyScreen> {
                   const SizedBox(height: 8),
                   AlertBanner(tone: AlertTone.info, body: _navNotice),
                 ],
+                const SizedBox(height: 8),
+                // 운행을 시작하기 전에도 승하차지 명단을 볼 수 있다(UF-D-02 · 조회 전용).
+                BaraedaButton(
+                  label: '명단 보기',
+                  icon: 'list',
+                  variant: BaraedaButtonVariant.secondary,
+                  block: true,
+                  onPressed: () =>
+                      unawaited(context.push(AppRoutes.rosterView)),
+                ),
                 const SizedBox(height: 24),
                 _StopsSection(roster: roster!),
               ],

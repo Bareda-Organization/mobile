@@ -7,9 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:manager_app/app/app_routes.dart';
 import 'package:manager_app/app/di.dart';
-import 'package:manager_app/core/auth/academy_contact_store.dart';
 import 'package:manager_app/core/auth/account_session.dart';
-import 'package:manager_app/core/auth/auth_providers.dart';
 
 /// UF-X-03 — 로그인 폼 → `POST /auth/login` → 성공하면 역할·상태 provider 를
 /// 채운다. 이후 화면 전환은 이 화면이 직접 `go` 하지 않는다 —
@@ -69,22 +67,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         loginId: loginId,
         password: password,
       );
-      applyRoleAndStatus(
-        ref.read(unsupportedRoleProvider.notifier),
-        ref.read(currentUserRoleProvider.notifier),
-        ref.read(currentAccountStatusProvider.notifier),
-        role: response.role,
-        status: response.status,
-      );
-      ref.read(sessionExpiredNoticeProvider.notifier).state = null;
-      ref.read(mustChangePasswordProvider.notifier).state =
-          response.mustChangePassword;
-      ref.read(academyContactProvider.notifier).state =
-          response.academy?.contact;
-      // 계정이 잠기면 서버에서 번호를 못 받는다 — 성공한 로그인의 번호를 기기에 남겨 둔다(`Ruling 825`).
-      unawaited(
-        ref.read(academyContactStoreProvider).save(response.academy?.contact),
-      );
+      applyLoginResponse(ref, response);
 
       if (ref.read(unsupportedRoleProvider)) {
         // 로그인 자체는 서버 기준 성공이라 토큰이 이미 저장돼 있다 —
@@ -212,7 +195,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         tone: AlertTone.missed,
                         title: '$remaining번 더 틀리면 계정이 잠겨요',
                         body:
-                            '5번 연속 실패하면 학원 관리자가 풀어 줄 때까지 '
+                            '5번 연속 실패하면 메인 관리자가 풀어 줄 때까지 '
                             '로그인할 수 없어요.',
                       ),
                     ],
@@ -250,25 +233,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       style: BaraedaTypography.caption.copyWith(
                         color: colors.textSecondary,
                       ),
-                    ),
-                    DevQuickLogin(
-                      accounts: const [
-                        DevAccount('기사', 'driverA1'),
-                        DevAccount('동승자', 'escortA1'),
-                        // 시드에서 **운행 중(moving)** 인 회차 3의 동승자 — 승하차 처리를 눈으로 보려면 이
-                        // 계정이어야 한다(다른 동승자의 회차는 출발 전이다).
-                        DevAccount('동승자(운행중)', 'escortA2'),
-                        DevAccount('기사(타 학원)', 'driverB1'),
-                        DevAccount('차단됨', 'driverBlocked'),
-                        // V14 데모 학원(목동) 1호차 — 승하차지 15곳 · 학생 20명 명단.
-                        DevAccount('데모 기사', 'driver011'),
-                        DevAccount('데모 동승자', 'escort011'),
-                      ],
-                      onPick: (loginId, password) {
-                        _loginIdController.text = loginId;
-                        _passwordController.text = password;
-                        unawaited(_submit());
-                      },
                     ),
                   ],
                 ),

@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 /// R46 B — 운행 중 화면(기사 운전 화면 · 동승자 명단)에는 알림 진입점을 두지 않는다. 운전 중 시선을 뺏는 요소를 막는다.
+/// 이 시험은 import 만 본다 — 화면이 실제로 그리는 것은 `test/features/drive_mode/
+/// drive_mode_no_notification_entry_test.dart` 가 고정한다(857).
 void main() {
   for (final dir in [
     'lib/features/drive_mode',

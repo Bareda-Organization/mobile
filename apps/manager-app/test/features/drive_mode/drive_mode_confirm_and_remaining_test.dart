@@ -18,9 +18,13 @@ import 'package:manager_app/features/drive_mode/domain/drive_mode_repository.dar
 import 'package:manager_app/features/drive_mode/presentation/drive_mode_providers.dart';
 import 'package:manager_app/features/drive_mode/presentation/drive_mode_screen.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
+import 'package:manager_app/features/offline_queue/data/models/pending_request_summary.dart';
+import 'package:manager_app/features/offline_queue/domain/send_outcome.dart';
+import 'package:manager_app/features/offline_queue/presentation/offline_queue_providers.dart';
 import 'package:manager_app/features/roster/data/models/roster_response.dart';
 import 'package:manager_app/features/route_map/data/models/route_response.dart';
 import 'package:manager_app/features/route_map/presentation/route_providers.dart';
+import 'package:manager_app/features/run_end/presentation/run_end_screen.dart';
 
 import '../../support/manager_run_fixture.dart';
 
@@ -29,6 +33,12 @@ import '../../support/manager_run_fixture.dart';
 class _RecordingDriveModeRepository implements DriveModeRepository {
   int startCalls = 0;
   final arrivedStopIds = <String>[];
+
+  /// 참이면 연결이 없는 상황 — 도착 처리가 큐에 저장되고 [Queued] 로 끝난다(859).
+  bool offline = false;
+
+  /// [offline] 일 때 큐에 저장된 도착 처리 — 화면의 대기 목록(`pendingRequestsProvider`)이 읽는다.
+  final queuedRequests = <PendingRequestSummary>[];
 
   @override
   Future<StartRunResult> startRun(String runId) async {
@@ -40,11 +50,23 @@ class _RecordingDriveModeRepository implements DriveModeRepository {
   }
 
   @override
-  Future<ArriveStopResult> arriveStop({
+  Future<SendOutcome<ArriveStopResult>> arriveStop({
     required String runId,
     required String stopId,
   }) async {
     arrivedStopIds.add(stopId);
+    if (offline) {
+      queuedRequests.add(
+        PendingRequestSummary(
+          id: queuedRequests.length + 1,
+          endpoint: '/runs/$runId/stops/$stopId/arrive',
+          method: 'POST',
+          payload: '{}',
+          createdAt: DateTime(2026, 9, 30, 8, 1),
+        ),
+      );
+      return const Queued();
+    }
     // 이 시험은 요청이 나갔는지만 본다 — 종료 화면 이동을 피하려고 실패로 끝낸다.
     // Failure 는 Exception/Error 를 상속하지 않는다(다른 시험의 같은 패턴).
     // ignore: only_throw_errors
@@ -119,13 +141,20 @@ RosterStop _stop(
   ],
 );
 
-RosterResponse _roster(List<RosterStop> stops) => RosterResponse(
+RosterResponse _roster(
+  List<RosterStop> stops, {
+  RunDirection direction = RunDirection.toAcademy,
+  DateTime? cachedAt,
+}) => RosterResponse(
   runId: 'run-1',
   busNo: '3호차',
-  direction: RunDirection.toAcademy,
+  direction: direction,
   counts: const RosterCounts(boarded: 0, waiting: 0, noShow: 0, absentN: 0),
   stops: stops,
+  cachedAt: cachedAt,
 );
+
+int rosterLoads = 0;
 
 void main() {
   // fixture 의 출발 시각(08:00) 안쪽 — 운행 시작 창(±10분)에 든다.
@@ -135,8 +164,12 @@ void main() {
     WidgetTester tester, {
     required RunStatus status,
     required List<RosterStop> stops,
+    RunDirection direction = RunDirection.toAcademy,
+    bool offline = false,
+    DateTime? cachedAt,
   }) async {
-    final repository = _RecordingDriveModeRepository();
+    rosterLoads = 0;
+    final repository = _RecordingDriveModeRepository()..offline = offline;
     final overrides = <Override>[
       clockProvider.overrideWithValue(_FixedClock(now)),
       tokenStorageProvider.overrideWithValue(_NeverResolvingTokenStorage()),
@@ -145,10 +178,18 @@ void main() {
       selectedRunIdProvider.overrideWith((ref) => 'run-1'),
       currentUserRoleProvider.overrideWith((ref) => UserRole.driver),
       todayRunsProvider.overrideWith(
-        (ref) async => [managerRunFixture(status: status)],
+        (ref) async => [
+          managerRunFixture(status: status, direction: direction),
+        ],
       ),
-      driveModeRosterProvider.overrideWith((ref) async => _roster(stops)),
       driveModeRepositoryProvider.overrideWithValue(repository),
+      pendingRequestsProvider.overrideWith(
+        (ref) async => List.of(repository.queuedRequests),
+      ),
+      driveModeRosterProvider.overrideWith((ref) async {
+        rosterLoads++;
+        return _roster(stops, direction: direction, cachedAt: cachedAt);
+      }),
     ];
     await tester.pumpWidget(
       ProviderScope(
@@ -185,6 +226,42 @@ void main() {
       expect(repository.arrivedStopIds, ['s2']);
     });
 
+    // L3 — 등원은 도착이 곧 종료·전원 자동 하차, 하원은 도착만 기록되고 남은 학생이 있으면 종료가 보류된다(C-15).
+    testWidgets('등원 마지막 승하차지 확인 창은 전원 자동 하차와 위치 중단을 알린다', (tester) async {
+      await pumpDrive(
+        tester,
+        status: RunStatus.moving,
+        stops: [_stop(1, arrived: true), _stop(2)],
+      );
+
+      await tester.tap(find.text('도착 처리'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('전원이 자동으로 하차 처리돼요'), findsOneWidget);
+      expect(find.textContaining('보류'), findsNothing);
+      expect(find.text('도착했어요 · 운행 종료'), findsOneWidget);
+    });
+
+    testWidgets('하원 마지막 승하차지 확인 창은 자동 하차 대신 종료 보류를 알린다', (tester) async {
+      final repository = await pumpDrive(
+        tester,
+        status: RunStatus.moving,
+        stops: [_stop(1, arrived: true), _stop(2)],
+        direction: RunDirection.fromAcademy,
+      );
+
+      await tester.tap(find.text('도착 처리'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('자동으로 하차'), findsNothing);
+      expect(find.textContaining('위치 보내기가 멈춰요'), findsNothing);
+      expect(find.textContaining('종료가 보류'), findsOneWidget);
+      expect(find.text('도착했어요 · 운행 종료'), findsNothing);
+      await tester.tap(find.text('도착했어요'));
+      await tester.pumpAndSettle();
+      expect(repository.arrivedStopIds, ['s2']);
+    });
+
     testWidgets('마지막이 아닌 승하차지 도착은 확인 없이 바로 나간다(운전 중 조작 부담)', (tester) async {
       final repository = await pumpDrive(
         tester,
@@ -214,6 +291,144 @@ void main() {
 
       expect(find.text('마지막 승하차지예요'), findsOneWidget);
       expect(repository.arrivedStopIds, isEmpty);
+    });
+  });
+
+  // 859(UF-D-04 · §12.2) — 도착 처리는 연결이 없어도 기기에 저장된다. "저장돼요" 안내가 사실이 되려면 저장된 곳을
+  // 처리한 곳으로 보고 다음 곳을 가리켜야 하고(같은 곳을 다시 보내지 않는다), 서버 응답이 필요한 종료 화면으로는
+  // 가지 않는다.
+  // M-M3 — 기기에 저장해 둔 명단으로 다음 승하차지를 가리키는 동안에도 연결이 돌아오면 서버 명단으로 바뀐다.
+  testWidgets('저장해 둔 명단을 보는 동안은 주기마다 서버에서 다시 받아 본다', (tester) async {
+    await pumpDrive(
+      tester,
+      status: RunStatus.moving,
+      stops: [_stop(1), _stop(2)],
+      cachedAt: DateTime(2026, 9, 30, 7, 50),
+    );
+    final first = rosterLoads;
+
+    await tester.pump(const Duration(seconds: 16));
+    await tester.pump();
+
+    expect(rosterLoads, greaterThan(first));
+  });
+
+  group('H4 연결 없는 도착 처리', () {
+    testWidgets('저장 안내를 보이고 다음 누름은 다음 승하차지를 보낸다', (tester) async {
+      final repository = await pumpDrive(
+        tester,
+        status: RunStatus.moving,
+        stops: [_stop(1), _stop(2), _stop(3)],
+        offline: true,
+      );
+
+      await tester.tap(find.text('도착 처리'));
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.textContaining('도착을 저장했어요 · 연결되면 보내요'), findsOneWidget);
+      expect(repository.arrivedStopIds, ['s1']);
+
+      await tester.pump(const Duration(seconds: 6));
+      await tester.tap(find.text('도착 처리'));
+      await tester.pump();
+      await tester.pump();
+
+      expect(repository.arrivedStopIds, ['s1', 's2']);
+      await tester.pump(const Duration(seconds: 6));
+    });
+
+    // 큐가 비면(연결이 돌아와 저장된 도착이 서버로 나갔다) 명단을 다시 받는다 — 안 그러면 저장된 곳이 "처리한 곳" 에서
+    // 빠지는 순간 이미 도착한 곳이 다음 곳으로 되살아난다.
+    testWidgets('저장된 도착이 서버로 나가 큐가 비면 명단과 회차를 다시 받는다', (tester) async {
+      final repository = await pumpDrive(
+        tester,
+        status: RunStatus.moving,
+        stops: [_stop(1), _stop(2)],
+        offline: true,
+      );
+      await tester.tap(find.text('도착 처리'));
+      await tester.pump();
+      await tester.pump();
+      final loadsWhileQueued = rosterLoads;
+
+      repository.queuedRequests.clear();
+      ProviderScope.containerOf(
+        tester.element(find.byType(DriveModeScreen)),
+      ).invalidate(pendingRequestsProvider);
+      await tester.pump();
+      await tester.pump();
+
+      expect(rosterLoads, greaterThan(loadsWhileQueued));
+      await tester.pump(const Duration(seconds: 6));
+    });
+
+    testWidgets('마지막 승하차지 도착이 저장되면 종료 화면 대신 저장 안내가 남는다', (tester) async {
+      final repository = await pumpDrive(
+        tester,
+        status: RunStatus.moving,
+        stops: [_stop(1, arrived: true), _stop(2)],
+        offline: true,
+      );
+
+      await tester.tap(find.text('도착 처리'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('도착했어요 · 운행 종료'));
+      await tester.pump();
+      await tester.pump();
+
+      expect(repository.arrivedStopIds, ['s2']);
+      expect(find.byType(RunEndScreen), findsNothing);
+      expect(find.text('도착 처리를 저장했어요 · 연결되면 서버로 보내요'), findsOneWidget);
+      expect(find.text('도착 처리'), findsNothing);
+      await tester.pump(const Duration(seconds: 6));
+    });
+
+    // M-4 — 하원은 마지막 도착이 서버에 닿아도 남은 학생이 있으면 종료가 보류된다.
+    // 저장 안내가 "운행이 끝나요" 라고 약속하면 안 된다.
+    testWidgets('등원 마지막 도착 저장 안내는 운행이 끝난다고 알린다', (tester) async {
+      await pumpDrive(
+        tester,
+        status: RunStatus.moving,
+        stops: [_stop(1, arrived: true), _stop(2)],
+        offline: true,
+      );
+
+      await tester.tap(find.text('도착 처리'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('도착했어요 · 운행 종료'));
+      await tester.pump();
+      await tester.pump();
+
+      expect(
+        find.textContaining('마지막 승하차지 도착을 저장했어요 · 연결되면 보내고 운행이 끝나요'),
+        findsOneWidget,
+      );
+      await tester.pump(const Duration(seconds: 6));
+    });
+
+    testWidgets('하원 마지막 도착 저장 안내는 운행이 끝난다고 약속하지 않는다', (tester) async {
+      await pumpDrive(
+        tester,
+        status: RunStatus.moving,
+        stops: [_stop(1, arrived: true), _stop(2)],
+        direction: RunDirection.fromAcademy,
+        offline: true,
+      );
+
+      await tester.tap(find.text('도착 처리'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('도착했어요'));
+      await tester.pump();
+      // 확인 창이 닫힌 뒤에 본다 — 창 본문(하원 종료 보류 안내)에도 "운행이 끝나요" 가 있다.
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(
+        find.textContaining('마지막 승하차지 도착을 저장했어요 · 연결되면 보내요'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('운행이 끝나요'), findsNothing);
+      await tester.pump(const Duration(seconds: 6));
     });
   });
 

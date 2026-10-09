@@ -24,6 +24,7 @@ import 'package:manager_app/features/navigation/data/kakao_navi_launcher.dart';
 import 'package:manager_app/features/navigation/data/models/navigation_route.dart';
 import 'package:manager_app/features/navigation/data/models/navigation_scope.dart';
 import 'package:manager_app/features/navigation/domain/navigation_repository.dart';
+import 'package:manager_app/features/offline_queue/domain/send_outcome.dart';
 import 'package:manager_app/features/roster/data/models/roster_response.dart';
 import 'package:manager_app/features/route_map/data/models/route_response.dart';
 import 'package:manager_app/features/route_map/presentation/route_providers.dart';
@@ -32,15 +33,17 @@ import '../../support/manager_run_fixture.dart';
 
 class _OkArrive implements DriveModeRepository {
   @override
-  Future<ArriveStopResult> arriveStop({
+  Future<SendOutcome<ArriveStopResult>> arriveStop({
     required String runId,
     required String stopId,
-  }) async => ArriveStopResult(
-    arrivedAt: DateTime(2026, 10, 1, 8, 5),
-    isFinal: false,
-    runStatus: RunStatus.moving,
-    finishPending: false,
-    remaining: const [],
+  }) async => Sent(
+    ArriveStopResult(
+      arrivedAt: DateTime(2026, 10, 1, 8, 5),
+      isFinal: false,
+      runStatus: RunStatus.moving,
+      finishPending: false,
+      remaining: const [],
+    ),
   );
 
   @override
@@ -183,11 +186,10 @@ void main() {
       );
       await tester.pump();
       await tester.pump(const Duration(seconds: 2));
-      // `내비 열기` → 시트에서 범위를 고른다. 큰 글자에서는 지도 위 단추가 스크롤 밖에 있을 수 있어 보이게 한다.
-      await tester.ensureVisible(find.text('내비 열기'));
+      // 지도 위 [다음 목적지] 를 바로 누른다(시트 없음, Ruling 570).
+      // 큰 글자에서는 스크롤 밖에 있을 수 있어 보이게 한다.
+      await tester.ensureVisible(find.text('다음 목적지'));
       await tester.pump();
-      await tester.tap(find.text('내비 열기'));
-      await tester.pumpAndSettle();
       await tester.tap(find.text('다음 목적지'));
       await tester.pump();
       await tester.pump();

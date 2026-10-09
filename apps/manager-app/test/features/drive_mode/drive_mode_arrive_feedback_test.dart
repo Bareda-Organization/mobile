@@ -21,6 +21,7 @@ import 'package:manager_app/features/navigation/data/kakao_navi_launcher.dart';
 import 'package:manager_app/features/navigation/data/models/navigation_route.dart';
 import 'package:manager_app/features/navigation/data/models/navigation_scope.dart';
 import 'package:manager_app/features/navigation/domain/navigation_repository.dart';
+import 'package:manager_app/features/offline_queue/domain/send_outcome.dart';
 import 'package:manager_app/features/roster/data/models/roster_response.dart';
 import 'package:manager_app/features/route_map/data/models/route_response.dart';
 import 'package:manager_app/features/route_map/presentation/route_providers.dart';
@@ -32,17 +33,19 @@ class _ArriveRecorder implements DriveModeRepository {
   final arrivedStopIds = <String>[];
 
   @override
-  Future<ArriveStopResult> arriveStop({
+  Future<SendOutcome<ArriveStopResult>> arriveStop({
     required String runId,
     required String stopId,
   }) async {
     arrivedStopIds.add(stopId);
-    return ArriveStopResult(
-      arrivedAt: DateTime(2026, 10, 1, 8, 5),
-      isFinal: false,
-      runStatus: RunStatus.moving,
-      finishPending: false,
-      remaining: const [],
+    return Sent(
+      ArriveStopResult(
+        arrivedAt: DateTime(2026, 10, 1, 8, 5),
+        isFinal: false,
+        runStatus: RunStatus.moving,
+        finishPending: false,
+        remaining: const [],
+      ),
     );
   }
 
@@ -137,10 +140,8 @@ RosterStop _stop(int seq, {bool arrived = false}) => RosterStop(
   students: const [],
 );
 
-/// `내비 열기` → 시트에서 범위를 고른다(Ruling 570).
+/// 지도 위 범위 단추([다음 목적지] · [남은 전 구간])를 바로 누른다 — 시트 없음(Ruling 570).
 Future<void> _openNavigation(WidgetTester tester, String scopeLabel) async {
-  await tester.tap(find.text('내비 열기'));
-  await tester.pumpAndSettle();
   await tester.tap(find.text(scopeLabel));
   await tester.pump();
   await tester.pump();
@@ -275,7 +276,8 @@ void main() {
     testWidgets('카카오 앱 키가 없으면 길안내 버튼을 그리지 않는다 (R46)', (tester) async {
       await pumpDrive(tester);
 
-      expect(find.text('내비 열기'), findsNothing);
+      expect(find.text('다음 목적지'), findsNothing);
+      expect(find.text('남은 전 구간'), findsNothing);
     });
 
     testWidgets('키가 있으면 서버 경로를 받아 카카오내비 경계에 넘긴다 (R46)', (tester) async {

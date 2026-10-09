@@ -106,6 +106,18 @@ void main() {
     });
   });
 
+  // §4.12 `speed` 의 상한은 999.99 km/h — 넘으면 서버가 422 로 거부해 그 위치가 통째로 사라진다.
+  test('속도가 사양 상한(999.99 km/h)을 넘으면 상한으로 줄여 보낸다', () async {
+    final platform = _FakeGeolocatorPlatform();
+    GeolocatorPlatform.instance = platform;
+    final source = GeolocatorPositionSource()..start();
+    await source.ready;
+    platform.emit(_position(speed: 400, heading: 90));
+    await Future<void>.delayed(Duration.zero);
+
+    expect(source.sample()!.speed, 999.99);
+  });
+
   test('권한·위치 서비스가 정상이면 스트림 좌표를 캐시해 sample() 로 낸다', () async {
     final platform = _FakeGeolocatorPlatform();
     GeolocatorPlatform.instance = platform;
@@ -123,7 +135,8 @@ void main() {
     expect(sample, isNotNull);
     expect(sample!.lat, 37.5);
     expect(sample.lng, 127);
-    expect(sample.speed, 5);
+    // 기기는 m/s 로 주고 §4.12 는 km/h 로 받는다(L6 · 861 ⑩) — 5 m/s = 18 km/h.
+    expect(sample.speed, closeTo(18, 0.001));
     expect(sample.heading, 90);
   });
 

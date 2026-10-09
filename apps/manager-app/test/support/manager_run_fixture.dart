@@ -17,6 +17,7 @@ ManagerRun managerRunFixture({
   int? riderCount,
   int? absentCount,
   int? stopCount,
+  int? estDurationMin = 30,
   String? plateNo,
   DateTime? startWindowFrom,
   DateTime? startWindowTo,
@@ -29,7 +30,7 @@ ManagerRun managerRunFixture({
     departTime: depart,
     origin: '기점',
     destination: '학원',
-    estDurationMin: 30,
+    estDurationMin: estDurationMin,
     runStatus: status,
     confirmed: confirmed,
     startWindowFrom:

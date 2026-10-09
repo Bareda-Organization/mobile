@@ -245,7 +245,12 @@ void main() {
     await tester.tap(find.text('비상 알림 보내기'));
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('3명에게 전달'), findsOneWidget);
+    // `notified` 는 학원 관계자 + 메인 관리자 수다(서버 EmergencyRaiseResponse).
+    // "학원 관계자 N명" 으로 줄여 말하지 않는다.
+    expect(
+      find.textContaining('학원 관계자·메인 관리자 3명에게 전달'),
+      findsOneWidget,
+    );
     expect(find.text('처리되지 않았습니다 · 대기 중'), findsNothing);
     // raise 는 client_key 를 반드시 채워 보낸다(§1.7 멱등 대상 ②).
     expect(fakeRepo.lastRequest?.clientKey, isNotEmpty);

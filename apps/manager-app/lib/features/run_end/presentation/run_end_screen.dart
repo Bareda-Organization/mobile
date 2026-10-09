@@ -244,7 +244,7 @@ class _Done extends ConsumerWidget {
                   BaraedaListRow(
                     leadingIcon: 'triangle-alert',
                     title: '현장 상황 보고',
-                    subtitle: '도로 통제 · 차량 문제 · 보호자 부재를 알려요',
+                    subtitle: '도로 통제 · 차량 문제를 알려요',
                     trailing: BaraedaIcon(
                       'chevron-right',
                       color: colors.textSecondary,

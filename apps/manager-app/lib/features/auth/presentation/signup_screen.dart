@@ -5,9 +5,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:manager_app/app/app_routes.dart';
 import 'package:manager_app/app/di.dart';
+import 'package:manager_app/core/auth/account_session.dart';
 import 'package:manager_app/core/auth/credential_limits.dart';
 import 'package:manager_app/core/ui/bottom_action_bar.dart';
 import 'package:manager_app/core/ui/manager_header.dart';
+import 'package:manager_app/features/auth/domain/auth_repository.dart';
 import 'package:manager_app/features/auth/presentation/widgets/academy_picker.dart';
 
 /// UF-X-01 — 회원가입: 아이디·비밀번호·이름·연락처 → 역할 선택(버스기사·동승자) →
@@ -93,13 +95,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         ),
       );
       if (!mounted) return;
-      // 서버가 201 을 확정한 뒤에만 안내한다 — 낙관적 UI 금지(COMMON.md §6).
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: WordWrapText('가입 신청이 접수되었습니다. 로그인 후 진행 상황을 볼 수 있습니다.'),
-        ),
-      );
-      context.go(AppRoutes.login);
+      // 서버가 201 을 확정한 뒤에만 다음으로 간다 — 낙관적 UI 금지(COMMON.md §6).
+      await _signInAfterSignup(repository);
     } on Failure catch (failure) {
       if (!mounted) return;
       setState(() {
@@ -124,6 +121,33 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         _formError = '가입 신청에 실패했습니다';
       });
     }
+  }
+
+  /// 가입 직후 자동 로그인(UF-X-01, `Ruling 861` ⑥) — 성공하면 역할·상태만 채우고 화면 전환은 라우터에 맡긴다
+  /// (`LoginScreen` 과 같은 방식 — 승인 대기 화면으로 간다). 실패하면 가입은 이미 접수됐으니 로그인 화면으로
+  /// 돌려보내 직접 로그인하게 한다.
+  Future<void> _signInAfterSignup(AuthRepository repository) async {
+    try {
+      final response = await repository.login(
+        loginId: _loginIdController.text.trim(),
+        password: _passwordController.text,
+      );
+      if (!mounted) return;
+      applyLoginResponse(ref, response);
+    } on Object {
+      // 가입은 접수됐다 — 로그인 쪽 실패 종류와 상관없이 "가입 실패" 로 보이면 안 된다.
+      _goToLoginAfterSignup();
+    }
+  }
+
+  void _goToLoginAfterSignup() {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: WordWrapText('가입 신청이 접수되었습니다. 로그인 후 진행 상황을 볼 수 있습니다.'),
+      ),
+    );
+    context.go(AppRoutes.login);
   }
 
   @override

@@ -15,11 +15,15 @@ class RosterApi {
 
   final Dio _dio;
 
-  Future<RosterResponse> fetchRoster(String runId) async {
+  Future<RosterResponse> fetchRoster(String runId) async =>
+      RosterResponse.fromJson(await fetchRosterJson(runId));
+
+  /// §4.2 응답 본문 그대로 — 로컬 저장(`RosterCache`)이 파싱 전 본문을 담는다.
+  Future<Map<String, dynamic>> fetchRosterJson(String runId) async {
     final response = await _dio.get<Map<String, dynamic>>(
       '/runs/$runId/roster',
     );
-    return RosterResponse.fromJson(response.data!);
+    return response.data!;
   }
 
   /// §4.2.1 — 보호자 원번호 1건. 연결된 보호자가 없으면 `null`.

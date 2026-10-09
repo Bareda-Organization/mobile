@@ -133,15 +133,17 @@ class OfflineQueueRepositoryImpl implements OfflineQueueRepository {
   }
 
   /// 같은 학생(같은 [endpoint])에게 같은 승하차 `status` 가 이미 기다리고 있으면 중복이다(R46) — 두 번 눌러도
-  /// 재생 때 같은 처리가 두 번 나가지 않게 한다. `status` 가 없는 요청(비상 발신은 "상황 변화마다 재발신이
-  /// 정상", §4.14)은 중복으로 보지 않는다. 영구 실패 행은 기다리는 것이 아니라 다시 눌러 새로 보낼 수 있다.
+  /// 재생 때 같은 처리가 두 번 나가지 않게 한다. 도착 처리(`/stops/{stopId}/arrive`)는 본문이 없어 같은 승하차지의
+  /// 같은 요청이 이미 기다리고 있으면 중복이다(859). 그 밖에 `status` 가 없는 요청(비상 발신은 "상황 변화마다
+  /// 재발신이 정상", §4.14)은 중복으로 보지 않는다. 영구 실패 행은 기다리는 것이 아니라 다시 눌러 새로 보낼 수 있다.
   Future<bool> _isDuplicate(
     String endpoint,
     String method,
     Map<String, dynamic> payload,
   ) async {
     final status = payload['status'];
-    if (status == null) return false;
+    final isArrive = PendingRequestSummary.isArriveEndpoint(endpoint);
+    if (status == null && !isArrive) return false;
     // `where` 를 두 번 부르면 AND 로 묶인다.
     final rows =
         await (_database.select(_database.pendingRequests)
@@ -149,6 +151,7 @@ class OfflineQueueRepositoryImpl implements OfflineQueueRepository {
               ..where((t) => t.method.equals(method))
               ..where((t) => t.attempts.isSmallerThanValue(maxAttempts)))
             .get();
+    if (isArrive) return rows.isNotEmpty;
     return rows.any((row) {
       final body = jsonDecode(row.payload);
       return body is Map<String, dynamic> && body['status'] == status;
@@ -194,6 +197,12 @@ class OfflineQueueRepositoryImpl implements OfflineQueueRepository {
         await _deleteRow(row.id);
         succeeded++;
       } on DioException catch (exception) {
+        if (_isAlreadyArrived(row, exception)) {
+          // 서버가 이미 처리한 도착이다(응답만 잃은 채 재전송) — 같은 결과를 원했으므로 성공으로 센다(859).
+          await _deleteRow(row.id);
+          succeeded++;
+          continue;
+        }
         if (_isPermanentRejection(exception)) {
           // 서버가 확정 거절했다 — 다시 보내도 같은 결과라 큐에서 뺀다.
           await _deleteRow(row.id);
@@ -252,6 +261,17 @@ class OfflineQueueRepositoryImpl implements OfflineQueueRepository {
 
   @override
   Future<void> clear() => _database.delete(_database.pendingRequests).go();
+
+  /// 도착 처리 재전송에 서버가 `403 DUPLICATE_ARRIVE`(같은 승하차지 재처리, API_SPEC §4.5)
+  /// 로 답했는가. **403 이면서 에러 코드가 `DUPLICATE_ARRIVE`** 일 때만이다 — 403 전체를 흡수하면
+  /// `403 DRIVER_ONLY`(권한 없음)까지 성공으로 삼킨다.
+  bool _isAlreadyArrived(PendingRequest row, DioException exception) {
+    if (!PendingRequestSummary.isArriveEndpoint(row.endpoint)) return false;
+    if (exception.response?.statusCode != 403) return false;
+    final data = exception.response?.data;
+    final error = data is Map ? data['error'] : null;
+    return error is Map && error['code'] == 'DUPLICATE_ARRIVE';
+  }
 
   /// 다시 보내도 같은 결과인 4xx 만 확정 거절이다. 401(재발급 실패)·408·429
   /// 와 5xx·비JSON 프록시 오류는 재시도하면 통과할 수 있어 행을 남긴다.

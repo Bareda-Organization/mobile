@@ -476,7 +476,8 @@ void main() {
       expect(find.text('승차 처리를 되돌릴까요?'), findsOneWidget);
       expect(find.text('김바래'), findsWidgets);
       expect(find.text('처리 기록은 지워지지 않고 남아요'), findsOneWidget);
-      expect(find.textContaining('승차 취소'), findsOneWidget);
+      // 승차 취소 알림은 폐지됐다(Ruling 308) — 시트가 알림을 약속하지 않는다.
+      expect(find.textContaining('승차 취소'), findsNothing);
       expect(fakeRepo.revertCallCount, 0, reason: '확인 전에는 요청이 없다');
     });
 

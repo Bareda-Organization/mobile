@@ -1,5 +1,6 @@
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/core/constants/api_constants.dart';
 import 'package:manager_app/core/constants/navigation_constants.dart';
 import 'package:manager_app/core/location/position_source.dart';
@@ -28,10 +29,12 @@ import 'package:manager_app/features/offline_queue/domain/offline_queue_reposito
 import 'package:manager_app/features/position/data/position_api.dart';
 import 'package:manager_app/features/position/data/position_repository_impl.dart';
 import 'package:manager_app/features/position/domain/position_repository.dart';
+import 'package:manager_app/features/roster/data/drift_roster_cache.dart';
 import 'package:manager_app/features/roster/data/guardian_phone_repository_impl.dart';
 import 'package:manager_app/features/roster/data/roster_api.dart';
 import 'package:manager_app/features/roster/data/roster_repository_impl.dart';
 import 'package:manager_app/features/roster/domain/guardian_phone_repository.dart';
+import 'package:manager_app/features/roster/domain/roster_cache.dart';
 import 'package:manager_app/features/roster/domain/roster_repository.dart';
 import 'package:manager_app/features/route_map/data/route_api.dart';
 import 'package:manager_app/features/route_map/data/route_repository_impl.dart';
@@ -130,7 +133,10 @@ final driveModeApiProvider = Provider<DriveModeApi>((ref) {
 });
 
 final driveModeRepositoryProvider = Provider<DriveModeRepository>((ref) {
-  return DriveModeRepositoryImpl(api: ref.watch(driveModeApiProvider));
+  return DriveModeRepositoryImpl(
+    api: ref.watch(driveModeApiProvider),
+    offlineQueue: ref.watch(offlineQueueRepositoryProvider),
+  );
 });
 
 /// API_SPEC §4.2·§4.6·§4.7·§4.8 — 명단 조회 + 개인별 승하차 처리.
@@ -138,10 +144,18 @@ final rosterApiProvider = Provider<RosterApi>((ref) {
   return RosterApi(dio: ref.watch(apiClientProvider).dio);
 });
 
+/// 마지막으로 받은 명단의 로컬 저장소(M-M3) — 오프라인 대기열과 같은 기기 DB 를 쓴다.
+final rosterCacheProvider = Provider<RosterCache>((ref) {
+  return DriftRosterCache(database: ref.watch(offlineQueueDatabaseProvider));
+});
+
 final rosterRepositoryProvider = Provider<RosterRepository>((ref) {
   return RosterRepositoryImpl(
     api: ref.watch(rosterApiProvider),
     offlineQueue: ref.watch(offlineQueueRepositoryProvider),
+    cache: ref.watch(rosterCacheProvider),
+    // 로그아웃 뒤에 늦게 도착한 응답을 기기에 남기지 않는다(M-2).
+    isSignedIn: () => ref.read(currentUserRoleProvider) != null,
   );
 });
 

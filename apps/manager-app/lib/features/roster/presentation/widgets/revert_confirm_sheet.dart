@@ -49,11 +49,6 @@ class _RevertConfirmBody extends StatelessWidget {
     final from = _pillOf(student.status);
     final to = _pillOf(_revertedStatus(student.status));
     final initial = student.name.isEmpty ? '' : student.name.characters.first;
-    final notice = switch (student.status) {
-      RiderStatus.boarded => ('승차 취소', '승차'),
-      RiderStatus.alighted => ('하차 취소', '하차'),
-      _ => null,
-    };
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -109,18 +104,8 @@ class _RevertConfirmBody extends StatelessWidget {
         ),
         const SizedBox(height: BaraedaSpacing.space3),
         _Bullet(spans: [_span('처리 기록은 지워지지 않고 남아요')]),
-        if (notice != null)
-          _Bullet(
-            spans: [
-              _span('학부모에게 '),
-              _span(
-                notice.$1,
-                style: const TextStyle(fontWeight: BaraedaFontWeight.bold),
-              ),
-              _span(' 알림이 새로 나가요. 이미 간 ${notice.$2} 알림은 고칠 수 없어요'),
-            ],
-          )
-        else
+        // 승차·하차 취소 알림은 없다(Ruling 308) — 미승차를 되돌릴 때만 남는 일이 하나 더 있다.
+        if (student.status == RiderStatus.noShow)
           _Bullet(spans: [_span('연락 대기가 끝나고 그 승하차지의 건너뜀이 풀려요')]),
         const SizedBox(height: BaraedaSpacing.space4),
         BaraedaButton(

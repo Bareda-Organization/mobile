@@ -5,12 +5,16 @@ import 'dart:io';
 
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:dio/dio.dart';
+import 'package:drift/native.dart';
 import 'package:flutter_secure_storage_platform_interface/flutter_secure_storage_platform_interface.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/features/drive_mode/data/drive_mode_api.dart';
 import 'package:manager_app/features/drive_mode/data/drive_mode_repository_impl.dart';
 import 'package:manager_app/features/drive_mode/data/models/arrive_stop_result.dart';
+import 'package:manager_app/features/offline_queue/data/offline_queue_database.dart';
+import 'package:manager_app/features/offline_queue/data/offline_queue_repository_impl.dart';
+import 'package:manager_app/features/offline_queue/domain/offline_queue_repository.dart';
 import 'package:manager_app/features/position/data/models/position_request.dart';
 import 'package:manager_app/features/position/data/position_api.dart';
 import 'package:manager_app/features/position/data/position_repository_impl.dart';
@@ -85,6 +89,12 @@ class _FakeSecureStoragePlatform
 /// (목표 8 `START_WINDOW_CLOSED` 재현 대상, 시간이 지날수록 더 확실히
 /// 닫힌다). run3: `moving`, driverA2/escortA2 배치 — 목표 7·8·9 의 대부분이
 /// 이 회차에서 일어난다.
+/// 실서버 시험은 큐를 쓰지 않는다 — 메모리 DB 에 붙인 큐만 만든다(도착 처리가 큐를 거치는 구현이라 필요하다).
+OfflineQueueRepository _offlineQueue(Dio dio) => OfflineQueueRepositoryImpl(
+  database: OfflineQueueDatabase.forTesting(NativeDatabase.memory()),
+  dio: dio,
+);
+
 void main() {
   final baseUrl = requireRealBackendBaseUrl();
   late bool backendReachable;
@@ -187,7 +197,10 @@ void main() {
         }
         final (:auth, :dio) = buildClient();
         await auth.login(loginId: 'escortA1', password: 'password');
-        final repository = DriveModeRepositoryImpl(api: DriveModeApi(dio: dio));
+        final repository = DriveModeRepositoryImpl(
+          api: DriveModeApi(dio: dio),
+          offlineQueue: _offlineQueue(dio),
+        );
 
         Failure? failure;
         try {
@@ -215,7 +228,10 @@ void main() {
         }
         final (:auth, :dio) = buildClient();
         await auth.login(loginId: 'driverA1', password: 'password');
-        final repository = DriveModeRepositoryImpl(api: DriveModeApi(dio: dio));
+        final repository = DriveModeRepositoryImpl(
+          api: DriveModeApi(dio: dio),
+          offlineQueue: _offlineQueue(dio),
+        );
 
         Failure? failure;
         try {

@@ -296,6 +296,103 @@ void main() {
     });
   }
 
+  // 859(UF-D-04 · §12.2) — 도착 처리도 큐에 쌓고 재전송한다. 서버에 이미 반영됐는데 응답만 잃은 경우의 재전송은
+  // `403 DUPLICATE_ARRIVE`(API_SPEC §4.5) 로 돌아오는데, 이는 "이미 처리됨" 이라 성공으로 센다.
+  group('도착 처리 재생 (859)', () {
+    const arriveEndpoint = '/runs/1/stops/s1/arrive';
+
+    Future<({OfflineQueueRepositoryImpl repository, OfflineQueueDatabase db})>
+    queueArrive(String endpoint, int status, String body) async {
+      final database = OfflineQueueDatabase.forTesting(NativeDatabase.memory());
+      final repository = OfflineQueueRepositoryImpl(
+        database: database,
+        dio: Dio(BaseOptions(baseUrl: 'https://example.invalid'))
+          ..httpClientAdapter = _StatusAdapter(status, body),
+      );
+      final outcome = await repository.sendOrQueue<void>(
+        endpoint: endpoint,
+        method: 'POST',
+        payload: const {},
+        // Failure 는 Exception/Error 를 상속하지 않는다 — 위 시험과 같은 이유.
+        // ignore: only_throw_errors
+        send: () => throw const Failure.network(),
+      );
+      expect(outcome, isA<Queued<void>>());
+      return (repository: repository, db: database);
+    }
+
+    test('재생 중 403 DUPLICATE_ARRIVE 는 이미 처리된 도착이라 성공으로 흡수한다', () async {
+      final harness = await queueArrive(
+        arriveEndpoint,
+        403,
+        '{"error":{"code":"DUPLICATE_ARRIVE","message":"m"}}',
+      );
+
+      final result = await harness.repository.replayPending();
+
+      expect(result.succeeded, 1);
+      expect(result.droppedPermanently, 0);
+      expect(await harness.repository.fetchPending(), isEmpty);
+      await harness.db.close();
+    });
+
+    test('상태 코드가 403 이 아니면 같은 에러 코드여도 흡수하지 않는다', () async {
+      final harness = await queueArrive(
+        arriveEndpoint,
+        409,
+        '{"error":{"code":"DUPLICATE_ARRIVE","message":"m"}}',
+      );
+
+      final result = await harness.repository.replayPending();
+
+      expect(result.succeeded, 0);
+      expect(result.droppedPermanently, 1);
+      await harness.db.close();
+    });
+
+    test('DUPLICATE_ARRIVE 가 아닌 거절은 흡수하지 않고 확정 거절로 뺀다', () async {
+      final harness = await queueArrive(
+        arriveEndpoint,
+        403,
+        '{"error":{"code":"DRIVER_ONLY","message":"m"}}',
+      );
+
+      final result = await harness.repository.replayPending();
+
+      expect(result.succeeded, 0);
+      expect(result.droppedPermanently, 1);
+      await harness.db.close();
+    });
+
+    test('같은 승하차지 도착은 큐에 한 번만 쌓는다', () async {
+      final harness = await queueArrive(arriveEndpoint, 500, '{}');
+      await harness.repository.sendOrQueue<void>(
+        endpoint: arriveEndpoint,
+        method: 'POST',
+        payload: const {},
+        // Failure 는 Exception/Error 를 상속하지 않는다 — 위 시험과 같은 이유.
+        // ignore: only_throw_errors
+        send: () => throw const Failure.network(),
+      );
+      await harness.repository.sendOrQueue<void>(
+        endpoint: '/runs/1/stops/s2/arrive',
+        method: 'POST',
+        payload: const {},
+        // Failure 는 Exception/Error 를 상속하지 않는다 — 위 시험과 같은 이유.
+        // ignore: only_throw_errors
+        send: () => throw const Failure.network(),
+      );
+
+      final pending = await harness.repository.fetchPending();
+
+      expect(pending.map((item) => item.endpoint), [
+        arriveEndpoint,
+        '/runs/1/stops/s2/arrive',
+      ]);
+      await harness.db.close();
+    });
+  });
+
   test('cancel 은 그 행만 큐에서 지운다', () async {
     final database = OfflineQueueDatabase.forTesting(NativeDatabase.memory());
     final repository = OfflineQueueRepositoryImpl(

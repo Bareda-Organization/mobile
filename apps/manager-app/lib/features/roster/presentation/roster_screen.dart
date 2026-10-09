@@ -54,6 +54,27 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
   final Set<String> _expandedStopIds = {};
   bool _pastExpanded = false;
 
+  /// 기기에 저장해 둔 명단을 보는 동안 서버에서 다시 받아 보는 주기(M-M3) — 연결이 돌아오면 저장본이 서버
+  /// 명단으로 바뀐다. 서버에서 받은 명단이면 아무것도 하지 않는다.
+  static const _cachedRetryInterval = Duration(seconds: 15);
+  Timer? _cachedRetryTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _cachedRetryTimer = Timer.periodic(_cachedRetryInterval, (_) {
+      if (ref.read(rosterProvider).value?.cachedAt != null) {
+        ref.invalidate(rosterProvider);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _cachedRetryTimer?.cancel();
+    super.dispose();
+  }
+
   /// [미승차]는 [탑승] 옆에 있어 잘못 눌리기 쉽고, 처리하면 학부모에게 알림이 나간다 — 한 번
   /// 묻는다(R32 M7). 취소하면 요청을 보내지 않는다.
   Future<void> _confirmNoShow({
@@ -125,7 +146,7 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
     }
   }
 
-  /// 되돌리기는 처리 기록은 남기되 학부모 알림이 새로 나가는 일이라 한 번 묻는다(시안 `undo`). 닫으면 요청이 없다.
+  /// 되돌리기는 잘못 눌렀을 때 쓰는 조작이라 한 번 묻는다(시안 `undo`). 닫으면 요청이 없다.
   Future<void> _confirmRevert({
     required String runId,
     required RosterStudent student,
@@ -372,6 +393,15 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
       child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         children: [
+          if (roster.cachedAt case final cachedAt?) ...[
+            AlertBanner(
+              tone: AlertTone.info,
+              icon: 'wifi-off',
+              title: '저장된 명단을 보고 있어요',
+              body: '${hhmm(cachedAt)} 에 받은 명단이에요 · 연결되면 자동으로 새로 받아요',
+            ),
+            const SizedBox(height: 12),
+          ],
           if (refreshError != null) ...[
             AlertBanner(
               tone: AlertTone.missed,
@@ -577,24 +607,29 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
     );
     switch (student.status) {
       case RiderStatus.waiting:
+        // [탑승] 은 등원 승하차지의 일이다(C-07 · BRD-01) — 하원은 운행 시작에 전원 자동 승차라 서버가
+        // `waiting→boarded` 를 막는다. [미승차] 는 하원에서도 남긴다: 종료 보류 회차의 남은 학생을
+        // [되돌리기] → [미승차] 로 정리해 회차를 끝내는 유일한 경로다(BR-031 · C-15).
+        final canBoard = roster.direction == RunDirection.toAcademy;
         return row([
-          (
-            17,
-            BaraedaButton(
-              label: '탑승',
-              icon: 'check',
-              block: true,
-              onPressed: busy
-                  ? null
-                  : () => unawaited(
-                      _updateStatus(
-                        runId: runId,
-                        riderId: riderId,
-                        status: RiderStatus.boarded,
+          if (canBoard)
+            (
+              17,
+              BaraedaButton(
+                label: '탑승',
+                icon: 'check',
+                block: true,
+                onPressed: busy
+                    ? null
+                    : () => unawaited(
+                        _updateStatus(
+                          runId: runId,
+                          riderId: riderId,
+                          status: RiderStatus.boarded,
+                        ),
                       ),
-                    ),
+              ),
             ),
-          ),
           (
             10,
             BaraedaButton(
@@ -614,28 +649,34 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
           ),
         ]);
       case RiderStatus.boarded:
+        // 하차 처리는 하원 승하차지의 일이다(C-07 · BRD-02) — 등원은 종료 때 전원
+        // 자동 하차라 [하차] 가 없다. 잘못 눌린 승차를 바로잡는 [되돌리기] 는
+        // 방향과 무관하다.
+        final canAlight = roster.direction == RunDirection.fromAcademy;
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            row([
-              (
-                1,
-                BaraedaButton(
-                  label: '하차',
-                  icon: 'check',
-                  block: true,
-                  onPressed: busy
-                      ? null
-                      : () => unawaited(
-                          _updateStatus(
-                            runId: runId,
-                            riderId: riderId,
-                            status: RiderStatus.alighted,
-                          ),
-                        ),
-                ),
-              ),
-            ]),
+            if (canAlight || call != null)
+              row([
+                if (canAlight)
+                  (
+                    1,
+                    BaraedaButton(
+                      label: '하차',
+                      icon: 'check',
+                      block: true,
+                      onPressed: busy
+                          ? null
+                          : () => unawaited(
+                              _updateStatus(
+                                runId: runId,
+                                riderId: riderId,
+                                status: RiderStatus.alighted,
+                              ),
+                            ),
+                    ),
+                  ),
+              ]),
             revert,
           ],
         );

@@ -19,6 +19,7 @@ import 'package:manager_app/features/drive_mode/domain/drive_mode_repository.dar
 import 'package:manager_app/features/drive_mode/presentation/drive_mode_providers.dart';
 import 'package:manager_app/features/home/data/models/manager_run.dart';
 import 'package:manager_app/features/home/presentation/run_ready_screen.dart';
+import 'package:manager_app/features/offline_queue/domain/send_outcome.dart';
 import 'package:manager_app/features/roster/data/models/roster_response.dart';
 import 'package:manager_app/features/route_map/data/models/route_response.dart';
 import 'package:manager_app/features/route_map/presentation/route_providers.dart';
@@ -45,7 +46,7 @@ class _CountingDriveRepository implements DriveModeRepository {
   }
 
   @override
-  Future<ArriveStopResult> arriveStop({
+  Future<SendOutcome<ArriveStopResult>> arriveStop({
     required String runId,
     required String stopId,
   }) => throw UnimplementedError('이 파일의 시험 대상이 아니다');
@@ -88,6 +89,10 @@ void main() {
         GoRoute(
           path: AppRoutes.driveMode,
           builder: (_, _) => const Text('DRIVE_MARKER'),
+        ),
+        GoRoute(
+          path: AppRoutes.rosterView,
+          builder: (_, _) => const Text('ROSTER_VIEW_MARKER'),
         ),
       ],
     );
@@ -135,6 +140,20 @@ void main() {
   VoidCallback? startPressed(WidgetTester tester) => tester
       .widget<BaraedaButton>(find.widgetWithText(BaraedaButton, '운행 시작'))
       .onPressed;
+
+  // L1(UF-D-02) — 기사는 운행을 시작하기 전에도 승하차지 명단(조회 전용)을 열어 볼 수 있다.
+  testWidgets('운행 시작 전에도 [명단 보기] 로 조회 전용 명단을 연다', (tester) async {
+    await tester.pumpWidget(
+      wrap(DateTime(2026, 10, 3, 12, 2), _CountingDriveRepository()),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.widgetWithText(BaraedaButton, '명단 보기'));
+    await tester.tap(find.widgetWithText(BaraedaButton, '명단 보기'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('ROSTER_VIEW_MARKER'), findsOneWidget);
+  });
 
   testWidgets('시작 가능 시간(출발 ±10분) 안이면 [운행 시작] 이 켜지고 시간대가 보인다', (tester) async {
     final repo = _CountingDriveRepository();

@@ -142,4 +142,52 @@ void main() {
       await expectCleared();
     },
   );
+  // L7(Ruling 388 · 616) — 세션이 만료돼 큐를 비울 때 보내지 못한 처리를 안내 없이 지우지 않는다. 비상 신고가 섞여
+  // 있으면 그것을 따로 밝힌다. 직접 로그아웃은 확인 창이 이미 알려 주므로 만료 안내를 만들지 않는다.
+  test('세션 만료로 큐를 비울 때 버려지는 처리 건수를 만료 안내에 밝힌다', () async {
+    await loginWithLeftovers();
+    await container
+        .read(offlineQueueRepositoryProvider)
+        .sendOrQueue<void>(
+          endpoint: '/runs/run-A/emergency',
+          method: 'POST',
+          payload: const {'client_key': 'E', 'type': 'etc'},
+          // Failure 는 Exception/Error 를 상속하지 않는다.
+          // ignore: only_throw_errors
+          send: () => throw const Failure.network(),
+        );
+
+    await container.read(apiClientProvider).tokenRefresher.refresh();
+    await Future<void>.delayed(Duration.zero);
+    await Future<void>.delayed(Duration.zero);
+
+    final notice = container.read(sessionExpiredNoticeProvider);
+    expect(notice, contains('로그인이 만료됐습니다'));
+    expect(notice, contains('보내지 못한 처리 2건'));
+    expect(notice, contains('비상 신고 1건'));
+  });
+
+  test('직접 로그아웃은 만료 안내를 만들지 않는다', () async {
+    await loginWithLeftovers();
+
+    container.read(currentUserRoleProvider.notifier).state = null;
+    await Future<void>.delayed(Duration.zero);
+    await Future<void>.delayed(Duration.zero);
+
+    expect(container.read(sessionExpiredNoticeProvider), isNull);
+  });
+  // M-M3 — 기기에 저장한 명단은 계정이 볼 수 있던 학생의 정보라, 로그아웃·세션 만료에 함께 비운다.
+  test('역할이 비면 기기에 저장한 명단도 비운다', () async {
+    await loginWithLeftovers();
+    await container
+        .read(rosterCacheProvider)
+        .save('run-A', {'run_id': 'run-A'});
+    expect(await container.read(rosterCacheProvider).read('run-A'), isNotNull);
+
+    container.read(currentUserRoleProvider.notifier).state = null;
+    await Future<void>.delayed(Duration.zero);
+    await Future<void>.delayed(Duration.zero);
+
+    expect(await container.read(rosterCacheProvider).read('run-A'), isNull);
+  });
 }
