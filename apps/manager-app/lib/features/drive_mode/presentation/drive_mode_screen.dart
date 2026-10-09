@@ -127,20 +127,27 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
     String stopId, {
     required int order,
     required String name,
+    required RunDirection direction,
     bool isLast = false,
   }) async {
-    // 마지막 승하차지의 도착 처리는 곧 운행 종료다(C-15) — 되돌릴 수 없어 한 번 묻는다(R32 M6).
-    // 그 앞 승하차지는 운전 중에 자주 누르는 조작이라 묻지 않는다.
+    // 마지막 승하차지의 도착 처리는 등원이면 곧 운행 종료다(C-15) — 되돌릴 수 없어 한 번 묻는다(R32 M6).
+    // 하원은 도착만 기록되고 남은 학생이 있으면 종료가 보류된다. 그 앞 승하차지는 운전 중에 자주 누르는 조작이라
+    // 묻지 않는다.
     if (isLast) {
+      final toAcademy = direction == RunDirection.toAcademy;
       final confirmed = await confirmAction(
         context,
         title: '마지막 승하차지예요',
-        body:
-            '도착 처리가 곧 운행 종료예요. 되돌릴 수 없어요.\n'
-            '· 등원 학생 전원이 자동으로 하차 처리돼요\n'
-            '· 위치 보내기가 멈춰요\n'
-            '· 학원 관계자에게 운행 종료가 전달돼요',
-        confirmLabel: '도착했어요 · 운행 종료',
+        body: toAcademy
+            ? '도착 처리가 곧 운행 종료예요. 되돌릴 수 없어요.\n'
+                  '· 등원 학생 전원이 자동으로 하차 처리돼요\n'
+                  '· 위치 보내기가 멈춰요\n'
+                  '· 학원 관계자에게 운행 종료가 전달돼요'
+            : '도착이 기록돼요. 되돌릴 수 없어요.\n'
+                  '· 아직 버스에 있는 학생이 있으면 운행 종료가 보류돼요\n'
+                  '· 동승자가 마지막 학생을 하차 처리하면 운행이 끝나요\n'
+                  '· 남은 학생이 내릴 때까지 위치는 계속 보내요',
+        confirmLabel: toAcademy ? '도착했어요 · 운행 종료' : '도착했어요',
         cancelLabel: '닫기',
       );
       if (!confirmed || !mounted) return;
@@ -544,6 +551,7 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
                     nextStop.stopId,
                     order: _orderOf(roster, nextStop),
                     name: nextStop.name,
+                    direction: roster.direction,
                     isLast: isLastRemainingStop(roster, nextStop),
                   ),
           ),

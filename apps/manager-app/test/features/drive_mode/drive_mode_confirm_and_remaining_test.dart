@@ -119,10 +119,13 @@ RosterStop _stop(
   ],
 );
 
-RosterResponse _roster(List<RosterStop> stops) => RosterResponse(
+RosterResponse _roster(
+  List<RosterStop> stops, {
+  RunDirection direction = RunDirection.toAcademy,
+}) => RosterResponse(
   runId: 'run-1',
   busNo: '3호차',
-  direction: RunDirection.toAcademy,
+  direction: direction,
   counts: const RosterCounts(boarded: 0, waiting: 0, noShow: 0, absentN: 0),
   stops: stops,
 );
@@ -135,6 +138,7 @@ void main() {
     WidgetTester tester, {
     required RunStatus status,
     required List<RosterStop> stops,
+    RunDirection direction = RunDirection.toAcademy,
   }) async {
     final repository = _RecordingDriveModeRepository();
     final overrides = <Override>[
@@ -145,9 +149,13 @@ void main() {
       selectedRunIdProvider.overrideWith((ref) => 'run-1'),
       currentUserRoleProvider.overrideWith((ref) => UserRole.driver),
       todayRunsProvider.overrideWith(
-        (ref) async => [managerRunFixture(status: status)],
+        (ref) async => [
+          managerRunFixture(status: status, direction: direction),
+        ],
       ),
-      driveModeRosterProvider.overrideWith((ref) async => _roster(stops)),
+      driveModeRosterProvider.overrideWith(
+        (ref) async => _roster(stops, direction: direction),
+      ),
       driveModeRepositoryProvider.overrideWithValue(repository),
     ];
     await tester.pumpWidget(
@@ -181,6 +189,42 @@ void main() {
       await tester.tap(find.text('도착 처리'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('도착했어요 · 운행 종료'));
+      await tester.pumpAndSettle();
+      expect(repository.arrivedStopIds, ['s2']);
+    });
+
+    // L3 — 등원은 도착이 곧 종료·전원 자동 하차, 하원은 도착만 기록되고 남은 학생이 있으면 종료가 보류된다(C-15).
+    testWidgets('등원 마지막 승하차지 확인 창은 전원 자동 하차와 위치 중단을 알린다', (tester) async {
+      await pumpDrive(
+        tester,
+        status: RunStatus.moving,
+        stops: [_stop(1, arrived: true), _stop(2)],
+      );
+
+      await tester.tap(find.text('도착 처리'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('전원이 자동으로 하차 처리돼요'), findsOneWidget);
+      expect(find.textContaining('보류'), findsNothing);
+      expect(find.text('도착했어요 · 운행 종료'), findsOneWidget);
+    });
+
+    testWidgets('하원 마지막 승하차지 확인 창은 자동 하차 대신 종료 보류를 알린다', (tester) async {
+      final repository = await pumpDrive(
+        tester,
+        status: RunStatus.moving,
+        stops: [_stop(1, arrived: true), _stop(2)],
+        direction: RunDirection.fromAcademy,
+      );
+
+      await tester.tap(find.text('도착 처리'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('자동으로 하차'), findsNothing);
+      expect(find.textContaining('위치 보내기가 멈춰요'), findsNothing);
+      expect(find.textContaining('종료가 보류'), findsOneWidget);
+      expect(find.text('도착했어요 · 운행 종료'), findsNothing);
+      await tester.tap(find.text('도착했어요'));
       await tester.pumpAndSettle();
       expect(repository.arrivedStopIds, ['s2']);
     });
