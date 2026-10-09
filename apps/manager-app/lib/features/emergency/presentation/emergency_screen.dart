@@ -405,7 +405,7 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
         EmergencyStatusCard(
           title: '비상 알림을 보냈어요',
           subtitle:
-              '학원 관계자 ${raised.notified}명에게 전달 · $type · '
+              '학원 관계자·메인 관리자 ${raised.notified}명에게 전달 · $type · '
               '${_time(raised.raisedAt)}',
           below: [
             EmergencyCancelWindow(
