@@ -325,6 +325,46 @@ void main() {
 
       expect(repository.calls.last, ('login_id', '01000000000', '517249'));
     });
+
+    // L4 — API_SPEC §2.9: 같은 번호는 60초에 1회만 발급된다.
+    // 문자가 안 오면 다시 받는 길이 있어야 한다.
+    BaraedaButton resendButton(WidgetTester tester) =>
+        tester.widget<BaraedaButton>(
+          find.widgetWithText(BaraedaButton, '인증번호 다시 받기'),
+        );
+
+    testWidgets('L4 처음에는 [인증번호 다시 받기] 가 꺼져 있고 60초가 지나면 켜진다', (tester) async {
+      await pumpAtCodeStep(tester);
+
+      expect(resendButton(tester).onPressed, isNull);
+
+      await tester.pump(const Duration(seconds: 59));
+      expect(resendButton(tester).onPressed, isNull);
+
+      await tester.pump(const Duration(seconds: 1));
+      expect(resendButton(tester).onPressed, isNotNull);
+    });
+
+    testWidgets('L4 다시 받으면 같은 번호로 인증번호를 다시 요청하고, 적어 둔 번호는 비우고, 다시 60초 잠근다', (
+      tester,
+    ) async {
+      final repository = await pumpAtCodeStep(tester);
+      await tester.enterText(find.byType(TextField).last, '12345');
+      await tester.pump(const Duration(seconds: 60));
+
+      await tester.tap(find.text('인증번호 다시 받기'));
+      await tester.pump();
+
+      expect(repository.calls, [
+        ('login_id', '01000000000', null),
+        ('login_id', '01000000000', null),
+      ]);
+      expect(
+        tester.widget<BaraedaCodeInput>(find.byType(BaraedaCodeInput)).value,
+        isEmpty,
+      );
+      expect(resendButton(tester).onPressed, isNull);
+    });
   });
 
   testWidgets('요청 전에도 관리자 경유 안내가 보인다', (tester) async {
@@ -399,5 +439,14 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(CircularProgressIndicator), findsNothing);
+  });
+
+  testWidgets('L4 RECOVERY_RATE_LIMITED(429) 는 잠시 뒤에 다시 받으라고 안내한다', (
+    tester,
+  ) async {
+    await _pumpAndRequestCode(tester, 'RECOVERY_RATE_LIMITED');
+
+    expect(find.textContaining('잠시 뒤에 다시'), findsOneWidget);
+    expect(find.text('서버 원본 메시지(RECOVERY_RATE_LIMITED)'), findsNothing);
   });
 }

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
@@ -32,6 +34,9 @@ class AccountRecoveryScreen extends ConsumerStatefulWidget {
 /// 503 응답을 받은 뒤 띠에 쓰는 문구(Ruling 329 · 829) — "문자로 찾기" 가 준비 중이라는 사실과 다음 행동.
 const _unavailableNotice = '문자로 찾기는 준비 중이에요. 위 방법대로 다니는 학원에 요청해 주세요.';
 
+/// 인증번호를 다시 받을 수 있게 되기까지 — 서버가 같은 번호에 60초에 1회만 발급한다(API_SPEC §2.9).
+const _resendInterval = Duration(seconds: 60);
+
 /// 인증번호 자릿수 — 사양에 자릿수가 없어 시안의 6자리를 가정한다(`REPORT-MP §1.5`).
 const _codeLength = 6;
 
@@ -51,8 +56,22 @@ class _AccountRecoveryScreenState extends ConsumerState<AccountRecoveryScreen> {
   String? _banner;
   AlertTone _bannerTone = AlertTone.info;
 
+  /// 다시 받기를 잠가 둔 시간이 아직 남았는가.
+  bool _resendLocked = false;
+  Timer? _resendTimer;
+
+  /// [_resendInterval] 동안 [인증번호 다시 받기] 를 잠근다 — 서버 발급 간격과 맞춘다.
+  void _lockResend() {
+    _resendTimer?.cancel();
+    _resendLocked = true;
+    _resendTimer = Timer(_resendInterval, () {
+      if (mounted) setState(() => _resendLocked = false);
+    });
+  }
+
   @override
   void dispose() {
+    _resendTimer?.cancel();
     _phoneController.dispose();
     super.dispose();
   }
@@ -64,6 +83,8 @@ class _AccountRecoveryScreenState extends ConsumerState<AccountRecoveryScreen> {
     ) =>
       '휴대폰 번호 또는 인증번호를 확인할 수 없습니다',
     ApiFailure(code: 'RECOVERY_UNAVAILABLE') => _unavailableNotice,
+    ApiFailure(code: 'RECOVERY_RATE_LIMITED') =>
+      '인증번호는 잠시 뒤에 다시 받을 수 있어요. 조금만 기다려 주세요',
     ApiFailure(code: 'VALIDATION_FAILED') => '입력값을 다시 확인해 주세요',
     ApiFailure(:final message) => message,
     NetworkFailure() => '네트워크 상태를 확인해 주세요',
@@ -85,6 +106,9 @@ class _AccountRecoveryScreenState extends ConsumerState<AccountRecoveryScreen> {
       setState(() {
         _submitting = false;
         _codeRequested = true;
+        // 다시 받은 경우 앞에 적던 번호는 서버가 무효로 만들었다.
+        _code = '';
+        _lockResend();
         _bannerTone = AlertTone.boarded;
         _banner = '가입된 번호라면 인증번호를 문자로 보냈어요. 받은 번호를 입력해 주세요.';
       });
@@ -99,6 +123,12 @@ class _AccountRecoveryScreenState extends ConsumerState<AccountRecoveryScreen> {
         if (unavailable) {
           _unavailable = true;
           _formOpen = false;
+        }
+        // 발급 간격 초과(429) — 다시 받기를 한 번 더 잠근다.
+        if (_codeRequested &&
+            failure is ApiFailure &&
+            failure.code == 'RECOVERY_RATE_LIMITED') {
+          _lockResend();
         }
       });
     }
@@ -211,6 +241,13 @@ class _AccountRecoveryScreenState extends ConsumerState<AccountRecoveryScreen> {
       numeric: true,
       hint: '문자가 안 오면 1분 뒤에 다시 받을 수 있어요',
       onChanged: (value) => setState(() => _code = value),
+    ),
+    const SizedBox(height: BaraedaSpacing.space3),
+    BaraedaButton(
+      label: '인증번호 다시 받기',
+      variant: BaraedaButtonVariant.secondary,
+      block: true,
+      onPressed: _resendLocked || _submitting ? null : _requestCode,
     ),
     if (_submitting) ...[
       const SizedBox(height: BaraedaSpacing.space4),
