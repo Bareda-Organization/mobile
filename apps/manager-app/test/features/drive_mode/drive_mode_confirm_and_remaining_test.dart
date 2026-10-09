@@ -383,6 +383,52 @@ void main() {
       expect(find.text('도착 처리'), findsNothing);
       await tester.pump(const Duration(seconds: 6));
     });
+
+    // M-4 — 하원은 마지막 도착이 서버에 닿아도 남은 학생이 있으면 종료가 보류된다. 저장 안내가 "운행이 끝나요" 라고 약속하면 안 된다.
+    testWidgets('등원 마지막 도착 저장 안내는 운행이 끝난다고 알린다', (tester) async {
+      await pumpDrive(
+        tester,
+        status: RunStatus.moving,
+        stops: [_stop(1, arrived: true), _stop(2)],
+        offline: true,
+      );
+
+      await tester.tap(find.text('도착 처리'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('도착했어요 · 운행 종료'));
+      await tester.pump();
+      await tester.pump();
+
+      expect(
+        find.textContaining('마지막 승하차지 도착을 저장했어요 · 연결되면 보내고 운행이 끝나요'),
+        findsOneWidget,
+      );
+      await tester.pump(const Duration(seconds: 6));
+    });
+
+    testWidgets('하원 마지막 도착 저장 안내는 운행이 끝난다고 약속하지 않는다', (tester) async {
+      await pumpDrive(
+        tester,
+        status: RunStatus.moving,
+        stops: [_stop(1, arrived: true), _stop(2)],
+        direction: RunDirection.fromAcademy,
+        offline: true,
+      );
+
+      await tester.tap(find.text('도착 처리'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('도착했어요'));
+      await tester.pump();
+      // 확인 창이 닫힌 뒤에 본다 — 창 본문(하원 종료 보류 안내)에도 "운행이 끝나요" 가 있다.
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(
+        find.textContaining('마지막 승하차지 도착을 저장했어요 · 연결되면 보내요'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('운행이 끝나요'), findsNothing);
+      await tester.pump(const Duration(seconds: 6));
+    });
   });
 
   group('M5 남은 승하차지', () {

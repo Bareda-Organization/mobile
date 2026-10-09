@@ -186,8 +186,11 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
           _lockArriveButton();
           showBaraedaToast(
             context,
-            message: isLast
+            // 하원은 도착이 서버에 닿아도 남은 학생이 있으면 종료가 보류된다 — 운행이 끝난다고 약속하지 않는다.
+            message: isLast && direction == RunDirection.toAcademy
                 ? '마지막 승하차지 도착을 저장했어요 · 연결되면 보내고 운행이 끝나요'
+                : isLast
+                ? '마지막 승하차지 도착을 저장했어요 · 연결되면 보내요'
                 : '$name 도착을 저장했어요 · 연결되면 보내요',
             aboveTabBar: false,
             bottomOffset: _toastAboveActionBar,
