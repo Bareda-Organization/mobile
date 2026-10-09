@@ -185,17 +185,9 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
     }
   }
 
-  /// `내비 열기` — 범위를 고르는 시트를 띄우고 고른 범위로 카카오내비를 연다(UF-D-02, RUN-08, Ruling 570).
-  Future<void> _chooseNavigation(
-    String runId, {
-    required String nextLabel,
-  }) async {
-    final scope = await showBaraedaBottomSheet<NavigationScope>(
-      context: context,
-      title: '카카오내비로 열기',
-      builder: (sheetContext) => NavigationScopeSheet(nextLabel: nextLabel),
-    );
-    if (scope == null || !mounted) return;
+  /// 지도 위 [다음 목적지] · [남은 전 구간] 단추로 고른 범위의 길안내를 카카오내비로 연다(UF-D-02, RUN-08,
+  /// Ruling 570) — 범위를 고르는 시트는 없다.
+  Future<void> _openNavigation(String runId, NavigationScope scope) async {
     setState(() {
       _navigating = true;
       _errorMessage = null;
@@ -330,18 +322,9 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
                     context,
                     mapHeight,
                     transmission,
-                    navigationLabel: navigationEnabled || _navigating
-                        ? '내비 열기'
-                        : null,
+                    showNavigation: navigationEnabled || _navigating,
                     onNavigation: navigationEnabled
-                        ? () => unawaited(
-                            _chooseNavigation(
-                              runId,
-                              nextLabel:
-                                  '${_orderOf(roster, nextStop)} '
-                                  '${nextStop.name} 1곳',
-                            ),
-                          )
+                        ? (scope) => unawaited(_openNavigation(runId, scope))
                         : null,
                   ),
                   const SizedBox(height: 16),
@@ -379,26 +362,44 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
     );
   }
 
-  /// 지도 + 왼쪽 위 `내비 열기` · 오른쪽 아래 `크게 보기`(노선 지도 화면, `Ruling 829`).
+  /// 지도 + 왼쪽 위 [다음 목적지] · [남은 전 구간] 두 단추 · 오른쪽 아래 `크게 보기`
+  /// (노선 지도 화면, `Ruling 829`).
   Widget _mapWithControls(
     BuildContext context,
     double height,
     PositionTransmission transmission, {
-    String? navigationLabel,
-    VoidCallback? onNavigation,
+    bool showNavigation = false,
+    void Function(NavigationScope scope)? onNavigation,
   }) {
     return Stack(
       children: [
         DriveMapPanel(height: height, busPosition: transmission.busPosition),
-        if (navigationLabel != null)
+        if (showNavigation)
           Positioned(
             left: 8,
             top: 8,
-            child: BaraedaMapButton(
-              icon: 'navigation',
-              label: navigationLabel,
-              semanticLabel: '카카오내비',
-              onPressed: onNavigation,
+            right: 64,
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                BaraedaMapButton(
+                  icon: 'navigation',
+                  label: '다음 목적지',
+                  semanticLabel: '카카오내비',
+                  onPressed: onNavigation == null
+                      ? null
+                      : () => onNavigation(NavigationScope.next),
+                ),
+                BaraedaMapButton(
+                  icon: 'route',
+                  label: '남은 전 구간',
+                  semanticLabel: '카카오내비',
+                  onPressed: onNavigation == null
+                      ? null
+                      : () => onNavigation(NavigationScope.remaining),
+                ),
+              ],
             ),
           ),
         Positioned(
@@ -716,55 +717,6 @@ class _RemainingStops extends StatelessWidget {
                   ),
                 },
             ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-/// `내비 열기` 시트 — 다음 목적지 1곳 / 남은 전 구간(카카오내비 경유지 상한까지, Ruling 570).
-class NavigationScopeSheet extends StatelessWidget {
-  const new({required this.nextLabel, super.key});
-
-  /// `3 새솔초 정문 1곳` — 다음 목적지를 눌렀을 때 넘어가는 곳.
-  final String nextLabel;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        BaraedaListGroup(
-          children: [
-            BaraedaListRow(
-              title: '다음 목적지',
-              subtitle: nextLabel,
-              trailing: BaraedaIcon(
-                'chevron-right',
-                color: colors.textSecondary,
-              ),
-              onTap: () => Navigator.of(context).pop(NavigationScope.next),
-            ),
-            BaraedaListRow(
-              title: '남은 전 구간',
-              subtitle: '앞 4곳까지 넘겨요',
-              trailing: BaraedaIcon(
-                'chevron-right',
-                color: colors.textSecondary,
-              ),
-              onTap: () => Navigator.of(context).pop(NavigationScope.remaining),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Text(
-          '카카오내비는 경유지를 4곳까지 받아요. 남은 곳이 더 많으면 앞쪽만 넘기고 '
-          '알려 드려요. 앱이 없으면 설치 화면으로 이동해요.',
-          style: BaraedaTypography.caption.copyWith(
-            color: colors.textSecondary,
           ),
         ),
       ],

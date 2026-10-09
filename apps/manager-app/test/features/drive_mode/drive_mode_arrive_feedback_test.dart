@@ -137,10 +137,8 @@ RosterStop _stop(int seq, {bool arrived = false}) => RosterStop(
   students: const [],
 );
 
-/// `내비 열기` → 시트에서 범위를 고른다(Ruling 570).
+/// 지도 위 범위 단추([다음 목적지] · [남은 전 구간])를 바로 누른다 — 시트 없음(Ruling 570).
 Future<void> _openNavigation(WidgetTester tester, String scopeLabel) async {
-  await tester.tap(find.text('내비 열기'));
-  await tester.pumpAndSettle();
   await tester.tap(find.text(scopeLabel));
   await tester.pump();
   await tester.pump();
@@ -275,7 +273,8 @@ void main() {
     testWidgets('카카오 앱 키가 없으면 길안내 버튼을 그리지 않는다 (R46)', (tester) async {
       await pumpDrive(tester);
 
-      expect(find.text('내비 열기'), findsNothing);
+      expect(find.text('다음 목적지'), findsNothing);
+      expect(find.text('남은 전 구간'), findsNothing);
     });
 
     testWidgets('키가 있으면 서버 경로를 받아 카카오내비 경계에 넘긴다 (R46)', (tester) async {

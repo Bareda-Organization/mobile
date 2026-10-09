@@ -138,13 +138,11 @@ void main() {
     return (server: server, launcher: launcher);
   }
 
-  // `내비 열기` → 시트에서 범위를 고른다(Ruling 570).
+  // 지도 위 두 단추로 범위를 바로 고른다 — 시트 없음(Ruling 570).
   group('UF-D-02 길안내 범위 선택', () {
     testWidgets('[다음 목적지] 는 scope=next 로 묻고 목적지 1곳만 내비에 넘긴다', (tester) async {
       final harness = await pumpDrive(tester);
 
-      await tester.tap(find.text('내비 열기'));
-      await tester.pumpAndSettle();
       await tester.tap(find.text('다음 목적지'));
       await tester.pumpAndSettle();
 
@@ -159,8 +157,6 @@ void main() {
     ) async {
       final harness = await pumpDrive(tester);
 
-      await tester.tap(find.text('내비 열기'));
-      await tester.pumpAndSettle();
       await tester.tap(find.text('남은 전 구간'));
       await tester.pumpAndSettle();
 

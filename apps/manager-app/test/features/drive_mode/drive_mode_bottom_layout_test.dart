@@ -183,11 +183,9 @@ void main() {
       );
       await tester.pump();
       await tester.pump(const Duration(seconds: 2));
-      // `내비 열기` → 시트에서 범위를 고른다. 큰 글자에서는 지도 위 단추가 스크롤 밖에 있을 수 있어 보이게 한다.
-      await tester.ensureVisible(find.text('내비 열기'));
+      // 지도 위 [다음 목적지] 단추를 바로 누른다(시트 없음, Ruling 570). 큰 글자에서는 스크롤 밖에 있을 수 있어 보이게 한다.
+      await tester.ensureVisible(find.text('다음 목적지'));
       await tester.pump();
-      await tester.tap(find.text('내비 열기'));
-      await tester.pumpAndSettle();
       await tester.tap(find.text('다음 목적지'));
       await tester.pump();
       await tester.pump();
