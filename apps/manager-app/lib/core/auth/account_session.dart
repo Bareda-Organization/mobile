@@ -229,7 +229,28 @@ class RouterRefreshNotifier extends ChangeNotifier {
     _ref.read(academyContactProvider.notifier).state = null;
     _ref.read(transmissionEndedRunIdProvider.notifier).state = null;
     _ref.read(lastArriveResultProvider.notifier).state = null;
-    unawaited(_ref.read(offlineQueueRepositoryProvider).clear());
+    unawaited(_discardOfflineQueue());
+  }
+
+  /// 대기 요청을 버린다. 세션이 만료돼서 버리는 것이면(로그인 화면에 만료 안내가 있다) 버려지는 건수를 그 안내에
+  /// 더한다 — 직접 로그아웃은 확인 창이 이미 알려 준다(`Ruling 388`). 비상 신고가 섞여 있으면 따로 밝힌다:
+  /// 서버에 전달되지 못했으니 학원에 직접 알려야 한다(`Ruling 616`).
+  Future<void> _discardOfflineQueue() async {
+    final queue = _ref.read(offlineQueueRepositoryProvider);
+    final discarded = await queue.fetchPending();
+    await queue.clear();
+    final notice = _ref.read(sessionExpiredNoticeProvider);
+    if (notice == null || discarded.isEmpty) return;
+    final emergencies = discarded
+        .where((request) => request.isEmergency)
+        .length;
+    final emergencyNote = emergencies == 0
+        ? ''
+        : ' — 비상 신고 $emergencies건이 서버에 전달되지 못했으니 '
+              '학원에 직접 알려 주세요';
+    _ref.read(sessionExpiredNoticeProvider.notifier).state =
+        '$notice 보내지 못한 처리 ${discarded.length}건은 '
+        '버려졌습니다$emergencyNote';
   }
 
   final Ref _ref;
