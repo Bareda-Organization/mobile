@@ -26,6 +26,18 @@ import 'package:manager_app/features/route_map/presentation/route_map_screen.dar
 import 'package:manager_app/features/run_end/presentation/report_screen.dart';
 import 'package:manager_app/features/run_end/presentation/run_end_screen.dart';
 
+/// 기사 전용 화면 — 운행 준비 · 운행 중 · 운행 종료 · 조회 전용 명단(`canOperateRun`).
+const Set<String> _driverOnlyRoutes = {
+  AppRoutes.runReady,
+  AppRoutes.driveMode,
+  AppRoutes.runEnd,
+  AppRoutes.rosterView,
+};
+
+/// 동승자 전용 화면 — 지연 알림(`canSendDelayNotification`) ·
+/// 미승차 연락(`canDecideBoardingStatus`).
+const Set<String> _escortOnlyRoutes = {AppRoutes.delay, AppRoutes.noShow};
+
 /// 라우트 경로 상수는 [AppRoutes](`app_routes.dart`)를 본다 — 순환 참조
 /// 방지 이유가 그 파일에 있다.
 ///
@@ -80,6 +92,18 @@ final routerProvider = Provider<GoRouter>((ref) {
       // 명단 탭은 동승자만 있다 — 기사가 닿으면 운행 탭으로(기사의 명단은 조회 전용 [rosterView]).
       if (loggedIn && role == UserRole.driver && location == AppRoutes.roster) {
         return AppRoutes.home;
+      }
+      // 역할 전용 화면(L5) — 다른 역할이 닿으면 서버 403 에만 기대지 않고 그 역할의 첫 화면으로 돌려보낸다.
+      if (loggedIn) {
+        final landing = role == UserRole.escort
+            ? AppRoutes.roster
+            : AppRoutes.home;
+        if (role != UserRole.driver && _driverOnlyRoutes.contains(location)) {
+          return landing;
+        }
+        if (role != UserRole.escort && _escortOnlyRoutes.contains(location)) {
+          return landing;
+        }
       }
       return null;
     },
