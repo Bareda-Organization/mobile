@@ -16,8 +16,7 @@ class RouteMapOverlay {
   /// - 선은 `road_path` 가 2점 이상이면 그 도로 경로, 아니면 좌표가 있는 표시 승하차지를 이은 **점선**이다
   ///   (확정 전이거나 도로 좌표가 빈 옛 버전 — 실제 도로가 아니라는 표시).
   /// - [ended] 는 운행이 끝난 뒤 — 선을 "지나온 구간" 색으로 그린다.
-  /// - [markNext] 는 운행 중 — 아직 안 지난 첫 승하차지를 "다음" 모양으로
-  ///   그린다. 도착 예정 시각이나 "몇 곳 전"이 아니라 순서만 말한다(C-08).
+  /// - 지나간 곳 표시도 "다음 곳" 강조도 없다 — 번호와 함께 두면 남은 정차 수를 유추하게 된다(C-08, M-P1).
   /// - 좌표가 없는 승하차지(학원 항목이 `lat`·`lng` 를 못 가질 수 있다)는 마커도 점선 꼭짓점도 만들지 않는다.
   ///
   /// [idPrefix] 는 같은 마커·선을 다음 갱신에서도 알아보게 하는 화면별 접두어다.
@@ -25,20 +24,11 @@ class RouteMapOverlay {
     RouteDetail route, {
     required String idPrefix,
     bool ended = false,
-    bool markNext = false,
   }) {
     final located = [
       for (final stop in route.stops)
         if (stop.lat != null && stop.lng != null) stop,
     ];
-    // "다음 곳" 은 실제 승하차지 중에서만 고른다 — 하원은 학원이 맨 앞이라 거르지 않으면 학원이 "다음 곳" 을 가로챈다.
-    final nextStopId = markNext
-        ? located
-              .where((stop) => stop.stopId != null && stop.arrivedAt == null)
-              .firstOrNull
-              ?.stopId
-        : null;
-
     final markers = [
       for (final stop in located)
         if (stop.stopId == null)
@@ -56,11 +46,6 @@ class RouteMapOverlay {
             lng: stop.lng!,
             kind: MapMarkerKind.stop,
             seq: stop.seq,
-            stopState: stop.arrivedAt != null
-                ? MapStopState.passed
-                : (stop.stopId == nextStopId
-                      ? MapStopState.next
-                      : MapStopState.upcoming),
             mine: stop.stopId == route.myStopId,
             label: stop.stopId == route.myStopId ? _myStopLabel : null,
           ),

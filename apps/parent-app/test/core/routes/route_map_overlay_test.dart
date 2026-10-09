@@ -48,8 +48,7 @@ void main() {
   RouteMapOverlay overlay(
     RouteDetail r, {
     bool ended = false,
-    bool markNext = false,
-  }) => RouteMapOverlay.of(r, idPrefix: 'p', ended: ended, markNext: markNext);
+  }) => RouteMapOverlay.of(r, idPrefix: 'p', ended: ended);
 
   test('road_path 가 있으면 도로 경로선 1개와, 표시 승하차지 수만큼의 번호 마커를 만든다', () {
     final result = overlay(
@@ -138,27 +137,24 @@ void main() {
     );
   });
 
-  test('도착 시각(arrived_at)이 있는 승하차지만 지나간 모양이다', () {
-    final result = overlay(
+  // M-P1 — 지나간 곳 표시 · "다음 곳" 강조 핀은 번호와 함께 "몇 곳 전" 을 유추하게 한다(C-08).
+  test('M-P1 도착 시각(arrived_at)이 있어도 없어도 승하차지 핀 모양이 같다', () {
+    final arrived = overlay(
       route(
-        stops: [
-          stop(3, arrivedAt: DateTime.utc(2026, 10, 5, 3, 9)),
-          stop(4),
-          stop(5),
-        ],
+        stops: [stop(3, arrivedAt: DateTime.utc(2026, 10, 5, 3, 9)), stop(4)],
         roadPath: road,
       ),
     );
+    final notYet = overlay(route(stops: [stop(3), stop(4)], roadPath: road));
 
-    expect(result.markers.map((m) => m.stopState), [
-      MapStopState.passed,
-      MapStopState.upcoming,
-      MapStopState.upcoming,
-    ]);
+    expect(
+      arrived.markers.map((m) => m.lookKey),
+      notYet.markers.map((m) => m.lookKey),
+    );
   });
 
-  test('운행 중이면 아직 안 지난 첫 승하차지가 "다음" 모양이다', () {
-    final result = overlay(
+  test('M-P1 운행 중이어도 "다음 곳" 만 다른 핀으로 강조하지 않는다', () {
+    final running = overlay(
       route(
         stops: [
           stop(2, arrivedAt: DateTime.utc(2026, 10, 5, 3, 5)),
@@ -167,14 +163,15 @@ void main() {
         ],
         roadPath: road,
       ),
-      markNext: true,
+    );
+    final idle = overlay(
+      route(stops: [stop(2), stop(3), stop(4)], roadPath: road),
     );
 
-    expect(result.markers.map((m) => m.stopState), [
-      MapStopState.passed,
-      MapStopState.next,
-      MapStopState.upcoming,
-    ]);
+    expect(
+      running.markers.map((m) => m.lookKey),
+      idle.markers.map((m) => m.lookKey),
+    );
   });
 
   test('운행이 끝났으면 같은 경로선을 "지나온 구간" 색으로 그리고 마커도 그대로 남긴다', () {
@@ -187,10 +184,6 @@ void main() {
     expect(result.polylines, hasLength(1));
     expect(result.polylines.single.passed, isTrue);
     expect(result.markers.map((m) => m.seq), [3, 4]);
-    expect(
-      result.markers.every((m) => m.stopState == MapStopState.passed),
-      isTrue,
-    );
   });
 
   test('종료 전에는 경로선이 "지나온 구간" 색이 아니다', () {
@@ -280,15 +273,6 @@ void main() {
       expect(from.first, (lat: 37.51, lng: 126.71));
       expect(to, hasLength(4));
       expect(to.last, (lat: 37.51, lng: 126.71));
-    });
-
-    test('운행 중 "다음 곳" 은 학원이 아니라 안 지난 첫 승하차지다 — 하원도 학원이 앞이라고 빼앗지 않는다', () {
-      final result = overlay(detail(fromAcademy), markNext: true);
-
-      expect(
-        result.markers.where((m) => m.seq != null).map((m) => m.stopState),
-        [MapStopState.next, MapStopState.upcoming, MapStopState.upcoming],
-      );
     });
 
     test('내 승하차지 표시는 학원이 아니라 my_stop_id 의 승하차지에만 붙는다', () {

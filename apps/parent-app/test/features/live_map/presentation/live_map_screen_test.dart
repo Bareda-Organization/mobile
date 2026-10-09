@@ -1887,22 +1887,20 @@ void main() {
       expect(map.fitToContent, isTrue);
     });
 
-    testWidgets('종료 — 지나간 승하차지(arrived_at 있음)만 지나간 모양이다', (tester) async {
+    // M-P1 — 지나간 곳을 표시하면 번호와 함께 남은 정차 수를 유추하게 한다(C-08).
+    testWidgets('종료 — 지나간 승하차지(arrived_at 있음)도 아닌 곳과 같은 모양이다', (tester) async {
       await pumpMap(
         tester,
         position: snapshot(status: RunStatus.finished, withPosition: false),
         routeDetail: route(arrived: true),
       );
 
-      final byStop = {
+      final looks = {
         for (final m in surface(tester).markers.where((m) => m.seq != null))
-          m.seq: m.stopState,
+          m.seq: m.lookKey,
       };
-      expect(byStop, {
-        3: MapStopState.passed,
-        4: MapStopState.passed,
-        5: MapStopState.upcoming,
-      });
+      // 4번이 내 승하차지다 — 달라지는 것은 그 하나뿐이고, 지나간 3 · 4 와 아직인 5 는 구분이 없다.
+      expect(looks, {3: 'stop|3|false', 4: 'stop|4|true', 5: 'stop|5|false'});
     });
 
     testWidgets('종료 + 노선을 못 받으면 지도 없이 회색 면이다(기존 동작)', (tester) async {

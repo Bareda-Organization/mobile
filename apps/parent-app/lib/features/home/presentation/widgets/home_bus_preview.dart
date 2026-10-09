@@ -175,7 +175,6 @@ class _PreviewBody extends ConsumerWidget {
             route,
             idPrefix: 'preview-$studentId',
             ended: ended,
-            markNext: position.runStatus == RunStatus.moving,
           );
     // 끝난 회차는 서버가 좌표를 주지 않아 버스가 없다 — 지나온 구간(노선)에 맞춰 그린다.
     // 출발 전 회차도 좌표가 없다 — 빈 면으로 두지 않고 노선을 미리 그린다(Ruling 842).

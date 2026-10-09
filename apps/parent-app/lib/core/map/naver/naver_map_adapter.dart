@@ -265,12 +265,8 @@ class _NaverMapAdapterState extends State<NaverMapAdapter> {
       // 동그라미 핀의 기준점은 가운데다 — 핀 끝이 좌표에 오는 물방울과 다르다. 번호 핀이 종류를 말하므로
       // 글자는 이름표(내 승하차지)가 있을 때만 붙인다.
       final icon = await NOverlayImage.fromWidget(
-        widget: StopNumberPin(
-          seq: seq,
-          state: marker.stopState,
-          mine: marker.mine,
-        ),
-        size: StopNumberPin.sizeOf(state: marker.stopState, mine: marker.mine),
+        widget: StopNumberPin(seq: seq, mine: marker.mine),
+        size: StopNumberPin.sizeOf(mine: marker.mine),
         context: context,
       );
       return NMarker(

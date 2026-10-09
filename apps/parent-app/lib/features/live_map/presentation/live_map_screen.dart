@@ -298,7 +298,6 @@ class _MapPageState extends ConsumerState<_MapPage> {
             route,
             idPrefix: 'live-${widget.studentId}',
             ended: ended,
-            markNext: _view.phase == LiveMapPhase.tracking,
           );
     // 종료 화면은 서버가 끝난 뒤 좌표를 주지 않아 버스가 없다 — 대신 지나온 구간(노선)을 그리고 지도를 거기에 맞춘다.
     final fitRoute = ended && overlay != null && !overlay.isEmpty;

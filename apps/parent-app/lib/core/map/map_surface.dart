@@ -30,18 +30,6 @@ class MapCamera {
 /// 간다(외양만 어댑터가 새로 그린다).
 enum MapMarkerKind { bus, stop, student }
 
-/// 번호 마커(승하차지)가 지금 어떤 상태인가 — 모양(색·확인 표시)이 이 값으로 갈린다.
-enum MapStopState {
-  /// 아직 안 지난 곳.
-  upcoming,
-
-  /// 안 지난 곳 중 버스가 다음에 갈 곳 — 운행 중에만 쓴다(도착 예정 시각이 아니라 순서일 뿐이다, C-08).
-  next,
-
-  /// 이미 지난 곳(도착 처리 시각이 있다) — 확인 표시.
-  passed,
-}
-
 /// 지도 위에 찍을 점 하나. `id` 는 같은 마커를 다음 갱신에서도 알아보기
 /// 위한 값이라 화면마다 고유해야 한다(예: `'bus-$studentId'`).
 class MapMarker {
@@ -52,7 +40,6 @@ class MapMarker {
     required this.kind,
     this.label,
     this.seq,
-    this.stopState = MapStopState.upcoming,
     this.mine = false,
   });
 
@@ -69,15 +56,12 @@ class MapMarker {
   /// 있으면 어댑터가 번호가 든 핀으로 그린다.
   final int? seq;
 
-  /// 번호 마커의 지나간 정도.
-  final MapStopState stopState;
-
   /// 내 승하차지 — 더 크게 · 둘레를 점선으로 강조한다.
   final bool mine;
 
   /// 아이콘 모양을 정하는 값의 묶음 — 이 값이 달라지면 어댑터가 마커 아이콘을 다시 만든다(좌표는 제외).
-  /// 번호 · 지나감 · 내 승하차지가 운행 중에 바뀌어도 마커 id 는 그대로라, 좌표만 비교하면 옛 아이콘이 남는다.
-  String get lookKey => '${kind.name}|$seq|${stopState.name}|$mine';
+  /// 번호 · 내 승하차지가 바뀌어도 마커 id 는 그대로라, 좌표만 비교하면 옛 아이콘이 남는다.
+  String get lookKey => '${kind.name}|$seq|$mine';
 }
 
 /// 지도 위에 그릴 선 하나(예: 확정 노선의 도로 경로). 점은 순서대로 이어진다.
