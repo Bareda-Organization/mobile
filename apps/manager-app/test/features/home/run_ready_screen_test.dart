@@ -90,6 +90,10 @@ void main() {
           path: AppRoutes.driveMode,
           builder: (_, _) => const Text('DRIVE_MARKER'),
         ),
+        GoRoute(
+          path: AppRoutes.rosterView,
+          builder: (_, _) => const Text('ROSTER_VIEW_MARKER'),
+        ),
       ],
     );
     final overrides = <Override>[
@@ -136,6 +140,20 @@ void main() {
   VoidCallback? startPressed(WidgetTester tester) => tester
       .widget<BaraedaButton>(find.widgetWithText(BaraedaButton, '운행 시작'))
       .onPressed;
+
+  // L1(UF-D-02) — 기사는 운행을 시작하기 전에도 승하차지 명단(조회 전용)을 열어 볼 수 있다.
+  testWidgets('운행 시작 전에도 [명단 보기] 로 조회 전용 명단을 연다', (tester) async {
+    await tester.pumpWidget(
+      wrap(DateTime(2026, 10, 3, 12, 2), _CountingDriveRepository()),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.widgetWithText(BaraedaButton, '명단 보기'));
+    await tester.tap(find.widgetWithText(BaraedaButton, '명단 보기'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('ROSTER_VIEW_MARKER'), findsOneWidget);
+  });
 
   testWidgets('시작 가능 시간(출발 ±10분) 안이면 [운행 시작] 이 켜지고 시간대가 보인다', (tester) async {
     final repo = _CountingDriveRepository();
