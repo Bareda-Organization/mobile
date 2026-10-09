@@ -114,6 +114,7 @@ void main() {
     List<Student>? students,
     String? originStudentId,
     String? runId,
+    bool asStudent = false,
   }) async {
     // stops 목록이 창(3) + 학원 1개로 늘어나 기본 뷰포트를 넘긴다 —
     // ListView 는 화면 밖 항목을 늦게(스크롤 시점에) 그리므로, 뷰포트를
@@ -127,9 +128,12 @@ void main() {
       ProviderScope(
         overrides: [
           roleCapabilitiesProvider.overrideWithValue(
-            RoleCapabilities.of(UserRole.parent),
+            RoleCapabilities.of(
+              asStudent ? UserRole.student : UserRole.parent,
+            ),
           ),
           myStudentsProvider.overrideWith((ref) async => students ?? [student]),
+          myStudentIdProvider.overrideWith((ref) async => student.studentId),
           routeRepositoryProvider.overrideWithValue(
             repository ?? _FakeRouteRepository(response),
           ),
@@ -413,6 +417,20 @@ void main() {
         tester,
         response: sample(),
         repository: repository,
+        originStudentId: 's-1',
+        runId: 'run-7',
+      );
+
+      expect(repository.requests, [(studentId: 's-1', runId: 'run-7')]);
+    });
+
+    testWidgets('학생 계정도 지도가 넘긴 회차 번호를 서버 요청에 싣는다', (tester) async {
+      final repository = _FakeRouteRepository(sample());
+      await pumpScreen(
+        tester,
+        response: sample(),
+        repository: repository,
+        asStudent: true,
         originStudentId: 's-1',
         runId: 'run-7',
       );
