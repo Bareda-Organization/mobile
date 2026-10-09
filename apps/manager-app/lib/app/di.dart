@@ -1,5 +1,6 @@
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/core/constants/api_constants.dart';
 import 'package:manager_app/core/constants/navigation_constants.dart';
 import 'package:manager_app/core/location/position_source.dart';
@@ -153,6 +154,8 @@ final rosterRepositoryProvider = Provider<RosterRepository>((ref) {
     api: ref.watch(rosterApiProvider),
     offlineQueue: ref.watch(offlineQueueRepositoryProvider),
     cache: ref.watch(rosterCacheProvider),
+    // 로그아웃 뒤에 늦게 도착한 응답을 기기에 남기지 않는다(M-2).
+    isSignedIn: () => ref.read(currentUserRoleProvider) != null,
   );
 });
 

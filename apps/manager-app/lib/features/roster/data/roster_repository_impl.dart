@@ -24,6 +24,7 @@ class RosterRepositoryImpl implements RosterRepository {
     required RosterApi api,
     required OfflineQueueRepository offlineQueue,
     required RosterCache cache,
+    bool Function() isSignedIn = _alwaysSignedIn,
   })
     // 위와 같은 이유.
     // ignore: prefer_initializing_formals
@@ -33,11 +34,20 @@ class RosterRepositoryImpl implements RosterRepository {
        _offlineQueue = offlineQueue,
        // 위와 같은 이유.
        // ignore: prefer_initializing_formals
-       _cache = cache;
+       _cache = cache,
+       // 위와 같은 이유.
+       // ignore: prefer_initializing_formals
+       _isSignedIn = isSignedIn;
+
+  static bool _alwaysSignedIn() => true;
 
   final RosterApi _api;
   final OfflineQueueRepository _offlineQueue;
   final RosterCache _cache;
+
+  /// 저장 직전에 아직 로그인한 계정이 있는지 — 로그아웃 직전에 보낸 요청의 응답이 정리(`RosterCache.clear`) 뒤에
+  /// 도착해도 지운 명단을 다시 저장하지 않는다(M-2).
+  final bool Function() _isSignedIn;
 
   @override
   Future<RosterResponse> fetchRoster(String runId) async {
@@ -58,6 +68,7 @@ class RosterRepositoryImpl implements RosterRepository {
   }
 
   Future<void> _saveQuietly(String runId, Map<String, dynamic> json) async {
+    if (!_isSignedIn()) return;
     try {
       await _cache.save(runId, json);
     } on Object {

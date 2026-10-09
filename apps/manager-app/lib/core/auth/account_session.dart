@@ -232,7 +232,13 @@ class RouterRefreshNotifier extends ChangeNotifier {
     _sessionExpiredSubscription = _ref
         .read(apiClientProvider)
         .sessionExpired
-        .listen((_) => endSessionAsExpired(_ref));
+        .listen((_) {
+          // 앱을 켜 세션을 되살리다 거절된 경우(M-2) — 역할이 원래 비어 있어 위 "역할이 비는 순간" 정리가 돌지 않는다.
+          // 지난 계정이 기기에 남긴 명단·대기열이 그대로 남지 않게 같은 정리를 직접 태운다.
+          final restoreFailed = _ref.read(currentUserRoleProvider) == null;
+          endSessionAsExpired(_ref);
+          if (restoreFailed) _clearAccountScopedState();
+        });
   }
 
   /// 다음 계정이 이전 계정의 회차 목록·선택값을 보거나, 이전 계정의 대기 요청을 자기 토큰으로 재생하지
@@ -252,15 +258,24 @@ class RouterRefreshNotifier extends ChangeNotifier {
     unawaited(_discardOfflineQueue());
   }
 
+  /// 기기에 남긴 이 계정의 것을 지운다. **명단(학생 특이사항 포함)을 먼저** 지운다 — 대기열 쪽이 예외를 던져도
+  /// 개인정보는 남지 않는다(M-2). 명단 삭제가 실패해도 대기열 정리는 그대로 이어진다(`finally`).
+  Future<void> _discardOfflineQueue() async {
+    try {
+      // 기기에 저장한 명단도 이 계정의 것이다(M-M3) — 다음 계정이 보면 안 된다.
+      await _ref.read(rosterCacheProvider).clear();
+    } finally {
+      await _discardPendingRequests();
+    }
+  }
+
   /// 대기 요청을 버린다. 세션이 만료돼서 버리는 것이면(로그인 화면에 만료 안내가 있다) 버려지는 건수를 그 안내에
   /// 더한다 — 직접 로그아웃은 확인 창이 이미 알려 준다(`Ruling 388`). 비상 신고가 섞여 있으면 따로 밝힌다:
   /// 서버에 전달되지 못했으니 학원에 직접 알려야 한다(`Ruling 616`).
-  Future<void> _discardOfflineQueue() async {
+  Future<void> _discardPendingRequests() async {
     final queue = _ref.read(offlineQueueRepositoryProvider);
     final discarded = await queue.fetchPending();
     await queue.clear();
-    // 기기에 저장한 명단도 이 계정의 것이다(M-M3) — 다음 계정이 보면 안 된다.
-    await _ref.read(rosterCacheProvider).clear();
     final notice = _ref.read(sessionExpiredNoticeProvider);
     if (notice == null || discarded.isEmpty) return;
     final emergencies = discarded
