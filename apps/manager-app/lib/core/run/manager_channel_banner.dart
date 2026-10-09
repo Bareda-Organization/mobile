@@ -79,8 +79,8 @@ ManagerChannelBannerContent? managerChannelBannerContentFor(
   ),
   ManagerChannelStatus.forbidden => const ManagerChannelBannerContent(
     tone: AlertTone.missed,
-    title: '이 운행에 배정되지 않았습니다',
-    body: '홈 화면에서 배정 현황을 다시 확인하세요',
+    title: WsConnectionNotice.forbiddenTitle,
+    body: '이 운행에 배정되지 않았습니다 — 홈 화면에서 배정 현황을 다시 확인하세요',
   ),
 };
 

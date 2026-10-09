@@ -77,7 +77,7 @@ void main() {
     });
 
     // R46-FIXCONN C-12 — 같은 끊김을 웹·학부모 앱과 같은 제목으로 알린다.
-    // 권한 거부(forbidden)는 이 앱에서 "배정되지 않음" 이라는 업무 의미가 있어 그 문구를 유지한다.
+    // 권한 거부(forbidden)도 제목은 공용 문구다(Ruling 666) — "배정되지 않음" 이라는 업무 의미는 본문이 맡는다.
     test('끊김 제목이 웹·학부모 앱과 같은 공용 문구다', () {
       expect(
         managerChannelBannerContentFor(ManagerChannelStatus.reconnecting)!
@@ -88,6 +88,11 @@ void main() {
         managerChannelBannerContentFor(ManagerChannelStatus.gaveUp)!.title,
         WsConnectionNotice.gaveUpTitle,
       );
+      final forbidden = managerChannelBannerContentFor(
+        ManagerChannelStatus.forbidden,
+      )!;
+      expect(forbidden.title, WsConnectionNotice.forbiddenTitle);
+      expect(forbidden.body, contains('배정'));
     });
 
     test('gaveUp 과 forbidden 은 톤이 같아도 문구로 원인이 구별된다', () {
