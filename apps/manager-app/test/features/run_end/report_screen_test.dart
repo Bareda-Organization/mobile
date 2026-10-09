@@ -77,12 +77,14 @@ Widget _wrap(
 }
 
 /// 지금 탑승 중인 학생만 담은 명단 — 하차 대기 인원·보고 대상은 이 명단에서 읽는다(F06-14).
-Override _boardedRoster(List<({String id, String name})> riders) =>
-    rosterProvider.overrideWith(
+Override _boardedRoster(
+  List<({String id, String name})> riders, {
+  RunDirection direction = RunDirection.toAcademy,
+}) => rosterProvider.overrideWith(
       (ref) async => RosterResponse(
         runId: 'run-1',
         busNo: '3호차',
-        direction: RunDirection.toAcademy,
+        direction: direction,
         counts: const RosterCounts(
           boarded: 0,
           waiting: 0,
@@ -229,6 +231,62 @@ void main() {
     expect(find.byType(BaraedaListRow), findsOneWidget);
     expect(find.widgetWithText(BaraedaListRow, '김바래'), findsOneWidget);
   });
+
+  // H3(UF-E-04 · M-14 · EXC-02) — 동승자의 [예외 보고] 는 이 화면으로 오는데, 보호자 부재는
+  // 기사 종료 보류 화면에서만 열렸다. 하원 회차에서는 이 화면에서 보호자 부재를 고를 수 있어야 한다.
+  testWidgets('하원 회차의 예외 보고에서 보호자 부재를 골라 학생을 지정해 보고한다', (tester) async {
+    final fakeRepo = await pumpReport(
+      tester,
+      roster: _boardedRoster([
+        (id: 'r1', name: '김바래'),
+      ], direction: RunDirection.fromAcademy),
+    );
+
+    expect(find.text('통제'), findsOneWidget);
+    // 구간 선택은 낱말마다 따로 그린다(`wrapByWord`) — 두 번째 낱말을 누른다.
+    await tester.tap(find.text('부재'));
+    await tester.pumpAndSettle();
+    expect(find.text('어느 학생이에요?'), findsOneWidget);
+
+    await tester.enterText(find.byType(TextField), '보호자가 안 나왔어요');
+    await tester.tap(find.text('김바래'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('보고 제출'));
+    await tester.pumpAndSettle();
+
+    expect(fakeRepo.lastRequest?.type, ReportType.guardianAbsent);
+    expect(fakeRepo.lastRequest?.riderId, 'r1');
+  });
+
+  testWidgets('하원 보호자 부재를 고르고 학생을 안 고르면 보내지 않는다', (tester) async {
+    final fakeRepo = await pumpReport(
+      tester,
+      roster: _boardedRoster([
+        (id: 'r1', name: '김바래'),
+      ], direction: RunDirection.fromAcademy),
+    );
+
+    // 구간 선택은 낱말마다 따로 그린다(`wrapByWord`) — 두 번째 낱말을 누른다.
+    await tester.tap(find.text('부재'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), '보호자가 안 나왔어요');
+    await tester.tap(find.text('보고 제출'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('어느 학생인지 골라 주세요'), findsOneWidget);
+    expect(fakeRepo.callCount, 0);
+  });
+
+  testWidgets('등원 회차에는 보호자 부재 항목이 없다(하원 승하차지의 일)', (tester) async {
+    await pumpReport(
+      tester,
+      roster: _boardedRoster([(id: 'r1', name: '김바래')]),
+    );
+
+    expect(find.text('통제'), findsOneWidget);
+    expect(find.text('부재'), findsNothing);
+  });
+
 
   testWidgets('보호자 부재인데 대상 학생이 없으면 이유를 알려 준다', (tester) async {
     await pumpReport(tester, guardianAbsent: true);

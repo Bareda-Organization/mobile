@@ -278,6 +278,32 @@ void main() {
     expect(find.text('13명'), findsOneWidget);
   });
 
+  // H3 — 끝난 운행에는 버스에 탄 학생이 없어 보호자 부재를 보고할 수 없다. 현장 보고 줄이 그것을 약속하지 않는다.
+  testWidgets('종료 완료 화면의 현장 상황 보고 줄은 보호자 부재를 약속하지 않는다', (tester) async {
+    await tester.pumpWidget(
+      _wrap(
+        const RunEndScreen(),
+        [
+          selectedRunIdProvider.overrideWith((ref) => runId),
+          lastArriveResultProvider.overrideWith(
+            (ref) => _terminationWith(finishPending: false),
+          ),
+        ],
+        roster: rosterProvider.overrideWith(
+          (ref) async => _finishedResponse(alighted: 2),
+        ),
+        runs: todayRunsProvider.overrideWith(
+          (ref) async => [managerRunFixture(status: RunStatus.finished)],
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('현장 상황 보고'), findsOneWidget);
+    expect(find.text('도로 통제 · 차량 문제를 알려요'), findsOneWidget);
+    expect(find.textContaining('보호자 부재'), findsNothing);
+  });
+
   // R48 1순위 결함 — 하차 합계를 `counts.boarded` 로 그리면 운행이 끝난 뒤
   // (전원 alighted) 항상 0 이 나왔다.
   testWidgets('전원이 하차한 종료 명단은 하차를 alighted 학생 수로 센다(counts.boarded 는 0)', (
