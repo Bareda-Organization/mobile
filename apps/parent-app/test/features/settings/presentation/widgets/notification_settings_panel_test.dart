@@ -10,11 +10,9 @@ import 'package:parent_app/features/settings/domain/notification_settings.dart';
 import 'package:parent_app/features/settings/domain/notification_settings_repository.dart';
 import 'package:parent_app/features/settings/presentation/widgets/notification_settings_panel.dart';
 
-/// P2 게이트 조건 ① — `notification_settings_panel.dart:70` 의 되돌리기
-/// 줄(`_current = previous;`)이 없으면, 서버가 변경을 거부해도 화면은
-/// 방금 누른(거부된) 값을 계속 켜진 채로 보여준다. 이 테스트는 그 상태를
-/// 직접 확인한다 — "토글이 꺼진다" 가 아니라 "실패 후에도 원래 값으로
-/// 돌아온다" 를 봐야 되돌리기 로직 자체를 잡는다.
+/// P2 게이트 조건 ① — 서버가 변경을 거부하면 스위치는 거부 전 값에 머물고
+/// 안내만 떠야 한다. 응답 전에 스위치를 먼저 바꾸는 구현(M-P4 이전)이었다면
+/// 여기서 거짓 상태가 남으므로 이 테스트가 그 회귀를 잡는다.
 class _RejectingNotificationSettingsRepository
     implements NotificationSettingsRepository {
   new(
@@ -45,6 +43,7 @@ class _PendingNotificationSettingsRepository
 
   final NotificationSettings _initial;
   final Completer<NotificationSettings> response = Completer();
+  int updateCalls = 0;
 
   @override
   Future<NotificationSettings> getNotificationSettings() async => _initial;
@@ -52,11 +51,14 @@ class _PendingNotificationSettingsRepository
   @override
   Future<NotificationSettings> updateNotificationSettings(
     NotificationSettings settings,
-  ) => response.future;
+  ) {
+    updateCalls++;
+    return response.future;
+  }
 }
 
 void main() {
-  testWidgets('서버가 변경을 거부하면 스위치가 거부되기 전 값으로 되돌아간다', (tester) async {
+  testWidgets('서버가 변경을 거부하면 스위치는 바뀌지 않고 안내만 보여준다', (tester) async {
     const initial = NotificationSettings(
       arrive: false,
       boarding: true,
@@ -174,16 +176,29 @@ void main() {
       expect(arriveChecked(tester), isTrue);
     });
 
-    testWidgets('응답을 기다리는 동안 스위치는 잠기고 같은 요청을 또 보내지 않는다', (tester) async {
+    testWidgets('응답을 기다리는 동안 스위치는 잠기고, 다시 눌러도 요청은 1번만 나간다', (tester) async {
       final repository = await pumpPending(tester);
 
       await tester.tap(find.byType(BaraedaSwitch).first);
       await tester.pump();
+      expect(repository.updateCalls, 1);
 
       final locked = tester.widget<BaraedaSwitch>(
         find.byType(BaraedaSwitch).first,
       );
       expect(locked.disabled, isTrue);
+
+      // 잠긴 스위치의 탭은 위젯이 버린다. 화면 잠금을 뚫고 들어온 호출도
+      // 화면 로직(_submitting)이 한 번 더 막는지 onChanged 를 직접 불러 본다.
+      await tester.tap(find.byType(BaraedaSwitch).first);
+      locked.onChanged!(true);
+      await tester.pump();
+
+      expect(
+        repository.updateCalls,
+        1,
+        reason: '응답 대기 중 다시 누른 요청이 나가면 안 된다',
+      );
 
       repository.response.complete(initial);
       await tester.pumpAndSettle();
