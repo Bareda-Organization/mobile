@@ -256,14 +256,17 @@ void main() {
 
     test(
       '같은 client_key 로 2회 보내도 부수효과는 1회 — 원재료 dio 로 '
-      'run3/rider 3(boarded→alighted) 을 갱신하고, 두 응답의 changed_at 이 '
+      'run3/rider 3(waiting→boarded) 을 갱신하고, 두 응답의 changed_at 이 '
       '동일한지로 서버가 재처리하지 않고 원래 처리 결과를 그대로 돌려주는지 '
       '확인한다. ⚠ 프로덕션 RosterApi.updateRiderStatus 는 이 응답의 '
       'rider_id 를 String 으로 캐스팅하는데(rider_update_result.dart) 이 '
       '백엔드는 int 로 내려 캐스팅이 실패한다(§4.3 과 같은 종류의 결함, '
       '아래 두 번째 시험이 그 실패를 실제 응답 값으로 재현한다) — 그래서 '
-      '이 시험은 원재료 dio 로 직접 멱등성을 검증한다. ⚠ 이 호출은 run3의 '
-      'rider 3 상태를 boarded → alighted 로 영구히 바꾼다(보고서 2항)',
+      '이 시험은 원재료 dio 로 직접 멱등성을 검증한다. ⚠ run3 은 등원 '
+      '회차라 boarded→alighted 가 막혀 있다(409 RIDER_TRANSITION_NOT_ALLOWED, '
+      'R51 C3) — 쓸 수 있는 전이는 waiting→boarded 뿐인데 시드의 rider 3 은 '
+      '이미 boarded 라서, 먼저 되돌리기(§4.7)로 waiting 으로 돌린 뒤 처리한다. '
+      '끝나면 rider 3 은 시드와 같은 boarded 이고 이력 행만 늘어난다',
       () async {
         if (!backendReachable) {
           markTestSkipped('환경 문제: 백엔드 미기동($baseUrl)');
@@ -272,9 +275,22 @@ void main() {
         final (:auth, :dio) = buildClient();
         await auth.login(loginId: 'escortA2', password: 'password');
 
+        // 시드의 rider 3 은 boarded — 가장 최근 이력(waiting→boarded)의 이전
+        // 값인 waiting 으로 먼저 돌려야 등원 회차의 허용 전이를 쓸 수 있다.
+        final reverted = await RosterApi(dio: dio).revertRiderStatus(
+          runId: '3',
+          riderId: '3',
+          reason: '실백엔드 계약 시험 — 등원 허용 전이(waiting→boarded) 준비',
+        );
+        expect(
+          reverted.status,
+          RiderStatus.waiting,
+          reason: '시드 rider 3(boarded)의 되돌리기 결과가 waiting 이 아니다',
+        );
+
         final clientKey = IdempotencyKeys.generate();
         final request = BoardingUpdateRequest(
-          status: RiderStatus.alighted,
+          status: RiderStatus.boarded,
           clientKey: clientKey,
         );
 
@@ -327,7 +343,7 @@ void main() {
           markTestSkipped('환경 문제: 백엔드 미기동($baseUrl)');
           return;
         }
-        // 새 client_key 로 같은 상태(alighted)를 다시 요청하면 지금 계약은
+        // 새 client_key 로 같은 상태(boarded)를 다시 요청하면 지금 계약은
         // 409 RIDER_TRANSITION_NOT_ALLOWED 다(Ruling 345 — 같은 상태
         // 재요청은 멱등 재생과 다르며, 전이표 밖이라 거부된다). "성공
         // 응답을 다시 받아 파싱한다"는 옛 흐름이 더는 성립하지 않아, 위
@@ -336,12 +352,12 @@ void main() {
         final result = RiderUpdateResult.fromJson(firstResponseBody);
 
         expect(result.riderId, '3');
-        expect(result.status, RiderStatus.alighted);
+        expect(result.status, RiderStatus.boarded);
       },
     );
 
     test(
-      'RIDER_TRANSITION_NOT_ALLOWED — 같은 상태(alighted)로의 재요청은 '
+      'RIDER_TRANSITION_NOT_ALLOWED — 같은 상태(boarded)로의 재요청은 '
       '전이표 밖이라 409 로 거부된다(Ruling 345)',
       () async {
         if (!backendReachable) {
@@ -353,7 +369,7 @@ void main() {
 
         final clientKey = IdempotencyKeys.generate();
         final request = BoardingUpdateRequest(
-          status: RiderStatus.alighted,
+          status: RiderStatus.boarded,
           clientKey: clientKey,
         );
 
@@ -363,7 +379,7 @@ void main() {
             data: request.toJson(),
           );
           fail(
-            '이미 alighted 인 rider 에 같은 상태를 새 client_key 로 '
+            '이미 boarded 인 rider 에 같은 상태를 새 client_key 로 '
             '재요청했는데 409 가 아니었다',
           );
         } on DioException catch (e) {
@@ -379,8 +395,9 @@ void main() {
   group('§4.7 POST /runs/{runId}/riders/{riderId}/revert', () {
     test(
       '동승자(escortA2)가 run3/rider 3 의 방금 바뀐 상태를 되돌린다 — '
-      '위 §4.6 시험이 만든 alighted 를 원래 값(boarded)에 가깝게 되돌려 '
-      'DB 잔여 영향을 줄인다(완전한 원복은 아니다, 보고서 2항)',
+      '위 §4.6 시험이 만든 boarded 를 waiting 으로 되돌리고, 시드 값 '
+      '(boarded)으로 다시 승차 처리해 DB 잔여 영향을 줄인다(이력 행은 남는다, '
+      '보고서 2항)',
       () async {
         if (!backendReachable) {
           markTestSkipped('환경 문제: 백엔드 미기동($baseUrl)');
@@ -397,6 +414,20 @@ void main() {
         );
 
         expect(result.revertedAt, isNotNull);
+        expect(result.status, RiderStatus.waiting);
+
+        // 시드 상태(boarded)로 복원 — 이 시험이 rider 3 을 waiting 으로 남기면
+        // 다음 실행의 §4.6 준비 되돌리기가 최근 이력(boarded→waiting)의 이전
+        // 값인 boarded 를 받아 허용 전이를 쓸 수 없게 된다.
+        final restore = await dio.patch<Map<String, dynamic>>(
+          '/runs/3/riders/3',
+          data: BoardingUpdateRequest(
+            status: RiderStatus.boarded,
+            clientKey: IdempotencyKeys.generate(),
+          ).toJson(),
+        );
+        expect(restore.statusCode, 200);
+        expect(restore.data!['status'], 'boarded');
       },
     );
   });
