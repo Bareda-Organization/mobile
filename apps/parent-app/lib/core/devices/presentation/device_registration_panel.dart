@@ -6,7 +6,11 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:parent_app/app/di.dart';
+import 'package:parent_app/core/devices/presentation/push_receivable.dart';
 import 'package:parent_app/core/ui/failure_message.dart';
+
+/// 푸시를 받을 수 없는 기기에 보이는 안내(UF-X-09 ④).
+const _pushUnavailableNotice = '이 기기에서는 아직 푸시 알림을 받을 수 없습니다';
 
 /// NTF-12 · API_SPEC §2.11 — 이 기기의 푸시 알림 수신 등록. (이전 판은
 /// `AUTH-11` 로 잘못 표기돼 있었다 — `FEATURE_SPEC.md:269` 의 `AUTH-11` 은
@@ -82,11 +86,9 @@ class _DeviceRegistrationPanelState
         final token = await ref.read(pushTokenSourceProvider).currentToken();
         if (token == null) {
           if (!mounted) return;
-          setState(() {
-            _submitting = false;
-            _bannerTone = AlertTone.info;
-            _banner = '이 기기에서는 아직 푸시 알림을 받을 수 없습니다';
-          });
+          // 안내(`_pushUnavailableNotice`)는 토큰이 없으면 스위치 아래에 이미 늘 보인다.
+          // 여기서 또 띄우지 않는다.
+          setState(() => _submitting = false);
           return;
         }
         final deviceId = await storage.readOrCreateDeviceId();
@@ -145,6 +147,16 @@ class _DeviceRegistrationPanelState
           disabled: _submitting,
           onChanged: _toggle,
         ),
+        // 토큰이 자리표시이면 켜 보기 전에도 알린다(UF-X-09 ④) — 켜도 푸시는 오지 않는다.
+        if (ref.watch(pushReceivableProvider).value == false) ...[
+          const SizedBox(height: BaraedaSpacing.space2),
+          Text(
+            _pushUnavailableNotice,
+            style: BaraedaTypography.bodySm.copyWith(
+              color: context.colors.textSecondary,
+            ),
+          ),
+        ],
         if (_banner != null) ...[
           const SizedBox(height: BaraedaSpacing.space2),
           AlertBanner(tone: _bannerTone, body: _banner),

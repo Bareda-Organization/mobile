@@ -63,6 +63,7 @@ class NotificationListView<T> extends StatefulWidget {
     this.hasNext = false,
     this.loadingMore = false,
     this.loadMoreFailed = false,
+    this.pushAvailable = false,
   });
 
   /// 받아 둔 알림(최신이 앞).
@@ -110,6 +111,10 @@ class NotificationListView<T> extends StatefulWidget {
 
   /// 다음 쪽 받기가 실패했다 — 사용자가 `다시 시도` 를 누를 때까지 자동으로 다시 받지 않는다.
   final bool loadMoreFailed;
+
+  /// 이 기기가 실제로 푸시를 받을 수 있는가 — `true` 일 때만 빈 · 오류 화면이 "푸시로도 알려 드려요" 를 말한다.
+  /// 받을 수 없는 기기(Firebase 를 아직 안 붙임)에 약속하면 거짓이다(M-P3, `UF-X-09` ④).
+  final bool pushAvailable;
 
   @override
   State<NotificationListView<T>> createState() =>
@@ -201,7 +206,9 @@ class _NotificationListViewState<T> extends State<NotificationListView<T>> {
           EmptyState(
             icon: 'wifi-off',
             title: '알림을 불러오지 못했어요',
-            body: '인터넷 연결을 확인하고 다시 시도해 주세요. 새 알림은 푸시로는 계속 와요.',
+            body: w.pushAvailable
+                ? '인터넷 연결을 확인하고 다시 시도해 주세요. 새 알림은 푸시로는 계속 와요.'
+                : '인터넷 연결을 확인하고 다시 시도해 주세요.',
             action: BaraedaButton(
               label: '다시 시도',
               icon: 'refresh',
@@ -242,7 +249,9 @@ class _NotificationListViewState<T> extends State<NotificationListView<T>> {
                     icon: w.unreadOnly ? 'circle-check' : 'bell',
                     title: w.unreadOnly ? '안 읽은 알림이 없어요' : '새 알림이 없어요',
                     body: w.unreadOnly
-                        ? '모두 확인했어요. 새 알림은 푸시로도 알려 드려요.'
+                        ? (w.pushAvailable
+                              ? '모두 확인했어요. 새 알림은 푸시로도 알려 드려요.'
+                              : '모두 확인했어요.')
                         : '최근 14일 동안 받은 알림이 여기에 모여요.',
                     action: w.unreadOnly
                         ? BaraedaButton(

@@ -12,6 +12,7 @@ Widget _host({
   bool isLoading = false,
   VoidCallback? onRetry,
   ValueChanged<bool>? onUnreadOnlyChanged,
+  bool pushAvailable = false,
 }) => MaterialApp(
   theme: BaraedaTheme.light(),
   home: Scaffold(
@@ -28,6 +29,7 @@ Widget _host({
       unreadCount: unreadCount,
       isLoading: isLoading,
       onRetry: onRetry,
+      pushAvailable: pushAvailable,
     ),
   ),
 );
@@ -239,7 +241,7 @@ void main() {
     );
 
     expect(find.text('안 읽은 알림이 없어요'), findsOneWidget);
-    expect(find.text('모두 확인했어요. 새 알림은 푸시로도 알려 드려요.'), findsOneWidget);
+    expect(find.text('모두 확인했어요.'), findsOneWidget);
     await tester.tap(find.text('전체 알림 보기'));
     expect(changed, isFalse, reason: '전체 보기로 돌아간다');
 
@@ -253,9 +255,31 @@ void main() {
     await tester.pumpWidget(_host(onRetry: () => retried++));
 
     expect(find.text('알림을 불러오지 못했어요'), findsOneWidget);
-    expect(find.textContaining('새 알림은 푸시로는 계속 와요'), findsOneWidget);
+    expect(find.text('인터넷 연결을 확인하고 다시 시도해 주세요.'), findsOneWidget);
     await tester.tap(find.text('다시 시도'));
     expect(retried, 1);
+  });
+
+  // M-P3 — 푸시를 받을 수 없는 기기(Firebase 를 아직 안 붙인 자리표시 토큰)에
+  // "푸시로도 알려 드려요" 라고 단정하지 않는다.
+  group('M-P3 푸시 문구는 받을 수 있는 기기에서만', () {
+    testWidgets('푸시를 받을 수 없으면 어떤 화면에도 푸시 약속이 없다', (tester) async {
+      await tester.pumpWidget(_host(unreadOnly: true, unreadCount: 0));
+      expect(find.textContaining('푸시'), findsNothing);
+
+      await tester.pumpWidget(_host(onRetry: () {}));
+      expect(find.textContaining('푸시'), findsNothing);
+    });
+
+    testWidgets('푸시를 받을 수 있는 기기에서는 이전 문구가 그대로 나온다', (tester) async {
+      await tester.pumpWidget(
+        _host(unreadOnly: true, unreadCount: 0, pushAvailable: true),
+      );
+      expect(find.text('모두 확인했어요. 새 알림은 푸시로도 알려 드려요.'), findsOneWidget);
+
+      await tester.pumpWidget(_host(onRetry: () {}, pushAvailable: true));
+      expect(find.textContaining('새 알림은 푸시로는 계속 와요'), findsOneWidget);
+    });
   });
 
   testWidgets('불러오는 중에는 스피너 대신 목록 모양의 뼈대를 그린다', (tester) async {

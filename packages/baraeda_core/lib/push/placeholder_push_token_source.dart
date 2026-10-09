@@ -13,9 +13,16 @@ class PlaceholderPushTokenSource implements PushTokenSource {
 
   final DeviceRegistrationStorage _storage;
 
+  static const _tokenPrefix = 'placeholder-';
+
+  /// [token] 이 이 공급자가 만든 자리표시 값인가 — 그렇다면 이 기기는 실제로는 푸시를 받지 못한다.
+  /// 화면이 "푸시로도 알려 드려요" 같은 약속을 할지 가르는 데 쓴다(M-P3).
+  static bool isPlaceholder(String? token) =>
+      token != null && token.startsWith(_tokenPrefix);
+
   @override
   Future<String?> currentToken() async =>
-      'placeholder-${await _storage.readOrCreateDeviceId()}';
+      '$_tokenPrefix${await _storage.readOrCreateDeviceId()}';
 
   @override
   Stream<void> get onMessage => const Stream.empty();

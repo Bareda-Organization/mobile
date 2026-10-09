@@ -66,6 +66,7 @@ Future<({List<String> pushed, ProviderContainer container})> _pump(
   FakeNotificationRepository repository, {
   ThemeData? theme,
   UserRole? role,
+  String? pushToken,
 }) async {
   final pushed = <String>[];
   final router = GoRouter(
@@ -88,6 +89,7 @@ Future<({List<String> pushed, ProviderContainer container})> _pump(
       overrides: [
         notificationRepositoryProvider.overrideWithValue(repository),
         clockProvider.overrideWithValue(_FixedClock(_now)),
+        pushTokenSourceProvider.overrideWithValue(_FixedTokenSource(pushToken)),
         if (role != null)
           roleCapabilitiesProvider.overrideWithValue(RoleCapabilities.of(role)),
       ],
@@ -106,7 +108,47 @@ Future<({List<String> pushed, ProviderContainer container})> _pump(
   );
 }
 
+class _FixedTokenSource implements PushTokenSource {
+  new(this.token);
+
+  final String? token;
+
+  @override
+  Future<String?> currentToken() async => token;
+
+  @override
+  Stream<void> get onMessage => const Stream.empty();
+}
+
 void main() {
+  // M-P3 — 푸시를 받을 수 없는 기기에 "푸시로도 알려 드려요" 라고 약속하지 않는다.
+  group('M-P3 푸시 문구', () {
+    testWidgets('자리표시 토큰이면 안 읽은 알림이 없다는 화면에 푸시 약속이 없다', (tester) async {
+      await _pump(
+        tester,
+        FakeNotificationRepository(const []),
+        pushToken: 'placeholder-device-1',
+      );
+      await tester.tap(find.textContaining('안 읽음'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('안 읽은 알림이 없어요'), findsOneWidget);
+      expect(find.textContaining('푸시'), findsNothing);
+    });
+
+    testWidgets('진짜 토큰이면 푸시로도 알려 준다는 문구가 나온다', (tester) async {
+      await _pump(
+        tester,
+        FakeNotificationRepository(const []),
+        pushToken: 'fcm-1',
+      );
+      await tester.tap(find.textContaining('안 읽음'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('모두 확인했어요. 새 알림은 푸시로도 알려 드려요.'), findsOneWidget);
+    });
+  });
+
   group('목록', () {
     testWidgets('날짜 머리 아래에 행이 시각과 함께 묶인다', (tester) async {
       final repository = FakeNotificationRepository([

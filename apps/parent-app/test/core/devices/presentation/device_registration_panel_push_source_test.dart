@@ -146,4 +146,27 @@ void main() {
       isFalse,
     );
   });
+
+  // M-P3 — UF-X-09 ④: 자리표시 토큰이면 켜 보기 전에도 "아직 받을 수 없다" 가 보인다.
+  testWidgets('자리표시 토큰이면 스위치를 누르기 전에도 아직 받을 수 없다는 안내가 보인다', (tester) async {
+    await _pumpPanel(
+      tester,
+      repository: _RecordingAuthRepository(),
+      storage: _MemoryStorage(),
+      tokenSource: _FixedTokenSource('placeholder-device-1'),
+    );
+
+    expect(find.text('이 기기에서는 아직 푸시 알림을 받을 수 없습니다'), findsOneWidget);
+  });
+
+  testWidgets('진짜 토큰이면 그 안내가 없다', (tester) async {
+    await _pumpPanel(
+      tester,
+      repository: _RecordingAuthRepository(),
+      storage: _MemoryStorage(),
+      tokenSource: _FixedTokenSource('fcm-1'),
+    );
+
+    expect(find.text('이 기기에서는 아직 푸시 알림을 받을 수 없습니다'), findsNothing);
+  });
 }

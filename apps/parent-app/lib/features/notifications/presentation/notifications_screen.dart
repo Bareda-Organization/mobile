@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:parent_app/app/di.dart';
 import 'package:parent_app/core/auth/auth_providers.dart';
+import 'package:parent_app/core/devices/presentation/push_receivable.dart';
 import 'package:parent_app/core/students/presentation/student_providers.dart';
 import 'package:parent_app/core/ui/failure_message.dart';
 import 'package:parent_app/features/notifications/presentation/notification_kind.dart';
@@ -44,6 +45,7 @@ class NotificationsScreen extends ConsumerWidget {
               ref.read(notificationFilterProvider.notifier).state = unreadOnly
               ? NotificationFilter.unread
               : NotificationFilter.all,
+          pushAvailable: ref.watch(pushReceivableProvider).value ?? false,
           isLoading: feedAsync.isLoading && feed == null,
           onRetry: feedAsync.hasError && feed == null
               ? () => ref.invalidate(notificationFeedProvider)
