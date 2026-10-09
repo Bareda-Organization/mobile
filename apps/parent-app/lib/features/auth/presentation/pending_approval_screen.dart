@@ -418,7 +418,7 @@ class _StatusCard extends StatelessWidget {
           ),
           const SizedBox(height: BaraedaSpacing.space3),
           Text(
-            rejected ? '가입이 거절되었어요' : '학원이 확인하고 있어요',
+            rejected ? '가입이 거절되었어요' : '가입 승인을 기다리고 있어요',
             style: BaraedaTypography.h3,
           ),
           const SizedBox(height: BaraedaSpacing.space2),

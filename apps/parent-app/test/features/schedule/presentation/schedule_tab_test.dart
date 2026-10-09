@@ -121,7 +121,7 @@ void main() {
     expect(find.textContaining('처리 대기'), findsNothing);
   });
 
-  testWidgets('처리 대기가 1건이면 "처리 대기 1건 · 학원이 확인하고 있어요" 띠가 사라지지 않는다(UF-P-06)', (
+  testWidgets('처리 대기가 1건이면 "처리 대기 1건 · 승인을 기다리고 있어요" 띠가 사라지지 않는다(UF-P-06)', (
     tester,
   ) async {
     await _pump(
@@ -139,7 +139,8 @@ void main() {
     );
 
     expect(find.text('처리 대기 1건'), findsOneWidget);
-    expect(find.text('학원이 확인하고 있어요'), findsWidgets);
+    expect(find.text('승인을 기다리고 있어요'), findsWidgets);
+    expect(find.textContaining('확인하고 있어요'), findsNothing);
     expect(find.text('이력 보기'), findsOneWidget);
   });
 

@@ -164,7 +164,7 @@ class _ScheduleBodyState extends ConsumerState<_ScheduleBody> {
           AlertBanner(
             tone: AlertTone.moving,
             title: '처리 대기 $pending건',
-            body: '학원이 확인하고 있어요',
+            body: '승인을 기다리고 있어요',
             inlineAction: true,
             action: BaraedaButton(
               label: '이력 보기',

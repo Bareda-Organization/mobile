@@ -151,8 +151,10 @@ void main() {
 
     expect(find.byType(PasswordChangeScreen), findsOneWidget);
     expect(find.byTooltip('뒤로'), findsNothing);
-    // 안내는 "임시 비밀번호로 로그인했어요" — 관리자가 초기화한 비밀번호라 새 비밀번호로 바꿔야 한다는 뜻이다.
+    // 안내는 "임시 비밀번호로 로그인했어요" — 새 비밀번호로 바꿔야 한다는 뜻이다.
+    // 누가 초기화했는지는 말하지 않는다 — 문자 복구도 같은 표식이다(L5).
     expect(find.text('임시 비밀번호로 로그인했어요'), findsOneWidget);
+    expect(find.textContaining('관리자가'), findsNothing);
 
     await tester.tap(find.widgetWithText(BaraedaButton, '로그아웃'));
     await tester.pumpAndSettle();

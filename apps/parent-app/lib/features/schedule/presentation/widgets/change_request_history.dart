@@ -104,7 +104,7 @@ String historySubtitle(ChangeRequest item) {
             : '${_sameDayTime(requested, decided)} 처리',
       ChangeRequestStatus.rejected when decided != null =>
         '${_sameDayTime(requested, decided)} 처리',
-      ChangeRequestStatus.pending => '학원이 확인하고 있어요',
+      ChangeRequestStatus.pending => '승인을 기다리고 있어요',
       _ => null,
     },
   ].join(' · ');

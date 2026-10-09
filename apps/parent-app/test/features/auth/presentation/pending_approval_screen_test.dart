@@ -232,7 +232,7 @@ void main() {
     final authRepository = _StubAuthRepository()
       ..statusFromSecondCall = AccountStatus.rejected;
     await _pumpPendingApproval(tester, authRepository);
-    expect(find.text('학원이 확인하고 있어요'), findsOneWidget);
+    expect(find.text('가입 승인을 기다리고 있어요'), findsOneWidget);
 
     await _scrollAndTap(tester, find.text('상태 다시 확인'));
     await tester.pumpAndSettle();
@@ -317,7 +317,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(authRepository.signupStatusCalls, 2);
-      expect(find.text('학원이 확인하고 있어요'), findsOneWidget);
+      expect(find.text('가입 승인을 기다리고 있어요'), findsOneWidget);
       expect(find.text('상태를 불러오지 못했습니다'), findsNothing);
     });
   });
@@ -408,7 +408,7 @@ void main() {
 
       expect(find.text('승인 대기'), findsOneWidget);
       expect(find.textContaining(RegExp(r'\d{2}:\d{2} 확인')), findsOneWidget);
-      expect(find.text('학원이 확인하고 있어요'), findsOneWidget);
+      expect(find.text('가입 승인을 기다리고 있어요'), findsOneWidget);
       expect(find.textContaining('30초마다 저절로 확인해요'), findsOneWidget);
       expect(find.text('신청 접수'), findsOneWidget);
       expect(find.text('학원 확인'), findsOneWidget);
@@ -434,7 +434,7 @@ void main() {
       // 거절 카드에는 "12:14 확인" 이 없다 — 대기 카드에만 마지막 확인 시각이 붙는다.
       expect(find.textContaining(RegExp(r'\d{2}:\d{2} 확인')), findsNothing);
       expect(find.text('사용 시작'), findsNothing);
-      expect(find.text('학원이 확인하고 있어요'), findsNothing);
+      expect(find.text('가입 승인을 기다리고 있어요'), findsNothing);
       expect(
         find.ancestor(
           of: find.text('학원 다시 골라 재신청'),

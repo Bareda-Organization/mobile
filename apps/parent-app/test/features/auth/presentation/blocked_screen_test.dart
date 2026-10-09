@@ -40,6 +40,14 @@ void main() {
     expect(find.textContaining('학원 관리자'), findsNothing);
   });
 
+  // L5 — 잠금은 메인 관리자만 풀 수 있다(AUTH-06 · C-11). "학원이 잠금을 풀면" 은 푸는 주체를 학원으로 단정한다.
+  testWidgets('L5 잠금을 누가 푸는지 단정하지 않는다 — 문의처만 학원이다', (tester) async {
+    await _pump(tester);
+
+    expect(find.textContaining('학원이 잠금'), findsNothing);
+    expect(find.text('잠금이 풀리면 바로 다시 로그인할 수 있어요.'), findsOneWidget);
+  });
+
   testWidgets('저장한 학원 문의처에 번호가 있으면 "학원에 전화 · 번호" 가 주 단추다', (tester) async {
     await _pump(tester, saved: '하늘수학 부천중동점 032-000-1100');
 

@@ -64,7 +64,7 @@ class BlockedScreen extends ConsumerWidget {
                     const SizedBox(height: BaraedaSpacing.space6),
                     const AlertBanner(
                       tone: AlertTone.info,
-                      title: '학원이 잠금을 풀면 바로 다시 로그인 할 수 있어요.',
+                      title: '잠금이 풀리면 바로 다시 로그인할 수 있어요.',
                       body: '잠긴 것은 이 계정뿐이에요. 다른 계정은 그대로 써요.',
                     ),
                   ],

@@ -147,7 +147,7 @@ class _PasswordChangeScreenState extends ConsumerState<PasswordChangeScreen> {
                       const AlertBanner(
                         tone: AlertTone.info,
                         title: '임시 비밀번호로 로그인했어요',
-                        body: '관리자가 초기화한 비밀번호예요. 새 비밀번호로 바꿔야 앱을 계속 쓸 수 있어요.',
+                        body: '새 비밀번호로 바꿔야 앱을 계속 쓸 수 있어요.',
                       )
                     else
                       const AlertBanner(
