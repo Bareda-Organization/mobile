@@ -36,10 +36,10 @@ Future<void> _pumpStudent(WidgetTester tester, Widget home) async {
           // ignore: only_throw_errors
           (ref, id) async => throw _withdrawn,
         ),
-        routeDetailProvider.overrideWith(
+        routeForRunProvider.overrideWith(
           // 위와 같은 이유.
           // ignore: only_throw_errors
-          (ref, id) async => throw _withdrawn,
+          (ref, request) async => throw _withdrawn,
         ),
         changeRequestsProvider.overrideWith(
           (ref, id) async =>

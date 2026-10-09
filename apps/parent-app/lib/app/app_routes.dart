@@ -25,6 +25,14 @@ abstract final class AppRoutes {
   static const liveMap = '/live-map';
   static const routeDetail = '/route-detail';
 
+  /// 노선 자세히 보기로 가는 주소 — 지도가 보던 자녀와 회차를 이어서 넘긴다(M-P2).
+  /// 회차 번호가 없으면 서버가 정하는 다음 회차를 본다.
+  static String routeDetailFor({required String studentId, String? runId}) =>
+      Uri(
+        path: routeDetail,
+        queryParameters: {'student_id': studentId, 'run_id': ?runId},
+      ).toString();
+
   /// 일정 탭(P-04) — 학부모 앱 아래 탭 막대의 두 번째 칸(R48). 학생에게는 탭이 없다.
   static const schedule = '/schedule';
 

@@ -19,8 +19,15 @@ import 'package:url_launcher/url_launcher.dart';
 /// 역할 분기는 `live_map_screen.dart` 와 같은 규칙 하나로만 한다
 /// (`roleCapabilitiesProvider.canToggleAttendance`, §1.1) — 학부모는
 /// 연결된 자녀 중 선택한 한 명, 학생은 본인 `student_id` 하나.
+///
+/// 지도에서 넘어오면 [originStudentId] · [runId] 로 지도가 보던 회차를 그대로 받는다(M-P2).
+/// 다른 자녀로 바꾸면 그 회차는 남의 것이라 보내지 않는다.
 class RouteDetailScreen extends ConsumerWidget {
-  const new({super.key});
+  const new({this.originStudentId, this.runId, super.key});
+
+  /// 회차 번호가 속한 자녀 — [runId] 는 이 자녀에게만 쓴다.
+  final String? originStudentId;
+  final String? runId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -31,8 +38,11 @@ class RouteDetailScreen extends ConsumerWidget {
       appBar: const AppHeader(title: '노선 자세히'),
       body: SafeArea(
         child: isParent
-            ? const _ParentRouteDetail()
-            : const _StudentRouteDetail(),
+            ? _ParentRouteDetail(originStudentId: originStudentId, runId: runId)
+            : _StudentRouteDetail(
+                originStudentId: originStudentId,
+                runId: runId,
+              ),
       ),
     );
   }
@@ -42,7 +52,10 @@ class RouteDetailScreen extends ConsumerWidget {
 /// `selectedStudentIdProvider` 를 공유해, 홈·자리표시에서 고른 자녀가
 /// 이 화면에도 그대로 이어진다.
 class _ParentRouteDetail extends ConsumerWidget {
-  const new();
+  const new({required this.originStudentId, required this.runId});
+
+  final String? originStudentId;
+  final String? runId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -72,7 +85,12 @@ class _ParentRouteDetail extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               StudentSwitcher(students: students, selectedId: selectedId),
-              Expanded(child: _RouteDetailBody(studentId: selectedId)),
+              Expanded(
+                child: _RouteDetailBody(
+                  studentId: selectedId,
+                  runId: selectedId == originStudentId ? runId : null,
+                ),
+              ),
             ],
           ),
         );
@@ -83,7 +101,10 @@ class _ParentRouteDetail extends ConsumerWidget {
 
 /// 학생 갈래 — 본인 `student_id` 하나만 쓴다(조회 전용).
 class _StudentRouteDetail extends ConsumerWidget {
-  const new();
+  const new({required this.originStudentId, required this.runId});
+
+  final String? originStudentId;
+  final String? runId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -97,13 +118,16 @@ class _StudentRouteDetail extends ConsumerWidget {
           ? const EmptyState(title: '학생 계정 정보가 없습니다')
           : Padding(
               padding: const EdgeInsets.all(BaraedaSpacing.gutterMobile),
-              child: _RouteDetailBody(studentId: studentId),
+              child: _RouteDetailBody(
+                studentId: studentId,
+                runId: studentId == originStudentId ? runId : null,
+              ),
             ),
     );
   }
 }
 
-/// `routeDetailProvider(studentId)` 를 그려주는 본체.
+/// `routeForRunProvider` 의 노선을 그려주는 본체 — [runId] 가 `null` 이면 서버 기본값(다음 회차).
 ///
 /// **판단 근거 — "확정 전" 은 에러가 아니라 데이터다** (API_SPEC §3.10
 /// 에러 표 마지막 줄 — "확정 전은 에러 부재, 고정 노선 + 배지로 반환").
@@ -113,13 +137,15 @@ class _StudentRouteDetail extends ConsumerWidget {
 /// `error` 분기가 받아 고정 문구로 안내한다(다른 화면과 같은 관례,
 /// `schedule_screen.dart` 등).
 class _RouteDetailBody extends ConsumerWidget {
-  const new({required this.studentId});
+  const new({required this.studentId, required this.runId});
 
   final String studentId;
+  final String? runId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final routeAsync = ref.watch(routeDetailProvider(studentId));
+    final request = (studentId: studentId, runId: runId);
+    final routeAsync = ref.watch(routeForRunProvider(request));
 
     return routeAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -132,9 +158,9 @@ class _RouteDetailBody extends ConsumerWidget {
       data: (route) => _RouteDetailView(
         route: route,
         onRefresh: () async {
-          ref.invalidate(routeDetailProvider(studentId));
+          ref.invalidate(routeForRunProvider(request));
           await ref
-              .read(routeDetailProvider(studentId).future)
+              .read(routeForRunProvider(request).future)
               .then<void>((_) {}, onError: (_) {});
         },
       ),
@@ -151,9 +177,8 @@ class _RouteDetailView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final departTimeText = DateFormat(
-      'HH:mm',
-    ).format(route.departTime.toLocal());
+    final departTimeText = DateFormat('HH:mm')
+        .format(route.departTime.toLocal());
     final hasSkipped = route.stops.any(
       (s) => s.change == RouteStopChange.skipped,
     );
@@ -246,7 +271,8 @@ Stop _timelineStop(RouteStop stop, {required bool isMyStop}) {
   };
   return Stop(
     name: stop.name,
-    address: stop.address,
+    // 서버가 주소 원문을 안 주는 승하차지(`null` — 853)는 주소 줄 자체를 그리지 않는다. 빈 글자도 같다.
+    address: (stop.address?.trim().isEmpty ?? true) ? null : stop.address,
     time: arrived == null ? null : '${formatClock(arrived)} 지남',
     state: state,
     tag: tag,

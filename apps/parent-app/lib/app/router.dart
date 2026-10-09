@@ -144,7 +144,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppRoutes.routeDetail,
-        builder: (context, state) => const RouteDetailScreen(),
+        builder: (context, state) => RouteDetailScreen(
+          originStudentId: state.uri.queryParameters['student_id'],
+          runId: state.uri.queryParameters['run_id'],
+        ),
       ),
       GoRoute(
         path: AppRoutes.weeklyAddress,

@@ -13,12 +13,14 @@ import 'package:parent_app/features/live_map/presentation/live_map_view.dart';
 /// 회차 목록을 못 받았으면(`404 RUN_NOT_FOUND` 포함) 출발 시각을 모르므로 카드 없이 안내 한 줄만 둔다.
 class LiveMapBefore extends StatelessWidget {
   const new({
+    required this.studentId,
     required this.view,
     required this.studentName,
     required this.switcher,
     super.key,
   });
 
+  final String studentId;
   final LiveMapView view;
 
   /// 학부모는 선택한 자녀 이름, 학생 본인은 `null`.
@@ -52,7 +54,12 @@ class LiveMapBefore extends StatelessWidget {
                 label: '노선 미리 보기',
                 variant: BaraedaButtonVariant.secondary,
                 block: true,
-                onPressed: () => context.push(AppRoutes.routeDetail),
+                onPressed: () => context.push(
+                  AppRoutes.routeDetailFor(
+                    studentId: studentId,
+                    runId: view.runId,
+                  ),
+                ),
               ),
             ],
           ],

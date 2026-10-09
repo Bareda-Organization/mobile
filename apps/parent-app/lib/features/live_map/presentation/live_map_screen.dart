@@ -208,6 +208,7 @@ class _LiveMapBodyState extends ConsumerState<_LiveMapBody> {
         ),
       ),
       LiveMapPhase.before => LiveMapBefore(
+        studentId: widget.studentId,
         view: view,
         studentName: widget.studentName,
         switcher: widget.switcher,
@@ -403,6 +404,7 @@ class _MapPageState extends ConsumerState<_MapPage> {
                   const MapSheetSkeleton()
                 else
                   _Sheet(
+                    studentId: widget.studentId,
                     view: _view,
                     studentName: widget.studentName,
                     myStopName: myStop?.name ?? _view.run?.stop.name,
@@ -558,6 +560,7 @@ class _MapFabs extends StatelessWidget {
 /// 운행 시작·종료에도 인원수를 붙이지 않는다(C-08 · Ruling 335).
 class _Sheet extends StatelessWidget {
   const new({
+    required this.studentId,
     required this.view,
     required this.studentName,
     required this.myStopName,
@@ -565,6 +568,7 @@ class _Sheet extends StatelessWidget {
     required this.onRetry,
   });
 
+  final String studentId;
   final LiveMapView view;
   final String? studentName;
   final String? myStopName;
@@ -634,7 +638,9 @@ class _Sheet extends StatelessWidget {
           variant: BaraedaButtonVariant.secondary,
           iconEnd: 'chevron-up',
           block: true,
-          onPressed: () => context.push(AppRoutes.routeDetail),
+          onPressed: () => context.push(
+            AppRoutes.routeDetailFor(studentId: studentId, runId: view.runId),
+          ),
         ),
       ],
     );

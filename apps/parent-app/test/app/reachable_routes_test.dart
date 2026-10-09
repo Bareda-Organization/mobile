@@ -33,7 +33,8 @@ void main() {
         continue; // 등록처·정의처는 세지 않는다
       }
       for (final m in re.allMatches(f.readAsStringSync())) {
-        targets.add(m.group(1)!);
+        // 주소를 만들어 주는 도우미(`routeDetailFor`)는 그 경로를 가리킨 것으로 센다.
+        targets.add(m.group(1)!.replaceFirst(RegExp(r'For$'), ''));
       }
     }
     return targets;

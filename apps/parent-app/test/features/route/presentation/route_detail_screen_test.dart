@@ -31,6 +31,9 @@ class _FakeRouteRepository implements RouteRepository {
   /// `getRoute` 가 불린 횟수 — 화면이 서버 값을 다시 받는지 본다(F05-06).
   int calls = 0;
 
+  /// 받은 요청 — 화면이 어느 자녀의 어느 회차를 물었는지 본다(M-P2).
+  final List<({String studentId, String? runId})> requests = [];
+
   @override
   Future<RouteDetail> getRoute(
     String studentId, {
@@ -38,6 +41,7 @@ class _FakeRouteRepository implements RouteRepository {
     String? runId,
   }) async {
     calls++;
+    requests.add((studentId: studentId, runId: runId));
     return response;
   }
 }
@@ -107,6 +111,9 @@ void main() {
     WidgetTester tester, {
     required RouteDetail response,
     _FakeRouteRepository? repository,
+    List<Student>? students,
+    String? originStudentId,
+    String? runId,
   }) async {
     // stops 목록이 창(3) + 학원 1개로 늘어나 기본 뷰포트를 넘긴다 —
     // ListView 는 화면 밖 항목을 늦게(스크롤 시점에) 그리므로, 뷰포트를
@@ -122,12 +129,17 @@ void main() {
           roleCapabilitiesProvider.overrideWithValue(
             RoleCapabilities.of(UserRole.parent),
           ),
-          myStudentsProvider.overrideWith((ref) async => [student]),
+          myStudentsProvider.overrideWith((ref) async => students ?? [student]),
           routeRepositoryProvider.overrideWithValue(
             repository ?? _FakeRouteRepository(response),
           ),
         ],
-        child: const MaterialApp(home: RouteDetailScreen()),
+        child: MaterialApp(
+          home: RouteDetailScreen(
+            originStudentId: originStudentId,
+            runId: runId,
+          ),
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -347,6 +359,112 @@ void main() {
     });
   });
 
+  // 853 — 서버는 내 승하차지 말고는 주소 원문을 `null` 로 보낸다.
+  // 아직 모든 승하차지를 보내는 서버도 있으므로 둘 다 그려진다.
+  group('853 주소 원문은 서버가 준 곳에만 그린다', () {
+    testWidgets('주소가 null 인 승하차지는 주소 줄이 없고 이름 · 번호 표시는 그대로다', (tester) async {
+      final route = RouteDetail.fromJson(
+        _routeJson(
+          stops: [
+            _stopJson(stopId: 's-1', seq: 1, name: '다른 아이 승하차지', address: null),
+            _stopJson(stopId: 's-2', seq: 2, name: '내 승하차지 이름'),
+          ],
+          myStopId: 's-2',
+        ),
+      );
+      await pumpScreen(tester, response: route);
+
+      expect(find.text('다른 아이 승하차지'), findsOneWidget);
+      expect(find.text('내 승하차지 이름 주소'), findsOneWidget);
+      expect(find.textContaining('null'), findsNothing);
+      // 주소 줄(글자 자리)이 없다 — 빈 글자도 그리지 않는다.
+      expect(find.text(''), findsNothing);
+    });
+
+    testWidgets('주소가 빈 글자로 와도 빈 주소 줄을 그리지 않는다', (tester) async {
+      final route = RouteDetail.fromJson(
+        _routeJson(
+          stops: [
+            _stopJson(stopId: 's-1', seq: 1, name: '이름만', address: '  '),
+            _stopJson(stopId: 's-2', seq: 2, name: '내 곳'),
+          ],
+          myStopId: 's-2',
+        ),
+      );
+      await pumpScreen(tester, response: route);
+
+      expect(find.text('  '), findsNothing);
+      expect(find.text(''), findsNothing);
+    });
+  });
+
+  // M-P2 — 지도는 회차 기준인데 상세는 학생 기준만 보내 다른 회차(다음 회차)가 보였다.
+  group('M-P2 지도에서 넘긴 회차로 노선을 받는다', () {
+    RouteDetail sample() => RouteDetail.fromJson(
+      _routeJson(
+        stops: [_stopJson(stopId: 's-stop-1', seq: 1, name: '정류장1')],
+        myStopId: 's-stop-1',
+      ),
+    );
+
+    testWidgets('지도가 넘긴 회차 번호가 서버 요청에 실린다', (tester) async {
+      final repository = _FakeRouteRepository(sample());
+      await pumpScreen(
+        tester,
+        response: sample(),
+        repository: repository,
+        originStudentId: 's-1',
+        runId: 'run-7',
+      );
+
+      expect(repository.requests, [(studentId: 's-1', runId: 'run-7')]);
+    });
+
+    testWidgets('회차 번호 없이 들어오면 회차를 보내지 않는다(서버 기본값)', (tester) async {
+      final repository = _FakeRouteRepository(sample());
+      await pumpScreen(tester, response: sample(), repository: repository);
+
+      expect(repository.requests, [(studentId: 's-1', runId: null)]);
+    });
+
+    testWidgets('다른 자녀로 바꾸면 그 회차 번호는 보내지 않는다 — 남의 회차다', (tester) async {
+      final repository = _FakeRouteRepository(sample());
+      await pumpScreen(
+        tester,
+        response: sample(),
+        repository: repository,
+        students: [
+          student,
+          Student(studentId: 's-2', name: '김철수', linkedAt: DateTime(2026)),
+        ],
+        originStudentId: 's-1',
+        runId: 'run-7',
+      );
+
+      await tester.tap(find.text('김철수'));
+      await tester.pumpAndSettle();
+
+      expect(repository.requests.last, (studentId: 's-2', runId: null));
+    });
+  });
+
+  // L7 — 기사 · 동승자 객체 자체가 `null` 로 와도 읽는다.
+  test('L7 driver · escort 가 null 이어도 RouteDetail 을 읽는다', () {
+    final route = RouteDetail.fromJson({
+      ..._routeJson(
+        stops: [_stopJson(stopId: 's-A', seq: 0, name: '정류장A')],
+        myStopId: 's-A',
+      ),
+      'driver': null,
+      'escort': null,
+    });
+
+    expect(route.driver.name, isNull);
+    expect(route.escort.name, isNull);
+    expect(route.escort.phone, isNull);
+  });
+
+
   // F05-06 — 한 번 받은 노선을 앱을 끌 때까지 붙들면 확정 뒤에도 "확정 전" 이 남는다.
   group('F05-06 다시 받기', () {
     RouteDetail sample() => RouteDetail.fromJson(
@@ -363,16 +481,17 @@ void main() {
       );
       addTearDown(container.dispose);
 
+      const request = (studentId: 's-1', runId: null);
       final subscription = container.listen(
-        routeDetailProvider('s-1'),
+        routeForRunProvider(request),
         (_, _) {},
       );
-      await container.read(routeDetailProvider('s-1').future);
+      await container.read(routeForRunProvider(request).future);
       subscription.close();
       await Future<void>.delayed(Duration.zero);
 
-      container.listen(routeDetailProvider('s-1'), (_, _) {});
-      await container.read(routeDetailProvider('s-1').future);
+      container.listen(routeForRunProvider(request), (_, _) {});
+      await container.read(routeForRunProvider(request).future);
 
       expect(repository.calls, 2);
     });

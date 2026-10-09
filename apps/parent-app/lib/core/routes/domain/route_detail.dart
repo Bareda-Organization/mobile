@@ -116,8 +116,13 @@ class RouteDetail {
     busNo: json['bus_no'] as String,
     departTime: DateTime.parse(json['depart_time'] as String),
     confirmed: json['confirmed'] as bool,
-    driver: RouteDriver.fromJson(json['driver'] as Map<String, dynamic>),
-    escort: RouteEscort.fromJson(json['escort'] as Map<String, dynamic>),
+    // 배치 전 회차는 객체 자체가 `null` 로 올 수도 있다 — 이름 · 연락처가 모두 없는 것과 같다.
+    driver: json['driver'] == null
+        ? const RouteDriver(name: null)
+        : RouteDriver.fromJson(json['driver'] as Map<String, dynamic>),
+    escort: json['escort'] == null
+        ? const RouteEscort(name: null, phone: null)
+        : RouteEscort.fromJson(json['escort'] as Map<String, dynamic>),
     myStopId: asIdString(json['my_stop_id']),
     stops: (json['stops'] as List<dynamic>)
         .cast<Map<String, dynamic>>()

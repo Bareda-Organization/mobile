@@ -5,6 +5,8 @@ import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
+import 'package:parent_app/app/app_routes.dart';
 import 'package:parent_app/app/di.dart';
 import 'package:parent_app/core/auth/auth_providers.dart';
 import 'package:parent_app/core/auth/role_policy.dart';
@@ -248,6 +250,7 @@ void main() {
     RouteDetail? route,
     BusPositionRepository? busPositionRepository,
     String? academyName,
+    GoRouter? router,
   }) async {
     await tester.pumpWidget(
       ProviderScope(
@@ -262,7 +265,9 @@ void main() {
           ),
           ...extraOverrides,
         ],
-        child: const MaterialApp(home: LiveMapScreen()),
+        child: router == null
+            ? const MaterialApp(home: LiveMapScreen())
+            : MaterialApp.router(routerConfig: router),
       ),
     );
   }
@@ -1718,6 +1723,7 @@ void main() {
       RouteDetail? routeDetail,
       String? academyName,
       RunDirection direction = RunDirection.toAcademy,
+      GoRouter? router,
     }) async {
       tester.view.physicalSize = const Size(800, 2400);
       tester.view.devicePixelRatio = 1;
@@ -1728,6 +1734,7 @@ void main() {
         busPositionRepository: _ScriptedBusPositionRepository([position]),
         route: routeDetail,
         academyName: academyName,
+        router: router,
         extraOverrides: [
           roleCapabilitiesProvider.overrideWithValue(
             RoleCapabilities.of(UserRole.parent),
@@ -1748,6 +1755,34 @@ void main() {
       client.emit(WsConnectionState.connected);
       await tester.pumpAndSettle();
     }
+
+    // M-P2 — 지도가 보던 자녀와 회차를 노선 자세히로 넘긴다(상세가 다른 회차를 보이던 것).
+    testWidgets('[노선 자세히 보기] 는 지도가 보던 자녀와 회차 번호를 주소에 싣는다', (tester) async {
+      String? pushedLocation;
+      final router = GoRouter(
+        routes: [
+          GoRoute(path: '/', builder: (_, _) => const LiveMapScreen()),
+          GoRoute(
+            path: AppRoutes.routeDetail,
+            builder: (_, state) {
+              pushedLocation = state.uri.toString();
+              return const Scaffold(body: Text('노선 상세 자리'));
+            },
+          ),
+        ],
+      );
+      await pumpMap(
+        tester,
+        position: snapshot(),
+        routeDetail: route(),
+        router: router,
+      );
+
+      await tester.tap(find.text('노선 자세히 보기'));
+      await tester.pumpAndSettle();
+
+      expect(pushedLocation, '/route-detail?student_id=s-1&run_id=r-1');
+    });
 
     MapSurface surface(WidgetTester tester) =>
         tester.widget<MapSurface>(find.byType(MapSurface));
