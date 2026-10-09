@@ -231,9 +231,11 @@ class RosterResponse {
     required this.direction,
     required this.counts,
     required this.stops,
+    this.cachedAt,
   });
 
-  factory fromJson(Map<String, dynamic> json) {
+  /// [cachedAt] 은 서버가 아니라 이 기기의 저장본에서 읽었을 때만 준다(M-M3).
+  factory fromJson(Map<String, dynamic> json, {DateTime? cachedAt}) {
     final stopsJson = json['stops'] as List<dynamic>? ?? [];
     return RosterResponse(
       runId: json['run_id'] as String,
@@ -246,6 +248,7 @@ class RosterResponse {
           .cast<Map<String, dynamic>>()
           .map(RosterStop.fromJson)
           .toList(),
+      cachedAt: cachedAt,
     );
   }
 
@@ -254,6 +257,10 @@ class RosterResponse {
   final RunDirection direction;
   final RosterCounts counts;
   final List<RosterStop> stops;
+
+  /// 이 명단을 기기에 저장해 둔 시각 — 서버에 닿지 못해 마지막으로 받은 명단을 보고 있을 때만 값이 있다.
+  /// 서버에서 방금 받은 명단이면 `null`(M-M3 · UF-E-07).
+  final DateTime? cachedAt;
 
   /// 지금까지 하차한 학생 수 — 학생 행의 `alighted` 를 센다. `counts` 에는 하차 칸이 없고
   /// `counts.boarded` 는 **지금 타고 있는** 학생 수라, 운행이 끝나(전원 자동 하차) 0 이 된 뒤에는 쓸 수 없다.

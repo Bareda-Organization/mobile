@@ -78,6 +78,11 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
   PositionAvailability? _recheckedAvailability;
   Timer? _availabilityTimer;
 
+  /// 기기에 저장해 둔 명단(`RosterResponse.cachedAt`)으로 다음 곳을 가리키는 동안 서버에서 다시 받아 보는
+  /// 주기(M-M3) — 연결이 돌아오면 서버 명단으로 바뀐다. 서버에서 받은 명단이면 아무것도 하지 않는다.
+  static const _cachedRetryInterval = Duration(seconds: 15);
+  Timer? _cachedRetryTimer;
+
   /// 위치 송신 상태의 [PositionAvailability] 를 화면 문구로 옮긴다 — 정상(`available`)이거나
   /// 아직 모르면(`null`) 아무것도 보여주지 않는다.
   String? _positionGuidance(PositionAvailability? availability) =>
@@ -99,6 +104,11 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
     // 것이 지금 GPS 송신을 지키는 유일한 수단이다(M-B 2항).
     _wakelockPort = ref.read(wakelockPortProvider);
     unawaited(_wakelockPort.enable());
+    _cachedRetryTimer = Timer.periodic(_cachedRetryInterval, (_) {
+      if (ref.read(driveModeRosterProvider).value?.cachedAt != null) {
+        ref.invalidate(driveModeRosterProvider);
+      }
+    });
     // 권한을 중간에 끄거나 위치 서비스가 꺼져도 주기마다 다시 본다. 스트림은 켜지 않는다.
     if (ref.read(roleCapabilitiesProvider)?.canTransmitPosition ?? false) {
       final source = ref.read(positionSourceProvider);
@@ -119,6 +129,7 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
   @override
   void dispose() {
     _availabilityTimer?.cancel();
+    _cachedRetryTimer?.cancel();
     _arriveLockTimer?.cancel();
     unawaited(_wakelockPort.disable());
     super.dispose();

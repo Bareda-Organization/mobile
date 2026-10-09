@@ -28,10 +28,12 @@ import 'package:manager_app/features/offline_queue/domain/offline_queue_reposito
 import 'package:manager_app/features/position/data/position_api.dart';
 import 'package:manager_app/features/position/data/position_repository_impl.dart';
 import 'package:manager_app/features/position/domain/position_repository.dart';
+import 'package:manager_app/features/roster/data/drift_roster_cache.dart';
 import 'package:manager_app/features/roster/data/guardian_phone_repository_impl.dart';
 import 'package:manager_app/features/roster/data/roster_api.dart';
 import 'package:manager_app/features/roster/data/roster_repository_impl.dart';
 import 'package:manager_app/features/roster/domain/guardian_phone_repository.dart';
+import 'package:manager_app/features/roster/domain/roster_cache.dart';
 import 'package:manager_app/features/roster/domain/roster_repository.dart';
 import 'package:manager_app/features/route_map/data/route_api.dart';
 import 'package:manager_app/features/route_map/data/route_repository_impl.dart';
@@ -141,10 +143,16 @@ final rosterApiProvider = Provider<RosterApi>((ref) {
   return RosterApi(dio: ref.watch(apiClientProvider).dio);
 });
 
+/// 마지막으로 받은 명단의 로컬 저장소(M-M3) — 오프라인 대기열과 같은 기기 DB 를 쓴다.
+final rosterCacheProvider = Provider<RosterCache>((ref) {
+  return DriftRosterCache(database: ref.watch(offlineQueueDatabaseProvider));
+});
+
 final rosterRepositoryProvider = Provider<RosterRepository>((ref) {
   return RosterRepositoryImpl(
     api: ref.watch(rosterApiProvider),
     offlineQueue: ref.watch(offlineQueueRepositoryProvider),
+    cache: ref.watch(rosterCacheProvider),
   );
 });
 

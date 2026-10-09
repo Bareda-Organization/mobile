@@ -54,6 +54,27 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
   final Set<String> _expandedStopIds = {};
   bool _pastExpanded = false;
 
+  /// 기기에 저장해 둔 명단을 보는 동안 서버에서 다시 받아 보는 주기(M-M3) — 연결이 돌아오면 저장본이 서버
+  /// 명단으로 바뀐다. 서버에서 받은 명단이면 아무것도 하지 않는다.
+  static const _cachedRetryInterval = Duration(seconds: 15);
+  Timer? _cachedRetryTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _cachedRetryTimer = Timer.periodic(_cachedRetryInterval, (_) {
+      if (ref.read(rosterProvider).value?.cachedAt != null) {
+        ref.invalidate(rosterProvider);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _cachedRetryTimer?.cancel();
+    super.dispose();
+  }
+
   /// [미승차]는 [탑승] 옆에 있어 잘못 눌리기 쉽고, 처리하면 학부모에게 알림이 나간다 — 한 번
   /// 묻는다(R32 M7). 취소하면 요청을 보내지 않는다.
   Future<void> _confirmNoShow({
@@ -372,6 +393,15 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
       child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         children: [
+          if (roster.cachedAt case final cachedAt?) ...[
+            AlertBanner(
+              tone: AlertTone.info,
+              icon: 'wifi-off',
+              title: '저장된 명단을 보고 있어요',
+              body: '${hhmm(cachedAt)} 에 받은 명단이에요 · 연결되면 자동으로 새로 받아요',
+            ),
+            const SizedBox(height: 12),
+          ],
           if (refreshError != null) ...[
             AlertBanner(
               tone: AlertTone.missed,

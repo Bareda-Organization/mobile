@@ -91,4 +91,37 @@ void main() {
     raw.close();
     expect(columns, contains('attempts'));
   });
+
+  // M-M3 — v4 → v5 는 명단 로컬 저장 표(`cached_rosters`)를 더한다.
+  // 이미 쌓여 있던 대기 요청은 그대로 남아야 한다.
+  test('v4 DB 가 v5 로 열리면 명단 저장 표가 생기고 기존 대기 요청은 남는다', () async {
+    final dir = Directory.systemTemp.createTempSync('oq_migration_v5_test');
+    final path = '${dir.path}/oq.sqlite';
+
+    sqlite3.sqlite3.open(path)
+      ..execute('''
+      CREATE TABLE pending_requests (
+        id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+        endpoint TEXT NOT NULL,
+        method TEXT NOT NULL DEFAULT 'PATCH',
+        payload TEXT NOT NULL,
+        created_at INTEGER NOT NULL DEFAULT (unixepoch()),
+        attempts INTEGER NOT NULL DEFAULT 0
+      );
+    ''')
+      ..execute(
+        'INSERT INTO pending_requests (endpoint, method, payload) '
+        "VALUES ('/runs/1/emergency', 'POST', '{}')",
+      )
+      ..execute('PRAGMA user_version = 4')
+      ..close();
+
+    final db = OfflineQueueDatabase.forTesting(NativeDatabase(File(path)));
+    final pending = await db.select(db.pendingRequests).get();
+    expect(pending, hasLength(1));
+    expect(pending.single.endpoint, '/runs/1/emergency');
+    // 새 표가 실제로 열려 읽고 쓸 수 있다.
+    expect(await db.select(db.cachedRosters).get(), isEmpty);
+    await db.close();
+  });
 }

@@ -239,6 +239,8 @@ class RouterRefreshNotifier extends ChangeNotifier {
     final queue = _ref.read(offlineQueueRepositoryProvider);
     final discarded = await queue.fetchPending();
     await queue.clear();
+    // 기기에 저장한 명단도 이 계정의 것이다(M-M3) — 다음 계정이 보면 안 된다.
+    await _ref.read(rosterCacheProvider).clear();
     final notice = _ref.read(sessionExpiredNoticeProvider);
     if (notice == null || discarded.isEmpty) return;
     final emergencies = discarded

@@ -144,12 +144,14 @@ RosterStop _stop(
 RosterResponse _roster(
   List<RosterStop> stops, {
   RunDirection direction = RunDirection.toAcademy,
+  DateTime? cachedAt,
 }) => RosterResponse(
   runId: 'run-1',
   busNo: '3호차',
   direction: direction,
   counts: const RosterCounts(boarded: 0, waiting: 0, noShow: 0, absentN: 0),
   stops: stops,
+  cachedAt: cachedAt,
 );
 
 int rosterLoads = 0;
@@ -164,6 +166,7 @@ void main() {
     required List<RosterStop> stops,
     RunDirection direction = RunDirection.toAcademy,
     bool offline = false,
+    DateTime? cachedAt,
   }) async {
     rosterLoads = 0;
     final repository = _RecordingDriveModeRepository()..offline = offline;
@@ -185,7 +188,7 @@ void main() {
       ),
       driveModeRosterProvider.overrideWith((ref) async {
         rosterLoads++;
-        return _roster(stops, direction: direction);
+        return _roster(stops, direction: direction, cachedAt: cachedAt);
       }),
     ];
     await tester.pumpWidget(
@@ -294,6 +297,22 @@ void main() {
   // 859(UF-D-04 · §12.2) — 도착 처리는 연결이 없어도 기기에 저장된다. "저장돼요" 안내가 사실이 되려면 저장된 곳을
   // 처리한 곳으로 보고 다음 곳을 가리켜야 하고(같은 곳을 다시 보내지 않는다), 서버 응답이 필요한 종료 화면으로는
   // 가지 않는다.
+  // M-M3 — 기기에 저장해 둔 명단으로 다음 승하차지를 가리키는 동안에도 연결이 돌아오면 서버 명단으로 바뀐다.
+  testWidgets('저장해 둔 명단을 보는 동안은 주기마다 서버에서 다시 받아 본다', (tester) async {
+    await pumpDrive(
+      tester,
+      status: RunStatus.moving,
+      stops: [_stop(1), _stop(2)],
+      cachedAt: DateTime(2026, 9, 30, 7, 50),
+    );
+    final first = rosterLoads;
+
+    await tester.pump(const Duration(seconds: 16));
+    await tester.pump();
+
+    expect(rosterLoads, greaterThan(first));
+  });
+
   group('H4 연결 없는 도착 처리', () {
     testWidgets('저장 안내를 보이고 다음 누름은 다음 승하차지를 보낸다', (tester) async {
       final repository = await pumpDrive(
