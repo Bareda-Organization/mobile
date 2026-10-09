@@ -136,7 +136,8 @@ void main() {
     expect(find.text('LOGIN_MARKER'), findsNothing);
   });
 
-  // 승인 대기 중에 관리자가 계정을 막으면 로그인 응답을 다시 받을 길이 없다 — 가입 직후 로그인도 연락처를 남겨야 한다(Ruling 825).
+  // 승인 대기 중에 관리자가 계정을 막으면 로그인 응답을 다시 받을 길이 없다 —
+  // 가입 직후 로그인도 연락처를 남겨야 한다(Ruling 825).
   testWidgets('가입 직후 로그인도 학원 연락처를 들고 있고 기기에 남긴다', (tester) async {
     await submit(tester, loginSucceeds: true);
 

@@ -384,7 +384,8 @@ void main() {
       await tester.pump(const Duration(seconds: 6));
     });
 
-    // M-4 — 하원은 마지막 도착이 서버에 닿아도 남은 학생이 있으면 종료가 보류된다. 저장 안내가 "운행이 끝나요" 라고 약속하면 안 된다.
+    // M-4 — 하원은 마지막 도착이 서버에 닿아도 남은 학생이 있으면 종료가 보류된다.
+    // 저장 안내가 "운행이 끝나요" 라고 약속하면 안 된다.
     testWidgets('등원 마지막 도착 저장 안내는 운행이 끝난다고 알린다', (tester) async {
       await pumpDrive(
         tester,

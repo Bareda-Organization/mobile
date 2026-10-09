@@ -172,11 +172,13 @@ void main() {
     // 대기열 정리의 예외는 알림 밖으로 새어 나가는 비동기 오류다 — 시험이 이 오류로 죽지 않게 구역을 따로 둔다.
     final uncaught = <Object>[];
     final done = Completer<void>();
-    runZonedGuarded(() async {
-      container.read(currentUserRoleProvider.notifier).state = null;
-      await settle();
-      done.complete();
-    }, (error, _) => uncaught.add(error));
+    unawaited(
+      runZonedGuarded(() async {
+        container.read(currentUserRoleProvider.notifier).state = null;
+        await settle();
+        done.complete();
+      }, (error, _) => uncaught.add(error)),
+    );
     await done.future;
 
     expect(

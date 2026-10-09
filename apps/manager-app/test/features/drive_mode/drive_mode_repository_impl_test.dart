@@ -33,8 +33,8 @@ class _FakeAdapter implements HttpClientAdapter {
 
 /// API_SPEC §4.5 의 정상 응답(마지막 지점이 아닌 도착).
 const _arriveBody =
-    '{"arrived_at":"2026-10-10T08:00:00Z","next_stop":{"stop_id":"21",'
-    '"stop_name":"다음 승하차지"},"is_final":false,"run_status":"moving",'
+    '{"arrived_at":"2026-10-10T08:00:00Z","next_stop":{"stop_id":"21", '
+    '"stop_name":"다음 승하차지"},"is_final":false,"run_status":"moving", '
     '"finish_pending":false,"remaining":[]}';
 
 void main() {
