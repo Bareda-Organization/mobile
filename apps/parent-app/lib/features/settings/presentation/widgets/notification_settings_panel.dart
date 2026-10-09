@@ -53,11 +53,12 @@ class _NotificationSwitchesState extends ConsumerState<_NotificationSwitches> {
   String? _banner;
   AlertTone _bannerTone = AlertTone.info;
 
+  /// 서버가 처리한 뒤에야 스위치가 바뀐다(C-10, API_SPEC §1.9) — 응답 전에 먼저 바꾸면
+  /// 실패했을 때 거짓 상태가 잠깐 보인다.
+  /// 기다리는 동안 스위치를 잠가 같은 요청이 겹쳐 나가지 않게 한다.
   Future<void> _update(NotificationSettings next) async {
     if (_submitting) return;
-    final previous = _current;
     setState(() {
-      _current = next;
       _submitting = true;
       _banner = null;
     });
@@ -73,14 +74,14 @@ class _NotificationSwitchesState extends ConsumerState<_NotificationSwitches> {
       });
     } on Failure catch (failure) {
       if (!mounted) return;
+      // 값은 건드린 적이 없으므로 되돌릴 것이 없다 — 안내만 띄운다.
       setState(() {
-        // 서버가 거부한 값을 화면에 남겨 두지 않는다 — 되돌린다.
-        _current = previous;
         _submitting = false;
         _bannerTone = AlertTone.missed;
-        _banner = switch (failure) {
-          _ => failureMessage(failure, fallback: '알림 설정을 바꾸지 못했습니다'),
-        };
+        _banner = failureMessage(
+          failure,
+          fallback: '알림 설정을 바꾸지 못했습니다',
+        );
       });
     }
   }

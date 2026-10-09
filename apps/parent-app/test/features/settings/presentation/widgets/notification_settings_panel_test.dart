@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
@@ -34,6 +36,23 @@ class _RejectingNotificationSettingsRepository
   Future<NotificationSettings> updateNotificationSettings(
     NotificationSettings settings,
   ) => Future.error(failure);
+}
+
+/// 응답을 손으로 늦추는 가짜 — 스위치가 응답 전에 바뀌는지 본다(M-P4).
+class _PendingNotificationSettingsRepository
+    implements NotificationSettingsRepository {
+  new(this._initial);
+
+  final NotificationSettings _initial;
+  final Completer<NotificationSettings> response = Completer();
+
+  @override
+  Future<NotificationSettings> getNotificationSettings() async => _initial;
+
+  @override
+  Future<NotificationSettings> updateNotificationSettings(
+    NotificationSettings settings,
+  ) => response.future;
 }
 
 void main() {
@@ -106,6 +125,69 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('네트워크 상태를 확인해 주세요'), findsOneWidget);
+  });
+
+  // M-P4 — C-10: 서버가 처리한 뒤에야 화면이 바뀐다. 응답 전에 먼저 바뀌어 있으면 실패 때 거짓 상태가 잠깐 보인다.
+  group('M-P4 스위치는 서버 응답 뒤에 바뀐다', () {
+    const initial = NotificationSettings(
+      arrive: false,
+      boarding: true,
+      noShow: true,
+    );
+
+    Future<_PendingNotificationSettingsRepository> pumpPending(
+      WidgetTester tester,
+    ) async {
+      final repository = _PendingNotificationSettingsRepository(initial);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            notificationSettingsRepositoryProvider.overrideWithValue(
+              repository,
+            ),
+          ],
+          child: const MaterialApp(
+            home: Scaffold(body: NotificationSettingsPanel(isParent: true)),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      return repository;
+    }
+
+    bool arriveChecked(WidgetTester tester) =>
+        tester.widget<BaraedaSwitch>(find.byType(BaraedaSwitch).first).checked;
+
+    testWidgets('응답이 오기 전에는 누른 스위치가 그대로이고, 응답이 오면 바뀐다', (tester) async {
+      final repository = await pumpPending(tester);
+
+      await tester.tap(find.byType(BaraedaSwitch).first);
+      await tester.pump();
+
+      expect(arriveChecked(tester), isFalse, reason: '서버 응답 전이다');
+
+      repository.response.complete(
+        const NotificationSettings(arrive: true, boarding: true, noShow: true),
+      );
+      await tester.pumpAndSettle();
+
+      expect(arriveChecked(tester), isTrue);
+    });
+
+    testWidgets('응답을 기다리는 동안 스위치는 잠기고 같은 요청을 또 보내지 않는다', (tester) async {
+      final repository = await pumpPending(tester);
+
+      await tester.tap(find.byType(BaraedaSwitch).first);
+      await tester.pump();
+
+      final locked = tester.widget<BaraedaSwitch>(
+        find.byType(BaraedaSwitch).first,
+      );
+      expect(locked.disabled, isTrue);
+
+      repository.response.complete(initial);
+      await tester.pumpAndSettle();
+    });
   });
 
   // R48 `Ruling 829` — 학생이 받는 알림은 도착 · 운행 시작뿐이라 의미 없는 스위치(미승차)를 뺀다.
