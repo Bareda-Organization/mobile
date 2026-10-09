@@ -186,9 +186,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.reportGuardian,
         builder: (context, state) => const ReportScreen(guardianAbsent: true),
       ),
+      // 운행 중 흐름에서 여는 조회 전용 명단 · 노선 지도 · 운행 종료도 다크 구역이다(`Ruling 830`).
       GoRoute(
         path: AppRoutes.rosterView,
-        builder: (context, state) => const RosterScreen(readOnly: true),
+        builder: (context, state) =>
+            const BaraedaDriveZone(child: RosterScreen(readOnly: true)),
       ),
       GoRoute(
         path: AppRoutes.delay,
@@ -196,11 +198,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppRoutes.routeMap,
-        builder: (context, state) => const RouteMapScreen(),
+        builder: (context, state) =>
+            const BaraedaDriveZone(child: RouteMapScreen()),
       ),
       GoRoute(
         path: AppRoutes.runEnd,
-        builder: (context, state) => const RunEndScreen(),
+        builder: (context, state) =>
+            const BaraedaDriveZone(child: RunEndScreen()),
       ),
       GoRoute(
         path: AppRoutes.emergency,
