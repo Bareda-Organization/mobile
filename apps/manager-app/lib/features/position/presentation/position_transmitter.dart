@@ -8,13 +8,16 @@ import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/core/constants/position_constants.dart';
 import 'package:manager_app/core/location/position_source.dart';
 import 'package:manager_app/core/run/manager_run_channel.dart';
+import 'package:manager_app/core/run/run_termination_provider.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
 import 'package:manager_app/features/position/data/models/position_request.dart';
 import 'package:manager_app/features/position/presentation/position_link.dart';
 import 'package:meta/meta.dart';
 
-/// 마지막 승하차지 도착 처리 응답(`is_final`)을 받은 회차 id — 하원 잔류로 서버 회차가 아직 `moving`
-/// 이어도 버스는 종점에 도착했으므로 위치 송신은 여기서 끝난다(R33 M1).
+/// 마지막 승하차지 도착 처리 응답(`is_final`)을 받은 회차 id — 종료 화면이 도착 응답 스냅샷
+/// ([lastArriveResultProvider])이 그 회차의 것인지 가르는 데도 쓴다. 운행이 끝난 응답이면 위치 송신은 여기서
+/// 끝난다(R33 M1). 하원 잔류로 종료가 보류된 응답(`finish_pending`)이면 서버 회차가 아직 `moving` 이고 남은
+/// 학생의 학부모가 버스 위치를 봐야 하므로 송신은 계속된다(`Ruling 855`).
 final StateProvider<String?> transmissionEndedRunIdProvider =
     StateProvider<String?>((ref) => null);
 
@@ -29,7 +32,13 @@ final Provider<String?> transmittingRunIdProvider = Provider<String?>((ref) {
   final runs = ref.watch(todayRunsProvider).value;
   final picked = runs == null ? null : pickResumableRun(runs);
   final endedRunId = ref.watch(transmissionEndedRunIdProvider);
-  if (picked == null || picked.runId == endedRunId) return null;
+  // 종료가 보류된 종점 도착(`finish_pending`)은 송신을 멈추는 사유가 아니다 — 마지막 학생이 내려 서버가 회차를
+  // 끝내면 `moving` 이 아니게 되어 [pickResumableRun] 이 거른다(`Ruling 855`).
+  final finishPending =
+      ref.watch(lastArriveResultProvider)?.finishPending ?? false;
+  if (picked == null || (picked.runId == endedRunId && !finishPending)) {
+    return null;
+  }
   return picked.runId;
 });
 

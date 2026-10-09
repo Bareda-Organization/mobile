@@ -165,9 +165,10 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
       // (닫힌 화면의 `ref` 는 쓸 수 없다, F06-16).
       container.invalidate(todayRunsProvider);
       if (result.isFinal) {
-        // 종점에 닿았으니 위치 송신은 여기서 끝난다 — 하원 잔류로 서버 회차가 아직 `moving` 이어도 그렇다.
-        container.read(transmissionEndedRunIdProvider.notifier).state = runId;
+        // 종점에 닿았다 — 운행이 끝났으면 위치 송신은 여기서 끝난다. 하원 잔류로 종료가 보류됐으면 송신은
+        // 계속된다(`Ruling 855`). 송신기가 보류 여부를 스냅샷에서 읽으므로 스냅샷을 먼저 채운다.
         container.read(lastArriveResultProvider.notifier).state = result;
+        container.read(transmissionEndedRunIdProvider.notifier).state = runId;
         if (!mounted) return;
         unawaited(context.push(AppRoutes.runEnd));
       } else {
