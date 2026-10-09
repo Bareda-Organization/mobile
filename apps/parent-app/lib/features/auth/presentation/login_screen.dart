@@ -211,22 +211,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             context.push(AppRoutes.accountRecovery),
                       ),
                     ),
-                    DevQuickLogin(
-                      accounts: const [
-                        DevAccount('학부모(자녀 2)', 'parentA1'),
-                        DevAccount('학부모', 'parentA2'),
-                        DevAccount('학생', 'studentA4'),
-                        DevAccount('승인 대기', 'parentPending'),
-                        DevAccount('거절됨', 'studentRejected'),
-                        // V14 데모 학원(목동) — 학생 20명 버스가 운행 중인 학부모.
-                        DevAccount('데모 학부모', 'parent01001'),
-                      ],
-                      onPick: (loginId, password) {
-                        _loginIdController.text = loginId;
-                        _passwordController.text = password;
-                        unawaited(_submit());
-                      },
-                    ),
                   ],
                 ),
               ),

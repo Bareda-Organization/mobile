@@ -48,6 +48,15 @@ Future<void> _pump(WidgetTester tester, {AuthRepository? repository}) async {
 }
 
 void main() {
+  // L6 · Ruling 861 ⑤ — 개발용 빠른 로그인(시드 계정 칩)은 앱에서 없앴다. 웹 Ruling 844 와 같은 기준이다.
+  testWidgets('L6 로그인 화면에 시드 계정을 채워 주는 개발용 칩이 없다', (tester) async {
+    await _pump(tester);
+
+    expect(find.text('학부모(자녀 2)'), findsNothing);
+    expect(find.text('승인 대기'), findsNothing);
+    expect(find.textContaining('개발용'), findsNothing);
+  });
+
   testWidgets('브랜드 줄에 이 앱을 쓰는 사람이 적혀 있다 — 학부모 · 학생(P4)', (tester) async {
     await _pump(tester);
 
