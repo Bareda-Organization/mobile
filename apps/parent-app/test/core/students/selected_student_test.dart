@@ -107,15 +107,18 @@ void main() {
       expect(pills.map((p) => p.selected), [true, false]);
     });
 
-    testWidgets('자녀 4명 이상도 고르는 창 없이 알약이 가로로 이어진다 — 눌러서 바꾼다', (tester) async {
+    // UF-P-02 · frontend Ruling 472 — 4명 이상은 칩이 좁아져 고르는 창이다(R51 L1).
+    testWidgets('자녀 4명 이상은 알약 대신 고르는 창이다 — 열어서 고른다', (tester) async {
       final container = await pump(tester, [
         for (var i = 1; i <= 4; i++) _child('s-$i', '자녀$i'),
       ], _MemoryStorage());
-      expect(find.byType(BaraedaFilterPill), findsNWidgets(4));
-      expect(find.byType(BaraedaSelect), findsNothing);
+      expect(find.byType(BaraedaFilterPill), findsNothing);
+      expect(find.byType(BaraedaSelect), findsOneWidget);
 
-      await tester.tap(find.text('자녀4'));
-      await tester.pump();
+      await tester.tap(find.byType(BaraedaSelect));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('자녀4').last);
+      await tester.pumpAndSettle();
       expect(container.read(selectedStudentIdProvider), 's-4');
     });
   });
