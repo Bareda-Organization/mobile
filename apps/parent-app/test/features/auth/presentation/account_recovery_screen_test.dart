@@ -147,6 +147,31 @@ class _OkAuthRepository extends _FailingAuthRepository {
   }
 }
 
+/// 첫 요청은 성공하고, 두 번째 요청(다시 받기)은 발급 간격 안이라며 429 를 준다.
+class _RateLimitedResendAuthRepository extends _OkAuthRepository {
+  @override
+  Future<void> recover({
+    required String type,
+    required String phone,
+    String? verificationCode,
+  }) async {
+    await super.recover(
+      type: type,
+      phone: phone,
+      verificationCode: verificationCode,
+    );
+    if (calls.length > 1) {
+      await Future<void>.error(
+        const Failure.api(
+          statusCode: 429,
+          code: 'RECOVERY_RATE_LIMITED',
+          message: '서버 원본 메시지(RECOVERY_RATE_LIMITED)',
+        ),
+      );
+    }
+  }
+}
+
 const _expectedSharedMessage = '휴대폰 번호 또는 인증번호를 확인할 수 없습니다';
 
 Future<void> _pumpAndRequestCode(
@@ -271,8 +296,11 @@ void main() {
   });
 
   group('인증번호 칸 — 요청이 성공한 뒤', () {
-    Future<_OkAuthRepository> pumpAtCodeStep(WidgetTester tester) async {
-      final repository = _OkAuthRepository();
+    Future<_OkAuthRepository> pumpAtCodeStep(
+      WidgetTester tester, [
+      _OkAuthRepository? fake,
+    ]) async {
+      final repository = fake ?? _OkAuthRepository();
       await tester.pumpWidget(
         ProviderScope(
           overrides: [authRepositoryProvider.overrideWithValue(repository)],
@@ -364,6 +392,24 @@ void main() {
         isEmpty,
       );
       expect(resendButton(tester).onPressed, isNull);
+    });
+
+    testWidgets('L4 다시 받기가 429 를 받으면 다시 60초 잠기고 그 뒤 열린다', (tester) async {
+      await pumpAtCodeStep(tester, _RateLimitedResendAuthRepository());
+      await tester.pump(const Duration(seconds: 60));
+      expect(resendButton(tester).onPressed, isNotNull);
+
+      await tester.tap(find.text('인증번호 다시 받기'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('잠시 뒤에 다시'), findsOneWidget);
+      expect(find.byType(BaraedaCodeInput), findsOneWidget);
+      expect(resendButton(tester).onPressed, isNull);
+
+      await tester.pump(const Duration(seconds: 59));
+      expect(resendButton(tester).onPressed, isNull);
+      await tester.pump(const Duration(seconds: 1));
+      expect(resendButton(tester).onPressed, isNotNull);
     });
   });
 
