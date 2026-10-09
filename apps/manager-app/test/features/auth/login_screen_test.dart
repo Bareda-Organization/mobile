@@ -17,4 +17,14 @@ void main() {
     expect(find.textContaining('학원'), findsWidgets);
     expect(find.textContaining('초기화'), findsOneWidget);
   });
+  // 861 ⑤ — 개발용 빠른 로그인(시드 계정 채우기)은 사양에 없는 화면 요소라 걷어 냈다(웹 `Ruling 844` 와 같은 기준).
+  testWidgets('로그인 화면에 개발용 빠른 로그인이 없다', (tester) async {
+    await tester.pumpWidget(
+      const ProviderScope(child: MaterialApp(home: LoginScreen())),
+    );
+    await tester.pump();
+
+    expect(find.textContaining('빠른 로그인'), findsNothing);
+    expect(find.text('driverA1'), findsNothing);
+  });
 }

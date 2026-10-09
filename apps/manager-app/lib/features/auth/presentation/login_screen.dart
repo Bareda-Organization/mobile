@@ -251,25 +251,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         color: colors.textSecondary,
                       ),
                     ),
-                    DevQuickLogin(
-                      accounts: const [
-                        DevAccount('기사', 'driverA1'),
-                        DevAccount('동승자', 'escortA1'),
-                        // 시드에서 **운행 중(moving)** 인 회차 3의 동승자 — 승하차 처리를 눈으로 보려면 이
-                        // 계정이어야 한다(다른 동승자의 회차는 출발 전이다).
-                        DevAccount('동승자(운행중)', 'escortA2'),
-                        DevAccount('기사(타 학원)', 'driverB1'),
-                        DevAccount('차단됨', 'driverBlocked'),
-                        // V14 데모 학원(목동) 1호차 — 승하차지 15곳 · 학생 20명 명단.
-                        DevAccount('데모 기사', 'driver011'),
-                        DevAccount('데모 동승자', 'escort011'),
-                      ],
-                      onPick: (loginId, password) {
-                        _loginIdController.text = loginId;
-                        _passwordController.text = password;
-                        unawaited(_submit());
-                      },
-                    ),
                   ],
                 ),
               ),
