@@ -6,11 +6,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:manager_app/app/app_routes.dart';
 import 'package:manager_app/app/di.dart';
+import 'package:manager_app/core/auth/academy_contact_store.dart';
 import 'package:manager_app/core/auth/account_session.dart';
 import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/core/auth/user_role.dart';
 import 'package:manager_app/features/auth/domain/auth_repository.dart';
 import 'package:manager_app/features/auth/presentation/signup_screen.dart';
+
+import '../../support/fake_academy_contact_store.dart';
 
 /// 861 ⑥ · L2(UF-X-01) — 가입이 접수되면 곧바로 로그인해 승인 대기 화면으로 간다(학부모 앱과 같은 동작).
 /// 로그인이 실패해도 가입은 접수됐으니 "가입 실패" 로 보이지 않고 로그인 화면으로 돌려보낸다.
@@ -57,6 +60,7 @@ class _FakeAuthRepository implements AuthRepository {
       role: AccountRole.driver,
       status: AccountStatus.pending,
       accountId: '7',
+      academy: AcademyRef(id: 'a1', name: '하늘수학학원', contact: '032-000-1100'),
     );
   }
 
@@ -66,12 +70,14 @@ class _FakeAuthRepository implements AuthRepository {
 
 void main() {
   late ProviderContainer container;
+  late FakeAcademyContactStore contactStore;
 
   Future<_FakeAuthRepository> submit(
     WidgetTester tester, {
     required bool loginSucceeds,
   }) async {
     final repository = _FakeAuthRepository(loginSucceeds: loginSucceeds);
+    contactStore = FakeAcademyContactStore();
     final router = GoRouter(
       initialLocation: AppRoutes.signup,
       routes: [
@@ -87,7 +93,10 @@ void main() {
     );
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [authRepositoryProvider.overrideWithValue(repository)],
+        overrides: [
+          authRepositoryProvider.overrideWithValue(repository),
+          academyContactStoreProvider.overrideWithValue(contactStore),
+        ],
         child: MaterialApp.router(routerConfig: router),
       ),
     );
@@ -125,6 +134,14 @@ void main() {
     expect(container.read(currentUserRoleProvider), UserRole.driver);
     expect(container.read(currentAccountStatusProvider), AccountStatus.pending);
     expect(find.text('LOGIN_MARKER'), findsNothing);
+  });
+
+  // 승인 대기 중에 관리자가 계정을 막으면 로그인 응답을 다시 받을 길이 없다 — 가입 직후 로그인도 연락처를 남겨야 한다(Ruling 825).
+  testWidgets('가입 직후 로그인도 학원 연락처를 들고 있고 기기에 남긴다', (tester) async {
+    await submit(tester, loginSucceeds: true);
+
+    expect(container.read(academyContactProvider), '032-000-1100');
+    expect(await contactStore.read(), '032-000-1100');
   });
 
   testWidgets('로그인이 실패하면 가입 실패가 아니라 로그인 화면으로 돌려보낸다', (tester) async {

@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 import 'package:manager_app/app/app_routes.dart';
 import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/auth/account_session.dart';
-import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/core/auth/credential_limits.dart';
 import 'package:manager_app/core/ui/bottom_action_bar.dart';
 import 'package:manager_app/core/ui/manager_header.dart';
@@ -134,16 +133,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         password: _passwordController.text,
       );
       if (!mounted) return;
-      applyRoleAndStatus(
-        ref.read(unsupportedRoleProvider.notifier),
-        ref.read(currentUserRoleProvider.notifier),
-        ref.read(currentAccountStatusProvider.notifier),
-        role: response.role,
-        status: response.status,
-      );
-      ref.read(sessionExpiredNoticeProvider.notifier).state = null;
-      ref.read(mustChangePasswordProvider.notifier).state =
-          response.mustChangePassword;
+      applyLoginResponse(ref, response);
     } on Object {
       // 가입은 접수됐다 — 로그인 쪽 실패 종류와 상관없이 "가입 실패" 로 보이면 안 된다.
       _goToLoginAfterSignup();

@@ -148,6 +148,26 @@ Future<void> signOut(WidgetRef ref) async {
   }
 }
 
+/// 로그인 성공 응답을 앱 상태에 반영한다 — 로그인 화면과 가입 직후 자동 로그인이 같은 처리를 하게 하는 한 곳이다.
+/// 역할·상태 · 만료 안내 비우기 · 비밀번호 강제 변경 표식 · 학원 연락처(메모리 + 기기 저장)를 함께 채운다.
+/// 계정이 잠기면 서버에서 번호를 못 받으니 성공한 로그인의 번호를 기기에 남겨 둔다(`Ruling 825`).
+void applyLoginResponse(WidgetRef ref, LoginResponse response) {
+  applyRoleAndStatus(
+    ref.read(unsupportedRoleProvider.notifier),
+    ref.read(currentUserRoleProvider.notifier),
+    ref.read(currentAccountStatusProvider.notifier),
+    role: response.role,
+    status: response.status,
+  );
+  ref.read(sessionExpiredNoticeProvider.notifier).state = null;
+  ref.read(mustChangePasswordProvider.notifier).state =
+      response.mustChangePassword;
+  ref.read(academyContactProvider.notifier).state = response.academy?.contact;
+  unawaited(
+    ref.read(academyContactStoreProvider).save(response.academy?.contact),
+  );
+}
+
 /// 로그인·`/me` 성공 응답을 역할·상태 provider 에 반영하는 유일한 통로 —
 /// 화면마다 이 매핑을 다시 적지 않는다. 로그인 화면도 이 함수를 그대로 쓴다.
 ///

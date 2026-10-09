@@ -7,9 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:manager_app/app/app_routes.dart';
 import 'package:manager_app/app/di.dart';
-import 'package:manager_app/core/auth/academy_contact_store.dart';
 import 'package:manager_app/core/auth/account_session.dart';
-import 'package:manager_app/core/auth/auth_providers.dart';
 
 /// UF-X-03 — 로그인 폼 → `POST /auth/login` → 성공하면 역할·상태 provider 를
 /// 채운다. 이후 화면 전환은 이 화면이 직접 `go` 하지 않는다 —
@@ -69,22 +67,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         loginId: loginId,
         password: password,
       );
-      applyRoleAndStatus(
-        ref.read(unsupportedRoleProvider.notifier),
-        ref.read(currentUserRoleProvider.notifier),
-        ref.read(currentAccountStatusProvider.notifier),
-        role: response.role,
-        status: response.status,
-      );
-      ref.read(sessionExpiredNoticeProvider.notifier).state = null;
-      ref.read(mustChangePasswordProvider.notifier).state =
-          response.mustChangePassword;
-      ref.read(academyContactProvider.notifier).state =
-          response.academy?.contact;
-      // 계정이 잠기면 서버에서 번호를 못 받는다 — 성공한 로그인의 번호를 기기에 남겨 둔다(`Ruling 825`).
-      unawaited(
-        ref.read(academyContactStoreProvider).save(response.academy?.contact),
-      );
+      applyLoginResponse(ref, response);
 
       if (ref.read(unsupportedRoleProvider)) {
         // 로그인 자체는 서버 기준 성공이라 토큰이 이미 저장돼 있다 —
