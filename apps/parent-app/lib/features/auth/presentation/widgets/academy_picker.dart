@@ -2,6 +2,9 @@ import 'package:baraeda_core/baraeda_core.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 
+/// 서버가 한 번에 주는 학원 검색 결과의 최대 건수(API_SPEC §2.1) — 이만큼 받았으면 더 있을 수 있다.
+const _searchLimit = 20;
+
 /// 학원 검색 + 결과 확인 + 선택 하나로 묶은 위젯(UF-X-01 학원 검색 단계).
 ///
 /// 결과는 드롭다운이 아니라 **라디오 목록**이다(R48 시안 `signup--academy`) —
@@ -116,6 +119,17 @@ class _AcademyPickerState extends State<AcademyPicker> {
             padding: const EdgeInsets.only(top: BaraedaSpacing.space2),
             child: WordWrapText(
               '학원을 찾을 수 없습니다 — 학원에 문의해 주세요',
+              style: BaraedaTypography.caption.copyWith(
+                color: context.colors.textSecondary,
+              ),
+            ),
+          ),
+        // 서버는 최대 20건만 주고 잘렸다는 표시를 하지 않는다(API_SPEC §2.1) — 가득 찼으면 좁히라고 알린다.
+        if (_results.length >= _searchLimit)
+          Padding(
+            padding: const EdgeInsets.only(top: BaraedaSpacing.space2),
+            child: WordWrapText(
+              '결과가 많아 일부만 보여요. 검색어를 더 자세히 입력해 주세요',
               style: BaraedaTypography.caption.copyWith(
                 color: context.colors.textSecondary,
               ),
