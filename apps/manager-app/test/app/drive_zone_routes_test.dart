@@ -58,4 +58,18 @@ void main() {
       expect(find.byType(BaraedaDriveZone), findsNothing);
     });
   }
+
+  // 857 — 기사가 운전하는 동안 보는 화면에는 아래 탭 막대(알림 진입점)가 없다. 화면만 따로 그리면 라우트가 탭 틀
+  // 안에 들어가 있어도 못 잡으므로 앱 전체를 열어 본다. 홈에는 탭 막대가 있다는 대조를 따로 둔다.
+  testWidgets('/drive-mode 에는 아래 탭 막대가 없다', (tester) async {
+    await pumpAt(tester, AppRoutes.driveMode);
+
+    expect(find.byType(BaraedaTabBar), findsNothing);
+  });
+
+  testWidgets('/home 에는 아래 탭 막대가 있다 (위 시험의 대조)', (tester) async {
+    await pumpAt(tester, AppRoutes.home);
+
+    expect(find.byType(BaraedaTabBar), findsOneWidget);
+  });
 }
