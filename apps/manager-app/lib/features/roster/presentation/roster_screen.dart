@@ -577,6 +577,11 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
     );
     switch (student.status) {
       case RiderStatus.waiting:
+        // 승차 처리는 등원 승하차지의 일이다(C-07 · BRD-01) — 하원은 운행 시작에
+        // 전원 자동 승차라 [탑승]·[미승차] 가 없다.
+        if (roster.direction == RunDirection.fromAcademy) {
+          return call == null ? null : row(const []);
+        }
         return row([
           (
             17,
@@ -614,28 +619,34 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
           ),
         ]);
       case RiderStatus.boarded:
+        // 하차 처리는 하원 승하차지의 일이다(C-07 · BRD-02) — 등원은 종료 때 전원
+        // 자동 하차라 [하차] 가 없다. 잘못 눌린 승차를 바로잡는 [되돌리기] 는
+        // 방향과 무관하다.
+        final canAlight = roster.direction == RunDirection.fromAcademy;
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            row([
-              (
-                1,
-                BaraedaButton(
-                  label: '하차',
-                  icon: 'check',
-                  block: true,
-                  onPressed: busy
-                      ? null
-                      : () => unawaited(
-                          _updateStatus(
-                            runId: runId,
-                            riderId: riderId,
-                            status: RiderStatus.alighted,
-                          ),
-                        ),
-                ),
-              ),
-            ]),
+            if (canAlight || call != null)
+              row([
+                if (canAlight)
+                  (
+                    1,
+                    BaraedaButton(
+                      label: '하차',
+                      icon: 'check',
+                      block: true,
+                      onPressed: busy
+                          ? null
+                          : () => unawaited(
+                              _updateStatus(
+                                runId: runId,
+                                riderId: riderId,
+                                status: RiderStatus.alighted,
+                              ),
+                            ),
+                    ),
+                  ),
+              ]),
             revert,
           ],
         );
