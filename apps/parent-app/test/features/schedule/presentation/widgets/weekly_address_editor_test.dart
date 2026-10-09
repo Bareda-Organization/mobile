@@ -162,30 +162,26 @@ void main() {
       WidgetTester tester,
     ) async {
       final repository = _RecordingWeeklyAddressRepository();
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            weeklyAddressRepositoryProvider.overrideWithValue(repository),
-          ],
-          child: const MaterialApp(
-            home: Scaffold(
-              body: WeeklyAddressEditor(
-                studentId: 's-1',
-                entries: [monTo, monFrom, tueTo, tueFrom],
-              ),
-            ),
-          ),
-        ),
-      );
+      await pumpEditor(tester, repository, [monTo, monFrom, tueTo, tueFrom]);
       return repository;
     }
 
-    testWidgets('등록된 요일만 알약에 나오고, 고른 요일의 등원 · 하원 두 칸만 보인다', (tester) async {
+    testWidgets('H5 요일 알약은 7개가 항상 나오고, 고른 요일의 등원 · 하원 주소 칸과 상세 칸이 보인다', (
+      tester,
+    ) async {
       await pumpFour(tester);
 
-      expect(find.byType(TextField), findsNWidgets(2));
+      for (final day in ['월', '화', '수', '목', '금', '토', '일']) {
+        expect(find.text(day), findsOneWidget);
+      }
+      // 주소 2 + 상세 2.
+      expect(find.byType(TextField), findsNWidgets(4));
       expect(find.text('월요일 · 등원', findRichText: true), findsOneWidget);
       expect(find.text('월요일 · 하원', findRichText: true), findsOneWidget);
+      expect(
+        find.text('상세 주소 (동 · 출입구)', findRichText: true),
+        findsNWidgets(2),
+      );
       expect(find.text('화요일 · 등원', findRichText: true), findsNothing);
 
       await tester.tap(find.text('화'));
@@ -193,6 +189,12 @@ void main() {
 
       expect(find.text('화요일 · 등원', findRichText: true), findsOneWidget);
       expect(find.text('월요일 · 등원', findRichText: true), findsNothing);
+
+      // 서버에 없는 요일(수)도 비어 있는 칸으로 열린다.
+      await tester.tap(find.text('수'));
+      await tester.pumpAndSettle();
+      expect(find.text('수요일 · 등원', findRichText: true), findsOneWidget);
+      expect(find.text('수요일 · 하원', findRichText: true), findsOneWidget);
     });
 
     testWidgets('고친 요일에만 ● 가 붙고 "저장하지 않은 변경" 띠가 나온다 — 되돌리면 사라진다', (
@@ -227,42 +229,139 @@ void main() {
       expect(repository.saved, hasLength(4));
       expect(repository.saved.first.address, '월 등원 주소 고침');
     });
+
+    // H5 — 처음 한 칸만 고칠 수 있던 것: 요일 7 × 방향 2 = 14칸 어디든 추가한다.
+    testWidgets('H5 등록되지 않은 요일 · 방향 칸에 주소를 넣고 저장하면 그 칸까지 한 번에 간다', (
+      tester,
+    ) async {
+      final repository = await pumpFour(tester);
+
+      await tester.tap(find.text('토'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('weekly-input-sat_from_academy')),
+        '토 하원 새 주소',
+      );
+      await tester.tap(find.text('저장하기'));
+      await tester.pumpAndSettle();
+
+      expect(repository.saved, hasLength(5));
+      final added = repository.saved.last;
+      expect(added.weekday, Weekday.sat);
+      expect(added.direction, RunDirection.fromAcademy);
+      expect(added.address, '토 하원 새 주소');
+    });
+
+    testWidgets('H5 14칸을 전부 채우면 14건이 한 요청으로 간다', (tester) async {
+      final repository = _RecordingWeeklyAddressRepository();
+      await pumpEditor(tester, repository, const []);
+
+      for (final day in Weekday.values) {
+        await tester.tap(find.text(day.label));
+        await tester.pumpAndSettle();
+        for (final direction in RunDirection.values) {
+          await tester.enterText(
+            find.byKey(
+              ValueKey('weekly-input-${day.wireValue}_${direction.wireValue}'),
+            ),
+            '${day.label} ${direction.label} 주소',
+          );
+        }
+      }
+      await tester.tap(find.text('저장하기'));
+      await tester.pumpAndSettle();
+
+      expect(repository.saved, hasLength(14));
+      expect({
+        for (final e in repository.saved)
+          '${e.weekday.name}_${e.direction.name}',
+      }, hasLength(14));
+    });
+
+    testWidgets('H5 상세 주소를 적으면 address_detail 로 같이 가고, 비우면 보내지 않는다', (
+      tester,
+    ) async {
+      final repository = await pumpFour(tester);
+
+      await tester.enterText(
+        find.byKey(const ValueKey('weekly-detail-mon_to_academy')),
+        '101동 2호 출입구',
+      );
+      await tester.tap(find.text('저장하기'));
+      await tester.pumpAndSettle();
+
+      final monTo = repository.saved.firstWhere(
+        (e) =>
+            e.weekday == Weekday.mon && e.direction == RunDirection.toAcademy,
+      );
+      expect(monTo.addressDetail, '101동 2호 출입구');
+      final monFrom = repository.saved.firstWhere(
+        (e) =>
+            e.weekday == Weekday.mon && e.direction == RunDirection.fromAcademy,
+      );
+      expect(monFrom.addressDetail, isNull);
+    });
+
+    testWidgets('H5 주소 없이 상세 주소만 적으면 요청이 나가지 않고 안내한다', (tester) async {
+      final repository = await pumpFour(tester);
+
+      await tester.tap(find.text('수'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('weekly-detail-wed_to_academy')),
+        '101동',
+      );
+      await tester.tap(find.text('저장하기'));
+      await tester.pumpAndSettle();
+
+      expect(repository.saved, isEmpty);
+      expect(find.textContaining('주소를 먼저 입력해 주세요'), findsOneWidget);
+    });
+
+    testWidgets('H5 서버에 있던 칸을 비우면 요청이 나가지 않는다(칸 삭제 수단이 서버에 없다)', (
+      tester,
+    ) async {
+      final repository = await pumpFour(tester);
+
+      await tester.tap(find.text('화'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('weekly-input-tue_from_academy')),
+        '',
+      );
+      await tester.tap(find.text('저장하기'));
+      await tester.pumpAndSettle();
+
+      expect(repository.saved, isEmpty);
+      expect(find.textContaining('비어 있는 주소가 있습니다'), findsOneWidget);
+    });
   });
 
-  // R32 P11 — 등록된 주소가 하나도 없으면 편집할 칸이 없어 주소를 넣을 방법이 없었다.
-  group('P11 빈 목록에서 추가', () {
+  // R32 P11 → H5 — 등록된 주소가 없어도 [추가] 단계 없이 14칸이 바로 열린다.
+  group('P11 빈 목록', () {
     Future<_RecordingWeeklyAddressRepository> pumpEmpty(
       WidgetTester tester,
     ) async {
       final repository = _RecordingWeeklyAddressRepository();
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            weeklyAddressRepositoryProvider.overrideWithValue(repository),
-          ],
-          child: const MaterialApp(
-            home: Scaffold(
-              body: WeeklyAddressEditor(studentId: 's-1', entries: []),
-            ),
-          ),
-        ),
-      );
+      await pumpEditor(tester, repository, const []);
       return repository;
     }
 
-    testWidgets('빈 목록에는 안내와 [추가] 버튼이 있다', (tester) async {
+    testWidgets('빈 목록에서도 월요일 등원 · 하원 칸이 바로 보인다', (tester) async {
       await pumpEmpty(tester);
 
-      expect(find.text('등록된 등하원 주소가 없어요'), findsOneWidget);
-      expect(find.text('추가'), findsOneWidget);
+      expect(find.text('월요일 · 등원', findRichText: true), findsOneWidget);
+      expect(find.text('월요일 · 하원', findRichText: true), findsOneWidget);
+      expect(find.text('추가'), findsNothing);
     });
 
-    testWidgets('[추가] 로 연 입력칸에 주소를 넣고 저장하면 그 주소가 서버로 간다', (tester) async {
+    testWidgets('칸 하나에 주소를 넣고 저장하면 그 한 건만 서버로 간다', (tester) async {
       final repository = await pumpEmpty(tester);
 
-      await tester.tap(find.text('추가'));
-      await tester.pumpAndSettle();
-      await tester.enterText(find.byType(TextField), '서울시 강남구 2');
+      await tester.enterText(
+        find.byKey(const ValueKey('weekly-input-mon_to_academy')),
+        '서울시 강남구 2',
+      );
       await tester.tap(find.text('저장하기'));
       await tester.pumpAndSettle();
 
@@ -275,8 +374,6 @@ void main() {
     testWidgets('주소를 비워 두고 저장하면 요청이 나가지 않고 입력 안내를 보여준다', (tester) async {
       final repository = await pumpEmpty(tester);
 
-      await tester.tap(find.text('추가'));
-      await tester.pumpAndSettle();
       await tester.tap(find.text('저장하기'));
       await tester.pumpAndSettle();
 
@@ -284,6 +381,31 @@ void main() {
       expect(find.text('주소를 입력해 주세요'), findsOneWidget);
     });
   });
+}
+
+/// 편집기를 저장소 가짜와 함께 띄운다.
+Future<void> pumpEditor(
+  WidgetTester tester,
+  WeeklyAddressRepository repository,
+  List<WeeklyAddressEntry> entries,
+) {
+  // 요일 하나가 주소 · 상세 4칸이라 기본 화면(600)에서는 아래 칸이 그려지지 않는다.
+  tester.view
+    ..physicalSize = const Size(800, 1600)
+    ..devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
+  return tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        weeklyAddressRepositoryProvider.overrideWithValue(repository),
+      ],
+      child: MaterialApp(
+        home: Scaffold(
+          body: WeeklyAddressEditor(studentId: 's-1', entries: entries),
+        ),
+      ),
+    ),
+  );
 }
 
 /// 저장 요청을 기록하는 가짜.
