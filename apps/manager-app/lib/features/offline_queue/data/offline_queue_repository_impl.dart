@@ -263,9 +263,11 @@ class OfflineQueueRepositoryImpl implements OfflineQueueRepository {
   Future<void> clear() => _database.delete(_database.pendingRequests).go();
 
   /// 도착 처리 재전송에 서버가 `403 DUPLICATE_ARRIVE`(같은 승하차지 재처리, API_SPEC §4.5)
-  /// 로 답했는가. 상태 코드는 보지 않고 에러 코드로만 가린다 — 사양이 바뀌어도 "이미 도착 처리됨" 의 뜻은 같다.
+  /// 로 답했는가. **403 이면서 에러 코드가 `DUPLICATE_ARRIVE`** 일 때만이다 — 403 전체를 흡수하면
+  /// `403 DRIVER_ONLY`(권한 없음)까지 성공으로 삼킨다.
   bool _isAlreadyArrived(PendingRequest row, DioException exception) {
     if (!PendingRequestSummary.isArriveEndpoint(row.endpoint)) return false;
+    if (exception.response?.statusCode != 403) return false;
     final data = exception.response?.data;
     final error = data is Map ? data['error'] : null;
     return error is Map && error['code'] == 'DUPLICATE_ARRIVE';

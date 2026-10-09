@@ -336,6 +336,20 @@ void main() {
       await harness.db.close();
     });
 
+    test('상태 코드가 403 이 아니면 같은 에러 코드여도 흡수하지 않는다', () async {
+      final harness = await queueArrive(
+        arriveEndpoint,
+        409,
+        '{"error":{"code":"DUPLICATE_ARRIVE","message":"m"}}',
+      );
+
+      final result = await harness.repository.replayPending();
+
+      expect(result.succeeded, 0);
+      expect(result.droppedPermanently, 1);
+      await harness.db.close();
+    });
+
     test('DUPLICATE_ARRIVE 가 아닌 거절은 흡수하지 않고 확정 거절로 뺀다', () async {
       final harness = await queueArrive(
         arriveEndpoint,

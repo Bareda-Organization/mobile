@@ -607,29 +607,29 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
     );
     switch (student.status) {
       case RiderStatus.waiting:
-        // 승차 처리는 등원 승하차지의 일이다(C-07 · BRD-01) — 하원은 운행 시작에
-        // 전원 자동 승차라 [탑승]·[미승차] 가 없다.
-        if (roster.direction == RunDirection.fromAcademy) {
-          return call == null ? null : row(const []);
-        }
+        // [탑승] 은 등원 승하차지의 일이다(C-07 · BRD-01) — 하원은 운행 시작에 전원 자동 승차라 서버가
+        // `waiting→boarded` 를 막는다. [미승차] 는 하원에서도 남긴다: 종료 보류 회차의 남은 학생을
+        // [되돌리기] → [미승차] 로 정리해 회차를 끝내는 유일한 경로다(BR-031 · C-15).
+        final canBoard = roster.direction == RunDirection.toAcademy;
         return row([
-          (
-            17,
-            BaraedaButton(
-              label: '탑승',
-              icon: 'check',
-              block: true,
-              onPressed: busy
-                  ? null
-                  : () => unawaited(
-                      _updateStatus(
-                        runId: runId,
-                        riderId: riderId,
-                        status: RiderStatus.boarded,
+          if (canBoard)
+            (
+              17,
+              BaraedaButton(
+                label: '탑승',
+                icon: 'check',
+                block: true,
+                onPressed: busy
+                    ? null
+                    : () => unawaited(
+                        _updateStatus(
+                          runId: runId,
+                          riderId: riderId,
+                          status: RiderStatus.boarded,
+                        ),
                       ),
-                    ),
+              ),
             ),
-          ),
           (
             10,
             BaraedaButton(
