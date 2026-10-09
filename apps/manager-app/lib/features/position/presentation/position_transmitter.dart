@@ -73,8 +73,13 @@ class PositionTransmitter extends Notifier<PositionTransmission> {
   /// 위치 요청이 진행 중인지 — 끝나기 전에는 다음 주기가 새 요청을 열지 않는다.
   bool _sending = false;
 
+  /// 서버가 `409 RUN_NOT_MOVING` 으로 운행 중이 아니라고 답한 회차.
+  /// 목록이 바뀌어 송신기가 내려갈 때까지 이 회차에는 보내지 않는다.
+  String? _haltedRunId;
+
   @override
   PositionTransmission build() {
+    _haltedRunId = null;
     final runId = ref.watch(transmittingRunIdProvider);
     if (runId == null) return const PositionTransmission();
     final source = ref.read(positionSourceProvider)..start();
@@ -98,6 +103,8 @@ class PositionTransmitter extends Notifier<PositionTransmission> {
     // 앞 요청이 아직 끝나지 않았으면(음영 구간) 이번 주기는 건너뛴다 — 요청이 쌓였다가 복구 순간
     // 오래된 좌표까지 한꺼번에 도착하지 않게 한다(F06-07 (3)).
     if (_sending) return;
+    // 서버가 이 회차를 운행 중이 아니라고 답했다면 더 보내지 않는다(아래 catch).
+    if (runId == _haltedRunId) return;
     // 권한·위치 서비스를 나중에 켜도 되살아나게 다시 확인시킨다(F06-03) — 정상이면 아무 일도 없다.
     if (source.availability != PositionAvailability.available) source.start();
     final sample = source.sample();
@@ -128,7 +135,13 @@ class PositionTransmitter extends Notifier<PositionTransmission> {
         // 서버에 닿았다 — 끊겨 재연결 대기 중인 실시간 연결이 있으면 바로 다시 붙게 알린다(R46-FIXCONN C-10).
         ref.read(serverReachedProvider.notifier).state++;
       }
-    } on Failure {
+    } on Failure catch (failure) {
+      // 서버가 `409 RUN_NOT_MOVING` 이라고 답하면 같은 회차는 다시 보내도 같은 답이다 — 그 회차 송신을 멈추고
+      // 오늘 회차 목록을 새로 받아 서버의 운행 상태와 맞춘다. 송신기가 내려가는 시점은 목록이 정한다.
+      if (failure is ApiFailure && failure.code == 'RUN_NOT_MOVING') {
+        _haltedRunId = runId;
+        if (ref.mounted) ref.invalidate(todayRunsProvider);
+      }
       // 배경 전송 실패 — 다음 주기가 대신한다(§1.9 는 화면 액션의 낙관적 표시를 금지할 뿐이다). 실패는 조용히
       // 넘기되 마지막 성공 시각은 그대로 둬서, 운행 화면의 상태 칩이 "N초 전 마지막 전송" 으로 드러낸다(R46).
     } finally {

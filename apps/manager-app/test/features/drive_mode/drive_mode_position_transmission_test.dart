@@ -82,6 +82,25 @@ class _RecordingPositionRepository implements PositionRepository {
   }
 }
 
+/// 서버가 회차를 더 이상 운행 중으로 보지 않는다고 답하는 가짜 — 모든 전송이
+/// `409 RUN_NOT_MOVING`(API_SPEC §4.12)으로 거절된다. 호출은 그대로 기록한다.
+class _NotMovingPositionRepository extends _RecordingPositionRepository {
+  @override
+  Future<void> sendPosition({
+    required String runId,
+    required PositionRequest request,
+  }) async {
+    await super.sendPosition(runId: runId, request: request);
+    await Future<void>.error(
+      const Failure.api(
+        statusCode: 409,
+        code: 'RUN_NOT_MOVING',
+        message: '운행 중 상태가 아닙니다',
+      ),
+    );
+  }
+}
+
 Widget _wrap(Widget child, List<Override> overrides) {
   return ProviderScope(
     overrides: overrides,
@@ -133,6 +152,7 @@ void main() {
     required RunStatus runStatus,
     required _FakePositionSource positionSource,
     required _RecordingPositionRepository positionRepository,
+    void Function()? onRunsLoad,
   }) => [
     clockProvider.overrideWithValue(_FixedClock(now)),
     currentUserRoleProvider.overrideWith((ref) => role),
@@ -142,6 +162,7 @@ void main() {
     ),
     // F06-12 — 송신 대상은 오늘 회차 목록에서 고른다(화면이 고른 회차가 아니다).
     todayRunsProvider.overrideWith((ref) async {
+      onRunsLoad?.call();
       final run = ref.watch(driveModeRunProvider);
       return run == null ? <ManagerRun>[] : [run];
     }),
@@ -265,6 +286,79 @@ void main() {
     await tester.pump(interval);
     await tester.pump();
     expect(container.read(serverReachedProvider), 2);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  // §4.12 — 409 RUN_NOT_MOVING 은 서버가 이 회차를 운행 중이 아니라고 답한 것이다.
+  // 같은 회차로 다음 주기에 또 보내면 같은 409 가 반복되므로 그 회차 송신을 멈춘다.
+  testWidgets('409 RUN_NOT_MOVING 을 받은 뒤 다음 주기에 다시 보내지 않는다', (tester) async {
+    final source = _FakePositionSource(
+      PositionSample(lat: 37.5, lng: 127, recordedAt: recordedAt),
+    );
+    final repository = _NotMovingPositionRepository();
+    const interval = PositionConstants.transmissionInterval;
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: baseOverrides(
+          role: UserRole.driver,
+          runStatus: RunStatus.moving,
+          positionSource: source,
+          positionRepository: repository,
+        ),
+        child: const MaterialApp(home: DriveModeScreen()),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(interval);
+    await tester.pump();
+    expect(repository.calls, hasLength(1));
+
+    await tester.pump(interval * 3);
+    expect(
+      repository.calls,
+      hasLength(1),
+      reason: '409 뒤에도 같은 회차로 계속 보내면 안 된다',
+    );
+
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('409 RUN_NOT_MOVING 을 받으면 오늘 회차 목록을 다시 받는다', (tester) async {
+    final source = _FakePositionSource(
+      PositionSample(lat: 37.5, lng: 127, recordedAt: recordedAt),
+    );
+    final repository = _NotMovingPositionRepository();
+    const interval = PositionConstants.transmissionInterval;
+    var runsLoads = 0;
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: baseOverrides(
+          role: UserRole.driver,
+          runStatus: RunStatus.moving,
+          positionSource: source,
+          positionRepository: repository,
+          onRunsLoad: () {
+            runsLoads++;
+          },
+        ),
+        child: const MaterialApp(home: DriveModeScreen()),
+      ),
+    );
+    await tester.pump();
+    final loadsBefore = runsLoads;
+
+    await tester.pump(interval);
+    await tester.pump();
+
+    expect(repository.calls, hasLength(1));
+    expect(
+      runsLoads,
+      greaterThan(loadsBefore),
+      reason: '409 뒤에는 오늘 회차 목록을 새로 받아 서버의 운행 상태와 맞춘다',
+    );
 
     await tester.pumpWidget(const SizedBox.shrink());
   });
