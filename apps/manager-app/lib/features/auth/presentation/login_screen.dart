@@ -212,7 +212,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         tone: AlertTone.missed,
                         title: '$remaining번 더 틀리면 계정이 잠겨요',
                         body:
-                            '5번 연속 실패하면 학원 관리자가 풀어 줄 때까지 '
+                            '5번 연속 실패하면 메인 관리자가 풀어 줄 때까지 '
                             '로그인할 수 없어요.',
                       ),
                     ],

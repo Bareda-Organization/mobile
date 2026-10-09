@@ -125,7 +125,7 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
     }
   }
 
-  /// 되돌리기는 처리 기록은 남기되 학부모 알림이 새로 나가는 일이라 한 번 묻는다(시안 `undo`). 닫으면 요청이 없다.
+  /// 되돌리기는 잘못 눌렀을 때 쓰는 조작이라 한 번 묻는다(시안 `undo`). 닫으면 요청이 없다.
   Future<void> _confirmRevert({
     required String runId,
     required RosterStudent student,

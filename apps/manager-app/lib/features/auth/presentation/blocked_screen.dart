@@ -19,7 +19,7 @@ import 'package:manager_app/core/ui/manager_header.dart';
 /// 한다(`app/router.dart` 의 redirect 는 이 경로를 벗어나게 하지 않도록 예외 처리돼 있다).
 ///
 /// 차단 범위는 계정 단위뿐이다(IP 차단 아님) — 다른 기기·다른 계정 로그인은 이 화면과 무관하다. 자가 해제 수단은
-/// 없고 학원 관리자만 해제할 수 있어, 이 화면은 안내와 학원 전화, 로그인 화면 복귀만 제공한다.
+/// 없고 메인 관리자만 해제할 수 있어(AUTH-06 · C-11), 이 화면은 안내와 학원 전화, 로그인 화면 복귀만 제공한다.
 ///
 /// 학원 전화번호는 **이 기기가 마지막 로그인 성공(응답 · `/me` 의 `academy.contact`)에서 저장해 둔 값**이다
 /// (`Ruling 825`) — 잠긴 계정은 서버에서 번호를 받을 수 없다. 저장된 번호가 없거나 번호 모양이 아니면 전화
@@ -90,8 +90,8 @@ class BlockedScreen extends ConsumerWidget {
                   child: StopTimeline(
                     stops: [
                       Stop(
-                        name: '학원 관리자에게 알리기',
-                        address: '잠금은 학원 관리자만 풀 수 있어요',
+                        name: '학원에 알리기',
+                        address: '잠금은 메인 관리자만 풀 수 있어요',
                         state: StopState.current,
                       ),
                       Stop(name: '풀리면 다시 로그인', address: '스스로 풀 방법은 없어요'),
