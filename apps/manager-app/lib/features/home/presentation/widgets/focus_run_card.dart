@@ -91,6 +91,7 @@ class FocusRunCard extends StatelessWidget {
               origin: run.origin,
               destination: run.destination,
               between: stops == null || stops < 2 ? null : stops - 1,
+              estDurationMin: run.estDurationMin,
             ),
           ],
           if (riders != null || stops != null) ...[
@@ -197,11 +198,15 @@ class _RouteEnds extends StatelessWidget {
     required this.origin,
     required this.destination,
     required this.between,
+    required this.estDurationMin,
   });
 
   final String origin;
   final String destination;
   final int? between;
+
+  /// 예상 소요시간(분) — 서버가 모르면 `null` 이고 그리지 않는다.
+  final int? estDurationMin;
 
   @override
   Widget build(BuildContext context) {
@@ -222,6 +227,11 @@ class _RouteEnds extends StatelessWidget {
       fontWeight: BaraedaFontWeight.bold,
       color: colors.textPrimary,
     );
+    // 점선 옆 한 줄 — 거치는 승하차지 수 · 예상 소요시간(M-07).
+    final caption = [
+      if (between != null) '승하차지 $between곳 거쳐',
+      if (estDurationMin != null) '예상 소요 ${durationLabel(estDurationMin!)}',
+    ].join(' · ');
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -255,11 +265,13 @@ class _RouteEnds extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 19),
-              if (between != null)
-                Text(
-                  '승하차지 $between곳 거쳐',
-                  style: BaraedaTypography.caption.copyWith(
-                    color: colors.textSecondary,
+              if (caption.isNotEmpty)
+                Expanded(
+                  child: Text(
+                    caption,
+                    style: BaraedaTypography.caption.copyWith(
+                      color: colors.textSecondary,
+                    ),
                   ),
                 ),
             ],
@@ -282,4 +294,12 @@ class _RouteEnds extends StatelessWidget {
       ],
     );
   }
+}
+
+/// 분을 `30분` · `1시간 15분` 으로 읽는다.
+String durationLabel(int minutes) {
+  if (minutes < 60) return '$minutes분';
+  final hours = minutes ~/ 60;
+  final rest = minutes % 60;
+  return rest == 0 ? '$hours시간' : '$hours시간 $rest분';
 }
