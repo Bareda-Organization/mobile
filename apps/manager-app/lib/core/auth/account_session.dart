@@ -197,7 +197,8 @@ final Provider<Future<void> Function()> sessionReverifierProvider =
           await _applyMe(ref, await ref.read(authRepositoryProvider).me());
           ref.invalidate(meProvider);
         } on Failure catch (failure) {
-          // 서버가 이 계정을 거절했다는 증거(401 · 403)가 있을 때만 끝낸다 — 연결 두절 · 5xx · 게이트웨이 HTML 오류 ·
+          // 서버가 이 계정을 거절했다는 증거(401 · 403)가 있을 때만 끝낸다 —
+          // 연결 두절 · 5xx · 게이트웨이 HTML 오류 ·
           // 그 밖의 실패는 마지막 역할 그대로 다음 기회를 기다린다(끝내면 대기열 · 비상 신고 대기분까지 버려진다).
           // 401 은 인터셉터가 세션 만료로 끝내므로 그 밖만 여기서 끝낸다.
           if (isServerRejection(failure)) {

@@ -73,7 +73,8 @@ class _MeRepository implements AuthRepository {
 void main() {
   const network = Failure.network();
   const rejected = Failure.api(statusCode: 401, code: 'AUTH', message: '만료');
-  // nginx · Cloudflare Tunnel 이 서버가 죽었을 때 내는 HTML 오류 페이지 — JSON 이 아니라 `unknown` 으로 매핑된다.
+  // nginx · Cloudflare Tunnel 이 서버가 죽었을 때 내는 HTML 오류 페이지 —
+  // JSON 이 아니라 `unknown` 으로 매핑된다.
   const gatewayHtml = Failure.unknown(
     message: '서버 응답을 해석할 수 없음 (status: 502)',
     statusCode: 502,
@@ -86,7 +87,8 @@ void main() {
     FakeRunSummaryStore? summary,
   }) async {
     late ProviderContainer container;
-    // 세션 종료가 대기열을 비울 때 실제 파일 DB 를 열지 않게 메모리 DB 를 쓰고, 시험이 끝나면 닫는다(drift 다중 생성 경고 방지).
+    // 세션 종료가 대기열을 비울 때 실제 파일 DB 를 열지 않게 메모리 DB 를 쓰고,
+    // 시험이 끝나면 닫는다(drift 다중 생성 경고 방지).
     final queueDatabase = OfflineQueueDatabase.forTesting(
       NativeDatabase.memory(),
     );
@@ -315,7 +317,7 @@ void main() {
     ('게이트웨이 HTML 502', gatewayHtml),
     ('HTML 504 (Failure.unknown)', const Failure.unknown(statusCode: 504)),
     ('응답 없는 기타 오류', const Failure.unknown()),
-    ('서버 오류 500', Failure.api(statusCode: 500, code: 'X', message: 'm')),
+    ('서버 오류 500', const Failure.api(statusCode: 500, code: 'X', message: 'm')),
     ('연결 두절', network),
   ]) {
     testWidgets('다시 확인이 $label 이면 세션 · 저장 역할 · 요약을 그대로 둔다', (tester) async {

@@ -16,7 +16,8 @@ Future<T> guardDio<T>(Future<T> Function() body) async {
   }
 }
 
-/// 서버에 닿지 못한 실패 — 연결 두절 · 서버 5xx · 게이트웨이(nginx · Cloudflare Tunnel)의 HTML 오류 페이지.
+/// 서버에 닿지 못한 실패 — 연결 두절 · 서버 5xx ·
+/// 게이트웨이(nginx · Cloudflare Tunnel)의 HTML 오류 페이지.
 /// 마지막으로 알던 값(저장 요약)으로 버틸 수 있다. HTML 오류 페이지는 JSON 이 아니라 `UnknownFailure` 로 오고
 /// (`statusCode` 가 그 상태 — 응답이 없었으면 `null`), 서버 프로세스가 죽었을 때 정확히 이 모양이다.
 bool isUnreachableFailure(Failure failure) => switch (failure) {

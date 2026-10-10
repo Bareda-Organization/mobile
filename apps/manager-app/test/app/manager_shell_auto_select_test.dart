@@ -117,7 +117,8 @@ void main() {
     },
   );
 
-  // 알림(route_changed · assignment_changed)이 이미 끝난 회차를 가리키면 `notifications_screen.dart` 가 그 회차를
+  // 알림(route_changed · assignment_changed)이 이미 끝난 회차를 가리키면
+  // `notifications_screen.dart` 가 그 회차를
   // 일부러 고른다. 그건 끝나기 전에 고른 회차가 그 뒤 끝난 경우가 아니므로 쉘이 덮어쓰면 안 된다.
   testWidgets('끝난 회차를 일부러 골랐으면(알림) 큰 카드가 다른 회차여도 쉘이 갈아타지 않는다', (tester) async {
     final container = await pump(tester, UserRole.escort, [
