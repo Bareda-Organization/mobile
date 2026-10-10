@@ -583,10 +583,30 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
       final queuedStopIds = ref.watch(queuedArrivalStopIdsProvider);
       final nextStop = nextUnarrivedStop(roster, queuedStopIds: queuedStopIds);
       if (nextStop == null) {
-        return WordWrapText(
-          queuedStopIds.isEmpty
-              ? '모든 승하차지 도착 처리가 끝났어요'
-              : '도착 처리를 저장했어요 · 연결되면 서버로 보내요',
+        // 하원은 마지막 도착 뒤에도 탑승 중 학생이 있으면 종료가 보류된다 — 보류 화면(하차 대기 목록 · 보호자 부재
+        // 보고)을 나갔다가 다시 열 길을 둔다. 도착이 큐에 있으면 아직 서버에 닿지 않았다.
+        final pendingEnd =
+            queuedStopIds.isEmpty &&
+            roster.direction == RunDirection.fromAcademy;
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            WordWrapText(
+              queuedStopIds.isEmpty
+                  ? '모든 승하차지 도착 처리가 끝났어요'
+                  : '도착 처리를 저장했어요 · 연결되면 서버로 보내요',
+            ),
+            if (pendingEnd) ...[
+              const SizedBox(height: 8),
+              BaraedaButton(
+                label: '하차 대기 보기',
+                size: BaraedaButtonSize.xl,
+                block: true,
+                onPressed: () => unawaited(context.push(AppRoutes.runEnd)),
+              ),
+            ],
+          ],
         );
       }
       final lost = judgePositionLink(
