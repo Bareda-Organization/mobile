@@ -133,7 +133,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // 로그인이 만료돼 돌아왔다면 이유를 알린다(R46) — 이유 없이 로그인 화면만 나오면 오류인 줄 안다.
+    // 로그인이 만료돼 돌아왔다면 알린다(R46) — 안내 없이 로그인 화면만 나오면 오류인 줄 안다.
+    // 재발급 거절은 다른 기기의 비밀번호 변경 · 차단으로도 생기므로 원인은 단정하지 않는다(R51).
     final expiredNotice = ref.watch(sessionExpiredNoticeProvider);
     final colors = context.colors;
     final remaining = _remainingAttempts;
@@ -168,11 +169,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                     const SizedBox(height: BaraedaSpacing.space8),
                     if (expiredNotice != null) ...[
-                      AlertBanner(
-                        tone: AlertTone.moving,
-                        title: '로그인이 만료됐어요',
-                        body: expiredNotice,
-                      ),
+                      AlertBanner(tone: AlertTone.moving, body: expiredNotice),
                       const SizedBox(height: BaraedaSpacing.space4),
                     ],
                     BaraedaInput(

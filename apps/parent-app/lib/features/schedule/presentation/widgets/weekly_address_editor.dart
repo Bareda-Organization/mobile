@@ -141,13 +141,16 @@ class _WeeklyAddressEditorState extends ConsumerState<WeeklyAddressEditor> {
     scheduleMicrotask(() => _edits.mark(this, dirty: false));
   }
 
-  void _showError(String message) => setState(() {
+  /// 안내를 띄우고, 고칠 칸이 있는 요일이면 그 요일로 옮겨 간다.
+  void _showError(String message, {Weekday? day}) => setState(() {
     _bannerTone = AlertTone.missed;
     _banner = message;
+    if (day != null) _selectedDay = day;
   });
 
-  /// 보낼 칸을 모은다 — 잘못된 입력이면 안내 문구를 돌려주고 `null` 목록을 준다.
-  ({List<WeeklyAddressEntry>? entries, String? error}) _collect() {
+  /// 보낼 칸을 모은다 — 잘못된 입력이면 안내 문구와 고칠 칸의 요일을 돌려주고 `null` 목록을 준다.
+  ({List<WeeklyAddressEntry>? entries, String? error, Weekday? day})
+  _collect() {
     final entries = <WeeklyAddressEntry>[];
     for (final slot in _slots) {
       final address = slot.address.text.trim();
@@ -155,15 +158,19 @@ class _WeeklyAddressEditorState extends ConsumerState<WeeklyAddressEditor> {
       if (address.isEmpty) {
         // F05-11 — 한 칸만 비어도 서버가 전체(최대 14건)를 거절해
         // 다른 요일 수정분까지 잃는다. 보내기 전에 막는다.
+        final label = '${slot.weekday.longLabel} ${slot.direction.label}';
         if (slot.isRegistered) {
-          return (entries: null, error: '비어 있는 주소가 있습니다. 주소를 입력해 주세요');
+          return (
+            entries: null,
+            error: '$label: 비어 있는 주소가 있습니다. 주소를 입력해 주세요',
+            day: slot.weekday,
+          );
         }
         if (detail.isNotEmpty) {
           return (
             entries: null,
-            error:
-                '${slot.weekday.longLabel} ${slot.direction.label}: '
-                '주소를 먼저 입력해 주세요',
+            error: '$label: 주소를 먼저 입력해 주세요',
+            day: slot.weekday,
           );
         }
         continue;
@@ -177,8 +184,10 @@ class _WeeklyAddressEditorState extends ConsumerState<WeeklyAddressEditor> {
         ),
       );
     }
-    if (entries.isEmpty) return (entries: null, error: '주소를 입력해 주세요');
-    return (entries: entries, error: null);
+    if (entries.isEmpty) {
+      return (entries: null, error: '주소를 입력해 주세요', day: null);
+    }
+    return (entries: entries, error: null, day: null);
   }
 
   Future<void> _save() async {
@@ -187,7 +196,7 @@ class _WeeklyAddressEditorState extends ConsumerState<WeeklyAddressEditor> {
     final collected = _collect();
     final entries = collected.entries;
     if (entries == null) {
-      _showError(collected.error ?? '주소를 입력해 주세요');
+      _showError(collected.error ?? '주소를 입력해 주세요', day: collected.day);
       return;
     }
     setState(() {
@@ -213,17 +222,42 @@ class _WeeklyAddressEditorState extends ConsumerState<WeeklyAddressEditor> {
       ref.invalidate(weeklyAddressProvider(widget.studentId));
     } on Failure catch (failure) {
       if (!mounted) return;
+      final failed = _failedEntriesOf(failure, entries);
       setState(() {
         _submitting = false;
         _bannerTone = AlertTone.missed;
         _banner = switch (failure) {
           ApiFailure(code: 'ADDRESS_VERIFICATION_FAILED') =>
-            '주소를 확인할 수 없습니다. 다시 입력해 주세요',
+            failed.isEmpty
+                ? '주소를 확인할 수 없습니다. 다시 입력해 주세요'
+                : '${failed.map(_slotLabel).join(', ')}: '
+                      '주소를 확인할 수 없습니다. 다시 입력해 주세요',
           _ => failureMessage(failure, fallback: '저장하지 못했습니다'),
         };
+        // 실패한 첫 칸의 요일로 옮겨 가 바로 고칠 수 있게 한다.
+        if (failed.isNotEmpty) _selectedDay = failed.first.weekday;
       });
     }
   }
+
+  /// 서버가 `details.failed_entries`(검증에 실패한 주소 글자 목록, API_SPEC §3.7)로 돌려준 주소를
+  /// 보낸 칸에 맞춰 본다 — 서버는 요일 · 방향 없이 주소 글자만 주므로 보낸 목록에서 같은 글자의 칸을 찾는다.
+  List<WeeklyAddressEntry> _failedEntriesOf(
+    Failure failure,
+    List<WeeklyAddressEntry> sent,
+  ) {
+    if (failure is! ApiFailure) return const [];
+    final raw = failure.details?['failed_entries'];
+    if (raw is! List) return const [];
+    final failedAddresses = raw.whereType<String>().toSet();
+    return [
+      for (final entry in sent)
+        if (failedAddresses.contains(entry.address)) entry,
+    ];
+  }
+
+  String _slotLabel(WeeklyAddressEntry entry) =>
+      '${entry.weekday.longLabel} ${entry.direction.label}';
 
   @override
   Widget build(BuildContext context) {
