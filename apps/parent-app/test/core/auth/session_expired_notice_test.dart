@@ -13,7 +13,8 @@ void main() {
         () => endSessionAsExpired(ref),
   );
 
-  test('로그인이 풀리면 역할을 비우고 "오래 쓰지 않아 로그아웃됐어요" 안내를 남긴다 (R46 · R48 문구)', () {
+  // R51 — 재발급 거절은 다른 기기의 비밀번호 변경 · 차단으로도 생겨, 오래 쓰지 않은 탓이라고 단정하지 않는다.
+  test('로그인이 풀리면 역할을 비우고 원인을 단정하지 않는 "로그인이 만료됐어요" 안내를 남긴다 (R46 · R51)', () {
     final container = ProviderContainer(
       overrides: [
         currentUserRoleProvider.overrideWith((ref) => UserRole.parent),
@@ -26,11 +27,11 @@ void main() {
     expect(container.read(currentUserRoleProvider), isNull);
     expect(
       container.read(sessionExpiredNoticeProvider),
-      '오래 쓰지 않아 로그아웃됐어요. 다시 로그인해 주세요.',
+      '로그인이 만료됐어요. 다시 로그인해 주세요.',
     );
   });
 
-  testWidgets('만료로 돌아온 로그인 화면은 이유를 보여주고, 직접 열었을 때는 없다 (R46)', (tester) async {
+  testWidgets('만료로 돌아온 로그인 화면은 안내를 보여주고, 직접 열었을 때는 없다 (R46)', (tester) async {
     Future<void> pumpLogin(String? notice) => tester.pumpWidget(
       ProviderScope(
         key: UniqueKey(),
@@ -39,10 +40,12 @@ void main() {
       ),
     );
 
-    await pumpLogin('오래 쓰지 않아 로그아웃됐어요. 다시 로그인해 주세요.');
-    expect(find.text('오래 쓰지 않아 로그아웃됐어요. 다시 로그인해 주세요.'), findsOneWidget);
+    await pumpLogin('로그인이 만료됐어요. 다시 로그인해 주세요.');
+    // 제목과 본문에 같은 말이 두 번 나오지 않는다.
+    expect(find.text('로그인이 만료됐어요. 다시 로그인해 주세요.'), findsOneWidget);
+    expect(find.text('로그인이 만료됐어요'), findsNothing);
 
     await pumpLogin(null);
-    expect(find.textContaining('로그아웃됐어요'), findsNothing);
+    expect(find.textContaining('로그인이 만료됐어요'), findsNothing);
   });
 }
