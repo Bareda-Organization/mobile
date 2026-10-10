@@ -11,6 +11,7 @@ import 'package:manager_app/core/launcher/device_launchers.dart';
 import 'package:manager_app/core/refresh/visible_poller.dart';
 import 'package:manager_app/core/ui/academy_call_card.dart';
 import 'package:manager_app/core/ui/bottom_action_bar.dart';
+import 'package:manager_app/core/ui/confirm_dialog.dart';
 import 'package:manager_app/core/ui/info_rows_card.dart';
 import 'package:manager_app/core/ui/manager_header.dart';
 import 'package:manager_app/features/auth/presentation/widgets/academy_picker.dart';
@@ -110,6 +111,19 @@ class _PendingApprovalScreenState extends ConsumerState<PendingApprovalScreen> {
     }
   }
 
+  /// 학원을 고른 뒤 확인 창 한 단계를 거친다(UF-X-02) — 신청한 뒤에는 되돌릴 수 없다.
+  Future<void> _confirmReapply() async {
+    final academy = _newAcademy;
+    if (academy == null || _submittingReapply) return;
+    final confirmed = await confirmAction(
+      context,
+      title: '가입을 다시 신청할까요?',
+      body: '신청 학원 · ${academy.name}\n신청한 뒤에는 되돌릴 수 없어요.',
+      confirmLabel: '다시 신청',
+    );
+    if (confirmed && mounted) await _reapply();
+  }
+
   Future<void> _reapply() async {
     final academy = _newAcademy;
     if (academy == null || _submittingReapply) return;
@@ -180,7 +194,7 @@ class _PendingApprovalScreenState extends ConsumerState<PendingApprovalScreen> {
                 _newAcademy = null;
                 _reapplying = false;
               }),
-              onSubmitReapply: _reapply,
+              onSubmitReapply: _confirmReapply,
               onSearch: ref.read(authRepositoryProvider).searchAcademies,
             );
           },

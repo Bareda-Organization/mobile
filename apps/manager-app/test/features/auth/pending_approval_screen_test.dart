@@ -1,5 +1,6 @@
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
+import 'package:flutter/material.dart' show DropdownButtonFormField, TextField;
 import 'package:flutter/widgets.dart' show AppLifecycleState;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -30,6 +31,28 @@ class _StubAuthRepository implements AuthRepository {
   /// 학원이 대표 연락처를 등록하지 않은 응답
   /// (`academy_contact: null` — API_SPEC §2.3, Ruling 781).
   bool academyContactMissing = false;
+
+  /// `reapply` 로 보낸 학원 id 들 — 확인 창을 취소하면 비어 있어야 한다.
+  final reappliedAcademyIds = <String>[];
+
+  @override
+  Future<List<AcademySummary>> searchAcademies(String query) async => [
+    const AcademySummary(
+      id: 'academy-7',
+      name: '새학원',
+      region: '부천',
+      code: 'B-007',
+    ),
+  ];
+
+  @override
+  Future<ReapplyResponse> reapply({required String academyId}) async {
+    reappliedAcademyIds.add(academyId);
+    return ReapplyResponse(
+      status: AccountStatus.pending,
+      requestedAt: DateTime(2026, 9),
+    );
+  }
 
   @override
   Future<SignupStatusResponse> signupStatus() async {
@@ -225,9 +248,28 @@ void main() {
 
   // 시안 `pending--rejected` — 거절 사유 · 신청 정보 표 · 다른 학원으로 다시 신청.
   group('거절 화면 (시안 pending--rejected)', () {
-    Future<void> pumpRejected(WidgetTester tester) async {
-      await pumpPending(tester, statusFromSecondCall: AccountStatus.rejected);
+    Future<_StubAuthRepository> pumpRejected(WidgetTester tester) async {
+      final repository = await pumpPending(
+        tester,
+        statusFromSecondCall: AccountStatus.rejected,
+      );
       await tester.tap(find.text('상태 다시 확인'));
+      await tester.pumpAndSettle();
+      return repository;
+    }
+
+    /// 학원을 검색해 고른 뒤 [이 학원으로 재신청] 을 누른다.
+    Future<void> pickAcademyAndTapReapply(WidgetTester tester) async {
+      await tester.enterText(find.byType(TextField), '새');
+      await tester.ensureVisible(find.text('검색하기'));
+      await tester.tap(find.text('검색하기'));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.byType(DropdownButtonFormField<String>));
+      await tester.tap(find.byType(DropdownButtonFormField<String>));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('새학원 · 부천 · B-007').last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('이 학원으로 재신청'));
       await tester.pumpAndSettle();
     }
 
@@ -256,6 +298,28 @@ void main() {
       expect(button.onPressed, isNull);
       expect(find.text('다시 신청할 학원을 고르면 눌러요'), findsOneWidget);
       expect(find.widgetWithText(BaraedaButton, '로그아웃'), findsOneWidget);
+    });
+
+    // A8 — 신청한 뒤에는 되돌릴 수 없어 확인 창 한 단계를 거친다.
+    testWidgets('재신청은 확인 창에서 취소하면 보내지 않는다', (tester) async {
+      final repository = await pumpRejected(tester);
+
+      await pickAcademyAndTapReapply(tester);
+      expect(find.text('가입을 다시 신청할까요?'), findsOneWidget);
+      await tester.tap(find.text('취소'));
+      await tester.pumpAndSettle();
+
+      expect(repository.reappliedAcademyIds, isEmpty);
+    });
+
+    testWidgets('재신청은 확인 창에서 [다시 신청] 을 눌러야 보낸다', (tester) async {
+      final repository = await pumpRejected(tester);
+
+      await pickAcademyAndTapReapply(tester);
+      await tester.tap(find.text('다시 신청'));
+      await tester.pumpAndSettle();
+
+      expect(repository.reappliedAcademyIds, ['academy-7']);
     });
   });
 }
