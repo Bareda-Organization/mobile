@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:parent_app/app/app_routes.dart';
 import 'package:parent_app/app/di.dart';
+import 'package:parent_app/core/auth/academy_contact.dart';
 import 'package:parent_app/core/auth/auth_providers.dart';
 import 'package:parent_app/core/map/map_surface.dart';
 import 'package:parent_app/core/refresh/visible_poller.dart';
@@ -14,6 +15,7 @@ import 'package:parent_app/core/runs/domain/bus_position.dart';
 import 'package:parent_app/core/runs/domain/student_run.dart';
 import 'package:parent_app/core/runs/presentation/run_display.dart';
 import 'package:parent_app/core/ui/delay_band.dart';
+import 'package:parent_app/features/home/presentation/widgets/academy_phone_card.dart';
 import 'package:parent_app/features/live_map/domain/live_map_status.dart';
 import 'package:parent_app/features/live_map/presentation/live_map_view.dart';
 
@@ -91,16 +93,27 @@ class _HomeBusPreviewState extends ConsumerState<HomeBusPreview> {
       // 갱신이 실패해도 마지막으로 받은 값을 지우지 않는다 — 엘리베이터·지하철에서 카드가 사라지지 않게.
       skipError: true,
       loading: () => const _PreviewSkeleton(),
-      error: (error, stack) => AlertBanner(
-        tone: AlertTone.missed,
-        body: '버스 위치를 불러오지 못했어요',
-        inlineAction: true,
-        action: BaraedaButton(
-          label: '다시 시도',
-          size: BaraedaButtonSize.sm,
-          variant: BaraedaButtonVariant.secondary,
-          onPressed: _reload,
-        ),
+      error: (error, stack) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AlertBanner(
+            tone: AlertTone.missed,
+            body: '버스 위치를 불러오지 못했어요',
+            inlineAction: true,
+            action: BaraedaButton(
+              label: '다시 시도',
+              size: BaraedaButtonSize.sm,
+              variant: BaraedaButtonVariant.secondary,
+              onPressed: _reload,
+            ),
+          ),
+          // 위치를 못 받아도 급한 사람이 갈 곳이 있다 — 번호를 줄 때만 나온다(A11 · Ruling 827).
+          if (phoneNumberOf(ref.watch(savedAcademyContactProvider).value)
+              case final phone?) ...[
+            const SizedBox(height: BaraedaSpacing.space3),
+            AcademyPhoneCard(phone: phone),
+          ],
+        ],
       ),
       data: (position) => position == null
           ? const _NoRunToday()

@@ -17,10 +17,10 @@ import 'package:parent_app/core/students/presentation/student_switcher.dart';
 import 'package:parent_app/core/time/service_date.dart';
 import 'package:parent_app/core/ui/failure_message.dart';
 import 'package:parent_app/features/home/presentation/home_providers.dart';
+import 'package:parent_app/features/home/presentation/widgets/academy_phone_card.dart';
 import 'package:parent_app/features/home/presentation/widgets/home_bus_preview.dart';
 import 'package:parent_app/features/home/presentation/widgets/pending_change_badge.dart';
 import 'package:parent_app/features/home/presentation/widgets/run_card.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 /// P-03·P-04 홈 화면 — 오늘 회차(§3.5) · 등원 여부 토글(§3.6). 운행 정보만 둔다.
 /// 알림 목록(P-09)은 2026-09-30 부터 아래 탭 막대의 `[알림]` 탭이다(`NotificationsScreen`, R44) —
@@ -227,57 +227,9 @@ class _LoadFailure extends ConsumerWidget {
         ),
         if (phone != null) ...[
           const SizedBox(height: BaraedaSpacing.space4),
-          _EmergencyPhone(phone: phone),
+          AcademyPhoneCard(phone: phone),
         ],
       ],
-    );
-  }
-}
-
-/// 급할 때 거는 학원 전화 — 번호를 줄 때만 나온다(`Ruling 827`). 못 불러온 화면에서도 버스가 궁금한 사람이 갈 곳이 있다.
-class _EmergencyPhone extends StatelessWidget {
-  const new({required this.phone});
-
-  final String phone;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-
-    return BaraedaCard(
-      tone: BaraedaCardTone.mist,
-      child: Row(
-        children: [
-          ExcludeSemantics(
-            child: BaraedaIcon('phone', color: colors.accentPrimary),
-          ),
-          const SizedBox(width: BaraedaSpacing.space3),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const WordWrapText(
-                  '버스가 급하게 궁금하면',
-                  style: TextStyle(fontWeight: BaraedaFontWeight.bold),
-                ),
-                WordWrapText(
-                  '학원 $phone',
-                  style: BaraedaTypography.bodySm.copyWith(
-                    color: colors.accentPrimary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: BaraedaSpacing.space2),
-          BaraedaButton(
-            label: '전화',
-            size: BaraedaButtonSize.sm,
-            variant: BaraedaButtonVariant.secondary,
-            onPressed: () => launchUrl(Uri(scheme: 'tel', path: phone)),
-          ),
-        ],
-      ),
     );
   }
 }

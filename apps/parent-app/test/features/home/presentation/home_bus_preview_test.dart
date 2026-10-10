@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:parent_app/app/app_routes.dart';
 import 'package:parent_app/app/di.dart';
+import 'package:parent_app/core/auth/academy_contact.dart';
 import 'package:parent_app/core/auth/auth_providers.dart';
 import 'package:parent_app/core/auth/role_policy.dart';
 import 'package:parent_app/core/auth/user_role.dart';
@@ -158,6 +159,7 @@ Future<_CountingPositionRepository> _pumpHome(
   _RecordingRouteRepository? routeRepository,
   RiderStatus riderStatus = RiderStatus.waiting,
   DateTime? now,
+  String? savedContact,
 }) async {
   tester.view.physicalSize = const Size(800, 2600);
   tester.view.devicePixelRatio = 1;
@@ -184,6 +186,7 @@ Future<_CountingPositionRepository> _pumpHome(
           routeRepository ?? _RecordingRouteRepository(route),
         ),
         if (now != null) clockProvider.overrideWithValue(_FixedClock(now)),
+        savedAcademyContactProvider.overrideWith((ref) async => savedContact),
         currentUserRoleProvider.overrideWith((ref) => role),
         roleCapabilitiesProvider.overrideWithValue(RoleCapabilities.of(role)),
         myStudentsProvider.overrideWith(
@@ -278,6 +281,33 @@ void main() {
 
       expect(_inPreview('미등원'), findsOneWidget);
       expect(_inPreview('이동 중'), findsNothing);
+    });
+  });
+
+  // R52 낮음 A11 — 버스 위치를 못 불러온 화면에도 급할 때 걸 학원 전화가 있다(홈 전체 실패 화면과 같은 카드).
+  group('A11 버스 위치 실패 화면의 학원 전화', () {
+    Future<void> failToLoad(WidgetTester tester, {String? savedContact}) =>
+        _pumpHome(
+          tester,
+          savedContact: savedContact,
+          position: () => Future.error(
+            const Failure.network(message: '연결할 수 없습니다'),
+          ),
+        );
+
+    testWidgets('기기에 남긴 문의처에 번호가 있으면 오류 띠 아래에 학원 전화 카드가 나온다', (tester) async {
+      await failToLoad(tester, savedContact: '학원 데스크 032-000-1100');
+
+      expect(find.text('버스 위치를 불러오지 못했어요'), findsOneWidget);
+      expect(find.text('버스가 급하게 궁금하면'), findsOneWidget);
+      expect(find.text('학원 032-000-1100'), findsOneWidget);
+    });
+
+    testWidgets('번호가 없으면 오류 띠만 있고 전화 카드는 없다', (tester) async {
+      await failToLoad(tester, savedContact: '학원에 직접 문의');
+
+      expect(find.text('버스 위치를 불러오지 못했어요'), findsOneWidget);
+      expect(find.text('버스가 급하게 궁금하면'), findsNothing);
     });
   });
 
