@@ -16,6 +16,7 @@ import 'package:manager_app/features/home/presentation/home_providers.dart';
 import 'package:manager_app/features/offline_queue/data/offline_queue_database.dart';
 import 'package:manager_app/features/position/presentation/position_transmitter.dart';
 
+import '../../support/fake_roster_key_store.dart';
 import '../../support/fake_token_storage.dart';
 
 class _CountingRunsRepository implements ManagerRunRepository {
@@ -66,6 +67,7 @@ void main() {
       overrides: [
         tokenStorageProvider.overrideWithValue(tokens),
         offlineQueueDatabaseProvider.overrideWithValue(database),
+        rosterKeyStoreProvider.overrideWithValue(FakeRosterKeyStore()),
         managerRunRepositoryProvider.overrideWithValue(runs),
         apiClientProvider.overrideWith(
           (ref) => ApiClient(

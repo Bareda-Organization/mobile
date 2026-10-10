@@ -21,6 +21,7 @@ import 'package:manager_app/features/offline_queue/presentation/offline_queue_au
 import '../../support/fake_academy_contact_store.dart';
 import '../../support/fake_last_session_store.dart';
 import '../../support/fake_notification_repository.dart';
+import '../../support/fake_roster_key_store.dart';
 import '../../support/fake_token_storage.dart';
 
 /// 회차 목록은 비어 있다 — 기사 계정이 확인되면 앱이 위치 송신 재개용으로 목록을 한 번 부른다.
@@ -241,6 +242,7 @@ void main() {
       overrides: [
         tokenStorageProvider.overrideWithValue(FakeTokenStorage()),
         offlineQueueDatabaseProvider.overrideWithValue(database),
+        rosterKeyStoreProvider.overrideWithValue(FakeRosterKeyStore()),
         lastSessionStoreProvider.overrideWithValue(store),
         todayRunsProvider.overrideWith((ref) async => []),
       ],

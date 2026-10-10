@@ -32,6 +32,7 @@ import 'package:manager_app/features/position/domain/position_repository.dart';
 import 'package:manager_app/features/roster/data/drift_roster_cache.dart';
 import 'package:manager_app/features/roster/data/guardian_phone_repository_impl.dart';
 import 'package:manager_app/features/roster/data/roster_api.dart';
+import 'package:manager_app/features/roster/data/roster_cipher.dart';
 import 'package:manager_app/features/roster/data/roster_repository_impl.dart';
 import 'package:manager_app/features/roster/domain/guardian_phone_repository.dart';
 import 'package:manager_app/features/roster/domain/roster_cache.dart';
@@ -146,8 +147,21 @@ final rosterApiProvider = Provider<RosterApi>((ref) {
 
 /// 마지막으로 받은 명단의 로컬 저장소(M-M3) — 오프라인 대기열과 같은 기기 DB 를 쓴다.
 final rosterCacheProvider = Provider<RosterCache>((ref) {
-  return DriftRosterCache(database: ref.watch(offlineQueueDatabaseProvider));
+  return DriftRosterCache(
+    database: ref.watch(offlineQueueDatabaseProvider),
+    cipher: ref.watch(rosterCipherProvider),
+  );
 });
+
+/// 명단 저장본 암호화(`Ruling 872`) — 키는 기기 보안 저장소에 둔다. 시험은
+/// [rosterKeyStoreProvider] 를 메모리 대역으로 바꾼다(플랫폼 채널이 없다).
+final rosterKeyStoreProvider = Provider<RosterKeyStore>(
+  (ref) => const SecureRosterKeyStore(),
+);
+
+final rosterCipherProvider = Provider<RosterCipher>(
+  (ref) => RosterCipher(ref.watch(rosterKeyStoreProvider)),
+);
 
 final rosterRepositoryProvider = Provider<RosterRepository>((ref) {
   return RosterRepositoryImpl(

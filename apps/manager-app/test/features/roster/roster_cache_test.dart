@@ -8,7 +8,10 @@ import 'package:manager_app/features/offline_queue/data/offline_queue_database.d
 import 'package:manager_app/features/offline_queue/domain/offline_queue_repository.dart';
 import 'package:manager_app/features/roster/data/drift_roster_cache.dart';
 import 'package:manager_app/features/roster/data/roster_api.dart';
+import 'package:manager_app/features/roster/data/roster_cipher.dart';
 import 'package:manager_app/features/roster/data/roster_repository_impl.dart';
+
+import '../../support/fake_roster_key_store.dart';
 
 /// M-M3(M-06 · BRD-06 · UF-E-07 · `USER_FLOWS §12.2`) — 명단은 로컬에 저장돼 앱을 다시 켠 뒤
 /// 오프라인이어도 마지막으로 받은 명단을 본다. 서버가 응답하지 못할 때(연결 없음 · 5xx)만
@@ -91,7 +94,11 @@ void main() {
 
   setUp(() {
     database = OfflineQueueDatabase.forTesting(NativeDatabase.memory());
-    cache = DriftRosterCache(database: database, clock: clock);
+    cache = DriftRosterCache(
+      database: database,
+      cipher: RosterCipher(FakeRosterKeyStore()),
+      clock: clock,
+    );
   });
   tearDown(() => database.close());
 
@@ -130,9 +137,8 @@ void main() {
   test('서버가 5xx 로 응답해도 저장본을 보인다', () async {
     await repositoryWith(_Adapter(first: _ok)).fetchRoster('run-1');
 
-    final roster = await repositoryWith(
-      _Adapter(first: (_) => _status(502)),
-    ).fetchRoster('run-1');
+    final roster = await repositoryWith(_Adapter(first: (_) => _status(502)))
+        .fetchRoster('run-1');
 
     expect(roster.cachedAt, isNotNull);
   });

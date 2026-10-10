@@ -33,6 +33,7 @@ dependencies:
     path: ../../packages/baraeda_core
   baraeda_ui:
     path: ../../packages/baraeda_ui
+  cryptography: ^2.9.0  # R52 Ruling 872 — 명단 저장본 AES-GCM 256 암호화(순수 Dart · Dart 표준 라이브러리에 AES 부재)
   dio: ^5.11.1
   drift: ^2.34.4
   flutter:
