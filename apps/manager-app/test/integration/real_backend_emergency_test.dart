@@ -107,6 +107,13 @@ void main() {
     } finally {
       probe.close();
     }
+    // BR-109 시험은 시드의 idle 회차(run 1)를 요구한다 — 서버의 확정 배치가 시드 적용 +2.5h 에
+    // 그 회차를 confirmed 로 옮기므로, 서버를 오래 켜 둔 뒤에는 필요할 때만 시드를 되돌린다
+    // (real_backend_target.dart 의 함수 주석 ③). 되돌리지 않으면 서버가 발신을 받아 409 대신
+    // 200 이 오고 신고 행이 쌓인다.
+    if (backendReachable) {
+      await ensureManagerSeedIsSafeForTiming(baseUrl);
+    }
   });
 
   ({AuthApi auth, Dio dio}) buildClient() {
@@ -174,7 +181,8 @@ void main() {
   // BR-109 — 확정 전(idle) 회차는 발신을 받지 않는다(§4.14 · Ruling 357).
   // 회차 1 은 시드 기준 그대로 idle 이고 driverA1 이 배치돼 있어, 배치
   // 인가(assertAssignedDriverOrEscort)는 통과하고 상태 검사에서만 막히는지
-  // 를 구분해 확인한다.
+  // 를 구분해 확인한다. 단 시드 적용 +2.5h 가 지나면 확정 배치가 이 회차를
+  // confirmed 로 옮기므로 setUpAll 이 필요할 때 시드를 되돌린다.
   test(
     'RUN_NOT_CONFIRMED — 확정 전(idle) 회차로 비상 알림을 발신하면 409 로 '
     '거부된다(BR-109)',

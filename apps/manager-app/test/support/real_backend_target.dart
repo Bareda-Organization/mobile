@@ -31,7 +31,17 @@ String requireRealBackendBaseUrl() {
 /// `moving` 으로 영구히 옮겨 §4.2(confirmed 회차 존재 확인)까지 함께
 /// 무너뜨린다(F5 M3 보고서 1항 실측 — 두 실패가 같은 원인의 다른 증상).
 ///
-/// 이 함수는 그 두 조건을 실제로 조회해, 안전하지 않을 때만
+/// R51 로 두 조건이 더 붙었다.
+/// ③ 비상 알림 시험(BR-109)이 쓰는 `run1` 은 시드 적용 +2.5h 에 서버의 확정
+/// 배치가 `idle`→`confirmed` 로 옮긴다(confirm_at = 출발 − 30분). 서버를 오래
+/// 켜 둔 뒤에는 영영 `idle` 이 아니다.
+/// ④ `run3` 의 rider 3 이 속한 승하차지(명단 seq 1)가 도착 처리되면 위치
+/// 시뮬레이터 + 근접 출발 판정(100m 이탈)이 곧 `departed_at` 을 채워 §4.6·§4.7 의
+/// 되돌리기가 `409 STOP_ALREADY_DEPARTED` 가 된다. §4.5 가 매 실행 seq 가 가장
+/// 작은 정류장(= 그 승하차지)부터 소모하므로 **직전 실행의 §4.5 가 다음 실행의
+/// §4.6 을 막는다**.
+///
+/// 이 함수는 그 네 조건을 실제로 조회해, 안전하지 않을 때만
 /// `POST /dev/reset`(로컬 전용, 인증만 요구)을 호출해 시드를 되돌린다 —
 /// 매 실행마다 무조건 초기화하지 않는 이유는 이미 안전한 상태에서까지
 /// Flyway clean+migrate 를 다시 돌려 실행 시간을 늘리지 않기 위해서다
@@ -89,12 +99,20 @@ Future<bool> _needsManagerSeedReset(Dio dio, String baseUrl) async {
   final runsData = runsResponse.data!['data'] as Map<String, dynamic>;
   final runs = (runsData['items'] as List).cast<Map<String, dynamic>>();
 
+  Map<String, dynamic>? run1;
   Map<String, dynamic>? run2;
   for (final run in runs) {
-    if (run['run_id'] == '2') {
-      run2 = run;
-      break;
-    }
+    if (run['run_id'] == '1') run1 = run;
+    if (run['run_id'] == '2') run2 = run;
+  }
+  // 비상 알림 시험(BR-109 RUN_NOT_CONFIRMED)이 요구하는 idle 회차 — 확정 배치가 곧
+  // 옮길 회차(confirm_at 이 10분 안)도 시험 도중 confirmed 가 되므로 미리 되돌린다.
+  if (run1 == null || run1['run_status'] != 'idle') return true;
+  final run1ConfirmAt = run1['confirm_at'] as String?;
+  if (run1ConfirmAt != null &&
+      DateTime.parse(run1ConfirmAt).toUtc().difference(DateTime.now().toUtc()) <
+          const Duration(minutes: 10)) {
+    return true;
   }
   // §4.2 가 요구하는 confirmed 회차가 이미 소모됨(예: 이전 실행이 §4.4 를
   // 실수로 통과시켜 run2 를 moving 으로 옮겼다).
@@ -133,7 +151,17 @@ Future<bool> _needsManagerSeedReset(Dio dio, String baseUrl) async {
       (stop) => stop['arrived_at'] == null && (stop['seq'] as int) != maxSeq,
     );
     // §4.5 가 요구하는 미도착 정류장(마지막 정류장 제외)이 바닥남.
-    return !hasCandidate;
+    if (!hasCandidate) return true;
+    // §4.6·§4.7 이 rider 3 을 되돌리려면 그 승하차지가 도착 전이어야 한다 — 도착 처리된
+    // 정류장은 근접 출발 판정이 곧 출발 처리해 되돌리기가 409 STOP_ALREADY_DEPARTED 가 된다.
+    // (명단의 stop_id 는 run_stop id 라 물리 정류장 번호로 찾지 않고 rider 3 이 속한 항목을 고른다.)
+    return stops.any(
+      (stop) =>
+          stop['arrived_at'] != null &&
+          (stop['students'] as List).cast<Map<String, dynamic>>().any(
+            (student) => '${student['rider_id']}' == '3',
+          ),
+    );
   } finally {
     run3Dio.close();
   }
