@@ -7,6 +7,8 @@ import 'package:flutter_riverpod/legacy.dart';
 import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/auth/academy_contact_store.dart';
 import 'package:manager_app/core/auth/auth_providers.dart';
+import 'package:manager_app/core/auth/last_session_store.dart';
+import 'package:manager_app/core/auth/me_provider.dart';
 import 'package:manager_app/core/auth/user_role.dart';
 import 'package:manager_app/core/run/run_termination_provider.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
@@ -69,6 +71,17 @@ void endSessionAsExpired(Ref ref) {
   );
 }
 
+/// 통신이 끊긴 채 앱을 켜서 **마지막으로 확인한 역할로 들어온 상태**(R52 H2) — `/me` 로 다시 확인하기 전까지 `true`.
+/// 다시 확인되면 끄고, 로그아웃 · 세션 만료로 역할이 비어도 끈다.
+final StateProvider<bool> unverifiedSessionProvider = StateProvider<bool>(
+  (ref) => false,
+);
+
+/// 연결이 닿지 못한 실패 — 연결 두절과 서버 5xx. 로그인이 풀린 것이 아니다(F06-10).
+bool _isUnreachable(Failure failure) =>
+    failure is NetworkFailure ||
+    (failure is ApiFailure && failure.statusCode >= 500);
+
 /// 앱 시작 시 저장된 refresh 토큰으로 자동 로그인을 시도한다(UF-X-03 분기
 /// "앱 재실행"). refresh 토큰이 없으면 즉시 로그아웃 상태로 끝난다 —
 /// `/me` 를 부르지 않는다(빈 토큰으로 호출해 401 을 만들 이유가 없다).
@@ -76,6 +89,10 @@ void endSessionAsExpired(Ref ref) {
 /// `/me` 응답이 만료된 access 토큰을 만나면 `ApiClient` 의 `_AuthInterceptor`
 /// 가 저장된 refresh 로 자동 재발급 후 재시도한다 — 이 provider 는 그 재발급
 /// 로직을 다시 구현하지 않는다.
+///
+/// `/me` 가 연결 실패(또는 5xx)이고 마지막으로 확인한 역할이 기기에 있으면 그 역할로 들어간다(R52 H2) —
+/// 통신 두절 구간에도 저장 명단 · 대기열 · 비상 신고 · 학원 전화가 열려야 한다. 역할이 없으면 지금처럼 오류로
+/// 남겨 [다시 시도] 를 보인다. 인증 거절(401 등)은 로그인 화면으로 남기고 저장한 역할을 지운다.
 // 자동 재시도를 끈다 — Riverpod 3 은 실패한 provider 를 늘어나는 간격으로 조용히 다시 불러 그동안 스피너만
 // 보이는데, 여기서는 곧바로 [다시 시도] 안내를 보이는 것이 낫다(F06-10).
 final authBootstrapProvider = FutureProvider<void>(retry: (_, _) => null, (
@@ -87,35 +104,91 @@ final authBootstrapProvider = FutureProvider<void>(retry: (_, _) => null, (
 
   final authRepository = ref.watch(authRepositoryProvider);
   try {
-    final me = await authRepository.me();
-    applyRoleAndStatus(
-      ref.read(unsupportedRoleProvider.notifier),
-      ref.read(currentUserRoleProvider.notifier),
-      ref.read(currentAccountStatusProvider.notifier),
-      role: me.role,
-      status: me.status,
-    );
-    ref.read(mustChangePasswordProvider.notifier).state = me.mustChangePassword;
-    ref.read(academyContactProvider.notifier).state = me.academy?.contact;
-    // 계정이 잠기면 서버에서 번호를 못 받는다 — 성공한 로그인의 번호를 기기에 남겨 둔다(`Ruling 825`).
-    unawaited(
-      ref.read(academyContactStoreProvider).save(me.academy?.contact),
-    );
-    if (me.status == AccountStatus.active && me.role == AccountRole.driver) {
-      await _resumeMovingRun(ref);
-    }
+    await _applyMe(ref, await authRepository.me());
   } on Failure catch (failure) {
-    // F06-10 — 연결이 끊겼거나 서버가 잠깐 죽은 것은 로그인이 풀린 것이 아니다. 토큰은 그대로 두고 앱이
-    // [다시 시도] 를 보이게 오류로 남긴다. 그 밖(401 등 인증 거절)은 로그인 화면으로 남긴다.
-    if (failure is NetworkFailure ||
-        (failure is ApiFailure && failure.statusCode >= 500)) {
+    if (_isUnreachable(failure)) {
+      if (await _enterWithLastSession(ref)) return;
       rethrow;
     }
+    // 인증 거절 — 로그인 화면으로 남기고, 이 기기가 기억한 역할은 더 쓰지 않는다.
+    unawaited(ref.read(lastSessionStoreProvider).clear());
   } on Object {
     // 재발급까지 실패하면 인터셉터가 이미 토큰을 지웠다(§ api_client.dart
     // onError) — 여기서는 로그인 화면으로 남기는 것으로 충분하다.
   }
 });
+
+/// `/me` 응답을 앱 상태에 반영한다 — 앱 시작과 연결 회복 뒤 재확인이 같은 처리를 한다.
+Future<void> _applyMe(Ref ref, MeResponse me) async {
+  applyRoleAndStatus(
+    ref.read(unsupportedRoleProvider.notifier),
+    ref.read(currentUserRoleProvider.notifier),
+    ref.read(currentAccountStatusProvider.notifier),
+    role: me.role,
+    status: me.status,
+  );
+  ref.read(unverifiedSessionProvider.notifier).state = false;
+  ref.read(mustChangePasswordProvider.notifier).state = me.mustChangePassword;
+  ref.read(academyContactProvider.notifier).state = me.academy?.contact;
+  // 계정이 잠기면 서버에서 번호를 못 받는다 — 성공한 로그인의 번호를 기기에 남겨 둔다(`Ruling 825`).
+  unawaited(ref.read(academyContactStoreProvider).save(me.academy?.contact));
+  _rememberRole(ref.read(lastSessionStoreProvider), me.role, me.status);
+  if (me.status == AccountStatus.active && me.role == AccountRole.driver) {
+    await _resumeMovingRun(ref);
+  }
+}
+
+/// 활성 계정의 역할만 기기에 남긴다 — 대기 · 거절 · 지원하지 않는 계정은 오프라인으로 들어갈 자격이 없다.
+void _rememberRole(
+  LastSessionStore store,
+  AccountRole? role,
+  AccountStatus? status,
+) {
+  final supported =
+      role != null && UserRole.fromWireValueOrNull(role.wireValue) != null;
+  if (role != null && status == AccountStatus.active && supported) {
+    unawaited(store.saveRole(role));
+  } else {
+    unawaited(store.clear());
+  }
+}
+
+/// 연결이 닿지 않을 때 기기에 남긴 마지막 역할로 들어간다. 남긴 것이 없으면 `false`.
+Future<bool> _enterWithLastSession(Ref ref) async {
+  final role = await ref.read(lastSessionStoreProvider).readRole();
+  if (role == null) return false;
+  applyRoleAndStatus(
+    ref.read(unsupportedRoleProvider.notifier),
+    ref.read(currentUserRoleProvider.notifier),
+    ref.read(currentAccountStatusProvider.notifier),
+    role: role,
+    status: AccountStatus.active,
+  );
+  ref.read(unverifiedSessionProvider.notifier).state = true;
+  ref.read(academyContactProvider.notifier).state = await ref
+      .read(academyContactStoreProvider)
+      .read();
+  return true;
+}
+
+/// 마지막 역할로 들어온 세션을 `/me` 로 다시 확인한다(R52 H2) — 연결이 돌아오는 주기 · 앱 복귀 · 서버 도달
+/// 신호마다 부른다. 아직 닿지 않으면 그대로 두고 다음 기회를 기다린다. 인증 거절은 인터셉터가 세션 만료로 처리한다.
+final Provider<Future<void> Function()> sessionReverifierProvider =
+    Provider<Future<void> Function()>((ref) {
+      var running = false;
+      return () async {
+        if (running || !ref.read(unverifiedSessionProvider)) return;
+        running = true;
+        try {
+          await _applyMe(ref, await ref.read(authRepositoryProvider).me());
+          ref.invalidate(meProvider);
+        } on Object {
+          // 닿지 못했거나 거절됐다 — 거절(401)은 인터셉터가 로그인 화면으로 보낸다. 그 밖은 다음 기회에.
+        } finally {
+          running = false;
+        }
+      };
+    });
 
 /// 운행 중에 앱을 완전히 껐다 켜면 메모리 값인 선택 회차가 비어 위치 송신이 멎는다 — 오늘 회차(§4.1)에서
 /// 운행 중이고 내가 기사인 회차를 찾아 채우면 앱 전역 송신기가 그대로 돈다. 화면은 옮기지 않는다
@@ -165,6 +238,12 @@ void applyLoginResponse(WidgetRef ref, LoginResponse response) {
   ref.read(academyContactProvider.notifier).state = response.academy?.contact;
   unawaited(
     ref.read(academyContactStoreProvider).save(response.academy?.contact),
+  );
+  ref.read(unverifiedSessionProvider.notifier).state = false;
+  _rememberRole(
+    ref.read(lastSessionStoreProvider),
+    response.role,
+    response.status,
   );
 }
 
@@ -252,7 +331,10 @@ class RouterRefreshNotifier extends ChangeNotifier {
       ..invalidate(routeProvider);
     _ref.read(selectedRunIdProvider.notifier).state = null;
     _ref.read(mustChangePasswordProvider.notifier).state = false;
+    _ref.read(unverifiedSessionProvider.notifier).state = false;
     _ref.read(academyContactProvider.notifier).state = null;
+    // 로그아웃 · 세션 만료 뒤에는 이 기기가 기억한 역할로 다시 들어갈 수 없다(R52 H2).
+    unawaited(_ref.read(lastSessionStoreProvider).clear());
     _ref.read(transmissionEndedRunIdProvider.notifier).state = null;
     _ref.read(lastArriveResultProvider.notifier).state = null;
     unawaited(_discardOfflineQueue());
