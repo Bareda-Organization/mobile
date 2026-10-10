@@ -97,10 +97,7 @@ void main() {
     final adapter = _RecordingAdapter();
     final dio = Dio(BaseOptions(baseUrl: 'https://example.invalid'))
       ..httpClientAdapter = adapter;
-    final repository = OfflineQueueRepositoryImpl(
-      database: database,
-      dio: dio,
-    );
+    final repository = OfflineQueueRepositoryImpl(database: database, dio: dio);
 
     const originalClientKey = 'ORIGINAL-CLIENT-KEY';
     final outcome = await repository.sendOrQueue<void>(
@@ -130,10 +127,7 @@ void main() {
     final database = OfflineQueueDatabase.forTesting(NativeDatabase.memory());
     final dio = Dio(BaseOptions(baseUrl: 'https://example.invalid'))
       ..httpClientAdapter = _OfflineAdapter();
-    final repository = OfflineQueueRepositoryImpl(
-      database: database,
-      dio: dio,
-    );
+    final repository = OfflineQueueRepositoryImpl(database: database, dio: dio);
 
     Future<SendOutcome<void>> press(
       String riderId,
@@ -159,11 +153,11 @@ void main() {
       contains('/runs/1/riders/7'),
       contains('/runs/1/riders/8'),
     ]);
-    expect(
-      pending.map((row) => row.description).toList(),
-      ['탑승 처리', '미승차 처리', '탑승 처리'],
-      reason: '같은 학생의 다른 처리·다른 학생의 같은 처리는 각각 쌓인다',
-    );
+    expect(pending.map((row) => row.description).toList(), [
+      '탑승 처리',
+      '미승차 처리',
+      '탑승 처리',
+    ], reason: '같은 학생의 다른 처리·다른 학생의 같은 처리는 각각 쌓인다');
 
     await database.close();
   });
@@ -178,10 +172,7 @@ void main() {
     final adapter = _RecordingAdapter(log: log);
     final dio = Dio(BaseOptions(baseUrl: 'https://example.invalid'))
       ..httpClientAdapter = adapter;
-    final repository = OfflineQueueRepositoryImpl(
-      database: database,
-      dio: dio,
-    );
+    final repository = OfflineQueueRepositoryImpl(database: database, dio: dio);
 
     await repository.sendOrQueue<void>(
       endpoint: '/runs/1/riders/7',
@@ -215,16 +206,14 @@ void main() {
     final adapter = _OfflineAdapter();
     final dio = Dio(BaseOptions(baseUrl: 'https://example.invalid'))
       ..httpClientAdapter = adapter;
-    final repository = OfflineQueueRepositoryImpl(
-      database: database,
-      dio: dio,
-    );
+    final repository = OfflineQueueRepositoryImpl(database: database, dio: dio);
 
     for (final riderId in [7, 8]) {
       await repository.sendOrQueue<void>(
         endpoint: '/runs/1/riders/$riderId',
         method: 'PATCH',
         payload: {'client_key': 'KEY-$riderId', 'status': 'boarded'},
+        // Failure 는 Exception/Error 를 상속하지 않는다 — 위 시험과 같은 이유.
         // Failure 는 Exception/Error 를 상속하지 않는다 — 위 시험과 같은 이유.
         // ignore: only_throw_errors
         send: () => throw const Failure.network(),
@@ -282,6 +271,7 @@ void main() {
         method: 'PATCH',
         payload: const {'client_key': 'K', 'status': 'boarded'},
         // Failure 는 Exception/Error 를 상속하지 않는다 — 위 시험과 같은 이유.
+        // Failure 는 Exception/Error 를 상속하지 않는다 — 위 시험과 같은 이유.
         // ignore: only_throw_errors
         send: () => throw const Failure.network(),
       );
@@ -313,6 +303,7 @@ void main() {
         endpoint: endpoint,
         method: 'POST',
         payload: const {},
+        // Failure 는 Exception/Error 를 상속하지 않는다 — 위 시험과 같은 이유.
         // Failure 는 Exception/Error 를 상속하지 않는다 — 위 시험과 같은 이유.
         // ignore: only_throw_errors
         send: () => throw const Failure.network(),
@@ -371,6 +362,7 @@ void main() {
         method: 'POST',
         payload: const {},
         // Failure 는 Exception/Error 를 상속하지 않는다 — 위 시험과 같은 이유.
+        // Failure 는 Exception/Error 를 상속하지 않는다 — 위 시험과 같은 이유.
         // ignore: only_throw_errors
         send: () => throw const Failure.network(),
       );
@@ -378,6 +370,7 @@ void main() {
         endpoint: '/runs/1/stops/s2/arrive',
         method: 'POST',
         payload: const {},
+        // Failure 는 Exception/Error 를 상속하지 않는다 — 위 시험과 같은 이유.
         // Failure 는 Exception/Error 를 상속하지 않는다 — 위 시험과 같은 이유.
         // ignore: only_throw_errors
         send: () => throw const Failure.network(),
@@ -406,6 +399,7 @@ void main() {
         method: 'PATCH',
         payload: {'client_key': 'K$riderId', 'status': 'boarded'},
         // Failure 는 Exception/Error 를 상속하지 않는다 — 위 시험과 같은 이유.
+        // Failure 는 Exception/Error 를 상속하지 않는다 — 위 시험과 같은 이유.
         // ignore: only_throw_errors
         send: () => throw const Failure.network(),
       );
@@ -420,5 +414,75 @@ void main() {
     expect(rest.single.payload, contains('K8'));
 
     await database.close();
+  });
+  // R52 M5(Ruling 616) — 앞의 일반 행이 5xx 를 되풀이하는 동안에도 새 비상 신고는 대기 행과 무관하게 직접 보낸다.
+  // 새 요청 앞의 재생이 머리 행에서 멈추면 비상 신고가 큐 뒤로 밀려 최대 약 5분 동안 서버에 닿지 못했다.
+  group('비상 신고는 대기열 앞 행에 막히지 않는다', () {
+    Future<(OfflineQueueDatabase, OfflineQueueRepositoryImpl, _OfflineAdapter)>
+    queueWithStuckRider() async {
+      final database = OfflineQueueDatabase.forTesting(NativeDatabase.memory());
+      final adapter = _OfflineAdapter();
+      final dio = Dio(BaseOptions(baseUrl: 'https://example.invalid'))
+        ..httpClientAdapter = adapter;
+      final repository = OfflineQueueRepositoryImpl(
+        database: database,
+        dio: dio,
+      );
+      await repository.sendOrQueue<void>(
+        endpoint: '/runs/1/riders/7',
+        method: 'PATCH',
+        payload: const {'client_key': 'OLD', 'status': 'boarded'},
+        // Failure 는 Exception/Error 를 상속하지 않는다 — 위 시험과 같은 이유.
+        // ignore: only_throw_errors
+        send: () => throw const Failure.network(),
+      );
+      return (database, repository, adapter);
+    }
+
+    test('직접 전송이 먼저 나가고 일반 행은 그대로 남는다', () async {
+      final (database, repository, adapter) = await queueWithStuckRider();
+
+      final log = <String>[];
+      final outcome = await repository.sendOrQueue<void>(
+        endpoint: '/runs/1/emergency',
+        method: 'POST',
+        payload: const {'client_key': 'E1', 'type': 'etc'},
+        send: () async => log.add('direct /runs/1/emergency'),
+      );
+
+      expect(outcome, isA<Sent<void>>());
+      expect(log, ['direct /runs/1/emergency']);
+      expect(
+        adapter.requests,
+        isEmpty,
+        reason: '비상 신고 앞에서 막힌 일반 행을 재생하느라 기다리지 않는다',
+      );
+      final pending = await repository.fetchPending();
+      expect(pending.map((p) => p.endpoint), ['/runs/1/riders/7']);
+
+      await database.close();
+    });
+
+    test('직접 전송이 실패하면 큐 뒤에 쌓는다', () async {
+      final (database, repository, _) = await queueWithStuckRider();
+
+      final outcome = await repository.sendOrQueue<void>(
+        endpoint: '/runs/1/emergency',
+        method: 'POST',
+        payload: const {'client_key': 'E1', 'type': 'etc'},
+        // Failure 는 Exception/Error 를 상속하지 않는다 — 위 시험과 같은 이유.
+        // ignore: only_throw_errors
+        send: () => throw const Failure.network(),
+      );
+
+      expect(outcome, isA<Queued<void>>());
+      final pending = await repository.fetchPending();
+      expect(pending.map((p) => p.endpoint), [
+        '/runs/1/riders/7',
+        '/runs/1/emergency',
+      ]);
+
+      await database.close();
+    });
   });
 }

@@ -18,6 +18,7 @@ import 'package:manager_app/features/offline_queue/domain/offline_queue_reposito
 import 'package:manager_app/features/offline_queue/domain/send_outcome.dart';
 import 'package:manager_app/features/roster/data/roster_api.dart';
 
+import '../../support/fake_roster_key_store.dart';
 import '../../support/fake_token_storage.dart';
 
 const Map<String, dynamic> _rosterJson = {
@@ -140,6 +141,7 @@ void main() {
       overrides: [
         tokenStorageProvider.overrideWithValue(tokens),
         offlineQueueDatabaseProvider.overrideWithValue(database),
+        rosterKeyStoreProvider.overrideWithValue(FakeRosterKeyStore()),
         apiClientProvider.overrideWith(
           (ref) => ApiClient(
             tokenStorage: tokens,

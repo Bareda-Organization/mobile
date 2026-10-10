@@ -102,11 +102,7 @@ void main() {
       currentUserRoleProvider.overrideWith((ref) => UserRole.driver),
       selectedRunIdProvider.overrideWith((ref) => 'run-1'),
       driveModeRunProvider.overrideWithValue(
-        run ??
-            managerRunFixture(
-              busNo: '2호차',
-              departTime: _depart,
-            ),
+        run ?? managerRunFixture(busNo: '2호차', departTime: _depart),
       ),
       driveModeRepositoryProvider.overrideWithValue(repo),
       positionSourceProvider.overrideWithValue(
@@ -290,6 +286,35 @@ void main() {
     await tester.pumpAndSettle();
     expect(repo.startCalls, 1);
     expect(find.text('DRIVE_MARKER'), findsOneWidget);
+  });
+
+  // A3 — 하원 시작은 전원 자동 승차 + 승차 알림(C-07 · Ruling 854)이라 확인 창에서 미리 알린다.
+  testWidgets('하원 시작 확인 창은 자동 승차 알림을 알리고, 등원 확인 창은 알리지 않는다', (tester) async {
+    Future<void> openConfirm(RunDirection direction) async {
+      await tester.pumpWidget(
+        wrap(
+          DateTime(2026, 10, 3, 12, 14),
+          _CountingDriveRepository(),
+          run: managerRunFixture(
+            busNo: '2호차',
+            departTime: _depart,
+            direction: direction,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(BaraedaButton, '운행 시작'));
+      await tester.pumpAndSettle();
+    }
+
+    const notice = '학생은 하원 시작과 함께 자동으로 승차 처리되고 학부모에게 승차 알림이 가요.';
+    await openConfirm(RunDirection.fromAcademy);
+    expect(find.textContaining(notice), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox());
+    await openConfirm(RunDirection.toAcademy);
+    expect(find.text('운행을 시작할까요?'), findsOneWidget);
+    expect(find.textContaining('자동으로 승차'), findsNothing);
   });
 
   testWidgets('확인 창에서 [닫기] 를 누르면 요청이 나가지 않는다', (tester) async {

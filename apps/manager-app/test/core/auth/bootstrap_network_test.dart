@@ -4,10 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:manager_app/app/app.dart';
 import 'package:manager_app/app/di.dart';
+import 'package:manager_app/core/auth/last_session_store.dart';
 import 'package:manager_app/features/auth/domain/auth_repository.dart';
 import 'package:manager_app/features/auth/presentation/login_screen.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
 
+import '../../support/fake_last_session_store.dart';
 import '../../support/fake_token_storage.dart';
 
 /// `/me` 만 쓰는 가짜 — 첫 호출은 [failure] 로 실패하고 그 뒤로는 동승자 계정을 돌려준다.
@@ -47,6 +49,8 @@ void main() {
             FakeTokenStorage(seedRefreshToken: 'refresh'),
           ),
           authRepositoryProvider.overrideWithValue(repository),
+          // 저장된 역할이 없는 기기 — 플랫폼 채널 대신 메모리 대역(R52 H2).
+          lastSessionStoreProvider.overrideWithValue(FakeLastSessionStore()),
           // 다시 시도가 성공하면 홈이 열린다 — 홈이 부르는 요청은 가짜로 막는다.
           todayRunsProvider.overrideWith((ref) async => []),
         ],
@@ -70,6 +74,13 @@ void main() {
       tester,
       const Failure.api(statusCode: 503, code: 'X', message: 'down'),
     );
+
+    expect(find.byType(LoginScreen), findsNothing);
+    expect(find.text('다시 시도'), findsOneWidget);
+  });
+
+  testWidgets('시작할 때 게이트웨이 HTML 502 면 로그인 화면 대신 다시 시도 안내를 보인다', (tester) async {
+    await pumpApp(tester, const Failure.unknown(statusCode: 502));
 
     expect(find.byType(LoginScreen), findsNothing);
     expect(find.text('다시 시도'), findsOneWidget);

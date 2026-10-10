@@ -16,8 +16,10 @@ import 'package:manager_app/features/drive_mode/domain/drive_mode_repository.dar
 import 'package:manager_app/features/emergency/data/emergency_api.dart';
 import 'package:manager_app/features/emergency/data/emergency_repository_impl.dart';
 import 'package:manager_app/features/emergency/domain/emergency_repository.dart';
+import 'package:manager_app/features/home/data/cached_manager_run_repository.dart';
 import 'package:manager_app/features/home/data/manager_run_api.dart';
 import 'package:manager_app/features/home/data/manager_run_repository_impl.dart';
+import 'package:manager_app/features/home/data/run_summary_store.dart';
 import 'package:manager_app/features/home/domain/manager_run_repository.dart';
 import 'package:manager_app/features/navigation/data/kakao_navi_launcher.dart';
 import 'package:manager_app/features/navigation/data/navigation_api.dart';
@@ -32,6 +34,7 @@ import 'package:manager_app/features/position/domain/position_repository.dart';
 import 'package:manager_app/features/roster/data/drift_roster_cache.dart';
 import 'package:manager_app/features/roster/data/guardian_phone_repository_impl.dart';
 import 'package:manager_app/features/roster/data/roster_api.dart';
+import 'package:manager_app/features/roster/data/roster_cipher.dart';
 import 'package:manager_app/features/roster/data/roster_repository_impl.dart';
 import 'package:manager_app/features/roster/domain/guardian_phone_repository.dart';
 import 'package:manager_app/features/roster/domain/roster_cache.dart';
@@ -95,9 +98,8 @@ final deviceRegistrationStorageProvider = Provider<DeviceRegistrationStorage>(
 /// 자리표시 토큰이다. Firebase 를 붙일 때 이 provider 한 곳만 바꾼다
 /// (`docs/backend/infra/DEPLOYMENT.md` "외부 연동 준비물").
 final pushTokenSourceProvider = Provider<PushTokenSource>(
-  (ref) => PlaceholderPushTokenSource(
-    ref.watch(deviceRegistrationStorageProvider),
-  ),
+  (ref) =>
+      PlaceholderPushTokenSource(ref.watch(deviceRegistrationStorageProvider)),
 );
 
 /// 로그인 뒤 단말 등록 · 로그아웃 해지 — `AuthApi` 가 부른다. 매니저는 알림
@@ -124,7 +126,12 @@ final managerRunApiProvider = Provider<ManagerRunApi>((ref) {
 });
 
 final managerRunRepositoryProvider = Provider<ManagerRunRepository>((ref) {
-  return ManagerRunRepositoryImpl(api: ref.watch(managerRunApiProvider));
+  return CachedManagerRunRepository(
+    inner: ManagerRunRepositoryImpl(api: ref.watch(managerRunApiProvider)),
+    store: ref.watch(runSummaryStoreProvider),
+    clock: ref.watch(clockProvider),
+    isSignedIn: () => ref.read(currentUserRoleProvider) != null,
+  );
 });
 
 /// API_SPEC §4.4·§4.5 — 운행 시작·승하차지 도착(기사 전용).
@@ -146,8 +153,21 @@ final rosterApiProvider = Provider<RosterApi>((ref) {
 
 /// 마지막으로 받은 명단의 로컬 저장소(M-M3) — 오프라인 대기열과 같은 기기 DB 를 쓴다.
 final rosterCacheProvider = Provider<RosterCache>((ref) {
-  return DriftRosterCache(database: ref.watch(offlineQueueDatabaseProvider));
+  return DriftRosterCache(
+    database: ref.watch(offlineQueueDatabaseProvider),
+    cipher: ref.watch(rosterCipherProvider),
+  );
 });
+
+/// 명단 저장본 암호화(`Ruling 872`) — 키는 기기 보안 저장소에 둔다. 시험은
+/// [rosterKeyStoreProvider] 를 메모리 대역으로 바꾼다(플랫폼 채널이 없다).
+final rosterKeyStoreProvider = Provider<RosterKeyStore>(
+  (ref) => const SecureRosterKeyStore(),
+);
+
+final rosterCipherProvider = Provider<RosterCipher>(
+  (ref) => RosterCipher(ref.watch(rosterKeyStoreProvider)),
+);
 
 final rosterRepositoryProvider = Provider<RosterRepository>((ref) {
   return RosterRepositoryImpl(

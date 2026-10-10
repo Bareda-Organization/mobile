@@ -50,7 +50,10 @@ class ManagerRun {
       addedCount: json['added_count'] as int,
       removedCount: json['removed_count'] as int,
       ackRequired: json['ack_required'] as bool,
-      roleInRun: UserRole.fromWireValueOrNull(json['role_in_run'] as String),
+      roleInRun: switch (json['role_in_run']) {
+        final String wire => UserRole.fromWireValueOrNull(wire),
+        _ => null,
+      },
       // R48 Ruling 822 — 서버가 아직 안 주거나 확정 전이면 `null`. 값이 없으면 화면은 그 줄을 숨긴다.
       plateNo: json['plate_no'] as String?,
       riderCount: json['rider_count'] as int?,
@@ -58,6 +61,33 @@ class ManagerRun {
       stopCount: json['stop_count'] as int?,
     );
   }
+
+  /// 기기에 남기는 회차 요약(R52 H2) — `fromJson` 이 그대로 읽는 §4.1 항목 모양이다.
+  /// 학생 · 보호자 정보는 이 항목에 없다.
+  Map<String, dynamic> toJson() => {
+    'run_id': runId,
+    'bus_no': busNo,
+    'direction': direction.wireValue,
+    'depart_time': departTime.toIso8601String(),
+    'origin': origin,
+    'destination': destination,
+    'est_duration_min': estDurationMin,
+    'run_status': runStatus.wireValue,
+    'confirmed': confirmed,
+    'confirm_at': confirmAt?.toIso8601String(),
+    'start_window': {
+      'from': startWindowFrom.toIso8601String(),
+      'to': startWindowTo.toIso8601String(),
+    },
+    'added_count': addedCount,
+    'removed_count': removedCount,
+    'ack_required': ackRequired,
+    'role_in_run': roleInRun?.wireValue,
+    'plate_no': plateNo,
+    'rider_count': riderCount,
+    'absent_count': absentCount,
+    'stop_count': stopCount,
+  };
 
   final String runId;
 

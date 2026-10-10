@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:manager_app/app/di.dart';
+import 'package:manager_app/core/auth/account_session.dart';
 import 'package:manager_app/core/auth/auth_providers.dart';
+import 'package:manager_app/core/run/manager_run_channel.dart';
 import 'package:manager_app/features/offline_queue/presentation/offline_queue_providers.dart';
 
 /// 복구 시 자동 동기화 (M-06, API_SPEC §1.7) — 앱이 떠 있는 동안 주기마다
@@ -39,10 +41,10 @@ class _OfflineQueueAutoSyncState extends ConsumerState<OfflineQueueAutoSync> {
   @override
   void initState() {
     super.initState();
-    _timer = Timer.periodic(
-      OfflineQueueAutoSync.interval,
-      (_) => unawaited(_flush()),
-    );
+    _timer = Timer.periodic(OfflineQueueAutoSync.interval, (_) {
+      unawaited(_reverifySession());
+      unawaited(_flush());
+    });
   }
 
   @override
@@ -50,6 +52,9 @@ class _OfflineQueueAutoSyncState extends ConsumerState<OfflineQueueAutoSync> {
     _timer?.cancel();
     super.dispose();
   }
+
+  /// 통신이 끊긴 채 마지막 역할로 들어온 세션이면 `/me` 를 다시 불러 확인한다(R52 H2). 아니면 아무 일도 없다.
+  Future<void> _reverifySession() => ref.read(sessionReverifierProvider)();
 
   Future<void> _flush() async {
     // 로그인 전에는 토큰이 없다 — 보내면 401 이고, 재생 규칙상 4xx 는
@@ -72,5 +77,14 @@ class _OfflineQueueAutoSyncState extends ConsumerState<OfflineQueueAutoSync> {
   }
 
   @override
-  Widget build(BuildContext context) => widget.child;
+  Widget build(BuildContext context) {
+    // 앱이 돌아왔거나 위치 전송이 서버에 닿았다 — 연결이 회복됐을 수 있으니 주기를 기다리지 않고 바로 확인한다.
+    ref
+      ..listen<int>(appResumedProvider, (_, _) => unawaited(_reverifySession()))
+      ..listen<int>(
+        serverReachedProvider,
+        (_, _) => unawaited(_reverifySession()),
+      );
+    return widget.child;
+  }
 }
