@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/core/auth/user_role.dart';
+import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
 import 'package:manager_app/features/notifications/presentation/notification_providers.dart';
@@ -46,13 +47,20 @@ class ManagerShell extends ConsumerWidget {
     final current = branches.indexOf(navigationShell.currentIndex);
 
     // 회차를 아직 고르지 않았거나 고른 회차가 오늘 목록에서 사라졌으면 자동 선택을 담는다(진행 중 > 확정된 가장
-    // 이른) — 동승자의 첫 화면 명단이 홈을 거치지 않고도 회차를 안다. 이미 끝난 회차는 그대로 둔다: 방금 끝낸 운행의
-    // 종료 화면이 다음 회차로 바뀌어 보이면 안 된다.
+    // 이른) — 동승자의 첫 화면 명단이 홈을 거치지 않고도 회차를 안다. 고른 회차가 **끝났고** 큰 카드(focus)가 다른
+    // 회차를 가리키면 그 회차로 갈아탄다(R52 H1) — 앞 회차가 끝난 뒤에도 명단 탭 · 지연 알림 · 예외 보고가 끝난 회차에
+    // 머물지 않게 한다. 갈아타기는 쉘이 맨 위 화면일 때만 한다: 운행 종료 · 보고 화면이 위에 떠 있는 동안
+    // 방금 끝낸 운행의 화면이 다음 회차로 바뀌어 보이면 안 된다(그 화면을 닫으면 그때 갈아탄다).
     final focus = ref.watch(focusRunProvider);
     final selected = ref.watch(selectedRunIdProvider);
     final runs = ref.watch(todayRunsProvider).value ?? const [];
+    final selectedRun = runs.where((run) => run.runId == selected).firstOrNull;
+    final isTop = ModalRoute.of(context)?.isCurrent ?? true;
     if (focus != null &&
-        (selected == null || !runs.any((run) => run.runId == selected))) {
+        (selectedRun == null ||
+            (isTop &&
+                selectedRun.runStatus == RunStatus.finished &&
+                selectedRun.runId != focus.runId))) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         ref.read(selectedRunIdProvider.notifier).state = focus.runId;
       });
