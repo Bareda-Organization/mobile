@@ -539,4 +539,58 @@ void main() {
     expect(fakeRepo.canceledIds, isEmpty);
     expect(find.text('미승차 처리'), findsOneWidget);
   });
+
+  // 삭제 확인 문구는 요청 종류마다 다시 처리하는 길이 다르다 — 도착 처리는 명단이 아니라 운행 화면의 [도착 처리] 다.
+  Future<void> openDeleteDialog(
+    WidgetTester tester,
+    PendingRequestSummary request,
+  ) async {
+    await tester.pumpWidget(
+      _wrap(const OfflineQueueScreen(), [
+        offlineQueueRepositoryProvider.overrideWithValue(
+          _FakeOfflineQueueRepository(pending: [request]),
+        ),
+      ]),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('삭제'));
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('도착 처리 삭제 확인 창은 도착 기록이 사라진다고 알리고 운행 화면에서 다시 누르라고 안내한다', (
+    tester,
+  ) async {
+    await openDeleteDialog(
+      tester,
+      PendingRequestSummary(
+        id: 1,
+        endpoint: '/runs/run-1/stops/stop-1/arrive',
+        method: 'POST',
+        payload: '{}',
+        createdAt: DateTime(2026, 9, 12, 10),
+      ),
+    );
+
+    expect(find.text('승하차지 도착 처리를 삭제할까요?'), findsOneWidget);
+    expect(find.textContaining('도착 기록이 남지 않아요.'), findsOneWidget);
+    expect(find.textContaining('운행 화면에서 [도착 처리]를 다시 눌러 주세요.'), findsOneWidget);
+    expect(find.textContaining('명단에서 다시 처리'), findsNothing);
+  });
+
+  testWidgets('비상 신고 삭제 확인 창의 문장은 어색한 이음 없이 끝난다', (tester) async {
+    await openDeleteDialog(
+      tester,
+      PendingRequestSummary(
+        id: 1,
+        endpoint: '/runs/run-1/emergency',
+        method: 'POST',
+        payload: '{"type":"accident","client_key":"K"}',
+        createdAt: DateTime(2026, 9, 12, 10),
+      ),
+    );
+
+    expect(find.textContaining('학원에 알림도 가지 않아요.'), findsOneWidget);
+    expect(find.textContaining('화면에서 다시 보내 주세요.'), findsOneWidget);
+    expect(find.textContaining('보내해'), findsNothing);
+  });
 }
