@@ -461,6 +461,48 @@ void main() {
       expect(find.widgetWithText(BaraedaButton, '보호자 부재 보고'), findsOneWidget);
     });
 
+    // A16 — 혼자 귀가 경고는 하원 회차에만 뜬다. 등원에는 "혼자 귀가" 라는 개념이 없다.
+    testWidgets('하원 종료 보류 줄에는 혼자 귀가 불가 경고가 붙는다', (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          const RunEndScreen(),
+          [
+            selectedRunIdProvider.overrideWith((ref) => runId),
+            lastArriveResultProvider.overrideWith((ref) => null),
+          ],
+          roster: rosterProvider.overrideWith(
+            (ref) async => _fromAcademyRoster(
+              arrived: const [true, true],
+              boarded: const ['김바래'],
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('혼자 귀가 불가'), findsOneWidget);
+    });
+
+    testWidgets('등원 종료 보류 줄에는 혼자 귀가 불가 경고가 없다', (tester) async {
+      await tester.pumpWidget(
+        _wrap(const RunEndScreen(), [
+          selectedRunIdProvider.overrideWith((ref) => runId),
+          lastArriveResultProvider.overrideWith(
+            (ref) => _terminationWith(
+              finishPending: true,
+              remaining: const [
+                RemainingRider(riderId: 'r1', name: '김바래', stopName: 'A정류장'),
+              ],
+            ),
+          ),
+        ], roster: _boardedRoster([(id: 'r1', name: '김바래')])),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.widgetWithText(BaraedaListRow, '김바래'), findsOneWidget);
+      expect(find.textContaining('혼자 귀가'), findsNothing);
+    });
+
     testWidgets('도착하지 않은 곳이 미경유뿐이면 마지막까지 도착한 것이다', (tester) async {
       await tester.pumpWidget(
         _wrap(
