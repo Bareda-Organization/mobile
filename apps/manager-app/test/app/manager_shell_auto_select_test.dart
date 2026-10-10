@@ -99,16 +99,50 @@ void main() {
     );
   }
 
-  testWidgets('동승자: 앞 회차 A 가 끝나고 B 가 확정이면 명단 · 지연 알림 · 예외 보고가 읽는 선택이 B 로 바뀐다', (
-    tester,
-  ) async {
+  testWidgets(
+    '동승자: 고른 앞 회차 A 가 끝나고 B 가 확정이면 명단 · 지연 알림 · 예외 보고가 읽는 선택이 B 로 바뀐다',
+    (tester) async {
+      final container = await pump(tester, UserRole.escort, [
+        confirmedA(),
+        confirmedB(),
+      ]);
+      expect(container.read(selectedRunIdProvider), 'run-A');
+
+      container.read(_runs.notifier).state = [finishedA(), confirmedB()];
+      await tester.pumpAndSettle();
+
+      expect(container.read(selectedRunIdProvider), 'run-B');
+      expect(container.read(selectedManagerRunProvider)?.busNo, '2호차');
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
+  // 알림(route_changed · assignment_changed)이 이미 끝난 회차를 가리키면 `notifications_screen.dart` 가 그 회차를
+  // 일부러 고른다. 그건 끝나기 전에 고른 회차가 그 뒤 끝난 경우가 아니므로 쉘이 덮어쓰면 안 된다.
+  testWidgets('끝난 회차를 일부러 골랐으면(알림) 큰 카드가 다른 회차여도 쉘이 갈아타지 않는다', (tester) async {
     final container = await pump(tester, UserRole.escort, [
       finishedA(),
       confirmedB(),
     ]);
 
+    expect(container.read(selectedRunIdProvider), 'run-A');
+    expect(container.read(selectedManagerRunProvider)?.busNo, '1호차');
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('A 가 끝나 B 로 갈아탄 뒤 끝난 A 를 알림으로 다시 고르면 그대로 둔다', (tester) async {
+    final container = await pump(tester, UserRole.escort, [
+      confirmedA(),
+      confirmedB(),
+    ]);
+    container.read(_runs.notifier).state = [finishedA(), confirmedB()];
+    await tester.pumpAndSettle();
     expect(container.read(selectedRunIdProvider), 'run-B');
-    expect(container.read(selectedManagerRunProvider)?.busNo, '2호차');
+
+    container.read(selectedRunIdProvider.notifier).state = 'run-A';
+    await tester.pumpAndSettle();
+
+    expect(container.read(selectedRunIdProvider), 'run-A');
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
