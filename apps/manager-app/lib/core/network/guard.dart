@@ -15,3 +15,8 @@ Future<T> guardDio<T>(Future<T> Function() body) async {
     throw mapDioExceptionToFailure(exception);
   }
 }
+
+/// 서버에 닿지 못한 실패 — 연결 두절과 서버 5xx. 서버의 판단(4xx)이 아니라서 마지막으로 알던 값으로 버틸 수 있다.
+bool isUnreachableFailure(Failure failure) =>
+    failure is NetworkFailure ||
+    (failure is ApiFailure && failure.statusCode >= 500);

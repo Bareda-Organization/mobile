@@ -16,8 +16,10 @@ import 'package:manager_app/features/drive_mode/domain/drive_mode_repository.dar
 import 'package:manager_app/features/emergency/data/emergency_api.dart';
 import 'package:manager_app/features/emergency/data/emergency_repository_impl.dart';
 import 'package:manager_app/features/emergency/domain/emergency_repository.dart';
+import 'package:manager_app/features/home/data/cached_manager_run_repository.dart';
 import 'package:manager_app/features/home/data/manager_run_api.dart';
 import 'package:manager_app/features/home/data/manager_run_repository_impl.dart';
+import 'package:manager_app/features/home/data/run_summary_store.dart';
 import 'package:manager_app/features/home/domain/manager_run_repository.dart';
 import 'package:manager_app/features/navigation/data/kakao_navi_launcher.dart';
 import 'package:manager_app/features/navigation/data/navigation_api.dart';
@@ -96,9 +98,8 @@ final deviceRegistrationStorageProvider = Provider<DeviceRegistrationStorage>(
 /// 자리표시 토큰이다. Firebase 를 붙일 때 이 provider 한 곳만 바꾼다
 /// (`docs/backend/infra/DEPLOYMENT.md` "외부 연동 준비물").
 final pushTokenSourceProvider = Provider<PushTokenSource>(
-  (ref) => PlaceholderPushTokenSource(
-    ref.watch(deviceRegistrationStorageProvider),
-  ),
+  (ref) =>
+      PlaceholderPushTokenSource(ref.watch(deviceRegistrationStorageProvider)),
 );
 
 /// 로그인 뒤 단말 등록 · 로그아웃 해지 — `AuthApi` 가 부른다. 매니저는 알림
@@ -125,7 +126,12 @@ final managerRunApiProvider = Provider<ManagerRunApi>((ref) {
 });
 
 final managerRunRepositoryProvider = Provider<ManagerRunRepository>((ref) {
-  return ManagerRunRepositoryImpl(api: ref.watch(managerRunApiProvider));
+  return CachedManagerRunRepository(
+    inner: ManagerRunRepositoryImpl(api: ref.watch(managerRunApiProvider)),
+    store: ref.watch(runSummaryStoreProvider),
+    clock: ref.watch(clockProvider),
+    isSignedIn: () => ref.read(currentUserRoleProvider) != null,
+  );
 });
 
 /// API_SPEC §4.4·§4.5 — 운행 시작·승하차지 도착(기사 전용).

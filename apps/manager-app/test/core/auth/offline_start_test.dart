@@ -13,6 +13,7 @@ import 'package:manager_app/core/auth/user_role.dart';
 import 'package:manager_app/features/auth/domain/auth_repository.dart';
 import 'package:manager_app/features/auth/presentation/login_screen.dart';
 import 'package:manager_app/features/home/data/models/manager_run.dart';
+import 'package:manager_app/features/home/data/run_summary_store.dart';
 import 'package:manager_app/features/home/domain/manager_run_repository.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
 import 'package:manager_app/features/offline_queue/data/offline_queue_database.dart';
@@ -22,7 +23,9 @@ import '../../support/fake_academy_contact_store.dart';
 import '../../support/fake_last_session_store.dart';
 import '../../support/fake_notification_repository.dart';
 import '../../support/fake_roster_key_store.dart';
+import '../../support/fake_run_summary_store.dart';
 import '../../support/fake_token_storage.dart';
+import '../../support/manager_run_fixture.dart';
 
 /// 회차 목록은 비어 있다 — 기사 계정이 확인되면 앱이 위치 송신 재개용으로 목록을 한 번 부른다.
 class _NoRuns implements ManagerRunRepository {
@@ -213,6 +216,46 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
+  testWidgets('다시 확인이 서버의 거절(403)이면 저장 역할을 지우고 세션을 끝낸다', (tester) async {
+    const blocked = Failure.api(
+      statusCode: 403,
+      code: 'AUTH_ACCOUNT_BLOCKED',
+      message: '차단',
+    );
+    final repository = _MeRepository(network);
+    final store = FakeLastSessionStore(AccountRole.driver);
+    final container = await pumpApp(
+      tester,
+      repository: repository,
+      store: store,
+    );
+    expect(container.read(unverifiedSessionProvider), isTrue);
+
+    repository.failure = blocked;
+    await container.read(sessionReverifierProvider)();
+    await tester.pumpAndSettle();
+
+    expect(store.role, isNull);
+    expect(container.read(currentUserRoleProvider), isNull);
+    expect(find.byType(LoginScreen), findsOneWidget);
+  });
+
+  testWidgets('다시 확인이 서버의 거절(401)이어도 저장 역할을 지운다', (tester) async {
+    final repository = _MeRepository(network);
+    final store = FakeLastSessionStore(AccountRole.driver);
+    final container = await pumpApp(
+      tester,
+      repository: repository,
+      store: store,
+    );
+
+    repository.failure = rejected;
+    await container.read(sessionReverifierProvider)();
+    await tester.pumpAndSettle();
+
+    expect(store.role, isNull);
+  });
+
   testWidgets('로그인에 성공하면 역할을 기기에 남긴다', (tester) async {
     final store = FakeLastSessionStore();
     await tester.pumpWidget(
@@ -238,8 +281,13 @@ void main() {
   test('로그아웃(역할이 비는 순간)하면 저장한 역할을 지운다', () async {
     final database = OfflineQueueDatabase.forTesting(NativeDatabase.memory());
     final store = FakeLastSessionStore(AccountRole.driver);
+    final summary = FakeRunSummaryStore((
+      savedAt: DateTime(2026, 10, 10, 9),
+      runs: [managerRunFixture()],
+    ));
     final container = ProviderContainer(
       overrides: [
+        runSummaryStoreProvider.overrideWithValue(summary),
         tokenStorageProvider.overrideWithValue(FakeTokenStorage()),
         offlineQueueDatabaseProvider.overrideWithValue(database),
         rosterKeyStoreProvider.overrideWithValue(FakeRosterKeyStore()),
@@ -258,5 +306,6 @@ void main() {
     await Future<void>.delayed(Duration.zero);
 
     expect(store.role, isNull);
+    expect(summary.saved, isNull, reason: '오늘 회차 요약도 함께 지운다');
   });
 }
