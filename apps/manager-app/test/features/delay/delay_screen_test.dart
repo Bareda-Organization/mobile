@@ -252,6 +252,26 @@ void main() {
     });
   });
 
+  // API_SPEC §4.9 — 안내 문구는 최대 500자이고 넘으면 서버가 422 로 거절한다. 입력칸에서 먼저 멈춘다.
+  testWidgets('안내 문구는 500자에서 더 입력되지 않는다', (tester) async {
+    await tester.pumpWidget(
+      _wrap(const DelayScreen(), [
+        selectedRunIdProvider.overrideWith((ref) => runId),
+        roleCapabilitiesProvider.overrideWithValue(
+          RoleCapabilities.of(UserRole.escort),
+        ),
+      ]),
+    );
+
+    await tester.enterText(find.byType(TextField), '가' * 501);
+    await tester.pump();
+
+    expect(
+      tester.widget<TextField>(find.byType(TextField)).controller!.text.length,
+      500,
+    );
+  });
+
   testWidgets('전송 실패 시 서버 실패 사유를 보여준다', (tester) async {
     final fakeRepo = _FakeDelayRepository(
       failure: const ApiFailure(

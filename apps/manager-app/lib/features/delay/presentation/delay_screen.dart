@@ -51,9 +51,14 @@ class _DelayScreenState extends ConsumerState<DelayScreen> {
   static const _maxMinutes = 30;
   static const _stepMinutes = 5;
 
+  /// 안내 문구 최대 길이 — API_SPEC §4.9, 넘으면 서버가 `422 VALIDATION_FAILED`.
+  static const _maxMessageLength = 500;
+
   int _minutes = _minMinutes;
   DelayReason _reason = DelayReason.traffic;
-  final _messageController = TextEditingController();
+  final _messageController = LimitedTextController(
+    maxLength: _maxMessageLength,
+  );
 
   bool _submitting = false;
   String? _errorMessage;
