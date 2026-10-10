@@ -141,6 +141,9 @@ class RosterStopCard extends StatelessWidget {
                       fontWeight: BaraedaFontWeight.bold,
                       color: skipped ? colors.statusMissed : colors.textPrimary,
                       height: 1.3,
+                      // 타임라인 · 지도 핀과 같게 — 미경유는 이름에 취소선.
+                      decoration: skipped ? TextDecoration.lineThrough : null,
+                      decorationColor: colors.statusMissed,
                     ),
                   ),
                   Text(
