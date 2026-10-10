@@ -290,6 +290,29 @@ void main() {
     );
   });
 
+  // 일정 탭이 이미 열려 있을 때 — 영수증 [신청 이력 보기] 가 나중에 표시를 켜도 이력 자리로 내려간다.
+  testWidgets('이미 열린 일정 탭도 이력 표시가 나중에 켜지면 이력 자리로 내려간다', (tester) async {
+    await _pump(
+      tester,
+      page: const ChangeRequestPage(items: [], pendingCount: 0),
+      height: 500,
+    );
+    expect(scrolled(tester), 0);
+
+    ProviderScope.containerOf(tester.element(find.byType(ScheduleScreen)))
+            .read(scheduleShowHistoryProvider.notifier)
+            .state =
+        true;
+    await tester.pumpAndSettle();
+
+    expect(scrolled(tester), greaterThan(0));
+    expect(
+      tester.getTopLeft(find.text('신청 이력')).dy,
+      lessThan(500),
+      reason: '신청 이력 제목이 화면 안에 있다',
+    );
+  });
+
   testWidgets('표시가 없으면 일정 탭은 맨 위에서 시작한다', (tester) async {
     await _pump(
       tester,

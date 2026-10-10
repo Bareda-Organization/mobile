@@ -160,6 +160,7 @@ Future<_CountingPositionRepository> _pumpHome(
   RiderStatus riderStatus = RiderStatus.waiting,
   DateTime? now,
   String? savedContact,
+  ChangeRequestPage? changeRequests,
 }) async {
   tester.view.physicalSize = const Size(800, 2600);
   tester.view.devicePixelRatio = 1;
@@ -200,6 +201,7 @@ Future<_CountingPositionRepository> _pumpHome(
         ),
         changeRequestsProvider.overrideWith(
           (ref, id) async =>
+              changeRequests ??
               const ChangeRequestPage(items: [], pendingCount: 0),
         ),
       ],
@@ -250,9 +252,8 @@ void main() {
       await _pumpHome(
         tester,
         now: now,
-        position: () async => _position(
-          receivedAt: now.subtract(const Duration(minutes: 3)),
-        ),
+        position: () async =>
+            _position(receivedAt: now.subtract(const Duration(minutes: 3))),
       );
 
       expect(_inPreview('신호 없음'), findsOneWidget);
@@ -269,6 +270,33 @@ void main() {
 
       expect(_inPreview('이동 중'), findsOneWidget);
       expect(_inPreview('신호 없음'), findsNothing);
+    });
+
+    // 유실 경계(Ruling 208 · 2분) — 2분 직전은 이동 중, 2분 직후는 신호 없음. 임계값을 바꾸면 여기서 깨진다.
+    testWidgets('마지막 좌표가 2분 직전(1분 59초)이면 유실이 아니라 "이동 중" 이다', (tester) async {
+      await _pumpHome(
+        tester,
+        now: now,
+        position: () async => _position(
+          receivedAt: now.subtract(const Duration(minutes: 1, seconds: 59)),
+        ),
+      );
+
+      expect(_inPreview('이동 중'), findsOneWidget);
+      expect(_inPreview('신호 없음'), findsNothing);
+    });
+
+    testWidgets('마지막 좌표가 2분 직후(2분 1초)면 유실로 "신호 없음" 이다', (tester) async {
+      await _pumpHome(
+        tester,
+        now: now,
+        position: () async => _position(
+          receivedAt: now.subtract(const Duration(minutes: 2, seconds: 1)),
+        ),
+      );
+
+      expect(_inPreview('신호 없음'), findsOneWidget);
+      expect(_inPreview('이동 중'), findsNothing);
     });
 
     testWidgets('오늘 미등원이면 칩이 "미등원" 이다 — "이동 중" 이 아니다', (tester) async {
@@ -290,9 +318,8 @@ void main() {
         _pumpHome(
           tester,
           savedContact: savedContact,
-          position: () => Future.error(
-            const Failure.network(message: '연결할 수 없습니다'),
-          ),
+          position: () =>
+              Future.error(const Failure.network(message: '연결할 수 없습니다')),
         );
 
     testWidgets('기기에 남긴 문의처에 번호가 있으면 오류 띠 아래에 학원 전화 카드가 나온다', (tester) async {
@@ -468,6 +495,53 @@ void main() {
 
       expect(find.text('내 버스'), findsOneWidget);
       expect(find.text('로그아웃'), findsNothing);
+    });
+  });
+
+  // R52 870 — 같은 회차 대기 신청이 여럿이면 가장 이른 마감을 카드에 보인다.
+  group('승인 대기 마감 — 여러 신청 중 가장 이른 마감(Ruling 870)', () {
+    final now = DateTime.utc(2026, 10, 3, 3, 30);
+    ChangeRequest pending(String id, DateTime deadline) => ChangeRequest(
+      changeRequestId: id,
+      type: ChangeRequestType.cancel,
+      status: ChangeRequestStatus.pending,
+      runId: 'run-1',
+      deadlineAt: deadline,
+    );
+
+    testWidgets('대기 신청이 2건이면 더 이른 마감(5분 뒤)을 쓴다 — 늦은 마감(40분)은 쓰지 않는다', (
+      tester,
+    ) async {
+      await _pumpHome(
+        tester,
+        now: now,
+        position: () async => _position(),
+        changeRequests: ChangeRequestPage(
+          items: [
+            pending('c-late', now.add(const Duration(minutes: 40))),
+            pending('c-early', now.add(const Duration(minutes: 5))),
+          ],
+          pendingCount: 2,
+        ),
+      );
+
+      expect(find.text('승인 대기 · 마감까지 5분'), findsOneWidget);
+      expect(find.text('승인 대기 · 마감까지 40분'), findsNothing);
+    });
+
+    testWidgets('마감이 이미 지났으면 "승인 대기" 만 보이고 남은 시간은 없다', (tester) async {
+      await _pumpHome(
+        tester,
+        now: now,
+        position: () async => _position(),
+        changeRequests: ChangeRequestPage(
+          items: [pending('c-old', now.subtract(const Duration(minutes: 1)))],
+          pendingCount: 1,
+        ),
+      );
+
+      expect(find.text('승인 대기'), findsOneWidget);
+      expect(find.textContaining('마감까지'), findsNothing);
     });
   });
 
