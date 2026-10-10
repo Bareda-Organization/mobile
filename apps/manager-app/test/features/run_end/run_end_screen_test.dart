@@ -183,6 +183,7 @@ RosterResponse _fromAcademyRoster({
   required List<bool> arrived,
   List<String> boarded = const [],
   RunDirection direction = RunDirection.fromAcademy,
+  Set<int> skipped = const {},
 }) => RosterResponse(
   runId: 'run-1',
   busNo: '3호차',
@@ -194,6 +195,7 @@ RosterResponse _fromAcademyRoster({
         stopId: 's$i',
         seq: i + 1,
         name: '${i + 1}번 승하차지',
+        change: skipped.contains(i) ? StopChange.skipped : null,
         arrivedAt: arrived[i] ? DateTime(2026, 9, 12, 8, 30 + i) : null,
         students: [
           if (i == 0)
@@ -457,6 +459,29 @@ void main() {
       expect(find.textContaining('하차 대기 2명'), findsOneWidget);
       expect(find.widgetWithText(BaraedaListRow, '김바래'), findsOneWidget);
       expect(find.widgetWithText(BaraedaButton, '보호자 부재 보고'), findsOneWidget);
+    });
+
+    testWidgets('도착하지 않은 곳이 미경유뿐이면 마지막까지 도착한 것이다', (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          const RunEndScreen(),
+          [
+            selectedRunIdProvider.overrideWith((ref) => runId),
+            lastArriveResultProvider.overrideWith((ref) => null),
+          ],
+          roster: rosterProvider.overrideWith(
+            (ref) async => _fromAcademyRoster(
+              arrived: const [true, false],
+              boarded: const ['김바래'],
+              skipped: const {1},
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('운행 종료 보류'), findsOneWidget);
+      expect(find.text('08:30 마지막 승하차지에 도착했어요'), findsOneWidget);
     });
 
     testWidgets('아직 도착하지 않은 승하차지가 남았으면 종료 보류로 그리지 않는다', (tester) async {
