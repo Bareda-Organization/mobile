@@ -1,5 +1,6 @@
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
+import 'package:flutter/widgets.dart' show AppLifecycleState;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:manager_app/app/app.dart';
@@ -167,6 +168,59 @@ void main() {
 
     expect(find.text('상태를 불러오지 못했습니다'), findsOneWidget);
     expect(find.byType(ManagerHomeScreen), findsNothing);
+  });
+
+  // R52 M6 — 승인은 관계자가 따로 하므로 앱이 돌아오면 바로 다시 보고, 자동 확인이 실패해도 오류 화면으로 바꾸지
+  // 않는다(학부모 앱 `VisiblePoller` 와 같은 동작 · frontend `Ruling 473`).
+  group('자동 확인 (R52 M6)', () {
+    Future<void> backgroundThenResume(WidgetTester tester) async {
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      await tester.pump();
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('앱이 백그라운드에서 돌아오면 간격을 기다리지 않고 바로 다시 확인한다', (tester) async {
+      final repository = await pumpPending(
+        tester,
+        statusFromSecondCall: AccountStatus.rejected,
+      );
+      expect(repository.signupStatusCalls, 1);
+
+      await backgroundThenResume(tester);
+
+      expect(repository.signupStatusCalls, 2);
+      expect(find.text('가입이 거절됐어요'), findsOneWidget);
+    });
+
+    testWidgets('백그라운드에 있는 동안에는 주기 확인을 건너뛴다', (tester) async {
+      final repository = await pumpPending(tester);
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      await tester.pump(const Duration(seconds: 65));
+
+      expect(repository.signupStatusCalls, 1);
+    });
+
+    testWidgets('주기 확인이 실패해도 오류 화면 대신 보던 대기 화면을 그대로 둔다', (tester) async {
+      final repository = await pumpPending(tester, failFromSecondCall: true);
+
+      await tester.pump(const Duration(seconds: 31));
+      await tester.pump();
+
+      expect(repository.signupStatusCalls, 2);
+      expect(find.text('상태를 불러오지 못했습니다'), findsNothing);
+      expect(find.text('가입 승인을 기다리고 있어요'), findsOneWidget);
+    });
+
+    testWidgets('주기 확인에서 승인됐으면 홈으로 간다', (tester) async {
+      await pumpPending(tester, statusFromSecondCall: AccountStatus.active);
+
+      await tester.pump(const Duration(seconds: 31));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ManagerHomeScreen), findsOneWidget);
+    });
   });
 
   // 시안 `pending--rejected` — 거절 사유 · 신청 정보 표 · 다른 학원으로 다시 신청.

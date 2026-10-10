@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/auth/account_session.dart';
 import 'package:manager_app/core/launcher/device_launchers.dart';
+import 'package:manager_app/core/refresh/visible_poller.dart';
 import 'package:manager_app/core/ui/academy_call_card.dart';
 import 'package:manager_app/core/ui/bottom_action_bar.dart';
 import 'package:manager_app/core/ui/info_rows_card.dart';
@@ -35,9 +36,15 @@ class _PendingApprovalScreenState extends ConsumerState<PendingApprovalScreen> {
   SignupStatusResponse? _lastStatus;
   DateTime? _checkedAt;
 
-  /// 승인은 관계자가 따로 하므로 이 화면이 스스로 상태를 다시 본다(M11, 시안 "30초마다").
+  /// 승인은 관계자가 따로 하므로 이 화면이 스스로 상태를 다시 본다(M11, 시안 "30초마다"). 앱이 보이는 동안만
+  /// 간격마다, 백그라운드에서 돌아오면 간격을 기다리지 않고 바로 본다(R52 M6 · frontend `Ruling 473`).
   static const _autoRefreshInterval = Duration(seconds: 30);
-  Timer? _autoRefresh;
+  late final VisiblePoller _poller = VisiblePoller(
+    interval: _autoRefreshInterval,
+    onTick: () {
+      if (mounted && !_reapplying) unawaited(_pollQuietly());
+    },
+  );
   bool _reapplying = false;
   AcademySummary? _newAcademy;
   bool _submittingReapply = false;
@@ -47,15 +54,33 @@ class _PendingApprovalScreenState extends ConsumerState<PendingApprovalScreen> {
   void initState() {
     super.initState();
     _statusFuture = ref.read(authRepositoryProvider).signupStatus();
-    _autoRefresh = Timer.periodic(_autoRefreshInterval, (_) {
-      if (mounted && !_reapplying) unawaited(_refreshStatus());
-    });
+    _poller.start();
   }
 
   @override
   void dispose() {
-    _autoRefresh?.cancel();
+    _poller.dispose();
     super.dispose();
+  }
+
+  /// 화면을 로딩·오류로 바꾸지 않고 조회한다 — 실패하면 보이던 상태를 그대로 두고 다음 간격에 다시 시도한다.
+  /// 승인(`active`)이면 계정 상태를 바꿔 라우터가 홈으로 보내게 한다.
+  Future<void> _pollQuietly() async {
+    try {
+      final status = await ref.read(authRepositoryProvider).signupStatus();
+      if (!mounted) return;
+      setState(() {
+        _lastStatus = status;
+        _statusFuture = Future.value(status);
+        _checkedAt = ref.read(clockProvider).now();
+      });
+      if (status.status == AccountStatus.active) {
+        ref.read(currentAccountStatusProvider.notifier).state =
+            AccountStatus.active;
+      }
+    } on Object {
+      // 연결이 끊긴 동안의 실패는 오류 화면이 아니라 다음 조회로 넘긴다.
+    }
   }
 
   Future<void> _logout() => signOut(ref);
