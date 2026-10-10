@@ -264,7 +264,8 @@ void main() {
 
       expect(find.textContaining('자동으로 하차'), findsNothing);
       expect(find.textContaining('위치 보내기가 멈춰요'), findsNothing);
-      expect(find.textContaining('종료가 보류'), findsOneWidget);
+      // 확인 창 본문의 한 줄 — 카드 · 남은 목록의 부제("종료가 보류돼요")와 가려 본다.
+      expect(find.textContaining('운행 종료가 보류'), findsOneWidget);
       expect(find.text('도착했어요 · 운행 종료'), findsNothing);
       await tester.tap(find.text('도착했어요'));
       await tester.pumpAndSettle();
@@ -501,6 +502,35 @@ void main() {
 
       expect(find.text('모든 승하차지 도착 처리가 끝났어요'), findsOneWidget);
       expect(find.text('하차 대기 보기'), findsNothing);
+    });
+  });
+
+  // 마지막 승하차지의 부제 — 등원은 도착이 곧 종료, 하원은 탑승 중 학생이 남아 있으면 종료가 보류된다(C-15).
+  // 확인 창 문구와 같은 약속을 해야 한다.
+  group('마지막 승하차지 부제', () {
+    testWidgets('등원은 도착하면 운행이 끝난다고 알린다(다음 카드 · 남은 목록 마지막 줄)', (tester) async {
+      await pumpDrive(
+        tester,
+        status: RunStatus.moving,
+        stops: [_stop(1, arrived: true), _stop(2)],
+      );
+
+      expect(find.text('도착하면 운행이 끝나요'), findsNWidgets(2));
+      expect(find.text('학생이 남아 있으면 종료가 보류돼요'), findsNothing);
+    });
+
+    testWidgets('하원은 학생이 남아 있으면 종료가 보류된다고 알린다(운행이 끝난다고 약속하지 않는다)', (
+      tester,
+    ) async {
+      await pumpDrive(
+        tester,
+        status: RunStatus.moving,
+        stops: [_stop(1, arrived: true), _stop(2)],
+        direction: RunDirection.fromAcademy,
+      );
+
+      expect(find.text('학생이 남아 있으면 종료가 보류돼요'), findsNWidgets(2));
+      expect(find.text('도착하면 운행이 끝나요'), findsNothing);
     });
   });
 

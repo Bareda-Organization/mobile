@@ -366,6 +366,7 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
                     _NextStopCard(
                       stop: nextStop,
                       order: _orderOf(roster, nextStop),
+                      direction: roster.direction,
                       isLast: isLastRemainingStop(
                         roster,
                         nextStop,
@@ -676,12 +677,14 @@ class _NextStopCard extends StatelessWidget {
   const new({
     required this.stop,
     required this.order,
+    required this.direction,
     required this.isLast,
     required this.onRoster,
   });
 
   final RosterStop stop;
   final int order;
+  final RunDirection direction;
   final bool isLast;
   final VoidCallback onRoster;
 
@@ -689,7 +692,7 @@ class _NextStopCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final subtitle = isLast
-        ? '도착하면 운행이 끝나요'
+        ? _lastStopNote(direction)
         : [
             if (stop.change == StopChange.added) '신규',
             '탑승 예정 ${stop.students.length}명',
@@ -807,7 +810,7 @@ class _RemainingStops extends StatelessWidget {
                   _ => Stop(
                     name: remaining[i].name,
                     address: i == remaining.length - 1
-                        ? '도착하면 운행이 끝나요'
+                        ? _lastStopNote(roster.direction)
                         : '학생 ${remaining[i].students.length}명'
                               '${_addedSuffix(remaining[i])}',
                     time: remaining[i].change == StopChange.added ? '추가' : null,
@@ -823,6 +826,13 @@ class _RemainingStops extends StatelessWidget {
     );
   }
 }
+
+/// 마지막 승하차지에 도착하면 일어나는 일 — 등원은 곧 운행 종료, 하원은 탑승 중 학생이 남아 있으면 종료가
+/// 보류된다(C-15). 도착 확인 창의 안내와 같은 약속이다.
+String _lastStopNote(RunDirection direction) =>
+    direction == RunDirection.toAcademy
+    ? '도착하면 운행이 끝나요'
+    : '학생이 남아 있으면 종료가 보류돼요';
 
 /// 신규로 추가된 승하차지의 부제 꼬리.
 String _addedSuffix(RosterStop stop) =>
