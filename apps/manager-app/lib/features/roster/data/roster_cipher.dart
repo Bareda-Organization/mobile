@@ -63,8 +63,19 @@ class RosterCipher {
   final AesGcm _algorithm = AesGcm.with256bits();
 
   /// 읽은 · 만든 키를 메모리에 묶어 둔다 — 키가 없는 채 동시에 두 번 저장해도
-  /// 키를 둘 만들지 않는다.
+  /// 키를 둘 만들지 않는다. 만들다 실패하면 비운다(실패한 Future 가 남으면 앱을
+  /// 다시 켜기 전까지 저장이 계속 실패한다).
   Future<SecretKey>? _cachedKey;
+
+  /// 키를 만들거나 지우는 일을 한 줄로 세운다 — 로그아웃의 키 삭제와 겹친 저장이
+  /// 삭제 뒤에 키를 되살리지 못하게 한다.
+  Future<void> _keyQueue = Future<void>.value();
+
+  Future<T> _serialized<T>(Future<T> Function() body) {
+    final run = _keyQueue.then((_) => body());
+    _keyQueue = run.then((_) {}, onError: (_) {});
+    return run;
+  }
 
   Future<SecretKey> _loadOrCreateKey() async {
     final stored = await _keys.read();
@@ -74,9 +85,19 @@ class RosterCipher {
     return key;
   }
 
+  Future<SecretKey> _key() async {
+    final pending = _cachedKey ??= _serialized(_loadOrCreateKey);
+    try {
+      return await pending;
+    } on Object {
+      if (identical(_cachedKey, pending)) _cachedKey = null;
+      rethrow;
+    }
+  }
+
   /// [plain] 을 암호화한 저장 문자열. 키가 없으면 새로 만든다.
   Future<String> encrypt(String plain) async {
-    final key = await (_cachedKey ??= _loadOrCreateKey());
+    final key = await _key();
     final box = await _algorithm.encrypt(utf8.encode(plain), secretKey: key);
     return '$_prefix${base64Encode(box.concatenation())}';
   }
@@ -105,6 +126,6 @@ class RosterCipher {
   /// 키를 지운다 — 이후 남은 저장본은 어떤 경로로도 복호화되지 않는다.
   Future<void> deleteKey() async {
     _cachedKey = null;
-    await _keys.delete();
+    await _serialized(_keys.delete);
   }
 }
