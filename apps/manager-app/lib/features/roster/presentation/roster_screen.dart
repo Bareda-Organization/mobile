@@ -75,8 +75,8 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
     super.dispose();
   }
 
-  /// [미승차]는 [탑승] 옆에 있어 잘못 눌리기 쉽고, 처리하면 학부모에게 알림이 나간다 — 한 번
-  /// 묻는다(R32 M7). 취소하면 요청을 보내지 않는다.
+  /// [미승차]는 [탑승] 옆에 있어 잘못 눌리기 쉽고, 처리하면 관계자에게 바로(학부모에게는 이
+  /// 승하차지를 출발할 때 — `Ruling 854`) 알림이 나간다 — 한 번 묻는다(R32 M7). 취소하면 요청을 보내지 않는다.
   Future<void> _confirmNoShow({
     required String runId,
     required String riderId,
@@ -85,7 +85,9 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
     final confirmed = await confirmAction(
       context,
       title: '$name 학생을 미승차로 처리할까요?',
-      body: '처리하면 학부모·관계자에게 바로 알림이 나가고 연락 대기 시간이 시작돼요.',
+      body:
+          '처리하면 관계자에게는 바로, 학부모에게는 이 승하차지를 출발할 때 알림이 나가고 '
+          '연락 대기 시간이 시작돼요.',
       confirmLabel: '미승차 처리',
       cancelLabel: '닫기',
     );

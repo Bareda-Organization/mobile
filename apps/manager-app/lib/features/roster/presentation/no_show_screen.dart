@@ -268,7 +268,7 @@ class _NoShowScreenState extends ConsumerState<NoShowScreen> {
                 child: StopTimeline(
                   stops: [
                     Stop(
-                      name: '학부모·관계자에게 알려줬어요',
+                      name: '관계자에게 알려줬어요',
                       address: _hms(noShow.startedAt),
                       state: StopState.done,
                     ),
@@ -279,6 +279,11 @@ class _NoShowScreenState extends ConsumerState<NoShowScreen> {
                           : '${contacts.length}회 시도 · '
                                 '${_resultLabel(lastResult!)}',
                       state: StopState.current,
+                    ),
+                    // Ruling 854 — 학부모 알림은 즉시가 아니라 이 승하차지를 출발할 때 나간다.
+                    const Stop(
+                      name: '학부모에게는 이 승하차지를 출발할 때 알려요',
+                      address: '출발 전에 되돌리면 알림이 나가지 않아요',
                     ),
                     Stop(
                       name: '$waitMinutes분이 지나면 관계자에게 보고돼요',
