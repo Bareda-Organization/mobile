@@ -113,8 +113,14 @@ Future<void> _open(
 ) async {
   if (route != null) {
     // 그 알림의 자녀로 선택을 먼저 바꾼다 — 안 바꾸면 B 자녀 알림이 A 자녀 지도로 열린다(R52 M3).
+    // 내 자녀 목록에 없는 id 면 건드리지 않는다 — 그 id 를 기기에 기억하면 고른 자녀 선택을 잃는다.
     final studentId = item.studentId;
-    if (studentId != null) selectStudent(ref, studentId);
+    final myStudentIds =
+        ref.read(myStudentsProvider).value?.map((s) => s.studentId) ??
+        const <String>[];
+    if (studentId != null && myStudentIds.contains(studentId)) {
+      selectStudent(ref, studentId);
+    }
     unawaited(context.push<void>(route));
   }
   if (!item.isUnread) return;

@@ -64,6 +64,12 @@ List<NotificationItem> _many(int count) => [
     ),
 ];
 
+/// 이 학부모에게 연결된 자녀 — `s-1` 과 `s-2`.
+final _linkedStudents = [
+  Student(studentId: 's-1', name: '이하준', linkedAt: DateTime(2026)),
+  Student(studentId: 's-2', name: '이서연', linkedAt: DateTime(2026)),
+];
+
 Future<
   ({
     List<String> pushed,
@@ -77,6 +83,7 @@ _pump(
   ThemeData? theme,
   UserRole? role,
   String? pushToken,
+  List<Student>? students,
 }) async {
   final pushed = <String>[];
   final selectedAtOpen = <String?>[];
@@ -90,9 +97,8 @@ _pump(
             pushed.add(path);
             // 열리는 순간의 자녀 선택 — 열고 나서 바꾸면 그 화면은 앞 자녀로 그려진다.
             selectedAtOpen.add(
-              ProviderScope.containerOf(
-                context,
-              ).read(selectedStudentIdProvider),
+              ProviderScope.containerOf(context)
+                  .read(selectedStudentIdProvider),
             );
             return const Scaffold(body: Text('도착'));
           },
@@ -107,6 +113,9 @@ _pump(
         notificationRepositoryProvider.overrideWithValue(repository),
         clockProvider.overrideWithValue(_FixedClock(_now)),
         pushTokenSourceProvider.overrideWithValue(_FixedTokenSource(pushToken)),
+        myStudentsProvider.overrideWith(
+          (ref) async => students ?? _linkedStudents,
+        ),
         if (role != null)
           roleCapabilitiesProvider.overrideWithValue(RoleCapabilities.of(role)),
       ],
@@ -222,7 +231,13 @@ void main() {
         _item('1', title: '미승차 안내', body: '버스가 출발했습니다.', studentName: '김철수'),
         _item('2', title: '승하차 안내', body: '버스에 탑승했습니다.'),
       ]);
-      await _pump(tester, repository, role: UserRole.parent);
+      // 머리 부제의 자녀 이름과 섞이지 않게 자녀 목록은 비워 둔다 — 여기서는 행의 이름만 본다.
+      await _pump(
+        tester,
+        repository,
+        role: UserRole.parent,
+        students: const [],
+      );
 
       expect(find.text('미승차 안내'), findsOneWidget, reason: '제목은 그대로');
       expect(find.text('· 김철수'), findsOneWidget);
@@ -443,6 +458,42 @@ void main() {
       expect(result.container.read(selectedStudentIdProvider), 's-2');
     });
 
+    // R52 M3 — 내 자녀가 아닌 id 로 선택을 덮어쓰면 기억해 둔 자녀 선택을 잃는다.
+    testWidgets('목록에 없는 자녀 id 의 알림을 눌러도 선택된 자녀가 바뀌지 않는다', (tester) async {
+      final result = await _pump(
+        tester,
+        FakeNotificationRepository([
+          _item('n-1', type: 'arrive', studentId: 's-9'),
+        ]),
+      );
+      result.container.read(selectedStudentIdProvider.notifier).state = 's-1';
+
+      await tester.tap(find.text('알림 n-1'));
+      await tester.pumpAndSettle();
+
+      expect(result.pushed, [AppRoutes.liveMap]);
+      expect(result.selectedAtOpen, ['s-1']);
+      expect(result.container.read(selectedStudentIdProvider), 's-1');
+    });
+
+    // 전환 조건에 읽음 여부가 섞이면 이미 읽은 알림은 자녀가 안 바뀐다 — 그 경우를 막는다.
+    testWidgets('읽은 알림을 눌러도 자녀가 전환된다', (tester) async {
+      final result = await _pump(
+        tester,
+        FakeNotificationRepository([
+          _item('n-1', type: 'arrive', studentId: 's-2', unread: false),
+        ]),
+      );
+      result.container.read(selectedStudentIdProvider.notifier).state = 's-1';
+
+      await tester.tap(find.text('알림 n-1'));
+      await tester.pumpAndSettle();
+
+      expect(result.pushed, [AppRoutes.liveMap]);
+      expect(result.selectedAtOpen, ['s-2']);
+      expect(result.container.read(selectedStudentIdProvider), 's-2');
+    });
+
     testWidgets('자녀 정보가 없는 알림은 선택을 건드리지 않는다', (tester) async {
       final result = await _pump(
         tester,
@@ -551,11 +602,7 @@ void main() {
     });
 
     testWidgets('학생은 자녀 이름 없이 최근 14일만 있다', (tester) async {
-      await pumpAs(
-        tester,
-        FakeNotificationRepository(_many(2)),
-        parent: false,
-      );
+      await pumpAs(tester, FakeNotificationRepository(_many(2)), parent: false);
 
       expect(find.text('최근 14일'), findsOneWidget);
       expect(find.textContaining('이하준'), findsNothing);
