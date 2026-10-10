@@ -42,6 +42,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   /// 서버가 알려 준 남은 시도 횟수(`remaining_attempts`) — 한도 안내(M14)에 쓴다. 모르면 `null`.
   int? _remainingAttempts;
 
+  /// 잔여 시도가 이 값 이하이면 잠금 경고 띠를 보인다(학부모 앱과 같다, B2).
+  static const _lockWarningThreshold = 2;
+
   @override
   void dispose() {
     _loginIdController.dispose();
@@ -189,7 +192,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       error: _passwordError,
                       controller: _passwordController,
                     ),
-                    if (remaining != null) ...[
+                    if (remaining != null &&
+                        remaining <= _lockWarningThreshold) ...[
                       const SizedBox(height: 12),
                       AlertBanner(
                         tone: AlertTone.missed,
