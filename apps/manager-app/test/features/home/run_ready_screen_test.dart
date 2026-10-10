@@ -78,6 +78,7 @@ void main() {
     _CountingDriveRepository repo, {
     bool routeFails = false,
     ManagerRun? run,
+    RosterResponse roster = _roster,
   }) {
     final router = GoRouter(
       initialLocation: AppRoutes.runReady,
@@ -129,7 +130,7 @@ void main() {
         routeProvider.overrideWith(
           (ref) async => const RouteResponse(stops: []),
         ),
-      driveModeRosterProvider.overrideWith((ref) async => _roster),
+      driveModeRosterProvider.overrideWith((ref) async => roster),
     ];
     return ProviderScope(
       overrides: overrides,
@@ -137,9 +138,81 @@ void main() {
     );
   }
 
+  // 승하차지 목록은 지도 · 단추 아래라 기본 화면 높이로는 그려지지 않는다.
+  void tallScreen(WidgetTester tester) {
+    tester.view
+      ..physicalSize = const Size(800, 2400)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+  }
+
   VoidCallback? startPressed(WidgetTester tester) => tester
       .widget<BaraedaButton>(find.widgetWithText(BaraedaButton, '운행 시작'))
       .onPressed;
+
+  // Ruling 822 — 승하차지·학생·미등원 수는 홈 카드와 같은 회차 필드다. 명단을 직접 세면 등원의 도착지(학원 행)와
+  // 버스 간 이동으로 빠진 행이 섞여 홈 카드와 숫자가 어긋난다.
+  testWidgets('승하차지 · 학생 · 미등원 수는 회차 필드(홈 카드와 같은 값)로 그린다', (tester) async {
+    tallScreen(tester);
+    RosterStop stop(String id, int students) => RosterStop(
+      stopId: id,
+      seq: 1,
+      name: '$id번 승하차지',
+      students: [
+        for (var i = 0; i < students; i++)
+          RosterStudent(
+            riderId: '$id-$i',
+            studentId: 'st-$id-$i',
+            name: '학생$id$i',
+            photoUrl: null,
+            guardianPhone: null,
+            canGoAlone: true,
+            status: RiderStatus.waiting,
+          ),
+      ],
+    );
+    await tester.pumpWidget(
+      wrap(
+        DateTime(2026, 10, 3, 12, 2),
+        _CountingDriveRepository(),
+        run: managerRunFixture(
+          busNo: '2호차',
+          departTime: _depart,
+          stopCount: 6,
+          riderCount: 14,
+          absentCount: 2,
+        ),
+        // 명단을 세면 승하차지 2곳 · 학생 3명 · 미등원 1명이 나온다.
+        roster: RosterResponse(
+          runId: 'run-1',
+          busNo: '2호차',
+          direction: RunDirection.toAcademy,
+          counts: const RosterCounts(
+            boarded: 0,
+            waiting: 3,
+            noShow: 0,
+            absentN: 1,
+          ),
+          stops: [stop('1', 2), stop('2', 1)],
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('승하차지 6곳'), findsOneWidget);
+    expect(find.text('학생 14명 · 미등원 2명'), findsOneWidget);
+  });
+
+  testWidgets('회차 필드가 없으면 명단으로 지어내지 않고 숫자를 숨긴다', (tester) async {
+    tallScreen(tester);
+    await tester.pumpWidget(
+      wrap(DateTime(2026, 10, 3, 12, 2), _CountingDriveRepository()),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('승하차지'), findsOneWidget);
+    expect(find.textContaining('미등원'), findsNothing);
+  });
 
   // L1(UF-D-02) — 기사는 운행을 시작하기 전에도 승하차지 명단(조회 전용)을 열어 볼 수 있다.
   testWidgets('운행 시작 전에도 [명단 보기] 로 조회 전용 명단을 연다', (tester) async {
