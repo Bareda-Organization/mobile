@@ -60,11 +60,8 @@ void main() {
     status: RunStatus.finished,
     departTime: DateTime(2026, 10, 3, 12),
   );
-  ManagerRun confirmedC() => managerRunFixture(
-    runId: 'run-C',
-    busNo: '3호차',
-    departTime: DateTime(2026, 10, 3, 14),
-  );
+  ManagerRun confirmedC() =>
+      managerRunFixture(runId: 'run-C', departTime: DateTime(2026, 10, 3, 14));
 
   Future<ProviderContainer> pump(
     WidgetTester tester,

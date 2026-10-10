@@ -20,6 +20,9 @@ Future<T> guardDio<T>(Future<T> Function() body) async {
 /// 게이트웨이(nginx · Cloudflare Tunnel)의 HTML 오류 페이지.
 /// 마지막으로 알던 값(저장 요약)으로 버틸 수 있다. HTML 오류 페이지는 JSON 이 아니라 `UnknownFailure` 로 오고
 /// (`statusCode` 가 그 상태 — 응답이 없었으면 `null`), 서버 프로세스가 죽었을 때 정확히 이 모양이다.
+/// 저장 요약 폴백 전용이다 — 응답 없는 `UnknownFailure`(statusCode null)도 두절로 보지만,
+/// 오프라인 대기열은 같은 경우를 두절로 보지 않고(재전송을 쌓지 않으려고) 명단 저장소는 5xx 만 두절로 보므로
+/// 이 정의를 그쪽에 재사용하지 않는다.
 bool isUnreachableFailure(Failure failure) => switch (failure) {
   NetworkFailure() => true,
   ApiFailure(:final statusCode) => statusCode >= 500,
