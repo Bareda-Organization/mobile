@@ -141,13 +141,16 @@ class _WeeklyAddressEditorState extends ConsumerState<WeeklyAddressEditor> {
     scheduleMicrotask(() => _edits.mark(this, dirty: false));
   }
 
-  void _showError(String message) => setState(() {
+  /// 안내를 띄우고, 고칠 칸이 있는 요일이면 그 요일로 옮겨 간다.
+  void _showError(String message, {Weekday? day}) => setState(() {
     _bannerTone = AlertTone.missed;
     _banner = message;
+    if (day != null) _selectedDay = day;
   });
 
-  /// 보낼 칸을 모은다 — 잘못된 입력이면 안내 문구를 돌려주고 `null` 목록을 준다.
-  ({List<WeeklyAddressEntry>? entries, String? error}) _collect() {
+  /// 보낼 칸을 모은다 — 잘못된 입력이면 안내 문구와 고칠 칸의 요일을 돌려주고 `null` 목록을 준다.
+  ({List<WeeklyAddressEntry>? entries, String? error, Weekday? day})
+  _collect() {
     final entries = <WeeklyAddressEntry>[];
     for (final slot in _slots) {
       final address = slot.address.text.trim();
@@ -155,15 +158,19 @@ class _WeeklyAddressEditorState extends ConsumerState<WeeklyAddressEditor> {
       if (address.isEmpty) {
         // F05-11 — 한 칸만 비어도 서버가 전체(최대 14건)를 거절해
         // 다른 요일 수정분까지 잃는다. 보내기 전에 막는다.
+        final label = '${slot.weekday.longLabel} ${slot.direction.label}';
         if (slot.isRegistered) {
-          return (entries: null, error: '비어 있는 주소가 있습니다. 주소를 입력해 주세요');
+          return (
+            entries: null,
+            error: '$label: 비어 있는 주소가 있습니다. 주소를 입력해 주세요',
+            day: slot.weekday,
+          );
         }
         if (detail.isNotEmpty) {
           return (
             entries: null,
-            error:
-                '${slot.weekday.longLabel} ${slot.direction.label}: '
-                '주소를 먼저 입력해 주세요',
+            error: '$label: 주소를 먼저 입력해 주세요',
+            day: slot.weekday,
           );
         }
         continue;
@@ -177,8 +184,10 @@ class _WeeklyAddressEditorState extends ConsumerState<WeeklyAddressEditor> {
         ),
       );
     }
-    if (entries.isEmpty) return (entries: null, error: '주소를 입력해 주세요');
-    return (entries: entries, error: null);
+    if (entries.isEmpty) {
+      return (entries: null, error: '주소를 입력해 주세요', day: null);
+    }
+    return (entries: entries, error: null, day: null);
   }
 
   Future<void> _save() async {
@@ -187,7 +196,7 @@ class _WeeklyAddressEditorState extends ConsumerState<WeeklyAddressEditor> {
     final collected = _collect();
     final entries = collected.entries;
     if (entries == null) {
-      _showError(collected.error ?? '주소를 입력해 주세요');
+      _showError(collected.error ?? '주소를 입력해 주세요', day: collected.day);
       return;
     }
     setState(() {

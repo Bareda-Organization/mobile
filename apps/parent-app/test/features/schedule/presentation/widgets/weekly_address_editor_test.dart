@@ -155,7 +155,49 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(repository.saved, isEmpty);
-    expect(find.textContaining('주소를 입력해 주세요'), findsOneWidget);
+    // 어느 칸인지 요일 · 방향까지 밝힌다 — 문구에 "주소" 만 있으면 14칸 중 어디인지 모른다.
+    expect(
+      find.text('월요일 등원: 비어 있는 주소가 있습니다. 주소를 입력해 주세요'),
+      findsOneWidget,
+    );
+  });
+
+  // R51 — 비운 칸이 지금 보는 요일이 아니면 그 요일로 옮겨 가야 바로 채울 수 있다.
+  testWidgets('R51 비운 칸이 다른 요일이면 안내에 그 요일 · 방향을 쓰고 그 요일로 옮긴다', (tester) async {
+    final repository = _RecordingWeeklyAddressRepository();
+    await pumpEditor(tester, repository, const [
+      WeeklyAddressEntry(
+        weekday: Weekday.mon,
+        direction: RunDirection.toAcademy,
+        address: '월 등원 주소',
+      ),
+      WeeklyAddressEntry(
+        weekday: Weekday.tue,
+        direction: RunDirection.fromAcademy,
+        address: '화 하원 주소',
+      ),
+    ]);
+
+    await tester.tap(find.text('화'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('weekly-input-tue_from_academy')),
+      '',
+    );
+    await tester.tap(find.text('월'));
+    await tester.pumpAndSettle();
+    expect(find.text('월요일 · 등원', findRichText: true), findsOneWidget);
+
+    await tester.tap(find.text('저장하기'));
+    await tester.pumpAndSettle();
+
+    expect(repository.saved, isEmpty);
+    expect(
+      find.text('화요일 하원: 비어 있는 주소가 있습니다. 주소를 입력해 주세요'),
+      findsOneWidget,
+    );
+    expect(find.text('화요일 · 하원', findRichText: true), findsOneWidget);
+    expect(find.text('월요일 · 등원', findRichText: true), findsNothing);
   });
 
   // R46 A — 검사 경고 뒤에 저장 버튼이 영구히 잠겨 화면을 나갔다 들어와야 했다.
