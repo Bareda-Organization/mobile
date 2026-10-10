@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:parent_app/app/di.dart';
 import 'package:parent_app/core/auth/auth_providers.dart';
 import 'package:parent_app/core/devices/presentation/push_receivable.dart';
+import 'package:parent_app/core/students/presentation/selected_student.dart';
 import 'package:parent_app/core/students/presentation/student_providers.dart';
 import 'package:parent_app/core/ui/failure_message.dart';
 import 'package:parent_app/features/notifications/presentation/notification_kind.dart';
@@ -110,7 +111,12 @@ Future<void> _open(
   NotificationItem item,
   String? route,
 ) async {
-  if (route != null) unawaited(context.push<void>(route));
+  if (route != null) {
+    // 그 알림의 자녀로 선택을 먼저 바꾼다 — 안 바꾸면 B 자녀 알림이 A 자녀 지도로 열린다(R52 M3).
+    final studentId = item.studentId;
+    if (studentId != null) selectStudent(ref, studentId);
+    unawaited(context.push<void>(route));
+  }
   if (!item.isUnread) return;
   try {
     await ref

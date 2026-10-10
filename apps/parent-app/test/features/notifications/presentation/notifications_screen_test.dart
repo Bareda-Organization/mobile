@@ -10,6 +10,7 @@ import 'package:parent_app/core/auth/auth_providers.dart';
 import 'package:parent_app/core/auth/role_policy.dart';
 import 'package:parent_app/core/auth/user_role.dart';
 import 'package:parent_app/core/students/domain/student.dart';
+import 'package:parent_app/core/students/presentation/selected_student.dart';
 import 'package:parent_app/core/students/presentation/student_providers.dart';
 import 'package:parent_app/features/notifications/presentation/notification_providers.dart';
 import 'package:parent_app/features/notifications/presentation/notifications_screen.dart';
@@ -40,6 +41,7 @@ NotificationItem _item(
   DateTime? sentAt,
   bool unread = true,
   String? studentName,
+  String? studentId,
 }) => NotificationItem(
   notificationId: id,
   type: type,
@@ -48,6 +50,7 @@ NotificationItem _item(
   sentAt: sentAt ?? _kst(9, 30, 8, 37),
   popup: false,
   studentName: studentName,
+  studentId: studentId,
   readAt: unread ? null : _kst(9, 30, 9, 0),
 );
 
@@ -61,7 +64,14 @@ List<NotificationItem> _many(int count) => [
     ),
 ];
 
-Future<({List<String> pushed, ProviderContainer container})> _pump(
+Future<
+  ({
+    List<String> pushed,
+    List<String?> selectedAtOpen,
+    ProviderContainer container,
+  })
+>
+_pump(
   WidgetTester tester,
   FakeNotificationRepository repository, {
   ThemeData? theme,
@@ -69,14 +79,21 @@ Future<({List<String> pushed, ProviderContainer container})> _pump(
   String? pushToken,
 }) async {
   final pushed = <String>[];
+  final selectedAtOpen = <String?>[];
   final router = GoRouter(
     routes: [
       GoRoute(path: '/', builder: (_, _) => const NotificationsScreen()),
       for (final path in [AppRoutes.liveMap, AppRoutes.schedule])
         GoRoute(
           path: path,
-          builder: (_, _) {
+          builder: (context, _) {
             pushed.add(path);
+            // 열리는 순간의 자녀 선택 — 열고 나서 바꾸면 그 화면은 앞 자녀로 그려진다.
+            selectedAtOpen.add(
+              ProviderScope.containerOf(
+                context,
+              ).read(selectedStudentIdProvider),
+            );
             return const Scaffold(body: Text('도착'));
           },
         ),
@@ -102,6 +119,7 @@ Future<({List<String> pushed, ProviderContainer container})> _pump(
   await tester.pumpAndSettle();
   return (
     pushed: pushed,
+    selectedAtOpen: selectedAtOpen,
     container: ProviderScope.containerOf(
       tester.element(find.byType(NotificationsScreen)),
     ),
@@ -344,7 +362,10 @@ void main() {
   group('읽음 처리', () {
     testWidgets('안 읽은 행을 누르면 읽음 처리되고 안 읽은 수가 줄어든다', (tester) async {
       final repository = FakeNotificationRepository(_many(4)); // 안 읽음 2
-      final (:pushed, :container) = await _pump(tester, repository);
+      final (:pushed, :container, selectedAtOpen: _) = await _pump(
+        tester,
+        repository,
+      );
       expect(container.read(notificationFeedProvider).value!.unreadCount, 2);
 
       await tester.tap(find.text('알림 n-0'));
@@ -402,6 +423,37 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(result.pushed, [AppRoutes.schedule]);
+    });
+
+    // R52 M3 — B 자녀 알림을 눌렀는데 A 자녀 지도가 열리던 것.
+    testWidgets('다른 자녀의 알림을 누르면 그 자녀로 선택을 먼저 바꾼 뒤 연다', (tester) async {
+      final result = await _pump(
+        tester,
+        FakeNotificationRepository([
+          _item('n-1', type: 'arrive', studentId: 's-2'),
+        ]),
+      );
+      result.container.read(selectedStudentIdProvider.notifier).state = 's-1';
+
+      await tester.tap(find.text('알림 n-1'));
+      await tester.pumpAndSettle();
+
+      expect(result.pushed, [AppRoutes.liveMap]);
+      expect(result.selectedAtOpen, ['s-2']);
+      expect(result.container.read(selectedStudentIdProvider), 's-2');
+    });
+
+    testWidgets('자녀 정보가 없는 알림은 선택을 건드리지 않는다', (tester) async {
+      final result = await _pump(
+        tester,
+        FakeNotificationRepository([_item('n-1', type: 'delay')]),
+      );
+      result.container.read(selectedStudentIdProvider.notifier).state = 's-1';
+
+      await tester.tap(find.text('알림 n-1'));
+      await tester.pumpAndSettle();
+
+      expect(result.selectedAtOpen, ['s-1']);
     });
 
     testWidgets('이미 읽은 알림도 눌러서 갈 수 있고 다시 읽음 처리하지 않는다', (tester) async {
