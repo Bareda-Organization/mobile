@@ -213,17 +213,42 @@ class _WeeklyAddressEditorState extends ConsumerState<WeeklyAddressEditor> {
       ref.invalidate(weeklyAddressProvider(widget.studentId));
     } on Failure catch (failure) {
       if (!mounted) return;
+      final failed = _failedEntriesOf(failure, entries);
       setState(() {
         _submitting = false;
         _bannerTone = AlertTone.missed;
         _banner = switch (failure) {
           ApiFailure(code: 'ADDRESS_VERIFICATION_FAILED') =>
-            '주소를 확인할 수 없습니다. 다시 입력해 주세요',
+            failed.isEmpty
+                ? '주소를 확인할 수 없습니다. 다시 입력해 주세요'
+                : '${failed.map(_slotLabel).join(', ')}: '
+                      '주소를 확인할 수 없습니다. 다시 입력해 주세요',
           _ => failureMessage(failure, fallback: '저장하지 못했습니다'),
         };
+        // 실패한 첫 칸의 요일로 옮겨 가 바로 고칠 수 있게 한다.
+        if (failed.isNotEmpty) _selectedDay = failed.first.weekday;
       });
     }
   }
+
+  /// 서버가 `details.failed_entries`(검증에 실패한 주소 글자 목록, API_SPEC §3.7)로 돌려준 주소를
+  /// 보낸 칸에 맞춰 본다 — 서버는 요일 · 방향 없이 주소 글자만 주므로 보낸 목록에서 같은 글자의 칸을 찾는다.
+  List<WeeklyAddressEntry> _failedEntriesOf(
+    Failure failure,
+    List<WeeklyAddressEntry> sent,
+  ) {
+    if (failure is! ApiFailure) return const [];
+    final raw = failure.details?['failed_entries'];
+    if (raw is! List) return const [];
+    final failedAddresses = raw.whereType<String>().toSet();
+    return [
+      for (final entry in sent)
+        if (failedAddresses.contains(entry.address)) entry,
+    ];
+  }
+
+  String _slotLabel(WeeklyAddressEntry entry) =>
+      '${entry.weekday.longLabel} ${entry.direction.label}';
 
   @override
   Widget build(BuildContext context) {
