@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
+import 'package:manager_app/app/app_routes.dart';
 import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/core/auth/user_role.dart';
@@ -22,6 +24,7 @@ import 'package:manager_app/features/offline_queue/data/models/pending_request_s
 import 'package:manager_app/features/offline_queue/domain/send_outcome.dart';
 import 'package:manager_app/features/offline_queue/presentation/offline_queue_providers.dart';
 import 'package:manager_app/features/roster/data/models/roster_response.dart';
+import 'package:manager_app/features/roster/presentation/roster_providers.dart';
 import 'package:manager_app/features/route_map/data/models/route_response.dart';
 import 'package:manager_app/features/route_map/presentation/route_providers.dart';
 import 'package:manager_app/features/run_end/presentation/run_end_screen.dart';
@@ -121,6 +124,7 @@ RosterStop _stop(
   bool arrived = false,
   StopChange? change,
   List<String> students = const [],
+  RiderStatus studentStatus = RiderStatus.waiting,
 }) => RosterStop(
   stopId: 's$seq',
   seq: seq,
@@ -136,7 +140,7 @@ RosterStop _stop(
         photoUrl: null,
         guardianPhone: null,
         canGoAlone: true,
-        status: RiderStatus.waiting,
+        status: studentStatus,
       ),
   ],
 );
@@ -167,6 +171,8 @@ void main() {
     RunDirection direction = RunDirection.toAcademy,
     bool offline = false,
     DateTime? cachedAt,
+    GoRouter? router,
+    List<Override> extraOverrides = const [],
   }) async {
     rosterLoads = 0;
     final repository = _RecordingDriveModeRepository()..offline = offline;
@@ -190,11 +196,14 @@ void main() {
         rosterLoads++;
         return _roster(stops, direction: direction, cachedAt: cachedAt);
       }),
+      ...extraOverrides,
     ];
     await tester.pumpWidget(
       ProviderScope(
         overrides: overrides,
-        child: const MaterialApp(home: DriveModeScreen()),
+        child: router == null
+            ? const MaterialApp(home: DriveModeScreen())
+            : MaterialApp.router(routerConfig: router),
       ),
     );
     await tester.pump();
@@ -255,7 +264,8 @@ void main() {
 
       expect(find.textContaining('자동으로 하차'), findsNothing);
       expect(find.textContaining('위치 보내기가 멈춰요'), findsNothing);
-      expect(find.textContaining('종료가 보류'), findsOneWidget);
+      // 확인 창 본문의 한 줄 — 카드 · 남은 목록의 부제("종료가 보류돼요")와 가려 본다.
+      expect(find.textContaining('운행 종료가 보류'), findsOneWidget);
       expect(find.text('도착했어요 · 운행 종료'), findsNothing);
       await tester.tap(find.text('도착했어요'));
       await tester.pumpAndSettle();
@@ -429,6 +439,98 @@ void main() {
       );
       expect(find.textContaining('운행이 끝나요'), findsNothing);
       await tester.pump(const Duration(seconds: 6));
+    });
+  });
+
+  // 하원은 마지막 승하차지에 도착해도 탑승 중 학생이 있으면 종료가 보류된다. 보류 화면(하차 대기 목록 · [보호자 부재
+  // 보고])을 뒤로 나가면 운행 화면에 돌아갈 길이 없어 그 화면을 다시 못 열었다.
+  group('종료 보류 화면 다시 열기', () {
+    GoRouter routerWithRunEnd() {
+      final router = GoRouter(
+        routes: [
+          GoRoute(path: '/', builder: (_, _) => const DriveModeScreen()),
+          GoRoute(
+            path: AppRoutes.runEnd,
+            builder: (_, _) => const RunEndScreen(),
+          ),
+        ],
+      );
+      addTearDown(router.dispose);
+      return router;
+    }
+
+    testWidgets('하원 마지막 도착 뒤 [하차 대기 보기] 를 누르면 종료 보류 화면이 다시 열린다', (
+      tester,
+    ) async {
+      final stops = [
+        _stop(
+          1,
+          arrived: true,
+          students: ['김바래'],
+          studentStatus: RiderStatus.boarded,
+        ),
+        _stop(2, arrived: true),
+      ];
+      await pumpDrive(
+        tester,
+        status: RunStatus.moving,
+        stops: stops,
+        direction: RunDirection.fromAcademy,
+        router: routerWithRunEnd(),
+        extraOverrides: [
+          rosterProvider.overrideWith(
+            (ref) async => _roster(stops, direction: RunDirection.fromAcademy),
+          ),
+        ],
+      );
+
+      expect(find.text('모든 승하차지 도착 처리가 끝났어요'), findsOneWidget);
+      await tester.tap(find.text('하차 대기 보기'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(RunEndScreen), findsOneWidget);
+      expect(find.text('운행 종료 보류'), findsOneWidget);
+      expect(find.widgetWithText(BaraedaListRow, '김바래'), findsOneWidget);
+    });
+
+    testWidgets('등원은 도착이 곧 종료라 [하차 대기 보기] 가 없다', (tester) async {
+      await pumpDrive(
+        tester,
+        status: RunStatus.moving,
+        stops: [_stop(1, arrived: true), _stop(2, arrived: true)],
+      );
+
+      expect(find.text('모든 승하차지 도착 처리가 끝났어요'), findsOneWidget);
+      expect(find.text('하차 대기 보기'), findsNothing);
+    });
+  });
+
+  // 마지막 승하차지의 부제 — 등원은 도착이 곧 종료, 하원은 탑승 중 학생이 남아 있으면 종료가 보류된다(C-15).
+  // 확인 창 문구와 같은 약속을 해야 한다.
+  group('마지막 승하차지 부제', () {
+    testWidgets('등원은 도착하면 운행이 끝난다고 알린다(다음 카드 · 남은 목록 마지막 줄)', (tester) async {
+      await pumpDrive(
+        tester,
+        status: RunStatus.moving,
+        stops: [_stop(1, arrived: true), _stop(2)],
+      );
+
+      expect(find.text('도착하면 운행이 끝나요'), findsNWidgets(2));
+      expect(find.text('학생이 남아 있으면 종료가 보류돼요'), findsNothing);
+    });
+
+    testWidgets('하원은 학생이 남아 있으면 종료가 보류된다고 알린다(운행이 끝난다고 약속하지 않는다)', (
+      tester,
+    ) async {
+      await pumpDrive(
+        tester,
+        status: RunStatus.moving,
+        stops: [_stop(1, arrived: true), _stop(2)],
+        direction: RunDirection.fromAcademy,
+      );
+
+      expect(find.text('학생이 남아 있으면 종료가 보류돼요'), findsNWidgets(2));
+      expect(find.text('도착하면 운행이 끝나요'), findsNothing);
     });
   });
 

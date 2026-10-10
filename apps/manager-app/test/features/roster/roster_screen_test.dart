@@ -305,6 +305,38 @@ void main() {
     expect(find.text('3'), findsNothing);
   });
 
+  // 미경유 승하차지는 타임라인(`StopTimeline`)·지도 핀과 같이 이름에 취소선을 긋는다 — 빨간 글씨만으로는 구분이 약하다.
+  testWidgets('미경유 승하차지 이름에는 취소선이 그어지고 경유하는 곳에는 없다', (tester) async {
+    const roster = RosterResponse(
+      runId: 'run-1',
+      busNo: '3호차',
+      direction: RunDirection.toAcademy,
+      counts: RosterCounts(boarded: 0, waiting: 0, noShow: 0, absentN: 0),
+      stops: [
+        RosterStop(stopId: 'a', seq: 1, name: 'A정류장', students: []),
+        RosterStop(
+          stopId: 'b',
+          seq: 2,
+          name: 'B정류장',
+          change: StopChange.skipped,
+          students: [],
+        ),
+      ],
+    );
+    await tester.pumpWidget(
+      _wrap(
+        const RosterScreen(),
+        overridesFor(roster: roster, ackRequired: false),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    TextDecoration? decorationOf(String name) =>
+        tester.widget<Text>(find.text(name)).style?.decoration;
+    expect(decorationOf('B정류장'), TextDecoration.lineThrough);
+    expect(decorationOf('A정류장'), isNot(TextDecoration.lineThrough));
+  });
+
   testWidgets('ack_required 가 false 면 변경 확인 배너를 보여주지 않는다', (tester) async {
     await tester.pumpWidget(
       _wrap(

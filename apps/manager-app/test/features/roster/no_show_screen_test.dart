@@ -125,6 +125,15 @@ void main() {
     expect(find.byType(BaraedaListRow), findsNothing);
   });
 
+  // Ruling 854 — 관계자에게는 표시 즉시, 학부모에게는 이 승하차지를 출발할 때 알림이 나간다.
+  testWidgets('타임라인은 관계자 알림(완료)과 학부모 알림(출발 때)을 나눠 그린다', (tester) async {
+    await pump(tester, const []);
+
+    expect(find.text('관계자에게 알려줬어요'), findsOneWidget);
+    expect(find.text('학부모에게는 이 승하차지를 출발할 때 알려요'), findsOneWidget);
+    expect(find.text('학부모·관계자에게 알려줬어요'), findsNothing);
+  });
+
   testWidgets('연락 대기 남은 시간을 mm:ss 로 그린다', (tester) async {
     await pump(tester, const []);
 

@@ -5,13 +5,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/network/failure_messages.dart';
 import 'package:manager_app/core/run/run_enums.dart';
-import 'package:manager_app/core/run/run_termination_provider.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/core/time/run_time_labels.dart';
 import 'package:manager_app/core/ui/limited_text_controller.dart';
 import 'package:manager_app/core/ui/manager_header.dart';
-import 'package:manager_app/features/drive_mode/data/models/arrive_stop_result.dart';
-import 'package:manager_app/features/position/presentation/position_transmitter.dart';
 import 'package:manager_app/features/roster/presentation/roster_providers.dart';
 import 'package:manager_app/features/run_end/data/models/report_request.dart';
 import 'package:manager_app/features/run_end/data/models/report_result.dart';
@@ -102,23 +99,16 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
     }
   }
 
-  /// 보호자 부재로 보고할 수 있는 학생 — 버스에 타고 있고 혼자 귀가할 수 없는 학생. 마지막 도착 응답의 하차 대기
-  /// 명단이 있으면(종료 직후) 그것을 쓴다.
-  List<({String riderId, String name, String meta})> _targets(
-    ArriveStopResult? termination,
-  ) {
+  /// 보호자 부재로 보고할 수 있는 학생 — 버스에 타고 있고 혼자 귀가할 수 없는 학생(EXC-02). 종료 보류 뒤에 열어도
+  /// 같다(`Ruling 866`). 도착 응답의 남은 탑승자(`remaining[]`)에는 혼자 귀가 여부가 없어, 명단을 못 받았으면
+  /// 대상을 내놓지 않는다.
+  List<({String riderId, String name, String meta})> _targets() {
     final roster = ref.watch(rosterProvider).value;
-    if (roster == null) {
-      return [
-        for (final rider in termination?.remaining ?? const <RemainingRider>[])
-          (riderId: rider.riderId, name: rider.name, meta: ''),
-      ];
-    }
+    if (roster == null) return const [];
     return [
       for (final stop in roster.stops)
         for (final student in stop.students)
-          if (student.status == RiderStatus.boarded &&
-              (termination != null || !student.canGoAlone))
+          if (student.status == RiderStatus.boarded && !student.canGoAlone)
             (
               riderId: student.riderId,
               name: student.name,
@@ -134,15 +124,9 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
   Widget build(BuildContext context) {
     final runId = ref.watch(selectedRunIdProvider);
     final roster = ref.watch(rosterProvider).value;
-    final snapshot = ref.watch(lastArriveResultProvider);
-    // 도착 응답 스냅샷은 그 회차의 것일 때만 쓴다(F06-14).
-    final termination =
-        snapshot != null && ref.watch(transmissionEndedRunIdProvider) == runId
-        ? snapshot
-        : null;
     final colors = context.colors;
     final targets = _isGuardianAbsent
-        ? _targets(termination)
+        ? _targets()
         : const <({String riderId, String name, String meta})>[];
 
     return Scaffold(
@@ -204,9 +188,11 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
                         const Text('어느 학생이에요?', style: BaraedaTypography.label),
                         const SizedBox(height: 8),
                         if (targets.isEmpty)
-                          const WordWrapText(
-                            '보호자 부재로 보고할 학생이 없어요. 혼자 귀가할 수 없는 학생이 '
-                            '탑승 중일 때만 고를 수 있어요.',
+                          WordWrapText(
+                            roster == null
+                                ? '명단을 불러온 뒤에 학생을 고를 수 있어요.'
+                                : '보호자 부재로 보고할 학생이 없어요. 혼자 귀가할 수 없는 학생이 '
+                                      '탑승 중일 때만 고를 수 있어요.',
                           )
                         else
                           BaraedaListGroup(

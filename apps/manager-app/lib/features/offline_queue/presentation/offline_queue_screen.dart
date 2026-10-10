@@ -63,11 +63,20 @@ class _OfflineQueueScreenState extends ConsumerState<OfflineQueueScreen> {
     final colors = context.colors;
     final name = _studentNameOf(item);
     final what = name == null ? item.description : '$name ${item.description}';
-    final isRider = item.riderId != null;
-    final lost = isRider
-        ? '학부모에게 ${item.description.replaceAll(' 처리', '')} 알림도 가지 않아요.'
-        : '학원에 알림도 가지 않아요.';
-    final redo = isRider ? '명단에서 다시 처리' : '화면에서 다시 보내';
+    // 요청 종류마다 잃는 것과 다시 처리하는 길이 다르다 — 도착 처리는 명단이 아니라 운행 화면에서 다시 누른다.
+    final (lost, redo, redoTail) = switch (item) {
+      PendingRequestSummary(isArrive: true) => (
+        '이 승하차지의 도착 기록이 남지 않아요.',
+        '운행 화면에서 [도착 처리]를 다시 눌러',
+        ' 주세요.',
+      ),
+      PendingRequestSummary(riderId: != null) => (
+        '학부모에게 ${item.description.replaceAll(' 처리', '')} 알림도 가지 않아요.',
+        '명단에서 다시 처리',
+        '해 주세요.',
+      ),
+      _ => ('학원에 알림도 가지 않아요.', '화면에서 다시 보내', ' 주세요.'),
+    };
     final confirmed = await showBaraedaConfirmDialog(
       context: context,
       title: '$what${_objectParticle(what)} 삭제할까요?',
@@ -79,7 +88,7 @@ class _OfflineQueueScreenState extends ConsumerState<OfflineQueueScreen> {
               text: redo,
               style: const TextStyle(fontWeight: BaraedaFontWeight.bold),
             ),
-            const TextSpan(text: '해 주세요.'),
+            TextSpan(text: redoTail),
           ],
         ),
         style: BaraedaTypography.body.copyWith(

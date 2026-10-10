@@ -257,7 +257,7 @@ class _RunReadyScreenState extends ConsumerState<RunReadyScreen> {
                       unawaited(context.push(AppRoutes.rosterView)),
                 ),
                 const SizedBox(height: 24),
-                _StopsSection(roster: roster!),
+                _StopsSection(run: run, roster: roster!),
               ],
             ],
           ),
@@ -394,18 +394,26 @@ class _MapCard extends StatelessWidget {
 }
 
 /// "승하차지 6곳 · 학생 14명 · 미등원 2명" + 번호 타임라인(추가 · 미경유 표시).
+///
+/// 숫자는 명단을 세지 않고 홈 카드와 같은 회차 필드(`stopCount` · `riderCount` · `absentCount`,
+/// `Ruling 822`)로 그린다 — 명단에는 등원의 도착지(학원 행)와 버스 간 이동으로 빠진 행이 섞여
+/// 홈 카드와 어긋난다. 필드가 없으면(확정 전) 그 숫자를 지어내지 않고 숨긴다.
 class _StopsSection extends StatelessWidget {
-  const new({required this.roster});
+  const new({required this.run, required this.roster});
 
+  final ManagerRun run;
   final RosterResponse roster;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final students = roster.stops.fold<int>(
-      0,
-      (sum, stop) => sum + stop.students.length,
-    );
+    final stops = run.stopCount;
+    final riders = run.riderCount;
+    final absent = run.absentCount;
+    final caption = [
+      if (riders != null) '학생 $riders명',
+      if (absent != null) '미등원 $absent명',
+    ].join(' · ');
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -413,18 +421,19 @@ class _StopsSection extends StatelessWidget {
           children: [
             Expanded(
               child: Text(
-                '승하차지 ${roster.stops.length}곳',
+                stops == null ? '승하차지' : '승하차지 $stops곳',
                 style: BaraedaTypography.title.copyWith(
                   color: colors.textPrimary,
                 ),
               ),
             ),
-            Text(
-              '학생 $students명 · 미등원 ${roster.counts.absentN}명',
-              style: BaraedaTypography.caption.copyWith(
-                color: colors.textSecondary,
+            if (caption.isNotEmpty)
+              Text(
+                caption,
+                style: BaraedaTypography.caption.copyWith(
+                  color: colors.textSecondary,
+                ),
               ),
-            ),
           ],
         ),
         const SizedBox(height: 8),

@@ -177,6 +177,43 @@ ArriveStopResult _terminationWith({
   );
 }
 
+/// 하원 회차 명단 — [arrived] 가 참인 승하차지는 도착했고, [boarded] 는 아직 버스에 있는 학생 이름이다.
+/// 오프라인에 저장했다 재전송된 도착은 응답을 못 받아 스냅샷이 비므로 이 명단이 유일한 근거다(`Ruling 859`).
+RosterResponse _fromAcademyRoster({
+  required List<bool> arrived,
+  List<String> boarded = const [],
+  RunDirection direction = RunDirection.fromAcademy,
+  Set<int> skipped = const {},
+}) => RosterResponse(
+  runId: 'run-1',
+  busNo: '3호차',
+  direction: direction,
+  counts: const RosterCounts(boarded: 0, waiting: 0, noShow: 0, absentN: 0),
+  stops: [
+    for (var i = 0; i < arrived.length; i++)
+      RosterStop(
+        stopId: 's$i',
+        seq: i + 1,
+        name: '${i + 1}번 승하차지',
+        change: skipped.contains(i) ? StopChange.skipped : null,
+        arrivedAt: arrived[i] ? DateTime(2026, 9, 12, 8, 30 + i) : null,
+        students: [
+          if (i == 0)
+            for (final name in boarded)
+              RosterStudent(
+                riderId: 'r-$name',
+                studentId: 'st-$name',
+                name: name,
+                photoUrl: null,
+                guardianPhone: null,
+                canGoAlone: false,
+                status: RiderStatus.boarded,
+              ),
+        ],
+      ),
+  ],
+);
+
 void main() {
   const runId = 'run-1';
 
@@ -372,6 +409,144 @@ void main() {
 
     expect(find.text('운행이 끝났어요'), findsOneWidget);
     expect(find.textContaining('하차 대기'), findsNothing);
+  });
+
+  // 오프라인에 저장했다 재전송된 마지막 도착은 응답을 받지 못해 스냅샷이 비고(`Ruling 859`), 종료 보류 화면을 나갔다
+  // 다시 들어와도 스냅샷이 없다 — 화면은 명단 · 회차 상태로 정한다.
+  group('도착 스냅샷이 없어도 명단 · 회차 상태로 그린다', () {
+    testWidgets('회차가 끝났으면 "끝난 운행이 없어요" 대신 합계를 그린다', (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          const RunEndScreen(),
+          [
+            selectedRunIdProvider.overrideWith((ref) => runId),
+            lastArriveResultProvider.overrideWith((ref) => null),
+          ],
+          roster: _finishedRoster(alighted: 5, noShow: 1, absentN: 2),
+          runs: todayRunsProvider.overrideWith(
+            (ref) async => [managerRunFixture(status: RunStatus.finished)],
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('끝난 운행이 없어요'), findsNothing);
+      expect(find.text('운행이 끝났어요'), findsOneWidget);
+      expect(find.text('5명'), findsOneWidget);
+    });
+
+    testWidgets('하원 마지막 승하차지까지 도착했고 탑승 중 학생이 있으면 종료 보류로 그린다', (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          const RunEndScreen(),
+          [
+            selectedRunIdProvider.overrideWith((ref) => runId),
+            lastArriveResultProvider.overrideWith((ref) => null),
+          ],
+          roster: rosterProvider.overrideWith(
+            (ref) async => _fromAcademyRoster(
+              arrived: const [true, true],
+              boarded: const ['김바래', '이다솜'],
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('운행 종료 보류'), findsOneWidget);
+      // 도착 시각은 도착한 곳 중 가장 늦은 `arrived_at` 이다.
+      expect(find.text('08:31 마지막 승하차지에 도착했어요'), findsOneWidget);
+      expect(find.textContaining('하차 대기 2명'), findsOneWidget);
+      expect(find.widgetWithText(BaraedaListRow, '김바래'), findsOneWidget);
+      expect(find.widgetWithText(BaraedaButton, '보호자 부재 보고'), findsOneWidget);
+    });
+
+    testWidgets('도착하지 않은 곳이 미경유뿐이면 마지막까지 도착한 것이다', (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          const RunEndScreen(),
+          [
+            selectedRunIdProvider.overrideWith((ref) => runId),
+            lastArriveResultProvider.overrideWith((ref) => null),
+          ],
+          roster: rosterProvider.overrideWith(
+            (ref) async => _fromAcademyRoster(
+              arrived: const [true, false],
+              boarded: const ['김바래'],
+              skipped: const {1},
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('운행 종료 보류'), findsOneWidget);
+      expect(find.text('08:30 마지막 승하차지에 도착했어요'), findsOneWidget);
+    });
+
+    testWidgets('아직 도착하지 않은 승하차지가 남았으면 종료 보류로 그리지 않는다', (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          const RunEndScreen(),
+          [
+            selectedRunIdProvider.overrideWith((ref) => runId),
+            lastArriveResultProvider.overrideWith((ref) => null),
+          ],
+          roster: rosterProvider.overrideWith(
+            (ref) async => _fromAcademyRoster(
+              arrived: const [true, false],
+              boarded: const ['김바래'],
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('운행 종료 보류'), findsNothing);
+      expect(find.text('끝난 운행이 없어요'), findsOneWidget);
+    });
+
+    testWidgets('탑승 중인 학생이 없으면 종료 보류로 그리지 않는다(서버가 종료한다)', (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          const RunEndScreen(),
+          [
+            selectedRunIdProvider.overrideWith((ref) => runId),
+            lastArriveResultProvider.overrideWith((ref) => null),
+          ],
+          roster: rosterProvider.overrideWith(
+            (ref) async => _fromAcademyRoster(arrived: const [true, true]),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('운행 종료 보류'), findsNothing);
+      expect(find.text('끝난 운행이 없어요'), findsOneWidget);
+    });
+
+    testWidgets('등원 회차는 명단만으로 종료 보류가 되지 않는다(보류는 하원 잔류만)', (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          const RunEndScreen(),
+          [
+            selectedRunIdProvider.overrideWith((ref) => runId),
+            lastArriveResultProvider.overrideWith((ref) => null),
+          ],
+          roster: rosterProvider.overrideWith(
+            (ref) async => _fromAcademyRoster(
+              arrived: const [true, true],
+              boarded: const ['김바래'],
+              direction: RunDirection.toAcademy,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('운행 종료 보류'), findsNothing);
+      expect(find.text('끝난 운행이 없어요'), findsOneWidget);
+    });
   });
 
   testWidgets('다른 회차의 도착 스냅샷은 이 회차의 종료 화면에 쓰지 않는다', (tester) async {

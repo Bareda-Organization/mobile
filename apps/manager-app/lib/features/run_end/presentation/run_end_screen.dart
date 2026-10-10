@@ -12,6 +12,7 @@ import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/core/time/run_time_labels.dart';
 import 'package:manager_app/core/ui/manager_header.dart';
 import 'package:manager_app/features/drive_mode/data/models/arrive_stop_result.dart';
+import 'package:manager_app/features/home/data/models/manager_run.dart';
 import 'package:manager_app/features/position/presentation/position_transmitter.dart';
 import 'package:manager_app/features/roster/data/models/roster_response.dart';
 import 'package:manager_app/features/roster/presentation/roster_providers.dart';
@@ -21,7 +22,8 @@ import 'package:manager_app/features/roster/presentation/roster_providers.dart';
 /// 합계(하차 · 미승차 · 미등원)는 **종료 뒤 §4.2 명단의 `counts` 를 다시 받아** 그린다(`Ruling 827`) —
 /// 도착 응답의
 /// 스냅샷은 하차 대기 판정에만 쓴다. 하원에서 아직 버스에 학생이 남아 있으면(`finish_pending`) 종료가 보류돼
-/// 하차 대기 명단과 보호자 부재 보고 단추가 보이고, 전원이 내리면 서버가 종료한다.
+/// 하차 대기 명단과 보호자 부재 보고 단추가 보이고, 전원이 내리면 서버가 종료한다. 도착 응답 스냅샷이 없어도(오프라인에
+/// 저장했다 재전송된 도착은 응답을 못 받는다, `Ruling 859`) 회차 상태 · 명단으로 같은 화면을 그린다.
 class RunEndScreen extends ConsumerStatefulWidget {
   const new({super.key});
 
@@ -50,30 +52,79 @@ class _RunEndScreenState extends ConsumerState<RunEndScreen> {
         snapshot != null && ref.watch(transmissionEndedRunIdProvider) == runId
         ? snapshot
         : null;
-    final finished =
-        ref.watch(selectedManagerRunProvider)?.runStatus == RunStatus.finished;
-    final pending =
-        termination != null && termination.finishPending && !finished;
+    final run = ref.watch(selectedManagerRunProvider);
+    final finished = run?.runStatus == RunStatus.finished;
+    final rosterAsync = ref.watch(rosterProvider);
+    // 스냅샷이 없어도 화면이 선다 — 오프라인에 저장했다 재전송된 도착은 응답을 받지 못하고(`Ruling 859`), 종료 보류
+    // 화면을 나갔다 다시 들어와도 앱이 다시 시작돼도 스냅샷은 비어 있다. 이때는 명단·회차 상태로 정한다.
+    final pending = finished
+        ? null
+        : termination == null
+        ? _stuckAtLastStop(run, rosterAsync.value)
+        : termination.finishPending
+        ? (arrivedAt: termination.arrivedAt, remaining: termination.remaining)
+        : null;
 
     return Scaffold(
-      appBar: ManagerHeader(title: pending ? '운행 종료 보류' : '운행 종료'),
-      body: runId == null || termination == null
-          ? const EmptyState(
-              title: '끝난 운행이 없어요',
-              body: '운행이 끝나면 여기서 결과를 볼 수 있어요.',
-            )
-          : pending
-          ? _Pending(termination: termination)
-          : const _Done(),
+      appBar: ManagerHeader(title: pending != null ? '운행 종료 보류' : '운행 종료'),
+      body: runId == null
+          ? const _NoEndedRun()
+          : pending != null
+          ? _Pending(arrivedAt: pending.arrivedAt, remaining: pending.remaining)
+          : finished || termination != null
+          ? const _Done()
+          : rosterAsync.isLoading && !rosterAsync.hasValue
+          ? const Center(child: CircularProgressIndicator())
+          : const _NoEndedRun(),
     );
   }
 }
 
-/// 종료 보류 — 하차 대기 학생들과 보고 단추.
-class _Pending extends ConsumerWidget {
-  const new({required this.termination});
+/// 종료 결과를 그릴 근거가 없을 때의 빈 화면.
+class _NoEndedRun extends StatelessWidget {
+  const new();
 
-  final ArriveStopResult termination;
+  @override
+  Widget build(BuildContext context) {
+    return const EmptyState(
+      title: '끝난 운행이 없어요',
+      body: '운행이 끝나면 여기서 결과를 볼 수 있어요.',
+    );
+  }
+}
+
+/// 하원 회차가 마지막 승하차지까지 도착했는데 버스에 학생이 남아 종료가 보류된 상태면
+/// 마지막 도착 시각(도착한 곳 중 가장 늦은 `arrived_at`) — 아니면 `null`. 미경유(skipped)는
+/// 도착 대상이 아니다(`nextUnarrivedStop` 과 같다).
+({DateTime arrivedAt, List<RemainingRider> remaining})? _stuckAtLastStop(
+  ManagerRun? run,
+  RosterResponse? roster,
+) {
+  if (run?.runStatus != RunStatus.moving || roster == null) return null;
+  if (roster.direction != RunDirection.fromAcademy) return null;
+  final stops = [
+    for (final stop in roster.stops)
+      if (stop.change != StopChange.skipped) stop,
+  ];
+  final arrivals = [for (final stop in stops) ?stop.arrivedAt];
+  if (stops.isEmpty || arrivals.length != stops.length) return null;
+  final anyBoarded = stops.any(
+    (stop) => stop.students.any((s) => s.status == RiderStatus.boarded),
+  );
+  if (!anyBoarded) return null;
+  return (
+    arrivedAt: arrivals.reduce((a, b) => a.isAfter(b) ? a : b),
+    remaining: const [],
+  );
+}
+
+/// 종료 보류 — 하차 대기 학생들과 보고 단추. [arrivedAt] 은 마지막 승하차지 도착 시각이고, [remaining] 은 도착
+/// 응답이 준 남은 탑승자 — 명단에서 탑승 중 학생을 못 찾을 때만 쓴다.
+class _Pending extends ConsumerWidget {
+  const new({required this.arrivedAt, required this.remaining});
+
+  final DateTime arrivedAt;
+  final List<RemainingRider> remaining;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -93,7 +144,7 @@ class _Pending extends ConsumerWidget {
               ),
     ];
     final fallback = [
-      for (final rider in termination.remaining) (name: rider.name, meta: ''),
+      for (final rider in remaining) (name: rider.name, meta: ''),
     ];
     final riders = waiting.isEmpty ? fallback : waiting;
     return Column(
@@ -104,7 +155,7 @@ class _Pending extends ConsumerWidget {
             children: [
               AlertBanner(
                 tone: AlertTone.moving,
-                title: '${hhmm(termination.arrivedAt)} 마지막 승하차지에 도착했어요',
+                title: '${hhmm(arrivedAt)} 마지막 승하차지에 도착했어요',
                 body: '하차 대기 ${riders.length}명 · 전원이 내려야 운행이 끝나요. 위치는 계속 보내요.',
               ),
               const SizedBox(height: 24),

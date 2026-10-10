@@ -23,8 +23,9 @@ import 'package:manager_app/features/roster/presentation/roster_screen.dart';
 
 import '../../support/manager_run_fixture.dart';
 
-/// R32 M7 — [미승차]는 [탑승] 바로 옆이라 잘못 눌리기 쉽고 누르면 학부모에게 알림이 나간다.
-/// 확인 창을 거치고, 취소하면 요청이 나가지 않는다.
+/// R32 M7 — [미승차]는 [탑승] 바로 옆이라 잘못 눌리기 쉽고 누르면 관계자에게 바로 알림이 나간다
+/// (학부모에게는 이 승하차지를 출발할 때 — `Ruling 854`). 확인 창을 거치고, 취소하면 요청이 나가지
+/// 않는다.
 class _RecordingRosterRepository implements RosterRepository {
   new(this.roster);
 
@@ -136,6 +137,20 @@ void main() {
     await tester.tap(find.text('미승차 처리'));
     await tester.pumpAndSettle();
     expect(repository.requestedStatuses, [RiderStatus.noShow]);
+  });
+
+  // Ruling 854 — 학부모 미승차 알림은 즉시가 아니라 기사가 그 승하차지를 출발할 때 나간다.
+  testWidgets('미승차 확인 창은 관계자는 바로, 학부모는 출발할 때 알림이 간다고 알린다', (tester) async {
+    await pumpRoster(tester);
+
+    await tester.tap(find.widgetWithText(BaraedaButton, '미승차'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.textContaining('관계자에게는 바로, 학부모에게는 이 승하차지를 출발할 때'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('학부모·관계자에게 바로'), findsNothing);
   });
 
   testWidgets('탑승은 확인 없이 바로 나간다(정상 흐름은 한 번에)', (tester) async {
