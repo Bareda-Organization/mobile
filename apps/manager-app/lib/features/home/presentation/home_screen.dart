@@ -178,7 +178,10 @@ class _HomeBody extends ConsumerWidget {
                       label: '명단 열기',
                       icon: 'list',
                       block: true,
-                      onPressed: () => context.go(AppRoutes.roster),
+                      onPressed: () {
+                        _selectFocusRun(ref, focus);
+                        context.go(AppRoutes.roster);
+                      },
                     )
                   : null,
             ),
@@ -246,7 +249,10 @@ class _HomeBody extends ConsumerWidget {
         icon: 'bus',
         size: BaraedaButtonSize.xl,
         block: true,
-        onPressed: () => unawaited(context.push(AppRoutes.driveMode)),
+        onPressed: () {
+          _selectFocusRun(ref, focus);
+          unawaited(context.push(AppRoutes.driveMode));
+        },
       );
     }
     return (context, ref) => BaraedaButton(
@@ -254,8 +260,17 @@ class _HomeBody extends ConsumerWidget {
       icon: 'bus',
       size: BaraedaButtonSize.xl,
       block: true,
-      onPressed: () => unawaited(context.push(AppRoutes.runReady)),
+      onPressed: () {
+        _selectFocusRun(ref, focus);
+        unawaited(context.push(AppRoutes.runReady));
+      },
     );
+  }
+
+  /// 큰 카드가 가리키는 회차로 선택 회차를 맞춘다(R52 H1) — 앞 회차가 끝난 뒤에도 선택이 그 회차에 남아 있으면
+  /// 운행 준비 · 명단 · 운행 화면이 끝난 회차를 그렸다.
+  void _selectFocusRun(WidgetRef ref, ManagerRun focus) {
+    ref.read(selectedRunIdProvider.notifier).state = focus.runId;
   }
 }
 
