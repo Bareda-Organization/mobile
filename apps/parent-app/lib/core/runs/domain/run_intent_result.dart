@@ -34,18 +34,21 @@ class RunIntentResult {
     this.deadlineAt,
   });
 
-  factory fromJson(Map<String, dynamic> json) => RunIntentResult(
-    result: RunIntentApplyResult.fromWireValue(json['result'] as String),
-    riding: json['riding'] as bool,
-    riderStatus: RiderStatus.fromWireValue(json['rider_status'] as String),
-    changeRequestId: json['change_request_id'] == null
-        ? null
-        : asIdString(json['change_request_id']),
-    changeQuotaLeft: json['change_quota_left'] as int,
-    deadlineAt: json['deadline_at'] == null
-        ? null
-        : DateTime.parse(json['deadline_at'] as String),
-  );
+  factory fromJson(Map<String, dynamic> json) =>
+      RunIntentResult(
+        result: RunIntentApplyResult.fromWireValue(
+          json['result'] as String,
+        ),
+        riding: json['riding'] as bool,
+        riderStatus: RiderStatus.fromWireValue(json['rider_status'] as String),
+        changeRequestId: json['change_request_id'] == null
+            ? null
+            : asIdString(json['change_request_id']),
+        changeQuotaLeft: json['change_quota_left'] as int,
+        deadlineAt: json['deadline_at'] == null
+            ? null
+            : DateTime.parse(json['deadline_at'] as String),
+      );
 
   final RunIntentApplyResult result;
 
