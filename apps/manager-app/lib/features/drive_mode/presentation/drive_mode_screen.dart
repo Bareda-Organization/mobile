@@ -142,6 +142,7 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
     required String name,
     required RunDirection direction,
     bool isLast = false,
+    bool hasBoardedRiders = false,
   }) async {
     // 마지막 승하차지의 도착 처리는 등원이면 곧 운행 종료다(C-15) — 되돌릴 수 없어 한 번 묻는다(R32 M6).
     // 하원은 도착만 기록되고 남은 학생이 있으면 종료가 보류된다. 그 앞 승하차지는 운전 중에 자주 누르는 조작이라
@@ -153,7 +154,8 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
         title: '마지막 승하차지예요',
         body: toAcademy
             ? '도착 처리가 곧 운행 종료예요. 되돌릴 수 없어요.\n'
-                  '· 등원 학생 전원이 자동으로 하차 처리돼요\n'
+                  // 타고 있는 학생이 없으면 자동 하차할 사람이 없다 — 그 줄을 내지 않는다(A9).
+                  '${hasBoardedRiders ? '· 등원 학생 전원이 자동으로 하차 처리돼요\n' : ''}'
                   '· 위치 보내기가 멈춰요\n'
                   '· 학원 관계자에게 운행 종료가 전달돼요'
             : '도착이 기록돼요. 되돌릴 수 없어요.\n'
@@ -221,6 +223,14 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
           }
       }
     } on Failure catch (failure) {
+      // 이미 처리된 도착(`403 DUPLICATE_ARRIVE`)은 실패가 아니라 명단이 낡았다는 신호다 — 큐 재생과 같이 성공으로
+      // 취급하고, 서버 명단을 다시 받아 다음 승하차지를 가리킨다(A10).
+      if (failure case ApiFailure(code: 'DUPLICATE_ARRIVE')) {
+        container
+          ..invalidate(driveModeRosterProvider)
+          ..invalidate(todayRunsProvider);
+        return;
+      }
       if (!mounted) return;
       setState(() => _errorMessage = describeFailure(failure));
     } finally {
@@ -633,6 +643,7 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
                     order: _orderOf(roster, nextStop),
                     name: nextStop.name,
                     direction: roster.direction,
+                    hasBoardedRiders: roster.counts.boarded > 0,
                     isLast: isLastRemainingStop(
                       roster,
                       nextStop,

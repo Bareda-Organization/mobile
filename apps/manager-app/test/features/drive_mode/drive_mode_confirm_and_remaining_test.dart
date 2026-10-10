@@ -40,6 +40,9 @@ class _RecordingDriveModeRepository implements DriveModeRepository {
   /// 참이면 연결이 없는 상황 — 도착 처리가 큐에 저장되고 [Queued] 로 끝난다(859).
   bool offline = false;
 
+  /// 오프라인이 아닐 때 도착 요청이 던질 실패 — 기본은 연결 실패.
+  Failure arriveFailure = const NetworkFailure();
+
   /// [offline] 일 때 큐에 저장된 도착 처리 — 화면의 대기 목록(`pendingRequestsProvider`)이 읽는다.
   final queuedRequests = <PendingRequestSummary>[];
 
@@ -73,7 +76,7 @@ class _RecordingDriveModeRepository implements DriveModeRepository {
     // 이 시험은 요청이 나갔는지만 본다 — 종료 화면 이동을 피하려고 실패로 끝낸다.
     // Failure 는 Exception/Error 를 상속하지 않는다(다른 시험의 같은 패턴).
     // ignore: only_throw_errors
-    throw const NetworkFailure();
+    throw arriveFailure;
   }
 }
 
@@ -149,11 +152,12 @@ RosterResponse _roster(
   List<RosterStop> stops, {
   RunDirection direction = RunDirection.toAcademy,
   DateTime? cachedAt,
+  int boarded = 0,
 }) => RosterResponse(
   runId: 'run-1',
   busNo: '3호차',
   direction: direction,
-  counts: const RosterCounts(boarded: 0, waiting: 0, noShow: 0, absentN: 0),
+  counts: RosterCounts(boarded: boarded, waiting: 0, noShow: 0, absentN: 0),
   stops: stops,
   cachedAt: cachedAt,
 );
@@ -171,6 +175,7 @@ void main() {
     RunDirection direction = RunDirection.toAcademy,
     bool offline = false,
     DateTime? cachedAt,
+    int boarded = 0,
     GoRouter? router,
     List<Override> extraOverrides = const [],
   }) async {
@@ -194,7 +199,12 @@ void main() {
       ),
       driveModeRosterProvider.overrideWith((ref) async {
         rosterLoads++;
-        return _roster(stops, direction: direction, cachedAt: cachedAt);
+        return _roster(
+          stops,
+          direction: direction,
+          cachedAt: cachedAt,
+          boarded: boarded,
+        );
       }),
       ...extraOverrides,
     ];
@@ -241,6 +251,7 @@ void main() {
         tester,
         status: RunStatus.moving,
         stops: [_stop(1, arrived: true), _stop(2)],
+        boarded: 3,
       );
 
       await tester.tap(find.text('도착 처리'));
@@ -249,6 +260,21 @@ void main() {
       expect(find.textContaining('전원이 자동으로 하차 처리돼요'), findsOneWidget);
       expect(find.textContaining('보류'), findsNothing);
       expect(find.text('도착했어요 · 운행 종료'), findsOneWidget);
+    });
+
+    // A9 — 타고 있는 학생이 0명이면 자동 하차할 사람이 없어 그 줄을 내지 않는다.
+    testWidgets('등원 마지막 승하차지 확인 창은 탑승 학생이 없으면 전원 하차 줄을 내지 않는다', (tester) async {
+      await pumpDrive(
+        tester,
+        status: RunStatus.moving,
+        stops: [_stop(1, arrived: true), _stop(2)],
+      );
+
+      await tester.tap(find.text('도착 처리'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('자동으로 하차'), findsNothing);
+      expect(find.textContaining('위치 보내기가 멈춰요'), findsOneWidget);
     });
 
     testWidgets('하원 마지막 승하차지 확인 창은 자동 하차 대신 종료 보류를 알린다', (tester) async {
@@ -270,6 +296,30 @@ void main() {
       await tester.tap(find.text('도착했어요'));
       await tester.pumpAndSettle();
       expect(repository.arrivedStopIds, ['s2']);
+    });
+
+    // A10 — 직접 보낸 도착이 `403 DUPLICATE_ARRIVE`(이미 처리됨)면 오류 대신 명단을 다시 받는다.
+    testWidgets('도착 처리가 403 DUPLICATE_ARRIVE 면 오류 없이 명단을 다시 조회한다', (
+      tester,
+    ) async {
+      final repository = await pumpDrive(
+        tester,
+        status: RunStatus.moving,
+        stops: [_stop(1), _stop(2)],
+      );
+      repository.arriveFailure = const ApiFailure(
+        statusCode: 403,
+        code: 'DUPLICATE_ARRIVE',
+        message: 'm',
+      );
+      final loadsBefore = rosterLoads;
+
+      await tester.tap(find.text('도착 처리'));
+      await tester.pumpAndSettle();
+
+      expect(repository.arrivedStopIds, ['s1']);
+      expect(rosterLoads, greaterThan(loadsBefore));
+      expect(find.text('이미 도착 처리된 승하차지입니다'), findsNothing);
     });
 
     testWidgets('마지막이 아닌 승하차지 도착은 확인 없이 바로 나간다(운전 중 조작 부담)', (tester) async {
@@ -363,9 +413,8 @@ void main() {
       final loadsWhileQueued = rosterLoads;
 
       repository.queuedRequests.clear();
-      ProviderScope.containerOf(
-        tester.element(find.byType(DriveModeScreen)),
-      ).invalidate(pendingRequestsProvider);
+      ProviderScope.containerOf(tester.element(find.byType(DriveModeScreen)))
+          .invalidate(pendingRequestsProvider);
       await tester.pump();
       await tester.pump();
 
