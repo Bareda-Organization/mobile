@@ -481,6 +481,25 @@ void main() {
       expect(find.text('끝난 운행이 없어요'), findsOneWidget);
     });
 
+    testWidgets('탑승 중인 학생이 없으면 종료 보류로 그리지 않는다(서버가 종료한다)', (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          const RunEndScreen(),
+          [
+            selectedRunIdProvider.overrideWith((ref) => runId),
+            lastArriveResultProvider.overrideWith((ref) => null),
+          ],
+          roster: rosterProvider.overrideWith(
+            (ref) async => _fromAcademyRoster(arrived: const [true, true]),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('운행 종료 보류'), findsNothing);
+      expect(find.text('끝난 운행이 없어요'), findsOneWidget);
+    });
+
     testWidgets('등원 회차는 명단만으로 종료 보류가 되지 않는다(보류는 하원 잔류만)', (tester) async {
       await tester.pumpWidget(
         _wrap(
