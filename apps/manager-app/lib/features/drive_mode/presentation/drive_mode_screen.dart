@@ -223,9 +223,9 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
           }
       }
     } on Failure catch (failure) {
-      // 이미 처리된 도착(`403 DUPLICATE_ARRIVE`)은 실패가 아니라 명단이 낡았다는 신호다 — 큐 재생과 같이 성공으로
-      // 취급하고, 서버 명단을 다시 받아 다음 승하차지를 가리킨다(A10).
-      if (failure case ApiFailure(code: 'DUPLICATE_ARRIVE')) {
+      // 이미 처리된 도착(`403 DUPLICATE_ARRIVE` — 상태와 코드가 짝일 때만)은 실패가 아니라
+      // 명단이 낡았다는 신호다 — 큐 재생과 같이 성공으로 취급하고, 서버 명단을 다시 받아 다음 승하차지를 가리킨다(A10).
+      if (failure case ApiFailure(statusCode: 403, code: 'DUPLICATE_ARRIVE')) {
         container
           ..invalidate(driveModeRosterProvider)
           ..invalidate(todayRunsProvider);

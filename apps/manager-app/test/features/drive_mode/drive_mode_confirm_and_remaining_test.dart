@@ -322,6 +322,25 @@ void main() {
       expect(find.text('이미 도착 처리된 승하차지입니다'), findsNothing);
     });
 
+    testWidgets('같은 코드라도 403 이 아니면 흡수하지 않고 오류를 보인다', (tester) async {
+      final repository = await pumpDrive(
+        tester,
+        status: RunStatus.moving,
+        stops: [_stop(1), _stop(2)],
+      );
+      repository.arriveFailure = const ApiFailure(
+        statusCode: 409,
+        code: 'DUPLICATE_ARRIVE',
+        message: 'm',
+      );
+      final loadsBefore = rosterLoads;
+
+      await tester.tap(find.text('도착 처리'));
+      await tester.pumpAndSettle();
+
+      expect(rosterLoads, loadsBefore);
+    });
+
     testWidgets('마지막이 아닌 승하차지 도착은 확인 없이 바로 나간다(운전 중 조작 부담)', (tester) async {
       final repository = await pumpDrive(
         tester,
