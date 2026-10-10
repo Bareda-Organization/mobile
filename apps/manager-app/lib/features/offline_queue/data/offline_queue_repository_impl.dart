@@ -58,7 +58,12 @@ class OfflineQueueRepositoryImpl implements OfflineQueueRepository {
     // 흘려보낸다. 순서를 뒤집으면 오프라인에서 쌓인 옛 처리가 복구 후의 새
     // 처리를 덮어쓴다(오프라인 '탑승' → 복구 후 '되돌리기' → 재생이 다시
     // '탑승').
-    if (await _hasPending()) {
+    //
+    // 단 새 요청이 비상 신고면 대기 행과 무관하게 직접 보내는 것이 먼저다(R52 M5 · Ruling 616) — 앞의 일반 행이
+    // 5xx 를 되풀이하면 재생이 머리 행에서 멈춰 비상 신고가 큐 뒤로 밀리고, 서버가 살아 있어도 최대 약 5분 동안
+    // 닿지 못했다. 직접 전송이 실패하면 아래 처럼 큐에 쌓는다.
+    if (!PendingRequestSummary.isEmergencyEndpoint(endpoint) &&
+        await _hasPending()) {
       // 새 요청 앞의 재생은 시도 횟수에 넣지 않는다 — 서버가 죽은 동안 학생을 연달아 누르면 눌렀을 뿐인데
       // 머리 행이 곧바로 영구 실패가 된다. 횟수는 주기 재생·수동 재시도만 센다.
       final replay = await _replay(countAttempts: false);
