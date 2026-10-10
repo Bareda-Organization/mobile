@@ -175,6 +175,93 @@ void main() {
     expect(store.role, isNull);
   });
 
+  testWidgets('시작할 때 재발급 실패(unauthenticated)면 저장 역할 · 요약을 지우고 로그인 화면이다', (
+    tester,
+  ) async {
+    final store = FakeLastSessionStore(AccountRole.driver);
+    final summary = FakeRunSummaryStore((
+      savedAt: DateTime(2026, 10, 10, 9),
+      runs: [managerRunFixture()],
+    ));
+    await pumpApp(
+      tester,
+      repository: _MeRepository(const Failure.unauthenticated()),
+      store: store,
+      summary: summary,
+    );
+
+    expect(find.byType(LoginScreen), findsOneWidget);
+    expect(find.text('오늘 운행'), findsNothing);
+    expect(store.role, isNull);
+    expect(summary.saved, isNull);
+  });
+
+  testWidgets('다시 확인이 unauthenticated 이면 세션을 끝내고 저장 역할 · 요약을 지운다', (
+    tester,
+  ) async {
+    final repository = _MeRepository(network);
+    final store = FakeLastSessionStore(AccountRole.driver);
+    final summary = FakeRunSummaryStore((
+      savedAt: DateTime(2026, 10, 10, 9),
+      runs: [managerRunFixture()],
+    ));
+    final container = await pumpApp(
+      tester,
+      repository: repository,
+      store: store,
+      summary: summary,
+    );
+    expect(container.read(unverifiedSessionProvider), isTrue);
+
+    repository.failure = const Failure.unauthenticated();
+    await container.read(sessionReverifierProvider)();
+    await tester.pumpAndSettle();
+
+    expect(container.read(currentUserRoleProvider), isNull);
+    expect(store.role, isNull);
+    expect(summary.saved, isNull);
+    expect(find.byType(LoginScreen), findsOneWidget);
+  });
+
+  testWidgets('시작할 때 JSON 4xx(404)면 저장 역할이 있으면 홈으로 들어가고 저장분을 유지한다', (
+    tester,
+  ) async {
+    final store = FakeLastSessionStore(AccountRole.driver);
+    final summary = FakeRunSummaryStore((
+      savedAt: DateTime(2026, 10, 10, 9),
+      runs: [managerRunFixture()],
+    ));
+    final container = await pumpApp(
+      tester,
+      repository: _MeRepository(
+        const Failure.api(statusCode: 404, code: 'NOT_FOUND', message: '없음'),
+      ),
+      store: store,
+      summary: summary,
+    );
+
+    expect(find.byType(LoginScreen), findsNothing);
+    expect(find.text('오늘 운행'), findsOneWidget);
+    expect(container.read(unverifiedSessionProvider), isTrue);
+    expect(store.role, AccountRole.driver);
+    expect(summary.saved, isNotNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('시작할 때 JSON 4xx(409)이고 저장 역할이 없으면 다시 시도 안내를 보인다', (tester) async {
+    await pumpApp(
+      tester,
+      repository: _MeRepository(
+        const Failure.api(statusCode: 409, code: 'CONFLICT', message: '충돌'),
+      ),
+      store: FakeLastSessionStore(),
+    );
+
+    expect(find.byType(LoginScreen), findsNothing);
+    expect(find.text('오늘 운행'), findsNothing);
+    expect(find.text('다시 시도'), findsOneWidget);
+  });
+
   testWidgets('/me 가 성공하면 역할을 기기에 남긴다', (tester) async {
     final store = FakeLastSessionStore();
     await pumpApp(tester, repository: _MeRepository(null), store: store);
@@ -318,6 +405,14 @@ void main() {
     ('HTML 504 (Failure.unknown)', const Failure.unknown(statusCode: 504)),
     ('응답 없는 기타 오류', const Failure.unknown()),
     ('서버 오류 500', const Failure.api(statusCode: 500, code: 'X', message: 'm')),
+    (
+      'JSON 404',
+      const Failure.api(statusCode: 404, code: 'NOT_FOUND', message: '없음'),
+    ),
+    (
+      'JSON 409',
+      const Failure.api(statusCode: 409, code: 'CONFLICT', message: '충돌'),
+    ),
     ('연결 두절', network),
   ]) {
     testWidgets('다시 확인이 $label 이면 세션 · 저장 역할 · 요약을 그대로 둔다', (tester) async {
