@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:parent_app/app/app_routes.dart';
 import 'package:parent_app/core/runs/domain/student_run.dart';
+import 'package:parent_app/core/runs/presentation/live_map_view.dart';
 import 'package:parent_app/core/runs/presentation/run_display.dart';
 import 'package:parent_app/core/ui/word_span.dart';
-import 'package:parent_app/features/live_map/presentation/live_map_view.dart';
 
 /// 운행 전 화면(시안 `live-map--before`) — 좌표가 없는데 지도를 그릴 근거가 없으므로 지도 대신
 /// 출발 시각 안내 + 그 회차 카드 + [노선 미리 보기].

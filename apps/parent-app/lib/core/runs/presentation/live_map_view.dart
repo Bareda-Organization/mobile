@@ -2,8 +2,8 @@ import 'package:baraeda_core/baraeda_core.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:parent_app/core/runs/domain/bus_position.dart';
+import 'package:parent_app/core/runs/domain/live_map_status.dart';
 import 'package:parent_app/core/runs/domain/student_run.dart';
-import 'package:parent_app/features/live_map/domain/live_map_status.dart';
 
 /// Ruling 208 — 마지막 수신 후 2분이면 유실로 판정한다. 서버
 /// (`API_SPEC §3.11`)의 `StudentBusPositionQueryService.STALE_THRESHOLD`

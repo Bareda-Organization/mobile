@@ -2,9 +2,9 @@ import 'package:baraeda_core/baraeda_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:parent_app/core/runs/domain/bus_position.dart';
+import 'package:parent_app/core/runs/domain/live_map_status.dart';
 import 'package:parent_app/core/runs/domain/student_run.dart';
-import 'package:parent_app/features/live_map/domain/live_map_status.dart';
-import 'package:parent_app/features/live_map/presentation/live_map_view.dart';
+import 'package:parent_app/core/runs/presentation/live_map_view.dart';
 
 /// 화면이 어떤 모양을 그릴지 정하는 순수 함수 — 시안 `live-map*` 7장이 이 판정 하나로 갈린다.
 /// 위젯 없이 값만 넣어 본다(판정 순서가 곧 사양이라 순서를 뒤집으면 여기서 먼저 깨진다).
