@@ -112,6 +112,66 @@ void main() {
     );
   });
 
+  for (final (label, failure) in <(String, Failure)>[
+    ('게이트웨이 HTML 502', const Failure.unknown(statusCode: 502)),
+    ('응답 없는 기타 오류', const Failure.unknown()),
+  ]) {
+    test('$label 도 오늘 저장한 요약을 돌려준다', () async {
+      final t = build(
+        result: failure,
+        store: FakeRunSummaryStore((savedAt: now, runs: [run])),
+      );
+
+      expect((await t.repo.fetchRuns()).single.runId, run.runId);
+    });
+  }
+
+  test('HTML 4xx(Failure.unknown 404)는 저장 요약으로 덮지 않는다', () async {
+    final t = build(
+      result: const Failure.unknown(statusCode: 404),
+      store: FakeRunSummaryStore((savedAt: now, runs: [run])),
+    );
+
+    await expectLater(t.repo.fetchRuns(), throwsA(isA<UnknownFailure>()));
+  });
+
+  test('날짜를 지정한 조회는 요약을 남기지 않는다', () async {
+    final t = build(result: [run]);
+
+    await t.repo.fetchRuns(date: DateTime(2026, 10, 11));
+
+    expect(t.store.saved, isNull);
+  });
+
+  // 저장 시각은 `DateTime.parse` 가 오프셋 문자열을 UTC 로 돌려주므로 UTC 값으로 넣어 로컬 날짜로 비교하는지 본다.
+  // 같은 일 · 다른 달, 같은 월일 · 다른 해는 저장분이 아니다.
+  for (final (label, savedAt) in <(String, DateTime)>[
+    ('같은 일 · 다른 달', DateTime(2026, 9, 10, 10)),
+    ('같은 월일 · 다른 해', DateTime(2025, 10, 10, 10)),
+    ('어제 자정 직전', DateTime(2026, 10, 9, 23, 59)),
+  ]) {
+    test('저장 시각이 $label 이면 저장 요약으로 돌아서지 않는다', () async {
+      final t = build(
+        result: const Failure.network(),
+        store: FakeRunSummaryStore((savedAt: savedAt.toUtc(), runs: [run])),
+      );
+
+      await expectLater(t.repo.fetchRuns(), throwsA(isA<NetworkFailure>()));
+    });
+  }
+
+  test('저장 시각이 오늘 자정 직후(UTC 로 저장)면 저장 요약을 돌려준다', () async {
+    final t = build(
+      result: const Failure.network(),
+      store: FakeRunSummaryStore((
+        savedAt: DateTime(2026, 10, 10, 0, 1).toUtc(),
+        runs: [run],
+      )),
+    );
+
+    expect(await t.repo.fetchRuns(), hasLength(1));
+  });
+
   test('요약이 없으면 실패가 그대로 나간다', () async {
     final t = build(result: const Failure.network());
 

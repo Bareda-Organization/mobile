@@ -94,9 +94,9 @@ void _forgetDeviceSession(Ref ref) {
 /// 가 저장된 refresh 로 자동 재발급 후 재시도한다 — 이 provider 는 그 재발급
 /// 로직을 다시 구현하지 않는다.
 ///
-/// `/me` 가 연결 실패(또는 5xx)이고 마지막으로 확인한 역할이 기기에 있으면 그 역할로 들어간다(R52 H2) —
+/// `/me` 가 서버의 거절이 아닌 실패(연결 실패 · 5xx · 게이트웨이 HTML 오류 등)이고 마지막으로 확인한 역할이 기기에 있으면 그 역할로 들어간다(R52 H2) —
 /// 통신 두절 구간에도 저장 명단 · 대기열 · 비상 신고 · 학원 전화가 열려야 한다. 역할이 없으면 지금처럼 오류로
-/// 남겨 [다시 시도] 를 보인다. 인증 거절(401 등)은 로그인 화면으로 남기고 저장한 역할을 지운다.
+/// 남겨 [다시 시도] 를 보인다. 서버의 거절(401 · 403)만 로그인 화면으로 남기고 저장한 역할을 지운다.
 // 자동 재시도를 끈다 — Riverpod 3 은 실패한 provider 를 늘어나는 간격으로 조용히 다시 불러 그동안 스피너만
 // 보이는데, 여기서는 곧바로 [다시 시도] 안내를 보이는 것이 낫다(F06-10).
 final authBootstrapProvider = FutureProvider<void>(retry: (_, _) => null, (
@@ -110,11 +110,11 @@ final authBootstrapProvider = FutureProvider<void>(retry: (_, _) => null, (
   try {
     await _applyMe(ref, await authRepository.me());
   } on Failure catch (failure) {
-    if (isUnreachableFailure(failure)) {
+    if (!isServerRejection(failure)) {
       if (await _enterWithLastSession(ref)) return;
       rethrow;
     }
-    // 인증 거절 — 로그인 화면으로 남기고, 이 기기가 기억한 역할은 더 쓰지 않는다.
+    // 서버의 거절(401 · 403) — 로그인 화면으로 남기고, 이 기기가 기억한 역할은 더 쓰지 않는다.
     _forgetDeviceSession(ref);
   } on Object {
     // 재발급까지 실패하면 인터셉터가 이미 토큰을 지웠다(§ api_client.dart
@@ -187,31 +187,32 @@ Future<bool> _enterWithLastSession(Ref ref) async {
 
 /// 마지막 역할로 들어온 세션을 `/me` 로 다시 확인한다(R52 H2) — 연결이 돌아오는 주기 · 앱 복귀 · 서버 도달
 /// 신호마다 부른다. 아직 닿지 않으면 그대로 두고 다음 기회를 기다린다. 인증 거절은 인터셉터가 세션 만료로 처리한다.
-final Provider<Future<void> Function()>
-sessionReverifierProvider = Provider<Future<void> Function()>((ref) {
-  var running = false;
-  return () async {
-    if (running || !ref.read(unverifiedSessionProvider)) return;
-    running = true;
-    try {
-      await _applyMe(ref, await ref.read(authRepositoryProvider).me());
-      ref.invalidate(meProvider);
-    } on Failure catch (failure) {
-      // 닿지 못했으면 마지막 역할 그대로 다음 기회를 기다린다. 서버가 거절한 것(401 · 403 · 그 밖 4xx)은 이 기기가
-      // 기억한 역할로 더 머물 수 없다 — 401 은 인터셉터가 세션 만료로 끝내므로 그 밖만 여기서 끝낸다.
-      if (!isUnreachableFailure(failure)) {
-        _forgetDeviceSession(ref);
-        final expiredByInterceptor =
-            failure is ApiFailure && failure.statusCode == 401;
-        if (!expiredByInterceptor) endSessionAsExpired(ref);
-      }
-    } on Object {
-      // 그 밖의 예외는 다음 기회에.
-    } finally {
-      running = false;
-    }
-  };
-});
+final Provider<Future<void> Function()> sessionReverifierProvider =
+    Provider<Future<void> Function()>((ref) {
+      var running = false;
+      return () async {
+        if (running || !ref.read(unverifiedSessionProvider)) return;
+        running = true;
+        try {
+          await _applyMe(ref, await ref.read(authRepositoryProvider).me());
+          ref.invalidate(meProvider);
+        } on Failure catch (failure) {
+          // 서버가 이 계정을 거절했다는 증거(401 · 403)가 있을 때만 끝낸다 — 연결 두절 · 5xx · 게이트웨이 HTML 오류 ·
+          // 그 밖의 실패는 마지막 역할 그대로 다음 기회를 기다린다(끝내면 대기열 · 비상 신고 대기분까지 버려진다).
+          // 401 은 인터셉터가 세션 만료로 끝내므로 그 밖만 여기서 끝낸다.
+          if (isServerRejection(failure)) {
+            _forgetDeviceSession(ref);
+            final expiredByInterceptor =
+                failure is ApiFailure && failure.statusCode == 401;
+            if (!expiredByInterceptor) endSessionAsExpired(ref);
+          }
+        } on Object {
+          // 그 밖의 예외는 다음 기회에.
+        } finally {
+          running = false;
+        }
+      };
+    });
 
 /// 운행 중에 앱을 완전히 껐다 켜면 메모리 값인 선택 회차가 비어 위치 송신이 멎는다 — 오늘 회차(§4.1)에서
 /// 운행 중이고 내가 기사인 회차를 찾아 채우면 앱 전역 송신기가 그대로 돈다. 화면은 옮기지 않는다

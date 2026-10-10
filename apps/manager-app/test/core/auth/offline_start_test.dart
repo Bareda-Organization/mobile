@@ -73,13 +73,24 @@ class _MeRepository implements AuthRepository {
 void main() {
   const network = Failure.network();
   const rejected = Failure.api(statusCode: 401, code: 'AUTH', message: '만료');
+  // nginx · Cloudflare Tunnel 이 서버가 죽었을 때 내는 HTML 오류 페이지 — JSON 이 아니라 `unknown` 으로 매핑된다.
+  const gatewayHtml = Failure.unknown(
+    message: '서버 응답을 해석할 수 없음 (status: 502)',
+    statusCode: 502,
+  );
 
   Future<ProviderContainer> pumpApp(
     WidgetTester tester, {
     required _MeRepository repository,
     required FakeLastSessionStore store,
+    FakeRunSummaryStore? summary,
   }) async {
     late ProviderContainer container;
+    // 세션 종료가 대기열을 비울 때 실제 파일 DB 를 열지 않게 메모리 DB 를 쓰고, 시험이 끝나면 닫는다(drift 다중 생성 경고 방지).
+    final queueDatabase = OfflineQueueDatabase.forTesting(
+      NativeDatabase.memory(),
+    );
+    addTearDown(queueDatabase.close);
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -87,7 +98,10 @@ void main() {
             FakeTokenStorage(seedRefreshToken: 'refresh'),
           ),
           authRepositoryProvider.overrideWithValue(repository),
+          offlineQueueDatabaseProvider.overrideWithValue(queueDatabase),
           lastSessionStoreProvider.overrideWithValue(store),
+          if (summary != null)
+            runSummaryStoreProvider.overrideWithValue(summary),
           academyContactStoreProvider.overrideWithValue(
             FakeAcademyContactStore(),
           ),
@@ -255,6 +269,81 @@ void main() {
 
     expect(store.role, isNull);
   });
+
+  testWidgets('게이트웨이 HTML 502 도 연결 두절처럼 저장 역할로 홈이 열린다', (tester) async {
+    final container = await pumpApp(
+      tester,
+      repository: _MeRepository(gatewayHtml),
+      store: FakeLastSessionStore(AccountRole.driver),
+    );
+
+    expect(find.byType(LoginScreen), findsNothing);
+    expect(find.text('오늘 운행'), findsOneWidget);
+    expect(container.read(unverifiedSessionProvider), isTrue);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('시작할 때 서버가 JSON 으로 거절(403)하면 저장 역할 · 요약을 지우고 로그인 화면이다', (
+    tester,
+  ) async {
+    final store = FakeLastSessionStore(AccountRole.driver);
+    final summary = FakeRunSummaryStore((
+      savedAt: DateTime(2026, 10, 10, 9),
+      runs: [managerRunFixture()],
+    ));
+    await pumpApp(
+      tester,
+      repository: _MeRepository(
+        const Failure.api(
+          statusCode: 403,
+          code: 'AUTH_ACCOUNT_BLOCKED',
+          message: '차단',
+        ),
+      ),
+      store: store,
+      summary: summary,
+    );
+
+    expect(find.byType(LoginScreen), findsOneWidget);
+    expect(store.role, isNull);
+    expect(summary.saved, isNull);
+  });
+
+  // 서버가 이 계정을 거절했다는 긍정 증거가 없는 실패는 세션 · 저장분을 그대로 둔다 — 지우면 대기열(비상 신고 포함)까지
+  // 버려지는 로그아웃이 된다.
+  for (final (label, failure) in <(String, Failure)>[
+    ('게이트웨이 HTML 502', gatewayHtml),
+    ('HTML 504 (Failure.unknown)', const Failure.unknown(statusCode: 504)),
+    ('응답 없는 기타 오류', const Failure.unknown()),
+    ('서버 오류 500', Failure.api(statusCode: 500, code: 'X', message: 'm')),
+    ('연결 두절', network),
+  ]) {
+    testWidgets('다시 확인이 $label 이면 세션 · 저장 역할 · 요약을 그대로 둔다', (tester) async {
+      final repository = _MeRepository(network);
+      final store = FakeLastSessionStore(AccountRole.driver);
+      final summary = FakeRunSummaryStore((
+        savedAt: DateTime(2026, 10, 10, 9),
+        runs: [managerRunFixture()],
+      ));
+      final container = await pumpApp(
+        tester,
+        repository: repository,
+        store: store,
+        summary: summary,
+      );
+
+      repository.failure = failure;
+      await container.read(sessionReverifierProvider)();
+      await tester.pumpAndSettle();
+
+      expect(container.read(currentUserRoleProvider), UserRole.driver);
+      expect(container.read(unverifiedSessionProvider), isTrue);
+      expect(store.role, AccountRole.driver);
+      expect(summary.saved, isNotNull);
+      expect(find.byType(LoginScreen), findsNothing);
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+  }
 
   testWidgets('로그인에 성공하면 역할을 기기에 남긴다', (tester) async {
     final store = FakeLastSessionStore();

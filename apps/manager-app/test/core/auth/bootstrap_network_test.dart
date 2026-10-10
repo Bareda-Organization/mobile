@@ -79,6 +79,13 @@ void main() {
     expect(find.text('다시 시도'), findsOneWidget);
   });
 
+  testWidgets('시작할 때 게이트웨이 HTML 502 면 로그인 화면 대신 다시 시도 안내를 보인다', (tester) async {
+    await pumpApp(tester, const Failure.unknown(statusCode: 502));
+
+    expect(find.byType(LoginScreen), findsNothing);
+    expect(find.text('다시 시도'), findsOneWidget);
+  });
+
   testWidgets('[다시 시도] 로 /me 를 다시 불러 로그인 상태로 들어간다', (tester) async {
     final repository = await pumpApp(tester, const Failure.network());
 
