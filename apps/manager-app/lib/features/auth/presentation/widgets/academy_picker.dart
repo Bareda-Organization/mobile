@@ -2,6 +2,9 @@ import 'package:baraeda_core/baraeda_core.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 
+/// 학원 검색 API 의 쪽 크기 — 서버 기본값이다(API_SPEC §2.1). 결과가 이만큼 꽉 차면 더 있을 수 있다.
+const academySearchPageSize = 20;
+
 /// 학원 검색 + 결과 확인 + 선택 하나로 묶은 위젯(UF-X-01 학원 검색 단계).
 /// `AcademySummary.displayLabel` 이 이미 `{name}·{region}·{code}` 형식을
 /// 만들어 주므로 이 위젯은 검색·목록·선택만 담당한다.
@@ -134,6 +137,16 @@ class _AcademyPickerState extends State<AcademyPicker> {
                 final academy = _results.firstWhere((a) => a.id == value);
                 widget.onSelected(academy);
               },
+            ),
+          ),
+        if (_results.length >= academySearchPageSize)
+          Padding(
+            padding: const EdgeInsets.only(top: BaraedaSpacing.space2),
+            child: WordWrapText(
+              '검색 결과가 많아요. 학원 이름을 더 자세히 입력해 주세요',
+              style: BaraedaTypography.caption.copyWith(
+                color: context.colors.textSecondary,
+              ),
             ),
           ),
       ],
