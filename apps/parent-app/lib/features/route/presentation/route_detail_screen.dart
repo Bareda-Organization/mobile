@@ -271,6 +271,9 @@ Stop _timelineStop(RouteStop stop, {required bool isMyStop}) {
   };
   return Stop(
     name: stop.name,
+    // 번호는 지도 마커와 같은 실제 `seq` 다(목록 순번이 아니다). 학원 항목(`stopId` 없음)은 번호 대신 학교 표시.
+    number: stop.stopId == null ? null : stop.seq,
+    nodeIcon: stop.stopId == null ? 'school' : null,
     // 서버가 주소 원문을 안 주는 승하차지(`null` — 853)는 주소 줄 자체를 그리지 않는다. 빈 글자도 같다.
     address: (stop.address?.trim().isEmpty ?? true) ? null : stop.address,
     time: arrived == null ? null : '${formatClock(arrived)} 지남',

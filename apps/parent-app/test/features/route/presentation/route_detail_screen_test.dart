@@ -168,6 +168,53 @@ void main() {
     });
   });
 
+  // R52 낮음 A9 — 목록 번호는 지도 마커와 같이 서버가 준 실제 순번(`seq`)이다.
+  // 표시 범위가 3~5번이면 3 · 4 · 5.
+  group('A9 목록 번호는 실제 seq', () {
+    testWidgets('표시 범위가 3~5번이면 번호 원에 3 · 4 · 5 가 적히고 1 · 2 는 없다', (
+      tester,
+    ) async {
+      final route = RouteDetail.fromJson(
+        _routeJson(
+          stops: [
+            _stopJson(stopId: 's-3', seq: 3, name: '정류장3'),
+            _stopJson(stopId: 's-4', seq: 4, name: '정류장4'),
+            _stopJson(stopId: 's-5', seq: 5, name: '정류장5'),
+          ],
+          myStopId: 's-4',
+        ),
+      );
+
+      await pumpScreen(tester, response: route);
+
+      for (final seq in ['3', '4', '5']) {
+        expect(find.text(seq), findsOneWidget, reason: '$seq번 원');
+      }
+      expect(find.text('1'), findsNothing);
+      expect(find.text('2'), findsNothing);
+    });
+
+    testWidgets('학원 항목(stop_id 없음)에는 번호 대신 학교 표시가 붙는다 — 0 이나 순번을 지어내지 않는다', (
+      tester,
+    ) async {
+      final route = RouteDetail.fromJson(
+        _routeJson(
+          stops: [
+            _stopJson(stopId: 's-3', seq: 3, name: '정류장3'),
+            _stopJson(stopId: 's-4', seq: 4, name: '정류장4'),
+            _stopJson(seq: 0, name: '바래다학원 A'),
+          ],
+          myStopId: 's-4',
+        ),
+      );
+
+      await pumpScreen(tester, response: route);
+
+      expect(find.text('0'), findsNothing);
+      expect(find.byIcon(Icons.school), findsOneWidget);
+    });
+  });
+
   group('①표시 범위 — 서버가 보낸 stops 를 그대로 그린다(재절단 없음)', () {
     testWidgets(
       '서버가 4개를 보내면 화면도 4개를 그린다(목표 2 — visibleStops 삭제)',

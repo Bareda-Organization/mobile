@@ -32,6 +32,8 @@ class Stop {
     this.missed,
     this.tag,
     this.tagTone = BaraedaBadgeTone.neutral,
+    this.number,
+    this.nodeIcon,
   });
 
   final String name;
@@ -52,6 +54,13 @@ class Stop {
   /// (시안 `.m-stop` 의 칩). 없으면 안 붙는다.
   final String? tag;
   final BaraedaBadgeTone tagTone;
+
+  /// 번호 원에 적을 번호 — 서버가 준 실제 순번이다. 비우면 목록 순번(1부터)을 쓴다. 표시 범위가 3~5번인 목록이
+  /// 1 · 2 · 3 으로 읽히지 않게 한다.
+  final int? number;
+
+  /// 번호 대신 번호 원에 그릴 아이콘 이름(예: 학원 항목의 `school`). 번호가 없는 항목에 순번을 지어내지 않는다.
+  final String? nodeIcon;
 }
 
 /// 노선 승하차지 순서 타임라인 — 세 제품 공통. 번호 원에 순서가 적히고 지금 곳은 앰버로 크다.
@@ -77,7 +86,7 @@ class StopTimeline extends StatelessWidget {
       itemCount: stops.length,
       itemBuilder: (context, index) => _StopTimelineRow(
         stop: stops[index],
-        number: index + 1,
+        number: stops[index].number ?? index + 1,
         isFirst: index == 0,
         isLast: index == stops.length - 1,
         dense: dense,
@@ -119,7 +128,7 @@ class _StopTimelineRow extends StatelessWidget {
       button: onTap != null,
       onTap: onTap,
       label: [
-        '$number번',
+        if (stop.nodeIcon == null) '$number번',
         stop.name,
         stop.address,
         stop.time,
@@ -154,7 +163,12 @@ class _StopTimelineRow extends StatelessWidget {
                             ? const SizedBox.shrink()
                             : _Line(color: colors.borderDefault),
                       ),
-                      _Node(number: number, state: stop.state, colors: colors),
+                      _Node(
+                        number: number,
+                        icon: stop.nodeIcon,
+                        state: stop.state,
+                        colors: colors,
+                      ),
                       Expanded(
                         child: isLast
                             ? const SizedBox.shrink()
@@ -294,9 +308,17 @@ class _Line extends StatelessWidget {
 /// 번호 원 — 지난 곳은 초록 면 + 체크, 지금은 앰버 면 + 두꺼운 고리(32), 이후는 흰 면 + 고리,
 /// 건너뜀은 빨간 고리 · 추가는 초록 고리.
 class _Node extends StatelessWidget {
-  const new({required this.number, required this.state, required this.colors});
+  const new({
+    required this.number,
+    required this.state,
+    required this.colors,
+    this.icon,
+  });
 
   final int number;
+
+  /// 있으면 번호 대신 이 아이콘을 그린다.
+  final String? icon;
   final StopState state;
   final BaraedaColors colors;
 
@@ -340,6 +362,8 @@ class _Node extends StatelessWidget {
       ),
       child: done
           ? BaraedaIcon('check', size: 16, color: textColor)
+          : icon != null
+          ? BaraedaIcon(icon!, size: 16, color: textColor)
           : Text(
               '$number',
               style: BaraedaTypography.micro.copyWith(
