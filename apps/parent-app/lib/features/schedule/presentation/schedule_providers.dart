@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:parent_app/app/di.dart';
 import 'package:parent_app/core/auth/auth_providers.dart';
 import 'package:parent_app/features/schedule/domain/weekly_address_entry.dart';
@@ -32,3 +33,6 @@ final scheduleUnsavedEditsProvider = Provider.autoDispose<UnsavedEdits>((ref) {
   ref.onDispose(edits.dispose);
   return edits;
 });
+
+/// 일정 탭이 열리면 신청 이력 자리까지 내려갈지 — 영수증의 [신청 이력 보기] 가 켜고, 일정 탭이 내려간 뒤 끈다(B9).
+final scheduleShowHistoryProvider = StateProvider<bool>((ref) => false);

@@ -431,7 +431,11 @@ class _ChangeRequestPanelState extends ConsumerState<ChangeRequestPanel> {
           label: '신청 이력 보기',
           block: true,
           variant: BaraedaButtonVariant.ghost,
-          onPressed: () => context.go(AppRoutes.schedule),
+          // 일정 탭이 신청 이력 자리까지 내려가 있게 한다 — 안 그러면 위 단추와 같은 곳(맨 위)으로 가는 단추가 된다.
+          onPressed: () {
+            ref.read(scheduleShowHistoryProvider.notifier).state = true;
+            context.go(AppRoutes.schedule);
+          },
         ),
       ],
     );

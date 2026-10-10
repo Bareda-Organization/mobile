@@ -3,6 +3,8 @@ import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
+import 'package:parent_app/app/app_routes.dart';
 import 'package:parent_app/app/di.dart';
 import 'package:parent_app/core/change_requests/domain/change_request.dart';
 import 'package:parent_app/core/change_requests/domain/change_request_repository.dart';
@@ -10,6 +12,7 @@ import 'package:parent_app/core/common/run_direction.dart';
 import 'package:parent_app/core/runs/domain/run_intent_result.dart';
 import 'package:parent_app/core/runs/domain/run_repository.dart';
 import 'package:parent_app/core/runs/domain/student_run.dart';
+import 'package:parent_app/features/schedule/presentation/schedule_providers.dart';
 import 'package:parent_app/features/schedule/presentation/widgets/change_request_panel.dart';
 
 /// 이월 2-2 — API_SPEC §3.8 에러 코드(`CHANGE_WINDOW_CLOSED` ·
@@ -573,6 +576,73 @@ void main() {
       expect(find.text('학원 승인이 필요해요'), findsOneWidget);
       expect(find.text('승인 요청 보내기'), findsOneWidget);
       expect(find.text('변경 신청하기'), findsNothing);
+    });
+
+    // R52 낮음 B9 — 영수증의 두 단추가 같은 곳(일정 탭 맨 위)으로 가서 [신청 이력 보기] 의 뜻이 없었다.
+    group('B9 영수증 두 단추', () {
+      Future<ProviderContainer> submitUnderRouter(WidgetTester tester) async {
+        tester.view.physicalSize = const Size(800, 2400);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        final router = GoRouter(
+          routes: [
+            GoRoute(
+              path: '/',
+              builder: (_, _) =>
+                  const Scaffold(body: ChangeRequestPanel(studentId: 's-1')),
+            ),
+            GoRoute(
+              path: AppRoutes.schedule,
+              builder: (_, _) => const Scaffold(body: Text('일정 탭')),
+            ),
+          ],
+        );
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              runRepositoryProvider.overrideWithValue(
+                _DatedRunRepository({}, today: [run('a')]),
+              ),
+              changeRequestRepositoryProvider.overrideWithValue(
+                _RecordingChangeRequestRepository(),
+              ),
+            ],
+            child: MaterialApp.router(routerConfig: router),
+          ),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('등원 · 08:00 출발'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('변경 신청하기'));
+        await tester.pumpAndSettle();
+        return ProviderScope.containerOf(
+          tester.element(find.byType(MaterialApp)),
+        );
+      }
+
+      testWidgets('[신청 이력 보기] 는 일정 탭의 신청 이력 자리로 내려가라고 알리고 일정 탭으로 간다', (
+        tester,
+      ) async {
+        final container = await submitUnderRouter(tester);
+
+        await tester.tap(find.text('신청 이력 보기'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('일정 탭'), findsOneWidget);
+        expect(container.read(scheduleShowHistoryProvider), isTrue);
+      });
+
+      testWidgets('[일정으로 돌아가기] 는 맨 위 그대로 일정 탭으로 간다 — 이력 자리를 요구하지 않는다', (
+        tester,
+      ) async {
+        final container = await submitUnderRouter(tester);
+
+        await tester.tap(find.text('일정으로 돌아가기'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('일정 탭'), findsOneWidget);
+        expect(container.read(scheduleShowHistoryProvider), isFalse);
+      });
     });
 
     testWidgets('제출하면 폼이 아니라 신청 내용 영수증이 나온다 — 회차 · 변경 · 사유', (tester) async {

@@ -127,10 +127,42 @@ class _ScheduleBodyState extends ConsumerState<_ScheduleBody> {
   /// 0 = 오늘, 1 = 내일 (한국 시간).
   int _dayOffset = 0;
   final GlobalKey<State<StatefulWidget>> _historyKey = GlobalKey();
+  final ScrollController _scroll = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    // 영수증의 [신청 이력 보기] 로 들어왔으면 열자마자 이력 자리로 내려간다(B9).
+    if (ref.read(scheduleShowHistoryProvider)) _goToRequestedHistory();
+  }
+
+  /// 이력으로 내려가 달라는 요청을 한 번 들어주고 끈다 — 그려진 뒤에 움직여야 해서 다음 프레임에 한다.
+  void _goToRequestedHistory() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _showHistory();
+      ref.read(scheduleShowHistoryProvider.notifier).state = false;
+    });
+  }
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
 
   void _showHistory() {
     final target = _historyKey.currentContext;
-    if (target == null) return;
+    if (target == null) {
+      // 이력이 화면 밖이라 아직 그려지지 않았다 — 끝까지 내려 그린 뒤 다시 맞춘다.
+      if (_scroll.hasClients) {
+        _scroll.jumpTo(_scroll.position.maxScrollExtent);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && _historyKey.currentContext != null) _showHistory();
+        });
+      }
+      return;
+    }
     Scrollable.ensureVisible(
       target,
       // 움직임 줄이기가 켜져 있으면 애니메이션 없이 바로 간다.
@@ -152,7 +184,13 @@ class _ScheduleBodyState extends ConsumerState<_ScheduleBody> {
     final pending =
         ref.watch(changeRequestsProvider(studentId)).value?.pendingCount ?? 0;
 
+    // 이미 열려 있던 일정 탭(탭 상태가 살아 있다)에도 요청이 오면 내려간다.
+    ref.listen<bool>(scheduleShowHistoryProvider, (_, wanted) {
+      if (wanted) _goToRequestedHistory();
+    });
+
     return ListView(
+      controller: _scroll,
       padding: const EdgeInsets.all(BaraedaSpacing.gutterMobile),
       children: [
         StudentSwitcher(students: widget.students, selectedId: studentId),

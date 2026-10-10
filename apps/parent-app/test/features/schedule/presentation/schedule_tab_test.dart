@@ -53,8 +53,10 @@ Future<void> _pump(
   required ChangeRequestPage page,
   List<Student>? students,
   List<WeeklyAddressEntry>? weekly,
+  bool showHistory = false,
+  double height = 2400,
 }) async {
-  tester.view.physicalSize = const Size(800, 2400);
+  tester.view.physicalSize = Size(800, height);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
   await tester.pumpWidget(
@@ -62,6 +64,7 @@ Future<void> _pump(
       retry: (_, _) => null,
       overrides: [
         clockProvider.overrideWithValue(_FixedClock(_now)),
+        scheduleShowHistoryProvider.overrideWith((ref) => showHistory),
         currentUserRoleProvider.overrideWith((ref) => UserRole.parent),
         myStudentsProvider.overrideWith(
           (ref) async =>
@@ -263,5 +266,37 @@ void main() {
 
     expect(find.text('연결된 자녀가 없어요'), findsOneWidget);
     expect(find.text('자녀 연결하기'), findsOneWidget);
+  });
+
+  // R52 낮음 B9 — 영수증의 [신청 이력 보기] 로 들어오면 일정 탭이 신청 이력 자리까지 내려가 있다.
+  double scrolled(WidgetTester tester) => tester
+      .state<ScrollableState>(find.byType(Scrollable).first)
+      .position
+      .pixels;
+
+  testWidgets('이력으로 내려가라는 표시가 있으면 일정 탭이 내려가 있다', (tester) async {
+    await _pump(
+      tester,
+      page: const ChangeRequestPage(items: [], pendingCount: 0),
+      showHistory: true,
+      height: 500,
+    );
+
+    expect(scrolled(tester), greaterThan(0));
+    expect(
+      tester.getTopLeft(find.text('신청 이력')).dy,
+      lessThan(500),
+      reason: '신청 이력 제목이 화면 안에 있다',
+    );
+  });
+
+  testWidgets('표시가 없으면 일정 탭은 맨 위에서 시작한다', (tester) async {
+    await _pump(
+      tester,
+      page: const ChangeRequestPage(items: [], pendingCount: 0),
+      height: 500,
+    );
+
+    expect(scrolled(tester), 0);
   });
 }
