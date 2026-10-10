@@ -90,10 +90,16 @@ class _RunReadyScreenState extends ConsumerState<RunReadyScreen> {
 
   Future<void> _start(String runId) async {
     // 시작하면 노선이 잠기고 학부모·관계자에게 알림이 나간다 — 되돌릴 수 없어 한 번 묻는다(R32 M6).
+    // 하원은 시작과 함께 전원이 자동으로 승차 처리된다(C-07) — 그 사실을 알린다. 등원에는 해당 없다.
+    final isFromAcademy =
+        ref.read(driveModeRunProvider)?.direction == RunDirection.fromAcademy;
     final confirmed = await confirmAction(
       context,
       title: '운행을 시작할까요?',
-      body: '시작하면 학부모·관계자에게 운행 시작 알림이 나가고 노선이 잠겨요.',
+      body: [
+        '시작하면 학부모·관계자에게 운행 시작 알림이 나가고 노선이 잠겨요.',
+        if (isFromAcademy) '학생은 하원 시작과 함께 자동으로 승차 처리되고 학부모에게 승차 알림이 가요.',
+      ].join('\n'),
       confirmLabel: '시작하기',
       cancelLabel: '닫기',
     );
