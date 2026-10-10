@@ -112,30 +112,46 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
-  testWidgets('종료 화면이 쉘 위에 떠 있는 동안에는 선택을 바꾸지 않고, 닫으면 갈아탄다', (tester) async {
-    final container = await pump(tester, UserRole.driver, [
-      confirmedA(),
-      confirmedB(),
-    ]);
-    expect(container.read(selectedRunIdProvider), 'run-A');
-
-    final navigator = Navigator.of(tester.element(find.byType(BaraedaTabBar)))
-      ..push<void>(
+  // 쉘 위에 다른 화면이 떠 있는 동안 앞 회차가 끝난다. 옆 화면(페이지)은 Riverpod 이 구독을 멈춰 두지만 대화상자는
+  // 아래 쉘이 계속 다시 그려지므로, 두 경우 모두 쉘이 맨 위 화면일 때만 갈아타야 한다.
+  for (final (label, open) in <(String, Future<void> Function(BuildContext))>[
+    (
+      '종료 화면(페이지)',
+      (context) => Navigator.of(context).push<void>(
         MaterialPageRoute<void>(
           builder: (_) => const Scaffold(body: Text('운행 종료 화면')),
         ),
-      );
-    await tester.pumpAndSettle();
+      ),
+    ),
+    (
+      '대화상자',
+      (context) => showDialog<void>(
+        context: context,
+        builder: (_) => const AlertDialog(title: Text('운행 종료 화면')),
+      ),
+    ),
+  ]) {
+    testWidgets('$label 가 쉘 위에 떠 있는 동안에는 선택을 바꾸지 않고, 닫으면 갈아탄다', (tester) async {
+      final container = await pump(tester, UserRole.driver, [
+        confirmedA(),
+        confirmedB(),
+      ]);
+      expect(container.read(selectedRunIdProvider), 'run-A');
 
-    // 위 화면이 떠 있는 동안 A 가 끝난다.
-    container.read(_runs.notifier).state = [finishedA(), confirmedB()];
-    await tester.pumpAndSettle();
-    expect(find.text('운행 종료 화면'), findsOneWidget);
-    expect(container.read(selectedRunIdProvider), 'run-A');
+      final context = tester.element(find.byType(BaraedaTabBar));
+      unawaited(open(context));
+      await tester.pumpAndSettle();
 
-    navigator.pop();
-    await tester.pumpAndSettle();
-    expect(container.read(selectedRunIdProvider), 'run-B');
-    await tester.pumpWidget(const SizedBox.shrink());
-  });
+      // 위 화면이 떠 있는 동안 A 가 끝난다.
+      container.read(_runs.notifier).state = [finishedA(), confirmedB()];
+      await tester.pumpAndSettle();
+      expect(find.text('운행 종료 화면'), findsOneWidget);
+      expect(container.read(selectedRunIdProvider), 'run-A');
+
+      Navigator.of(context).pop();
+      await tester.pumpAndSettle();
+      expect(container.read(selectedRunIdProvider), 'run-B');
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+  }
 }
