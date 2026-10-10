@@ -1,3 +1,4 @@
+import 'package:baraeda_core/baraeda_core.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -80,6 +81,7 @@ Widget _wrap(
 Override _boardedRoster(
   List<({String id, String name})> riders, {
   RunDirection direction = RunDirection.toAcademy,
+  Set<String> goAloneIds = const {},
 }) => rosterProvider.overrideWith(
       (ref) async => RosterResponse(
         runId: 'run-1',
@@ -104,7 +106,7 @@ Override _boardedRoster(
                   name: rider.name,
                   photoUrl: null,
                   guardianPhone: null,
-                  canGoAlone: false,
+                  canGoAlone: goAloneIds.contains(rider.id),
                   status: RiderStatus.boarded,
                 ),
             ],
@@ -213,6 +215,52 @@ void main() {
 
     expect(fakeRepo.lastRequest?.type, ReportType.guardianAbsent);
     expect(fakeRepo.lastRequest?.riderId, 'r1');
+  });
+
+  // Ruling 866(EXC-02) — 종료 보류 뒤 여는 화면도 대상은 "탑승 중이면서 혼자 귀가할 수 없는 학생"
+  // 이다. 혼자 귀가할 수 있는 학생은 하차 대기에는 있어도 보호자 부재로 보고할 대상이 아니다.
+  testWidgets('종료 보류 뒤에도 혼자 귀가할 수 있는 학생은 보호자 부재 대상이 아니다', (tester) async {
+    await pumpReport(
+      tester,
+      guardianAbsent: true,
+      termination: _terminationWith(
+        finishPending: true,
+        remaining: const [
+          RemainingRider(riderId: 'r1', name: '김바래', stopName: 'A정류장'),
+          RemainingRider(riderId: 'r2', name: '이혼자', stopName: 'A정류장'),
+        ],
+      ),
+      roster: _boardedRoster(
+        [(id: 'r1', name: '김바래'), (id: 'r2', name: '이혼자')],
+        goAloneIds: {'r2'},
+      ),
+    );
+
+    expect(find.widgetWithText(BaraedaListRow, '김바래'), findsOneWidget);
+    expect(find.widgetWithText(BaraedaListRow, '이혼자'), findsNothing);
+  });
+
+  // 도착 응답의 남은 탑승자(`remaining[]`)에는 혼자 귀가 여부가 없다 — 명단을 못 받았을 때 그 목록을 그대로 대상으로
+  // 내놓으면 같은 규칙을 지킬 수 없다.
+  testWidgets('명단을 못 받으면 도착 응답의 남은 탑승자를 대상으로 내놓지 않는다', (tester) async {
+    await pumpReport(
+      tester,
+      guardianAbsent: true,
+      termination: _terminationWith(
+        finishPending: true,
+        remaining: const [
+          RemainingRider(riderId: 'r1', name: '김바래', stopName: 'A정류장'),
+        ],
+      ),
+      roster: rosterProvider.overrideWith(
+        // Failure 는 Exception/Error 를 상속하지 않는다(다른 시험의 같은 패턴).
+        // ignore: only_throw_errors
+        (ref) => throw const NetworkFailure(),
+      ),
+    );
+
+    expect(find.byType(BaraedaListRow), findsNothing);
+    expect(find.textContaining('명단을 불러온 뒤에'), findsOneWidget);
   });
 
   testWidgets('보호자 부재 대상은 하차 대기 명단만 보인다', (tester) async {
