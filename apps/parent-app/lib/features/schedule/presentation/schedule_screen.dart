@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:parent_app/app/app_routes.dart';
 import 'package:parent_app/app/di.dart';
-import 'package:parent_app/core/auth/auth_providers.dart';
 import 'package:parent_app/core/runs/domain/student_run.dart';
 import 'package:parent_app/core/runs/presentation/run_display.dart';
 import 'package:parent_app/core/runs/presentation/run_providers.dart';
@@ -21,21 +20,18 @@ import 'package:parent_app/features/schedule/presentation/widgets/change_request
 /// 일정 탭(P-04 · `UF-P-03·06`) — 날짜별 회차 조회가 첫 칸이고, 편집 둘(요일별 주소 · 일일 변경)은 하위 화면이다.
 ///
 /// 처리 대기 신청이 있으면 맨 위 띠가 사라지지 않는다(`UF-P-06`). 신청 이력은 이 탭 맨 아래에 있다.
-/// 학부모만 편집한다(§1.1 `canChangeBoardingLocation`) — 학생에게는 이 탭이 없다.
+/// 학부모만 편집한다(§1.1 `canChangeBoardingLocation`) — 학생에게는 이 탭이 없고, 주소로 들어와도
+/// 라우터가 홈으로 돌려보낸다(`router.dart` redirect).
 class ScheduleScreen extends ConsumerWidget {
   const new({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final canEdit =
-        ref.watch(roleCapabilitiesProvider)?.canChangeBoardingLocation ?? false;
     final now = ref.watch(clockProvider).now();
 
     return Scaffold(
       appBar: AppHeader(title: '일정', subtitle: _dateWithWeekday(now, 0)),
-      body: SafeArea(
-        child: canEdit ? const _ParentSection() : const _StudentSection(),
-      ),
+      body: const SafeArea(child: _ParentSection()),
     );
   }
 }
@@ -326,23 +322,4 @@ Widget _runRow(StudentRun run, DateTime now, {required bool showCountdown}) {
     wrapSubtitleByWord: true,
     trailing: BaraedaStatusPill(status: status.status, label: status.label),
   );
-}
-
-/// 학생 계정은 이 탭이 없다 — 주소로 들어와도 편집 화면 대신 안내만 둔다(기본값은 닫힘).
-class _StudentSection extends StatelessWidget {
-  const new();
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: EmptyState(
-        icon: 'link',
-        title: '등하원 일정은 부모님 계정에서 관리해요',
-        action: BaraedaButton(
-          label: '부모 연결 코드 발급',
-          onPressed: () => context.push(AppRoutes.childLink),
-        ),
-      ),
-    );
-  }
 }

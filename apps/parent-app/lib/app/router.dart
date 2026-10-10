@@ -70,6 +70,18 @@ final routerProvider = Provider<GoRouter>((ref) {
             : AppRoutes.passwordChange;
       }
 
+      // 학생에게는 일정 탭이 없다(`AppShell`) — 주소로 들어와도 일정·편집 화면 대신 홈으로 보낸다.
+      // 권한을 모르는 동안(`null`)도 닫아 둔다. 학생용 일정 안내 화면은 R52 `Ruling 874` 로 지웠다.
+      final isScheduleArea =
+          location == AppRoutes.schedule ||
+          location.startsWith('${AppRoutes.schedule}/');
+      if (loggedIn &&
+          isScheduleArea &&
+          !(ref.read(roleCapabilitiesProvider)?.canChangeBoardingLocation ??
+              false)) {
+        return AppRoutes.home;
+      }
+
       if (!loggedIn && !onAuthScreen) return AppRoutes.login;
       if (loggedIn && (onAuthScreen || location == AppRoutes.pendingApproval)) {
         return AppRoutes.home;

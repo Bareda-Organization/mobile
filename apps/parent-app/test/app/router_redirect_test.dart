@@ -2,13 +2,18 @@ import 'package:baraeda_core/baraeda_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:parent_app/app/app.dart';
+import 'package:parent_app/app/app_routes.dart';
 import 'package:parent_app/app/di.dart';
+import 'package:parent_app/app/router.dart';
 import 'package:parent_app/core/auth/account_session.dart';
 import 'package:parent_app/core/auth/auth_providers.dart';
 import 'package:parent_app/core/auth/user_role.dart';
 import 'package:parent_app/features/auth/presentation/login_screen.dart';
 import 'package:parent_app/features/auth/presentation/pending_approval_screen.dart';
 import 'package:parent_app/features/home/presentation/home_screen.dart';
+import 'package:parent_app/features/schedule/presentation/daily_change_screen.dart';
+import 'package:parent_app/features/schedule/presentation/schedule_screen.dart';
+import 'package:parent_app/features/schedule/presentation/weekly_address_screen.dart';
 
 import '../support/fake_token_storage.dart';
 
@@ -32,12 +37,13 @@ void main() {
   Future<void> pumpLoggedInAs(
     WidgetTester tester, {
     required AccountStatus status,
+    UserRole role = UserRole.parent,
   }) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           tokenStorageProvider.overrideWithValue(FakeTokenStorage()),
-          currentUserRoleProvider.overrideWith((ref) => UserRole.parent),
+          currentUserRoleProvider.overrideWith((ref) => role),
           currentAccountStatusProvider.overrideWith((ref) => status),
         ],
         child: const BaraedaParentApp(),
@@ -68,5 +74,43 @@ void main() {
 
     expect(find.byType(HomeScreen), findsOneWidget);
     expect(find.byType(PendingApprovalScreen), findsNothing);
+  });
+
+  // R52 `Ruling 874`① — 학생에게는 일정 탭이 없다. 학생용 일정 안내 화면은 지우고, 주소로 들어오면 홈으로 보낸다.
+  for (final path in [
+    AppRoutes.schedule,
+    AppRoutes.weeklyAddress,
+    AppRoutes.dailyChange,
+  ]) {
+    testWidgets('학생이 $path 로 들어와도 일정 화면이 아니라 홈이 보인다', (tester) async {
+      await pumpLoggedInAs(
+        tester,
+        status: AccountStatus.active,
+        role: UserRole.student,
+      );
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(BaraedaParentApp)),
+      );
+
+      container.read(routerProvider).go(path);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(HomeScreen), findsOneWidget);
+      expect(find.byType(ScheduleScreen), findsNothing);
+      expect(find.byType(WeeklyAddressScreen), findsNothing);
+      expect(find.byType(DailyChangeScreen), findsNothing);
+    });
+  }
+
+  testWidgets('학부모는 /schedule 로 일정 화면에 들어간다', (tester) async {
+    await pumpLoggedInAs(tester, status: AccountStatus.active);
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(BaraedaParentApp)),
+    );
+
+    container.read(routerProvider).go(AppRoutes.schedule);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(ScheduleScreen), findsOneWidget);
   });
 }
