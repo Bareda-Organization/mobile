@@ -134,7 +134,7 @@ class _ChildLinkScreenState extends ConsumerState<ChildLinkScreen> {
 
   /// 학부모에게 메신저로 붙여 넣을 문장 — 코드만 보내면 어디에 입력하는지 모른다.
   String _shareMessage(String code, DateTime expiresAt) =>
-      '바래다 자녀 연결 코드 $code · 학부모 앱의 [자녀 연결] 에서 입력해 주세요 · '
+      '바래다 자녀 연결 코드 $code · 학부모 앱의 [설정] › [자녀 추가] 에서 입력해 주세요 · '
       '${DateFormat('H:mm').format(expiresAt.toLocal())} 까지 쓸 수 있습니다';
 
   String _messageFor(Failure failure) => switch (failure) {

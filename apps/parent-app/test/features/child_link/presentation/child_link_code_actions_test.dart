@@ -140,7 +140,9 @@ void main() {
       await tester.pump();
 
       expect(copied, contains('482913'));
-      expect(copied, contains('자녀 연결'));
+      // 학부모 앱의 진입점은 설정 탭의 [자녀 추가] 다 — 없는 [자녀 연결] 메뉴를 가리키면 안 된다.
+      expect(copied, contains('[설정] › [자녀 추가]'));
+      expect(copied, isNot(contains('[자녀 연결]')));
       expect(copied, contains('7:10'));
       expect(find.text('안내 문구를 복사했어요'), findsOneWidget);
     });
