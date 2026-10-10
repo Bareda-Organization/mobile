@@ -116,7 +116,10 @@ Future<void> _open(
     // 그 알림의 자녀로 선택을 먼저 바꾼다 — 안 바꾸면 B 자녀 알림이 A 자녀 지도로 열린다(R52 M3).
     // 내 자녀 목록에 없는 id 면 건드리지 않는다 — 그 id 를 기기에 기억하면 고른 자녀 선택을 잃는다.
     final studentId = item.studentId;
-    if (studentId != null) {
+    // `GET /me/students` 는 학부모 전용이다 — 학생이 부르면 매번 403 이라 학생은 건너뛴다(본인뿐이라 전환할 자녀도 없다).
+    final isStudent =
+        ref.read(roleCapabilitiesProvider)?.canToggleAttendance == false;
+    if (studentId != null && !isStudent) {
       // 목록이 아직 안 받아졌을 수 있어 기다린다(학부모 역할이 아니면 이 화면은 목록을 안 읽어 둔다).
       // 못 받으면 빈 목록으로 본다 — 선택은 건너뛰고 이동은 그대로 한다.
       final mine = await ref

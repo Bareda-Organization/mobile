@@ -494,6 +494,55 @@ void main() {
       expect(result.container.read(selectedStudentIdProvider), 's-2');
     });
 
+    // R52 최종 대조 — `GET /me/students` 는 학부모 전용이라 학생이 부르면 매번 403 이다.
+    testWidgets('학생이 알림을 누르면 자녀 목록을 부르지 않고 그대로 이동한다', (tester) async {
+      var studentsCalls = 0;
+      final pushed = <String>[];
+      final router = GoRouter(
+        routes: [
+          GoRoute(path: '/', builder: (_, _) => const NotificationsScreen()),
+          GoRoute(
+            path: AppRoutes.liveMap,
+            builder: (_, _) {
+              pushed.add(AppRoutes.liveMap);
+              return const Scaffold(body: Text('도착'));
+            },
+          ),
+        ],
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            notificationRepositoryProvider.overrideWithValue(
+              FakeNotificationRepository([
+                _item('n-1', type: 'arrive', studentId: 's-1'),
+              ]),
+            ),
+            clockProvider.overrideWithValue(_FixedClock(_now)),
+            pushTokenSourceProvider.overrideWithValue(_FixedTokenSource(null)),
+            roleCapabilitiesProvider.overrideWithValue(
+              RoleCapabilities.of(UserRole.student),
+            ),
+            myStudentsProvider.overrideWith((ref) async {
+              studentsCalls++;
+              throw StateError('학생은 /me/students 를 부르지 않는다');
+            }),
+          ],
+          child: MaterialApp.router(
+            theme: BaraedaTheme.light(),
+            routerConfig: router,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('알림 n-1'));
+      await tester.pumpAndSettle();
+
+      expect(pushed, [AppRoutes.liveMap]);
+      expect(studentsCalls, 0);
+    });
+
     testWidgets('자녀 정보가 없는 알림은 선택을 건드리지 않는다', (tester) async {
       final result = await _pump(
         tester,

@@ -60,27 +60,26 @@ class _RunCardState extends ConsumerState<RunCard> {
   AlertTone _bannerTone = AlertTone.info;
 
   /// 탑승 취소(끄기)만 확인을 거친다(켜기는 바로) — 구간마다 결과가 달라 문구를 가른다(UF-P-04·05).
-  /// 구간 판정은 서버가 준 `run_status`·`confirmed` 로만 한다(시각으로 계산하지 않는다).
+  /// 구간 판정은 서버와 같은 [changeZoneOf] 한 곳이다(`Ruling 870`).
   Future<void> _onSwitchChanged(bool value) async {
     if (value) return await _toggle(true);
     final run = widget.run;
-    final confirmAt = formatClock(
-      run.departTime.subtract(const Duration(minutes: 30)),
-    );
+    final confirmAt = formatClock(run.departTime.subtract(confirmLead));
+    final zone = changeZoneOf(run, ref.read(clockProvider).now());
     // 구간마다 결과가 달라 문구와 확인 단추를 가른다(시안 `cancel-ride` · `--approval` · `--moving`).
     // ②구간의 단추는 취소가 아니라 "요청" 이라 위험색이 아니다 — 취소가 즉시 되는 줄 아는 오해를 막는다(P2).
-    final needsApproval = isApprovalZone(run);
+    final needsApproval = zone == ChangeZone.approval;
     final confirmed = await showConfirmDialog(
       context,
       title: '$_dayWord 탑승을 취소할까요?',
-      body: switch (run.runStatus) {
-        RunStatus.idle when !run.confirmed =>
+      body: switch (zone) {
+        ChangeZone.immediate =>
           '바로 반영돼요. 출발 30분 전($confirmAt)까지는 다시 탑승으로 바꿀 수 있어요.',
-        RunStatus.idle || RunStatus.confirmed =>
+        ChangeZone.approval =>
           '출발 30분 전이 지나 학원 관리자의 승인이 필요해요. '
               '승인 요청은 이 회차에서 1번만 보낼 수 있고, 운행이 시작되기 전까지 승인되지 않으면 자동으로 반려돼요.',
-        RunStatus.moving || RunStatus.finished =>
-          '운행이 시작돼 바로 반영되고 다시 탑승으로 바꿀 수 없어요. '
+        ChangeZone.closed =>
+          '승인 요청을 받는 시간이 지나 바로 반영되고 다시 탑승으로 바꿀 수 없어요. '
               '노선은 바뀌지 않고, ${run.stop.name}에는 정차하지 않아요.',
       },
       confirmLabel: needsApproval ? '승인 요청 보내기' : '탑승 취소',
@@ -244,14 +243,18 @@ class _RunCardState extends ConsumerState<RunCard> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     if (widget.canToggle)
-                      BaraedaSwitch(
-                        checked: run.riding,
-                        label: '$_dayWord 탑승',
-                        // ①은 횟수 제한이 없고 ③은 신청할 수 없다 — ②구간에서만 뜻이 있다(Ruling 874).
-                        sublabel: isApprovalZone(run)
-                            ? '잔여 변경 ${run.changeQuotaLeft}회'
-                            : null,
-                        onChanged: _submitting ? null : _onSwitchChanged,
+                      MinuteTicker(
+                        builder: (context, now) => BaraedaSwitch(
+                          checked: run.riding,
+                          label: '$_dayWord 탑승',
+                          // ①은 횟수 제한이 없고 ③은 신청할 수 없다 —
+                          // ②구간에서만 뜻이 있다(Ruling 874).
+                          sublabel:
+                              changeZoneOf(run, now) == ChangeZone.approval
+                              ? '잔여 변경 ${run.changeQuotaLeft}회'
+                              : null,
+                          onChanged: _submitting ? null : _onSwitchChanged,
+                        ),
                       ),
                     if (_banner != null) ...[
                       const SizedBox(height: BaraedaSpacing.space2),

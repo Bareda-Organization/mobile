@@ -156,7 +156,7 @@ class _RunCard extends StatelessWidget {
         ? '내 ${run.direction.label}'
         : '$name ${run.direction.label}';
     // 확정(출발 30분 전)은 사용자 조작이 아니라 시각이 정한다 — 아직이면 그 시각을 알려 준다(C-04).
-    final confirmAt = run.departTime.subtract(const Duration(minutes: 30));
+    final confirmAt = run.departTime.subtract(confirmLead);
     final hint = [
       run.stop.name,
       busNo ?? run.busNo,

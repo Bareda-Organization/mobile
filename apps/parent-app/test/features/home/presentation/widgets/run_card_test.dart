@@ -324,7 +324,15 @@ void main() {
       ProviderScope(
         overrides: [
           runRepositoryProvider.overrideWithValue(repository),
-          if (now != null) clockProvider.overrideWithValue(_FixedClock(now)),
+          // 기본 시각: 확정 전 회차는 확정 시각 전(①), 확정된 회차는 확정 뒤 출발 전(②).
+          clockProvider.overrideWithValue(
+            _FixedClock(
+              now ??
+                  (confirmed
+                      ? DateTime(2026, 9, 12, 7, 45)
+                      : DateTime(2026, 9, 12, 7)),
+            ),
+          ),
         ],
         child: MaterialApp.router(routerConfig: router),
       ),

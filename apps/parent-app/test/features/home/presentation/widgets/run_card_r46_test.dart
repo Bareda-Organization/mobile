@@ -77,7 +77,13 @@ Future<void> _pump(
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
-        clockProvider.overrideWithValue(clock ?? _MutableClock(_now)),
+        // 기본 시각 — 확정 전 회차는 확정 시각 전(①), 확정된 회차는 확정 시각 뒤 출발 전(②)이다.
+        clockProvider.overrideWithValue(
+          clock ??
+              _MutableClock(
+                run.confirmed ? DateTime(2026, 9, 12, 7, 45) : _now,
+              ),
+        ),
       ],
       child: MaterialApp.router(routerConfig: router),
     ),
@@ -208,6 +214,51 @@ void main() {
 
       expect(find.textContaining('학원 관리자의 승인이 필요해요'), findsOneWidget);
       expect(find.text('승인 요청 보내기'), findsOneWidget);
+    });
+  });
+
+  // R52 최종 대조 — 서버는 출발 + 10분이 지나면 운행 미시작이어도 ③이다.
+  // ②로 두면 "승인 요청" 창으로 끈 것이 되돌릴 수 없는 즉시 취소가 된다.
+  group('구간 판정은 서버 segmentOf 와 같다', () {
+    testWidgets('출발 + 10분 0초가 지난 confirmed 회차는 ③ 확인 창이다 — 승인 요청이 아니다', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        run: _run(runStatus: RunStatus.confirmed, confirmed: true),
+        clock: _MutableClock(DateTime(2026, 9, 12, 8, 10)),
+      );
+      await tester.tap(find.byType(BaraedaSwitch));
+      await tester.pumpAndSettle();
+
+      expect(find.text('승인 요청 보내기'), findsNothing);
+      expect(find.text('탑승 취소'), findsWidgets);
+      expect(find.textContaining('에는 정차하지 않아요'), findsOneWidget);
+    });
+
+    testWidgets('9분 59초까지는 여전히 ② 확인 창이다', (tester) async {
+      await _pump(
+        tester,
+        run: _run(runStatus: RunStatus.confirmed, confirmed: true),
+        clock: _MutableClock(DateTime(2026, 9, 12, 8, 9, 59)),
+      );
+      await tester.tap(find.byType(BaraedaSwitch));
+      await tester.pumpAndSettle();
+
+      expect(find.text('승인 요청 보내기'), findsOneWidget);
+    });
+
+    testWidgets('confirmed 플래그가 참이어도 확정 시각 전이면 ① 이다', (tester) async {
+      await _pump(
+        tester,
+        run: _run(confirmed: true),
+        clock: _MutableClock(DateTime(2026, 9, 12, 7, 29)),
+      );
+      await tester.tap(find.byType(BaraedaSwitch));
+      await tester.pumpAndSettle();
+
+      expect(find.text('승인 요청 보내기'), findsNothing);
+      expect(find.textContaining('바로 반영돼요'), findsOneWidget);
     });
   });
 

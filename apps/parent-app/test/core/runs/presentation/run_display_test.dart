@@ -53,4 +53,37 @@ void main() {
 
     expect(chip.label, '이동 중');
   });
+
+  // R52 `Ruling 870` — 서버 `segmentOf` 와 같은 답. 출발 08:00(UTC) 기준.
+  group('changeZoneOf — 서버 segmentOf 와 같은 구간', () {
+    final depart = DateTime.utc(2026, 10, 10, 8);
+    ChangeZone zone(RunStatus status, DateTime now) =>
+        changeZoneOf(_run(status, RiderStatus.waiting), now);
+
+    test('확정 시각(출발 30분 전) 전에는 ①', () {
+      final now = depart.subtract(const Duration(minutes: 30, seconds: 1));
+      expect(zone(RunStatus.idle, now), ChangeZone.immediate);
+    });
+
+    test('확정 시각 직후는 ② — confirmed 플래그가 아니라 시각이 가른다', () {
+      final now = depart.subtract(const Duration(minutes: 30));
+      expect(zone(RunStatus.idle, now), ChangeZone.approval);
+    });
+
+    test('출발 시각이 지나도 운행 시작 전이고 9분 59초까지는 ②', () {
+      final now = depart.add(const Duration(minutes: 9, seconds: 59));
+      expect(zone(RunStatus.confirmed, now), ChangeZone.approval);
+    });
+
+    test('출발 + 10분 0초부터는 운행을 시작하지 않았어도 ③', () {
+      final now = depart.add(const Duration(minutes: 10));
+      expect(zone(RunStatus.confirmed, now), ChangeZone.closed);
+    });
+
+    test('moving · finished 는 시각과 무관하게 ③', () {
+      final early = depart.subtract(const Duration(hours: 1));
+      expect(zone(RunStatus.moving, early), ChangeZone.closed);
+      expect(zone(RunStatus.finished, early), ChangeZone.closed);
+    });
+  });
 }

@@ -54,11 +54,11 @@ class _ThrowingChangeRequestRepository implements ChangeRequestRepository {
 /// 회차 칸의 제목 — `runOptionLabel` 과 달리 손으로 적은 리터럴이다(출발 08:00).
 const _fixtureRunTitle = '등원 · 08:00 출발';
 
-StudentRun _fixtureRun() => StudentRun(
+StudentRun _fixtureRun({DateTime? departTime}) => StudentRun(
   runId: 'run-1',
   direction: RunDirection.toAcademy,
   busNo: '1호차', // 서버가 주는 꼴 — run_card_test 와 같은 이유
-  departTime: DateTime(2026, 9, 12, 8),
+  departTime: departTime ?? DateTime(2026, 9, 12, 8),
   runStatus: RunStatus.idle,
   confirmed: false,
   riding: true,
@@ -163,6 +163,7 @@ Future<void> _pumpAndSubmitWith(
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
+        clockProvider.overrideWithValue(_FixedClock(DateTime(2026, 9, 12, 7))),
         runRepositoryProvider.overrideWithValue(runs ?? _FixedRunRepository()),
         changeRequestRepositoryProvider.overrideWithValue(repository),
       ],
@@ -252,6 +253,9 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            clockProvider.overrideWithValue(
+              _FixedClock(DateTime(2026, 9, 12, 7)),
+            ),
             runRepositoryProvider.overrideWithValue(_FixedRunRepository()),
             changeRequestRepositoryProvider.overrideWithValue(
               _AcceptingChangeRequestRepository(
@@ -413,9 +417,12 @@ void main() {
     testWidgets('날짜를 바꾸면 앞서 고른 회차는 비워진다', (tester) async {
       await pumpPanel(
         tester,
-        _DatedRunRepository({
-          '2026-10-02': [tomorrowRun],
-        }),
+        _DatedRunRepository(
+          {
+            '2026-10-02': [tomorrowRun],
+          },
+          today: [_fixtureRun(departTime: DateTime(2026, 10, 1, 8))],
+        ),
         _RecordingChangeRequestRepository(),
       );
       await tester.tap(find.text(_fixtureRunTitle));
@@ -448,18 +455,21 @@ void main() {
     expect(find.text('학원에서 임시로 취소한 회차입니다. 학원에 문의해 주세요'), findsOneWidget);
   });
 
-  testWidgets('신청이 CHANGE_WINDOW_CLOSED 로 실패하면 운행 중 문구를 보여준다', (tester) async {
-    await _pumpAndSubmit(
-      tester,
-      const Failure.api(
-        statusCode: 403,
-        code: 'CHANGE_WINDOW_CLOSED',
-        message: '운행이 시작되어 변경할 수 없습니다',
-      ),
-    );
+  testWidgets(
+    '신청이 CHANGE_WINDOW_CLOSED 로 실패하면 마감 문구를 보여준다 — 운행 시작 여부를 단정하지 않는다',
+    (tester) async {
+      await _pumpAndSubmit(
+        tester,
+        const Failure.api(
+          statusCode: 403,
+          code: 'CHANGE_WINDOW_CLOSED',
+          message: '운행이 시작되어 변경할 수 없습니다',
+        ),
+      );
 
-    expect(find.text('운행 중에는 신청할 수 없습니다'), findsOneWidget);
-  });
+      expect(find.text('변경 신청 마감이 지났습니다'), findsOneWidget);
+    },
+  );
 
   testWidgets('신청이 CHANGE_LIMIT_REACHED 로 실패하면 한도 소진 문구를 보여준다', (tester) async {
     await _pumpAndSubmit(
@@ -512,8 +522,9 @@ void main() {
 
     Future<_RecordingChangeRequestRepository> pump(
       WidgetTester tester,
-      List<StudentRun> runs,
-    ) async {
+      List<StudentRun> runs, {
+      DateTime? now,
+    }) async {
       tester.view.physicalSize = const Size(800, 2400);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
@@ -521,6 +532,9 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            clockProvider.overrideWithValue(
+              _FixedClock(now ?? DateTime(2026, 9, 12, 7)),
+            ),
             runRepositoryProvider.overrideWithValue(
               _DatedRunRepository({}, today: runs),
             ),
@@ -565,11 +579,35 @@ void main() {
       expect(find.text('변경 신청하기'), findsOneWidget);
     });
 
-    testWidgets('② 구간(확정 뒤)은 "학원 승인이 필요해요" 와 승인 요청 보내기 단추다', (
-      tester,
-    ) async {
+    // R52 최종 대조 — 서버는 출발 + 10분 뒤를 ③ 으로 닫는다. 운행이 안 시작돼도 신청은 403 이다.
+    testWidgets('출발 + 10분이 지난 운행 전 회차는 마감 이유와 함께 꺼지고 골라지지 않는다', (tester) async {
+      final changes = await pump(tester, [
+        run('late', status: RunStatus.confirmed, confirmed: true),
+      ], now: DateTime(2026, 9, 12, 8, 10));
+
+      expect(find.text('변경 신청 마감이 지났어요 · 탑승 취소는 홈에서'), findsOneWidget);
+      await tester.tap(find.text('등원 · 08:00 출발'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('대상 회차를 골라 주세요'), findsOneWidget);
+      expect(changes.runIds, isEmpty);
+    });
+
+    testWidgets('출발 + 9분 59초까지는 ② 로 골라진다', (tester) async {
+      await pump(tester, [
+        run('a', status: RunStatus.confirmed, confirmed: true),
+      ], now: DateTime(2026, 9, 12, 8, 9, 59));
+      await tester.tap(find.text('등원 · 08:00 출발'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('학원 승인이 필요해요'), findsOneWidget);
+    });
+
+    testWidgets('② 구간(확정 뒤)은 "학원 승인이 필요해요" 와 승인 요청 보내기 단추다', (tester) async {
       // 취소가 즉시 되는 줄 아는 오해를 막는다.
-      await pump(tester, [run('a', confirmed: true)]);
+      await pump(tester, [
+        run('a', confirmed: true),
+      ], now: DateTime(2026, 9, 12, 7, 30));
       await tester.tap(find.text('등원 · 08:00 출발'));
       await tester.pumpAndSettle();
 
@@ -600,6 +638,9 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
+              clockProvider.overrideWithValue(
+                _FixedClock(DateTime(2026, 9, 12, 7)),
+              ),
               runRepositoryProvider.overrideWithValue(
                 _DatedRunRepository({}, today: [run('a')]),
               ),

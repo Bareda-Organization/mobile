@@ -164,7 +164,7 @@ class _ChangeRequestPanelState extends ConsumerState<ChangeRequestPanel> {
         _submitting = false;
         _bannerTone = AlertTone.missed;
         _banner = switch (failure) {
-          ApiFailure(code: 'CHANGE_WINDOW_CLOSED') => '운행 중에는 신청할 수 없습니다',
+          ApiFailure(code: 'CHANGE_WINDOW_CLOSED') => '변경 신청 마감이 지났습니다',
           ApiFailure(code: 'CHANGE_LIMIT_REACHED') =>
             '이 회차는 변경 가능 횟수를 모두 사용했습니다',
           ApiFailure(code: 'ADDRESS_VERIFICATION_FAILED') =>
@@ -218,7 +218,9 @@ class _ChangeRequestPanelState extends ConsumerState<ChangeRequestPanel> {
     final canSubmit = !_submitting && _missingInput == null;
     // 구간②(승인 필요)는 단추 글자부터 다르다 — 취소가 즉시 되는 줄 아는 오해를 막는다(P2).
     final needsApproval =
-        selectedRun != null && _zoneOf(selectedRun) == _Zone.approval;
+        selectedRun != null &&
+        changeZoneOf(selectedRun, ref.read(clockProvider).now()) ==
+            ChangeZone.approval;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -300,8 +302,9 @@ class _ChangeRequestPanelState extends ConsumerState<ChangeRequestPanel> {
     );
   }
 
-  /// 회차 라디오 칸 — 운행이 시작됐거나 끝난 회차는 이유와 함께 꺼진다(탑승 취소는 홈에서).
+  /// 회차 라디오 칸 — 운행이 시작됐거나 끝났거나 마감이 지난 회차는 이유와 함께 꺼진다(탑승 취소는 홈에서).
   Widget _buildRunChoices(List<StudentRun> runs) {
+    final now = ref.read(clockProvider).now();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -314,7 +317,11 @@ class _ChangeRequestPanelState extends ConsumerState<ChangeRequestPanel> {
             disabledReason: switch (run.runStatus) {
               RunStatus.moving => '운행이 시작되어 바꿀 수 없어요 · 탑승 취소는 홈에서',
               RunStatus.finished => '운행이 끝났어요',
-              RunStatus.idle || RunStatus.confirmed => null,
+              // 운행은 시작 전이어도 출발 + 10분이 지나면 서버가 ③ 으로 닫는다(`Ruling 870`).
+              RunStatus.idle || RunStatus.confirmed =>
+                changeZoneOf(run, now) == ChangeZone.closed
+                    ? '변경 신청 마감이 지났어요 · 탑승 취소는 홈에서'
+                    : null,
             },
             trailing: _runChip(run),
             onTap: () => setState(() => _selectedRunId = run.runId),
@@ -345,19 +352,23 @@ class _ChangeRequestPanelState extends ConsumerState<ChangeRequestPanel> {
 
   /// 구간 안내 띠 — ①바로 반영 / ②승인이 필요해요(회차당 1번).
   Widget _buildZoneNotice(StudentRun run) {
-    final confirmAt = formatClock(
-      run.departTime.subtract(const Duration(minutes: 30)),
-    );
-    return switch (_zoneOf(run)) {
-      _Zone.immediate => AlertBanner(
+    final confirmAt = formatClock(run.departTime.subtract(confirmLead));
+    return switch (changeZoneOf(run, ref.read(clockProvider).now())) {
+      ChangeZone.immediate => AlertBanner(
         tone: AlertTone.info,
         title: '바로 반영돼요',
         body: '$confirmAt 이후에는 학원 승인이 필요해요',
       ),
-      _Zone.approval => const AlertBanner(
+      ChangeZone.approval => const AlertBanner(
         tone: AlertTone.moving,
         title: '학원 승인이 필요해요',
         body: '이 회차에서 1번만 신청할 수 있어요. 운행이 시작되기 전까지 승인되지 않으면 자동 반려돼요.',
+      ),
+      // 일일 변경에서 고를 수 없는 회차(꺼진 칸)라 보통 닿지 않는다 — 고른 뒤 시각이 넘어간 경우만.
+      ChangeZone.closed => const AlertBanner(
+        tone: AlertTone.missed,
+        title: '변경 신청 마감이 지났어요',
+        body: '탑승 취소는 홈에서 할 수 있어요.',
       ),
     };
   }
@@ -441,15 +452,6 @@ class _ChangeRequestPanelState extends ConsumerState<ChangeRequestPanel> {
     );
   }
 }
-
-/// 신청 구간 — 서버가 준 `run_status`·`confirmed` 로만 가른다(시각으로 계산하지 않는다).
-/// 일일 변경에서 고를 수 있는 회차는 운행 전(`idle`·`confirmed`)뿐이다.
-enum _Zone { immediate, approval }
-
-_Zone _zoneOf(StudentRun run) =>
-    run.runStatus == RunStatus.idle && !run.confirmed
-    ? _Zone.immediate
-    : _Zone.approval;
 
 /// 제출 성공 때 영수증에 쓸 값 — 폼이 비워지기 전에 담아 둔다.
 class _Receipt {

@@ -1,3 +1,4 @@
+import 'package:baraeda_core/baraeda_core.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -53,6 +54,8 @@ Future<void> _pumpSchedule(
     ProviderScope(
       retry: (_, _) => null,
       overrides: [
+        // 출발 08:00 보다 한참 이른 ① 구간.
+        clockProvider.overrideWithValue(_FixedClock(DateTime(2026, 9, 12, 7))),
         currentUserRoleProvider.overrideWith((ref) => UserRole.parent),
         myStudentsProvider.overrideWith(
           (ref) async => [
@@ -94,6 +97,14 @@ Future<void> _pumpSchedule(
   );
   await tester.tap(find.text('일정 열기'));
   await tester.pumpAndSettle();
+}
+
+class _FixedClock implements Clock {
+  const new(this._value);
+  final DateTime _value;
+
+  @override
+  DateTime now() => _value;
 }
 
 void main() {

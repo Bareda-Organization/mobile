@@ -14,22 +14,38 @@ String formatClock(DateTime time) {
   return '$hour:$minute';
 }
 
+/// 확정 시각 = 출발 − 30분(`FEATURE_SPEC C-03` · 서버 `PolicyConstants`).
+/// §3.5 응답에는 `confirm_at` 이 없어 앱이 이 상수로 구한다.
+const confirmLead = Duration(minutes: 30);
+
+/// ②의 끝 = 출발 + 10분(운행 시작이 허용되는 마지막 시각 ·
+/// 서버 `PolicyConstants.START_WINDOW`, `Ruling 870`).
+const startWindow = Duration(minutes: 10);
+
+/// 변경 구간 — ①바로 반영 · ②승인 필요(회차당 1번) · ③마감(미등원만 즉시, 되돌릴 수 없음).
+enum ChangeZone { immediate, approval, closed }
+
 /// 확정(출발 30분 전)까지 남은 시간 문구 — 확정 전(`idle`·미확정)이고 아직 남았을 때만.
 String? untilConfirm(StudentRun run, DateTime now) {
   if (run.runStatus != RunStatus.idle || run.confirmed) return null;
-  final left = run.departTime
-      .subtract(const Duration(minutes: 30))
-      .difference(now);
+  final left = run.departTime.subtract(confirmLead).difference(now);
   return left <= Duration.zero ? null : formatRemaining(left);
 }
 
-/// ②구간(승인 필요) 인가 — 확정된 운행 전 회차다. 서버가 준 `run_status`·`confirmed`
-/// 로만 가르고 시각으로 계산하지 않는다(`Ruling 870`: ②는 운행이 시작될 때까지다).
-bool isApprovalZone(StudentRun run) => switch (run.runStatus) {
-  RunStatus.idle => run.confirmed,
-  RunStatus.confirmed => true,
-  RunStatus.moving || RunStatus.finished => false,
-};
+/// 구간 판정 — 서버 `ChangeWindowPolicy.segmentOf` 와 같은 답을 내는 **유일한 지점**이다.
+/// 운행 시작(`moving`)·종료 → ③ · 출발 + 10분 이후 → ③(운행이 시작되지 않았어도) ·
+/// 출발 − 30분 이후 → ② · 그 전 → ①. 시각은 `clockProvider` 에서 받은 [now] 를 넘긴다.
+ChangeZone changeZoneOf(StudentRun run, DateTime now) {
+  final status = run.runStatus;
+  if (status == RunStatus.moving || status == RunStatus.finished) {
+    return ChangeZone.closed;
+  }
+  if (!now.isBefore(run.departTime.add(startWindow))) return ChangeZone.closed;
+  if (!now.isBefore(run.departTime.subtract(confirmLead))) {
+    return ChangeZone.approval;
+  }
+  return ChangeZone.immediate;
+}
 
 /// 회차 한 건의 상태 칩 — 탑승 결과가 있으면 그것이, 없으면 운행 진행이 정한다.
 ({BaraedaStatus status, String label}) runStatusChip(StudentRun run) {

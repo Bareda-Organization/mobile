@@ -34,21 +34,18 @@ class RunIntentResult {
     this.deadlineAt,
   });
 
-  factory fromJson(Map<String, dynamic> json) =>
-      RunIntentResult(
-        result: RunIntentApplyResult.fromWireValue(
-          json['result'] as String,
-        ),
-        riding: json['riding'] as bool,
-        riderStatus: RiderStatus.fromWireValue(json['rider_status'] as String),
-        changeRequestId: json['change_request_id'] == null
-            ? null
-            : asIdString(json['change_request_id']),
-        changeQuotaLeft: json['change_quota_left'] as int,
-        deadlineAt: json['deadline_at'] == null
-            ? null
-            : DateTime.parse(json['deadline_at'] as String),
-      );
+  factory fromJson(Map<String, dynamic> json) => RunIntentResult(
+    result: RunIntentApplyResult.fromWireValue(json['result'] as String),
+    riding: json['riding'] as bool,
+    riderStatus: RiderStatus.fromWireValue(json['rider_status'] as String),
+    changeRequestId: json['change_request_id'] == null
+        ? null
+        : asIdString(json['change_request_id']),
+    changeQuotaLeft: json['change_quota_left'] as int,
+    deadlineAt: json['deadline_at'] == null
+        ? null
+        : DateTime.parse(json['deadline_at'] as String),
+  );
 
   final RunIntentApplyResult result;
 
@@ -60,6 +57,6 @@ class RunIntentResult {
   final String? changeRequestId;
   final int changeQuotaLeft;
 
-  /// ② 구간의 승인 마감 = 회차 출발 시각.
+  /// ② 구간의 승인 마감 = 운행 시작 또는 출발 시각 + 10분 중 먼저(`Ruling 870`).
   final DateTime? deadlineAt;
 }
