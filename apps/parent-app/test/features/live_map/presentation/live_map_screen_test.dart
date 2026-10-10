@@ -234,8 +234,8 @@ class _MutableClock implements Clock {
 
 final _linkedAt = DateTime(2026);
 
-/// R48 시안 `live-map--offline` 의 연결 끊김 띠 제목 — 옛 `_gaveUpTitle` 을 대신한다.
-const _gaveUpTitle = '실시간 위치 연결이 끊어졌어요';
+/// 재연결 포기 띠 제목 — 웹 · 두 앱이 같은 제목을 쓴다(`Ruling 666`, 낮음 A6).
+const String _gaveUpTitle = WsConnectionNotice.gaveUpTitle;
 
 void main() {
   late _FakeWsClient client;

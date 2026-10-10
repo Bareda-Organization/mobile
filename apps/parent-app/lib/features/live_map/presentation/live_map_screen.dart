@@ -657,7 +657,7 @@ class _Sheet extends StatelessWidget {
           tone: AlertTone.missed,
           title: view.forbidden
               ? WsConnectionNotice.forbiddenTitle
-              : '실시간 위치 연결이 끊어졌어요',
+              : WsConnectionNotice.gaveUpTitle,
           body: view.forbidden ? '이 회차의 위치 정보를 볼 권한이 없습니다' : '네트워크를 확인해 주세요.',
           inlineAction: !view.forbidden,
           // 권한 거절은 다시 해도 같은 결과라 단추를 두지 않는다. 그 외에는 이 자녀의 연결 상태를 새로 만들어
