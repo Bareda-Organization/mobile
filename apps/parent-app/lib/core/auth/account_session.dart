@@ -46,13 +46,14 @@ final StateProvider<bool> mustChangePasswordProvider = StateProvider<bool>(
 final StateProvider<String?> sessionExpiredNoticeProvider =
     StateProvider<String?>((ref) => null);
 
+const String _sessionExpiredNotice = '로그인이 만료됐어요. 다시 로그인해 주세요.';
+
 /// 재발급이 거절돼 로그인이 풀렸다 — REST·WS 두 경로가 같은 처리를 한다. 안내를 남기고 역할을 비운다(R46).
 void endSessionAsExpired(Ref ref) {
   // 옛 계정의 토큰으로 붙은 실시간 연결을 닫는다 — 안 닫으면 다음 로그인
   // 계정의 지도가 그 연결에 구독을 얹는다(R46-FIXCONN C-2).
   ref.read(webSocketClientProvider).disconnect();
-  ref.read(sessionExpiredNoticeProvider.notifier).state =
-      '로그인이 만료됐어요. 다시 로그인해 주세요.';
+  ref.read(sessionExpiredNoticeProvider.notifier).state = _sessionExpiredNotice;
   applyRoleAndStatus(
     ref.read(unsupportedRoleProvider.notifier),
     ref.read(currentUserRoleProvider.notifier),
@@ -96,6 +97,12 @@ final authBootstrapProvider = FutureProvider<void>(retry: (_, _) => null, (
     if (failure is NetworkFailure ||
         (failure is ApiFailure && failure.statusCode >= 500)) {
       rethrow;
+    }
+    // 저장된 로그인이 거절됐다 — 안내 없이 로그인 화면만 나오면 오류인 줄 안다. 만료 신호(`sessionExpired`)를 받는
+    // `RouterRefreshNotifier` 는 이 부팅이 끝난 뒤 라우터가 만들어질 때야 생겨 이 신호를 놓친다(R52 A7).
+    if (failure is UnauthenticatedFailure) {
+      ref.read(sessionExpiredNoticeProvider.notifier).state =
+          _sessionExpiredNotice;
     }
   } on Object {
     // 재발급까지 실패하면 인터셉터가 이미 토큰을 지웠다(§ api_client.dart
