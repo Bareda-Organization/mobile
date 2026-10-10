@@ -65,7 +65,7 @@ class _PendingApprovalScreenState extends ConsumerState<PendingApprovalScreen> {
   }
 
   /// 화면을 로딩·오류로 바꾸지 않고 조회한다 — 실패하면 보이던 상태를 그대로 두고 다음 간격에 다시 시도한다.
-  /// 승인(`active`)이면 계정 상태를 바꿔 라우터가 홈으로 보내게 한다.
+  /// 승인(`active`)이면 `/me` 를 적용해(저장 역할 포함) 라우터가 홈으로 보내게 한다.
   Future<void> _pollQuietly() async {
     try {
       final status = await ref.read(authRepositoryProvider).signupStatus();
@@ -76,8 +76,7 @@ class _PendingApprovalScreenState extends ConsumerState<PendingApprovalScreen> {
         _checkedAt = ref.read(clockProvider).now();
       });
       if (status.status == AccountStatus.active) {
-        ref.read(currentAccountStatusProvider.notifier).state =
-            AccountStatus.active;
+        await ref.read(approvedAccountEntryProvider)();
       }
     } on Object {
       // 연결이 끊긴 동안의 실패는 오류 화면이 아니라 다음 조회로 넘긴다.
@@ -86,8 +85,8 @@ class _PendingApprovalScreenState extends ConsumerState<PendingApprovalScreen> {
 
   Future<void> _logout() => signOut(ref);
 
-  /// [상태 다시 확인] — 서버에서 다시 받아 화면에 반영한다. 승인(`active`)이 났으면 계정 상태를
-  /// 바꿔 라우터가 홈으로 보내게 한다(안 바꾸면 승인된 뒤에도 이 화면이 대기 중으로 남는다).
+  /// [상태 다시 확인] — 서버에서 다시 받아 화면에 반영한다. 승인(`active`)이 났으면 `/me` 를
+  /// 적용해(저장 역할 포함) 라우터가 홈으로 보내게 한다(안 바꾸면 승인된 뒤에도 이 화면이 대기 중으로 남는다).
   /// `parent_app` 의 같은 화면과 같은 동작이다(R33 M3).
   Future<void> _refreshStatus() async {
     final future = ref.read(authRepositoryProvider).signupStatus();
@@ -103,8 +102,7 @@ class _PendingApprovalScreenState extends ConsumerState<PendingApprovalScreen> {
         });
       }
       if (mounted && status.status == AccountStatus.active) {
-        ref.read(currentAccountStatusProvider.notifier).state =
-            AccountStatus.active;
+        await ref.read(approvedAccountEntryProvider)();
       }
     } on Object {
       // 실패는 FutureBuilder 가 [다시 시도하기] 화면으로 보여준다.

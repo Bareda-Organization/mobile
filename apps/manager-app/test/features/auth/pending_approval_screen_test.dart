@@ -6,15 +6,26 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:manager_app/app/app.dart';
 import 'package:manager_app/app/di.dart';
+import 'package:manager_app/core/auth/academy_contact_store.dart';
 import 'package:manager_app/core/auth/account_session.dart';
 import 'package:manager_app/core/auth/auth_providers.dart';
+import 'package:manager_app/core/auth/last_session_store.dart';
 import 'package:manager_app/core/auth/user_role.dart';
 import 'package:manager_app/features/auth/domain/auth_repository.dart';
 import 'package:manager_app/features/auth/presentation/pending_approval_screen.dart';
+import 'package:manager_app/features/home/data/models/manager_run.dart';
+import 'package:manager_app/features/home/domain/manager_run_repository.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
 import 'package:manager_app/features/home/presentation/home_screen.dart';
 
+import '../../support/fake_academy_contact_store.dart';
+import '../../support/fake_last_session_store.dart';
 import '../../support/fake_token_storage.dart';
+
+class _NoRuns implements ManagerRunRepository {
+  @override
+  Future<List<ManagerRun>> fetchRuns({DateTime? date}) async => const [];
+}
 
 /// R33 M3 — 승인 대기 화면은 상태를 한 번만 조회해, 관리자가 승인·거절해도 앱을 껐다 켜야 알 수 있었다.
 /// [상태 다시 확인] 은 다시 조회해 화면에 반영하고, 승인(`active`)이면 홈으로 보낸다(학부모 앱 R32 P9 와 같은 동작).
@@ -34,6 +45,17 @@ class _StubAuthRepository implements AuthRepository {
 
   /// `reapply` 로 보낸 학원 id 들 — 확인 창을 취소하면 비어 있어야 한다.
   final reappliedAcademyIds = <String>[];
+
+  /// 승인 뒤 `/me` — 활성 기사.
+  @override
+  Future<MeResponse> me() async => const MeResponse(
+    accountId: 'a-1',
+    loginId: 'id',
+    name: '이름',
+    phone: '010',
+    role: AccountRole.driver,
+    status: AccountStatus.active,
+  );
 
   @override
   Future<List<AcademySummary>> searchAcademies(String query) async => [
@@ -93,6 +115,11 @@ class _StubAuthRepository implements AuthRepository {
 }
 
 void main() {
+  /// 기기가 기억한 마지막 역할 — 승인 대기로 로그인했으면 비어 있다.
+  late FakeLastSessionStore lastSession;
+
+  setUp(() => lastSession = FakeLastSessionStore());
+
   /// 실제 라우터로 띄운다 — 승인되면 홈으로 가는지까지 본다.
   Future<_StubAuthRepository> pumpPending(
     WidgetTester tester, {
@@ -113,6 +140,11 @@ void main() {
             (ref) => AccountStatus.pending,
           ),
           authRepositoryProvider.overrideWithValue(repository),
+          lastSessionStoreProvider.overrideWithValue(lastSession),
+          academyContactStoreProvider.overrideWithValue(
+            FakeAcademyContactStore(),
+          ),
+          managerRunRepositoryProvider.overrideWithValue(_NoRuns()),
           todayRunsProvider.overrideWith((ref) async => []),
         ],
         child: const BaraedaManagerApp(),
@@ -170,6 +202,26 @@ void main() {
     expect(repository.signupStatusCalls, 2);
     expect(find.byType(ManagerHomeScreen), findsOneWidget);
     expect(find.byType(PendingApprovalScreen), findsNothing);
+  });
+
+  // 승인 대기로 로그인하면 저장 역할이 비어 있다 — 승인을 확인한 순간 /me 를 적용해야 이후 통신 두절에도 오프라인 입장이 된다.
+  testWidgets('[상태 다시 확인] 으로 승인을 확인하면 오프라인 입장용 역할이 기기에 남는다', (tester) async {
+    await pumpPending(tester, statusFromSecondCall: AccountStatus.active);
+    expect(lastSession.role, isNull);
+
+    await tester.tap(find.text('상태 다시 확인'));
+    await tester.pumpAndSettle();
+
+    expect(lastSession.role, AccountRole.driver);
+  });
+
+  testWidgets('주기 확인으로 승인을 확인해도 오프라인 입장용 역할이 기기에 남는다', (tester) async {
+    await pumpPending(tester, statusFromSecondCall: AccountStatus.active);
+
+    await tester.pump(const Duration(seconds: 31));
+    await tester.pumpAndSettle();
+
+    expect(lastSession.role, AccountRole.driver);
   });
 
   testWidgets('여전히 대기 중이면 대기 화면에 남는다', (tester) async {
