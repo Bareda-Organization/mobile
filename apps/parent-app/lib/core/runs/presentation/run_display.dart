@@ -23,6 +23,14 @@ String? untilConfirm(StudentRun run, DateTime now) {
   return left <= Duration.zero ? null : formatRemaining(left);
 }
 
+/// ②구간(승인 필요) 인가 — 확정된 운행 전 회차다. 서버가 준 `run_status`·`confirmed`
+/// 로만 가르고 시각으로 계산하지 않는다(`Ruling 870`: ②는 운행이 시작될 때까지다).
+bool isApprovalZone(StudentRun run) => switch (run.runStatus) {
+  RunStatus.idle => run.confirmed,
+  RunStatus.confirmed => true,
+  RunStatus.moving || RunStatus.finished => false,
+};
+
 /// 회차 한 건의 상태 칩 — 탑승 결과가 있으면 그것이, 없으면 운행 진행이 정한다.
 ({BaraedaStatus status, String label}) runStatusChip(StudentRun run) {
   return switch (run.riderStatus) {

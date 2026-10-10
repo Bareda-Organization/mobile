@@ -211,6 +211,33 @@ void main() {
     });
   });
 
+  // R52 `Ruling 874`② — "잔여 변경 N회" 는 ②구간(승인 필요 · 회차당 1번)에서만 뜻이 있다.
+  // ①은 횟수 제한이 없고 ③은 신청할 수 없다.
+  group('R52 874② 잔여 변경 횟수는 ②구간에서만', () {
+    testWidgets('②구간(확정 뒤 · 운행 전)이면 보인다', (tester) async {
+      await _pump(
+        tester,
+        run: _run(runStatus: RunStatus.confirmed, confirmed: true),
+      );
+
+      expect(find.text('잔여 변경 1회'), findsOneWidget);
+    });
+
+    testWidgets('①구간(확정 전)이면 숨긴다', (tester) async {
+      await _pump(tester, run: _run());
+
+      expect(find.textContaining('잔여 변경'), findsNothing);
+    });
+
+    for (final status in [RunStatus.moving, RunStatus.finished]) {
+      testWidgets('③구간(${status.name})이면 숨긴다', (tester) async {
+        await _pump(tester, run: _run(runStatus: status, confirmed: true));
+
+        expect(find.textContaining('잔여 변경'), findsNothing);
+      });
+    }
+  });
+
   // C-08 — 홈 카드(지도 진입 표시를 더한 뒤에도)에 ETA·"몇 곳 전"·탑승 인원 문구가 없다.
   testWidgets('C-08 운행 중 카드에도 ETA·몇 곳 전·탑승 인원 문구가 없다', (tester) async {
     await _pump(

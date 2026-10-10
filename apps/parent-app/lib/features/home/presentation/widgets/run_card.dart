@@ -69,11 +69,7 @@ class _RunCardState extends ConsumerState<RunCard> {
     );
     // 구간마다 결과가 달라 문구와 확인 단추를 가른다(시안 `cancel-ride` · `--approval` · `--moving`).
     // ②구간의 단추는 취소가 아니라 "요청" 이라 위험색이 아니다 — 취소가 즉시 되는 줄 아는 오해를 막는다(P2).
-    final needsApproval = switch (run.runStatus) {
-      RunStatus.idle when !run.confirmed => false,
-      RunStatus.idle || RunStatus.confirmed => true,
-      RunStatus.moving || RunStatus.finished => false,
-    };
+    final needsApproval = isApprovalZone(run);
     final confirmed = await showConfirmDialog(
       context,
       title: '$_dayWord 탑승을 취소할까요?',
@@ -251,7 +247,10 @@ class _RunCardState extends ConsumerState<RunCard> {
                       BaraedaSwitch(
                         checked: run.riding,
                         label: '$_dayWord 탑승',
-                        sublabel: '잔여 변경 ${run.changeQuotaLeft}회',
+                        // ①은 횟수 제한이 없고 ③은 신청할 수 없다 — ②구간에서만 뜻이 있다(Ruling 874).
+                        sublabel: isApprovalZone(run)
+                            ? '잔여 변경 ${run.changeQuotaLeft}회'
+                            : null,
                         onChanged: _submitting ? null : _onSwitchChanged,
                       ),
                     if (_banner != null) ...[
