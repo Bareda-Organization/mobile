@@ -1,4 +1,5 @@
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:parent_app/core/runs/domain/bus_position.dart';
 import 'package:parent_app/core/runs/domain/student_run.dart';
@@ -219,4 +220,19 @@ class LiveMapView {
   /// 지금 보는 회차의 식별자 — 스냅샷이 준 값, 없으면 회차 목록의 값. 노선(§3.10)을 같은 회차로 읽는 데 쓴다.
   /// 둘 다 없으면 `null`(서버 기본값 — 당일 다음 회차).
   final String? runId;
+}
+
+/// 지도 시트와 홈 미리보기가 같이 쓰는 상태 칩 — 칩 문구를 두 곳에서 따로 정하지 않는다(R52 M2).
+/// 시트를 그리지 않는 모양(`absent` · `before` · `loading`)은 부르는 쪽이 따로 정한다.
+extension LiveMapViewChip on LiveMapView {
+  ({BaraedaStatus status, String label}) get chip => switch (phase) {
+    LiveMapPhase.tracking => (status: BaraedaStatus.moving, label: '이동 중'),
+    LiveMapPhase.noSignal => (status: BaraedaStatus.idle, label: '신호 없음'),
+    LiveMapPhase.ended => (status: BaraedaStatus.idle, label: '종료'),
+    LiveMapPhase.disconnected when forbidden => (
+      status: BaraedaStatus.idle,
+      label: '볼 수 없음',
+    ),
+    _ => (status: BaraedaStatus.idle, label: '연결 끊김'),
+  };
 }

@@ -20,6 +20,7 @@ import 'package:parent_app/core/runs/domain/student_run.dart';
 import 'package:parent_app/core/students/domain/student.dart';
 import 'package:parent_app/features/home/presentation/home_providers.dart';
 import 'package:parent_app/features/home/presentation/home_screen.dart';
+import 'package:parent_app/features/home/presentation/widgets/home_bus_preview.dart';
 import 'package:parent_app/features/live_map/domain/bus_position_repository.dart';
 
 /// R48 홈 지도 미리보기(`Ruling 821`) — **WebSocket 을 구독하지 않고** §3.11 을 30초마다 다시 읽는다.
@@ -136,7 +137,7 @@ BusPosition _position({
   delay: delay,
 );
 
-StudentRun _run() => StudentRun(
+StudentRun _run({RiderStatus riderStatus = RiderStatus.waiting}) => StudentRun(
   runId: 'run-1',
   direction: RunDirection.toAcademy,
   busNo: '2호차',
@@ -144,7 +145,7 @@ StudentRun _run() => StudentRun(
   runStatus: RunStatus.moving,
   confirmed: true,
   riding: true,
-  riderStatus: RiderStatus.waiting,
+  riderStatus: riderStatus,
   stop: const RunStop(stopId: 'st-1', name: '행복마을 입구'),
   changeQuotaLeft: 1,
 );
@@ -155,6 +156,8 @@ Future<_CountingPositionRepository> _pumpHome(
   UserRole role = UserRole.parent,
   RouteDetail? route,
   _RecordingRouteRepository? routeRepository,
+  RiderStatus riderStatus = RiderStatus.waiting,
+  DateTime? now,
 }) async {
   tester.view.physicalSize = const Size(800, 2600);
   tester.view.devicePixelRatio = 1;
@@ -180,6 +183,7 @@ Future<_CountingPositionRepository> _pumpHome(
         routeRepositoryProvider.overrideWithValue(
           routeRepository ?? _RecordingRouteRepository(route),
         ),
+        if (now != null) clockProvider.overrideWithValue(_FixedClock(now)),
         currentUserRoleProvider.overrideWith((ref) => role),
         roleCapabilitiesProvider.overrideWithValue(RoleCapabilities.of(role)),
         myStudentsProvider.overrideWith(
@@ -188,7 +192,9 @@ Future<_CountingPositionRepository> _pumpHome(
           ],
         ),
         myStudentIdProvider.overrideWith((ref) async => 's-1'),
-        runsForStudentProvider.overrideWith((ref, id) async => [_run()]),
+        runsForStudentProvider.overrideWith(
+          (ref, id) async => [_run(riderStatus: riderStatus)],
+        ),
         changeRequestsProvider.overrideWith(
           (ref, id) async =>
               const ChangeRequestPage(items: [], pendingCount: 0),
@@ -201,7 +207,80 @@ Future<_CountingPositionRepository> _pumpHome(
   return repository;
 }
 
+/// 미리보기 카드 안의 글자만 찾는다 — 아래 회차 카드(`RunCard`)도 같은 칩 글자를 쓴다.
+Finder _inPreview(String text) =>
+    find.descendant(of: find.byType(HomeBusPreview), matching: find.text(text));
+
+class _FixedClock implements Clock {
+  const new(this._value);
+
+  final DateTime _value;
+
+  @override
+  DateTime now() => _value;
+}
+
 void main() {
+  // R52 M2 — 칩은 전체 지도(`LiveMapView.resolve`)와 같은 판정을 따른다.
+  group('R52 M2 칩 — 신호 유실 · 미등원', () {
+    final now = DateTime.utc(2026, 10, 3, 3, 30);
+
+    testWidgets('좌표 없이 last_seen_at 만 오고 2분이 넘었으면 "신호 없음" 이다 — "이동 중" 이 아니다', (
+      tester,
+    ) async {
+      await _pumpHome(
+        tester,
+        now: now,
+        position: () async => BusPosition(
+          runId: 'run-1',
+          busNo: '2호차',
+          runStatus: RunStatus.moving,
+          lastSeenAt: now.subtract(const Duration(minutes: 5)),
+        ),
+      );
+
+      expect(_inPreview('신호 없음'), findsOneWidget);
+      expect(_inPreview('이동 중'), findsNothing);
+    });
+
+    testWidgets('받은 좌표가 2분을 넘겨 묵었으면 "신호 없음" 이다', (tester) async {
+      await _pumpHome(
+        tester,
+        now: now,
+        position: () async => _position(
+          receivedAt: now.subtract(const Duration(minutes: 3)),
+        ),
+      );
+
+      expect(_inPreview('신호 없음'), findsOneWidget);
+      expect(_inPreview('이동 중'), findsNothing);
+    });
+
+    testWidgets('2분 안에 받은 좌표면 "이동 중" 이다', (tester) async {
+      await _pumpHome(
+        tester,
+        now: now,
+        position: () async =>
+            _position(receivedAt: now.subtract(const Duration(minutes: 1))),
+      );
+
+      expect(_inPreview('이동 중'), findsOneWidget);
+      expect(_inPreview('신호 없음'), findsNothing);
+    });
+
+    testWidgets('오늘 미등원이면 칩이 "미등원" 이다 — "이동 중" 이 아니다', (tester) async {
+      await _pumpHome(
+        tester,
+        now: now,
+        riderStatus: RiderStatus.absent,
+        position: () async => _position(),
+      );
+
+      expect(_inPreview('미등원'), findsOneWidget);
+      expect(_inPreview('이동 중'), findsNothing);
+    });
+  });
+
   testWidgets('지도 미리보기는 WebSocket 을 구독하지 않는다 — 건드리면 이 시험이 죽는다', (tester) async {
     await _pumpHome(tester, position: () async => _position());
 

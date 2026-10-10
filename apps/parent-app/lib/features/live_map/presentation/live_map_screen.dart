@@ -582,16 +582,7 @@ class _Sheet extends StatelessWidget {
     final finishedAt = view.finishedAt;
     final lastSeenAt = view.lastSeenAt;
 
-    final (chipStatus, chipLabel) = switch (view.phase) {
-      LiveMapPhase.tracking => (BaraedaStatus.moving, '이동 중'),
-      LiveMapPhase.noSignal => (BaraedaStatus.idle, '신호 없음'),
-      LiveMapPhase.ended => (BaraedaStatus.idle, '종료'),
-      LiveMapPhase.disconnected when view.forbidden => (
-        BaraedaStatus.idle,
-        '볼 수 없음',
-      ),
-      _ => (BaraedaStatus.idle, '연결 끊김'),
-    };
+    final chip = view.chip;
 
     final facts = switch (view.phase) {
       LiveMapPhase.ended => <MapSheetFact>[
@@ -627,8 +618,8 @@ class _Sheet extends StatelessWidget {
             destination: destination,
             startedAt: startedAt,
           ),
-          chipLabel: chipLabel,
-          chipStatus: chipStatus,
+          chipLabel: chip.label,
+          chipStatus: chip.status,
         ),
         ..._notices(),
         if (facts.isNotEmpty) MapSheetFacts(facts: facts),

@@ -14,6 +14,8 @@ import 'package:parent_app/core/runs/domain/bus_position.dart';
 import 'package:parent_app/core/runs/domain/student_run.dart';
 import 'package:parent_app/core/runs/presentation/run_display.dart';
 import 'package:parent_app/core/ui/delay_band.dart';
+import 'package:parent_app/features/live_map/domain/live_map_status.dart';
+import 'package:parent_app/features/live_map/presentation/live_map_view.dart';
 
 /// 홈 지도 미리보기를 다시 읽는 간격 — `API_SPEC §3.11` · `Ruling 821`.
 ///
@@ -159,7 +161,7 @@ class _PreviewBody extends ConsumerWidget {
     final direction = run?.direction.label;
     final stop = position.currentStopName;
     final arrived = position.currentStopArrivedAt;
-    final chip = _chip(position.runStatus);
+    final chip = _chip(ref.watch(clockProvider).now());
 
     // 지금 보는 회차의 노선(§3.10)에서 표시 범위 승하차지 번호와 경로선을 얹는다(`Ruling 831`). 못 받으면 버스만
     // 그린다 — 미리보기에 오류 띠를 더하지 않는다.
@@ -302,13 +304,27 @@ class _PreviewBody extends ConsumerWidget {
     );
   }
 
-  ({BaraedaStatus status, String label}) _chip(RunStatus status) =>
-      switch (status) {
-        RunStatus.moving => (status: BaraedaStatus.moving, label: '이동 중'),
-        RunStatus.finished => (status: BaraedaStatus.idle, label: '종료'),
+  /// 칩은 전체 지도와 같은 판정(`LiveMapView.resolve` — 신호 유실 2분 · 종료 · 미등원)을 따른다.
+  /// 출발 전(`before`)은 지도 시트가 칩을 그리지 않는 모양이라 회차 상태로 정한다.
+  ({BaraedaStatus status, String label}) _chip(DateTime now) {
+    final view = LiveMapView.resolve(
+      LiveMapState(
+        connection: LiveMapConnection.connected,
+        restPosition: AsyncValue.data(position),
+        isAbsent: run?.riderStatus == RiderStatus.absent,
+        run: run,
+      ),
+      now,
+    );
+    return switch (view.phase) {
+      LiveMapPhase.absent => (status: BaraedaStatus.idle, label: '미등원'),
+      LiveMapPhase.before => switch (position.runStatus) {
         RunStatus.confirmed => (status: BaraedaStatus.boarded, label: '확정'),
-        RunStatus.idle => (status: BaraedaStatus.waiting, label: '운행 전'),
-      };
+        _ => (status: BaraedaStatus.waiting, label: '운행 전'),
+      },
+      _ => view.chip,
+    };
+  }
 }
 
 class _StopCell extends StatelessWidget {
