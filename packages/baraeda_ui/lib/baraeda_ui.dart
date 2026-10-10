@@ -17,6 +17,7 @@ export 'tokens/typography.dart';
 // 위젯 — 디자인 시스템 components/ 의 Dart 구현.
 // 앱이 쓰지 않는 위젯은 두지 않는다(Ruling 405).
 export 'widgets/core/core.dart';
+export 'widgets/dev/quick_login.dart';
 export 'widgets/feedback/feedback.dart';
 export 'widgets/forms/forms.dart';
 export 'widgets/navigation/navigation.dart';

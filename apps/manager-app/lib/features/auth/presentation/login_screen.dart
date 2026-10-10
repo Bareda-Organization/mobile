@@ -25,7 +25,16 @@ import 'package:manager_app/core/auth/account_session.dart';
 /// `parent_app` 의 같은 화면과 로직이 같다(§1.1) — 앱 제목만 다르다.
 class LoginScreen extends ConsumerStatefulWidget {
   /// 앱 시작 · 로그아웃 후 진입 라우트(`/login`).
-  const new({super.key});
+  ///
+  /// [quickLoginPassword] 는 배포 시험 빌드의 빠른 로그인 비밀번호 —
+  /// 기본은 빌드 때 준 값이고, 비어 있으면 단추가 없다(Ruling 877).
+  /// 시험에서 값을 바꿔 줄 수 있게 인자로 둔다.
+  const new({
+    this.quickLoginPassword = QuickLogin.environmentPassword,
+    super.key,
+  });
+
+  final String quickLoginPassword;
 
   @override
   ConsumerState<LoginScreen> createState() => _LoginScreenState();
@@ -237,6 +246,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       style: BaraedaTypography.caption.copyWith(
                         color: colors.textSecondary,
                       ),
+                    ),
+                    // 배포 시험 빌드에서만(값이 없으면 아무것도 그리지 않는다) — Ruling 877.
+                    QuickLogin(
+                      password: widget.quickLoginPassword,
+                      accounts: const [
+                        QuickLoginAccount('기사', 'driverA3'),
+                        QuickLoginAccount('동승자', 'escortA3'),
+                      ],
+                      onPick: (loginId, password) {
+                        _loginIdController.text = loginId;
+                        _passwordController.text = password;
+                        unawaited(_submit());
+                      },
                     ),
                   ],
                 ),

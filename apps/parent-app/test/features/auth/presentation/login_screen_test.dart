@@ -31,7 +31,34 @@ class _FailingLoginRepository implements AuthRepository {
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
 }
 
-Future<void> _pump(WidgetTester tester, {AuthRepository? repository}) async {
+/// 로그인 요청이 어떤 아이디·비밀번호로 나갔는지 기록하고 실패로 돌려보낸다.
+class _RecordingLoginRepository implements AuthRepository {
+  final calls = <List<String>>[];
+
+  @override
+  Future<LoginResponse> login({
+    required String loginId,
+    required String password,
+  }) {
+    calls.add([loginId, password]);
+    return Future.error(
+      const Failure.api(
+        statusCode: 401,
+        code: 'INVALID_CREDENTIALS',
+        message: '아이디 또는 비밀번호가 올바르지 않습니다',
+      ),
+    );
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
+}
+
+Future<void> _pump(
+  WidgetTester tester, {
+  AuthRepository? repository,
+  String? quickLoginPassword,
+}) async {
   tester.view.physicalSize = const Size(800, 2000);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
@@ -41,13 +68,44 @@ Future<void> _pump(WidgetTester tester, {AuthRepository? repository}) async {
         if (repository != null)
           authRepositoryProvider.overrideWithValue(repository),
       ],
-      child: const MaterialApp(home: LoginScreen()),
+      child: MaterialApp(
+        home: quickLoginPassword == null
+            ? const LoginScreen()
+            : LoginScreen(quickLoginPassword: quickLoginPassword),
+      ),
     ),
   );
   await tester.pump();
 }
 
 void main() {
+  // Ruling 877 — 배포 시험 빌드에서만 역할별 빠른 로그인 단추가 나온다
+  // (--dart-define=QUICK_LOGIN_PASSWORD).
+  testWidgets('QL 값이 있으면 학부모 · 학생 단추가 보이고, 누르면 그 아이디로 로그인 요청이 나간다', (
+    tester,
+  ) async {
+    final repository = _RecordingLoginRepository();
+    await _pump(tester, repository: repository, quickLoginPassword: 'fake-pw');
+
+    expect(find.text('학부모 · parentA1'), findsOneWidget);
+    expect(find.text('학생 · studentA1'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('quick-login-studentA1')));
+    await tester.pumpAndSettle();
+
+    expect(repository.calls, [
+      ['studentA1', 'fake-pw'],
+    ]);
+  });
+
+  testWidgets('QL 값이 없으면 빠른 로그인 단추가 하나도 없다', (tester) async {
+    await _pump(tester, quickLoginPassword: '');
+
+    expect(find.byType(QuickLogin), findsOneWidget);
+    expect(find.byType(OutlinedButton), findsNothing);
+    expect(find.textContaining('parentA1'), findsNothing);
+  });
+
   // L6 · Ruling 861 ⑤ — 개발용 빠른 로그인(시드 계정 칩)은 앱에서 없앴다. 웹 Ruling 844 와 같은 기준이다.
   testWidgets('L6 로그인 화면에 시드 계정을 채워 주는 개발용 칩이 없다', (tester) async {
     await _pump(tester);

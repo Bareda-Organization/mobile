@@ -24,7 +24,16 @@ import 'package:parent_app/core/auth/auth_providers.dart';
 ///   없다. [AppRoutes.blockedAccount] 로 직접 `push` 한다(UF-X-04).
 class LoginScreen extends ConsumerStatefulWidget {
   /// 앱 시작 · 로그아웃 후 진입 라우트(`/login`).
-  const new({super.key});
+  ///
+  /// [quickLoginPassword] 는 배포 시험 빌드의 빠른 로그인 비밀번호 —
+  /// 기본은 빌드 때 준 값이고, 비어 있으면 단추가 없다(Ruling 877).
+  /// 시험에서 값을 바꿔 줄 수 있게 인자로 둔다.
+  const new({
+    this.quickLoginPassword = QuickLogin.environmentPassword,
+    super.key,
+  });
+
+  final String quickLoginPassword;
 
   @override
   ConsumerState<LoginScreen> createState() => _LoginScreenState();
@@ -207,6 +216,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         onPressed: () =>
                             context.push(AppRoutes.accountRecovery),
                       ),
+                    ),
+                    // 배포 시험 빌드에서만(값이 없으면 아무것도 그리지 않는다) — Ruling 877.
+                    QuickLogin(
+                      password: widget.quickLoginPassword,
+                      accounts: const [
+                        QuickLoginAccount('학부모', 'parentA1'),
+                        QuickLoginAccount('학생', 'studentA1'),
+                      ],
+                      onPick: (loginId, password) {
+                        _loginIdController.text = loginId;
+                        _passwordController.text = password;
+                        unawaited(_submit());
+                      },
                     ),
                   ],
                 ),
