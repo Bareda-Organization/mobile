@@ -54,6 +54,17 @@ void main() {
     busNo: '2호차',
     departTime: DateTime(2026, 10, 3, 12),
   );
+  ManagerRun finishedB() => managerRunFixture(
+    runId: 'run-B',
+    busNo: '2호차',
+    status: RunStatus.finished,
+    departTime: DateTime(2026, 10, 3, 12),
+  );
+  ManagerRun confirmedC() => managerRunFixture(
+    runId: 'run-C',
+    busNo: '3호차',
+    departTime: DateTime(2026, 10, 3, 14),
+  );
 
   Future<ProviderContainer> pump(
     WidgetTester tester,
@@ -140,6 +151,36 @@ void main() {
     await tester.pumpAndSettle();
     expect(container.read(selectedRunIdProvider), 'run-B');
 
+    container.read(selectedRunIdProvider.notifier).state = 'run-A';
+    await tester.pumpAndSettle();
+
+    expect(container.read(selectedRunIdProvider), 'run-A');
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  // 마지막으로 살아 있던 선택 A 가 남은 채 먼저 끝난 B 를 사용자가 고르고, A 가 끝난 뒤 A 를 알림으로 고르면
+  // 쉘은 A 를 그대로 둬야 한다. 낡은 "살아 있던 A" 기억 때문에 C 로 갈아타면 안 된다.
+  testWidgets('끝난 B 를 고른 뒤 A 가 끝나고 알림으로 A 를 고르면 다음 회차 C 로 갈아타지 않는다', (
+    tester,
+  ) async {
+    final container = await pump(tester, UserRole.escort, [
+      confirmedA(),
+      confirmedB(),
+    ]);
+    expect(container.read(selectedRunIdProvider), 'run-A');
+
+    container.read(_runs.notifier).state = [confirmedA(), finishedB()];
+    await tester.pumpAndSettle();
+    container.read(selectedRunIdProvider.notifier).state = 'run-B';
+    await tester.pumpAndSettle();
+    expect(container.read(selectedRunIdProvider), 'run-B');
+
+    container.read(_runs.notifier).state = [
+      finishedA(),
+      finishedB(),
+      confirmedC(),
+    ];
+    await tester.pumpAndSettle();
     container.read(selectedRunIdProvider.notifier).state = 'run-A';
     await tester.pumpAndSettle();
 

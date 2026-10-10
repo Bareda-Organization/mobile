@@ -70,6 +70,11 @@ class _ManagerShellState extends ConsumerState<ManagerShell> {
     final selectedFinished = selectedRun?.runStatus == RunStatus.finished;
     if (selectedRun != null && !selectedFinished) {
       _lastLiveSelectedRunId = selectedRun.runId;
+    } else if (selectedRun != null &&
+        selectedRun.runId != _lastLiveSelectedRunId) {
+      // 끝난 다른 회차를 골랐으면 기억한 살아 있던 회차는 낡은 값이다 — 비워 두지 않으면 나중에 그 회차를
+      // 알림으로 고를 때 쉘이 다음 회차로 덮어 버린다.
+      _lastLiveSelectedRunId = null;
     }
     if (focus != null &&
         (selectedRun == null ||
