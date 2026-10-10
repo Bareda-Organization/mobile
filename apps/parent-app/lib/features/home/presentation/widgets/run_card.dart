@@ -29,6 +29,7 @@ class RunCard extends ConsumerStatefulWidget {
     required this.canToggle,
     this.date,
     this.isApprovalPending = false,
+    this.approvalDeadlineAt,
     super.key,
   });
 
@@ -43,6 +44,9 @@ class RunCard extends ConsumerStatefulWidget {
 
   /// 이 회차에 ②구간 변경 신청이 관리자 승인을 기다리는 중인가 — 홈이 §3.9 신청 이력에서 가려 넘긴다.
   final bool isApprovalPending;
+
+  /// 그 승인 대기 신청의 마감 — 서버가 준 `deadline_at` 이다(`Ruling 870`). 없으면 남은 시간을 보이지 않는다.
+  final DateTime? approvalDeadlineAt;
 
   @override
   ConsumerState<RunCard> createState() => _RunCardState();
@@ -63,7 +67,6 @@ class _RunCardState extends ConsumerState<RunCard> {
     final confirmAt = formatClock(
       run.departTime.subtract(const Duration(minutes: 30)),
     );
-    final departAt = formatClock(run.departTime);
     // 구간마다 결과가 달라 문구와 확인 단추를 가른다(시안 `cancel-ride` · `--approval` · `--moving`).
     // ②구간의 단추는 취소가 아니라 "요청" 이라 위험색이 아니다 — 취소가 즉시 되는 줄 아는 오해를 막는다(P2).
     final needsApproval = switch (run.runStatus) {
@@ -79,7 +82,7 @@ class _RunCardState extends ConsumerState<RunCard> {
           '바로 반영돼요. 출발 30분 전($confirmAt)까지는 다시 탑승으로 바꿀 수 있어요.',
         RunStatus.idle || RunStatus.confirmed =>
           '출발 30분 전이 지나 학원 관리자의 승인이 필요해요. '
-              '승인 요청은 이 회차에서 1번만 보낼 수 있고, $departAt 까지 승인되지 않으면 자동으로 반려돼요.',
+              '승인 요청은 이 회차에서 1번만 보낼 수 있고, 운행이 시작되기 전까지 승인되지 않으면 자동으로 반려돼요.',
         RunStatus.moving || RunStatus.finished =>
           '운행이 시작돼 바로 반영되고 다시 탑승으로 바꿀 수 없어요. '
               '노선은 바뀌지 않고, ${run.stop.name}에는 정차하지 않아요.',
@@ -209,7 +212,7 @@ class _RunCardState extends ConsumerState<RunCard> {
                     if (widget.isApprovalPending)
                       MinuteTicker(
                         builder: (context, now) => WordWrapText(
-                          _approvalWaitText(run.departTime, now),
+                          _approvalWaitText(widget.approvalDeadlineAt, now),
                           style: BaraedaTypography.bodySm,
                         ),
                       ),
@@ -265,10 +268,12 @@ class _RunCardState extends ConsumerState<RunCard> {
   }
 }
 
-/// ②구간 변경 신청은 출발 시각이 되면 서버가 자동 거절한다(`FEATURE_SPEC C-04`) — 그때까지 남은 시간이 카운트다운이다.
-String _approvalWaitText(DateTime departTime, DateTime now) {
-  final left = departTime.difference(now);
-  return left <= Duration.zero
+/// ②구간 변경 신청은 마감까지 승인되지 않으면 서버가 자동 거절한다
+/// (`FEATURE_SPEC C-04` · `Ruling 870`) — 마감은 서버가 준 `deadline_at` 이고, 그때까지
+/// 남은 시간이 카운트다운이다. 마감을 모르면 "승인 대기" 만 보인다.
+String _approvalWaitText(DateTime? deadlineAt, DateTime now) {
+  final left = deadlineAt?.difference(now);
+  return left == null || left <= Duration.zero
       ? '승인 대기'
-      : '승인 대기 · 출발까지 ${formatRemaining(left)}';
+      : '승인 대기 · 마감까지 ${formatRemaining(left)}';
 }

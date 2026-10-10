@@ -35,7 +35,7 @@ class _Runs implements RunRepository {
 class _Changes implements ChangeRequestRepository {
   @override
   Future<ChangeRequestPage> getChangeRequests(String studentId) async =>
-      const ChangeRequestPage(
+      ChangeRequestPage(
         pendingCount: 1,
         items: [
           ChangeRequest(
@@ -43,9 +43,11 @@ class _Changes implements ChangeRequestRepository {
             type: ChangeRequestType.cancel,
             status: ChangeRequestStatus.pending,
             runId: 'run-1',
+            // 서버 마감 = 출발(08:00) + 10분.
+            deadlineAt: DateTime(2026, 9, 12, 8, 10),
           ),
           // 처리된 신청은 기다리는 중이 아니다.
-          ChangeRequest(
+          const ChangeRequest(
             changeRequestId: 'c-0',
             type: ChangeRequestType.cancel,
             status: ChangeRequestStatus.approved,
@@ -77,7 +79,7 @@ StudentRun _run(String id, String bus) => StudentRun(
 );
 
 void main() {
-  testWidgets('승인 대기 신청이 걸린 회차 카드에만 출발까지 남은 시간이 붙는다', (tester) async {
+  testWidgets('승인 대기 신청이 걸린 회차 카드에만 서버 마감까지 남은 시간이 붙는다', (tester) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -103,6 +105,6 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('승인 대기 · 출발까지 30분'), findsOneWidget);
+    expect(find.text('승인 대기 · 마감까지 40분'), findsOneWidget);
   });
 }

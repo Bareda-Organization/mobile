@@ -359,16 +359,22 @@ class _RunsSectionState extends ConsumerState<_RunsSection> {
     final isOffline = ref.watch(
       networkStatusProvider.select((status) => status.isOffline),
     );
-    // P-03 — ②구간 신청이 승인을 기다리는 회차는 카드에 출발까지 남은 시간을 붙인다.
-    // 신청 이력이 아직 없거나 실패면 붙이지 않는다.
-    final waitingRunIds = {
-      for (final request
-          in ref.watch(changeRequestsProvider(studentId)).value?.items ??
-              const <ChangeRequest>[])
-        if (request.status == ChangeRequestStatus.pending &&
-            request.runId != null)
-          request.runId,
-    };
+    // P-03 — ②구간 신청이 승인을 기다리는 회차는 카드에 서버 마감까지 남은 시간을 붙인다(`Ruling 870`).
+    // 신청 이력이 아직 없거나 실패면 붙이지 않는다. 같은 회차의 대기 신청이 여럿이면 가장 이른 마감을 쓴다.
+    final waiting = <String, DateTime?>{};
+    for (final request
+        in ref.watch(changeRequestsProvider(studentId)).value?.items ??
+            const <ChangeRequest>[]) {
+      final runId = request.runId;
+      if (request.status != ChangeRequestStatus.pending || runId == null) {
+        continue;
+      }
+      final prior = waiting[runId];
+      waiting[runId] = switch ((prior, request.deadlineAt)) {
+        (final a?, final b?) => a.isBefore(b) ? a : b,
+        (_, final b) => prior ?? b,
+      };
+    }
     Widget retryBanner(String message) => _ErrorBanner(
       message: message,
       onRetry: () => date == null
@@ -415,7 +421,8 @@ class _RunsSectionState extends ConsumerState<_RunsSection> {
                     run: run,
                     canToggle: widget.canToggle,
                     date: date,
-                    isApprovalPending: waitingRunIds.contains(run.runId),
+                    isApprovalPending: waiting.containsKey(run.runId),
+                    approvalDeadlineAt: waiting[run.runId],
                   ),
             ],
           ),

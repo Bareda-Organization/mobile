@@ -348,17 +348,16 @@ class _ChangeRequestPanelState extends ConsumerState<ChangeRequestPanel> {
     final confirmAt = formatClock(
       run.departTime.subtract(const Duration(minutes: 30)),
     );
-    final departAt = formatClock(run.departTime);
     return switch (_zoneOf(run)) {
       _Zone.immediate => AlertBanner(
         tone: AlertTone.info,
         title: '바로 반영돼요',
         body: '$confirmAt 이후에는 학원 승인이 필요해요',
       ),
-      _Zone.approval => AlertBanner(
+      _Zone.approval => const AlertBanner(
         tone: AlertTone.moving,
         title: '학원 승인이 필요해요',
-        body: '이 회차에서 1번만 신청할 수 있어요. $departAt 까지 승인되지 않으면 자동 반려돼요.',
+        body: '이 회차에서 1번만 신청할 수 있어요. 운행이 시작되기 전까지 승인되지 않으면 자동 반려돼요.',
       ),
     };
   }

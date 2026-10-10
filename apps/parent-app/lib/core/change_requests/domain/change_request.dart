@@ -42,6 +42,7 @@ class ChangeRequest {
     this.decidedAt,
     this.serviceDate,
     this.direction,
+    this.deadlineAt,
   });
 
   factory fromJson(Map<String, dynamic> json) => ChangeRequest(
@@ -62,6 +63,9 @@ class ChangeRequest {
     direction: json['direction'] == null
         ? null
         : RunDirection.fromWireValue(json['direction'] as String),
+    deadlineAt: json['deadline_at'] == null
+        ? null
+        : DateTime.parse(json['deadline_at'] as String),
   );
 
   final String changeRequestId;
@@ -78,6 +82,11 @@ class ChangeRequest {
   /// 서버가 아직 안 주면 `null` 이고 화면은 그 말을 뺀다.
   final DateTime? serviceDate;
   final RunDirection? direction;
+
+  /// 승인 마감 — 서버가 주는 값만 쓴다(운행 시작 또는 출발 + 10분 중 먼저,
+  /// `Ruling 870`). 앱이 출발 시각으로 계산하지 않는다. 서버가 안 주면 `null` 이고
+  /// 화면은 남은 시간을 빼고 "승인 대기" 만 보인다.
+  final DateTime? deadlineAt;
 }
 
 /// §3.9 응답 봉투 — 홈 배지용 `pending_count` 를 함께 담는다.

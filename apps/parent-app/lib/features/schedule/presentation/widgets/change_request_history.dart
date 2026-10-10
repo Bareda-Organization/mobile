@@ -111,7 +111,7 @@ String historySubtitle(ChangeRequest item) {
   final second = switch (item.status) {
     ChangeRequestStatus.rejected when item.rejectReason != null =>
       '반려: ${item.rejectReason}',
-    ChangeRequestStatus.autoRejected => '출발 시각까지 승인되지 않아 자동으로 반려됐어요',
+    ChangeRequestStatus.autoRejected => '마감까지 승인되지 않아 자동으로 반려됐어요',
     _ => null,
   };
   return [if (first.isNotEmpty) first, ?second].join('\n');
