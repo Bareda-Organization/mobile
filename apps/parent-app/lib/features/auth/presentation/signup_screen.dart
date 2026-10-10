@@ -148,10 +148,20 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     if (_academy == null) '학원',
   ];
 
+  /// 한도를 넘어 [가입 신청하기] 가 꺼진 이유 — 단추 바로 아래에 적는다. 넘지 않았으면 `null`.
+  String? get _overLimitReason {
+    final over = [
+      if (loginIdLengthError(_loginIdController.text) != null) '아이디',
+      if (passwordLengthError(_passwordController.text) != null) '비밀번호',
+    ];
+    return over.isEmpty ? null : '${over.join('·')}를 한도 안으로 줄이면 눌러요';
+  }
+
   @override
   Widget build(BuildContext context) {
     final repository = ref.watch(authRepositoryProvider);
     final emptyFields = _emptyFields;
+    final overLimitReason = _overLimitReason;
 
     return Scaffold(
       appBar: const AppHeader(title: '회원가입'),
@@ -252,6 +262,14 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                     block: true,
                     onPressed: _canSubmit ? _submit : null,
                   ),
+                  if (!_submitting && overLimitReason != null) ...[
+                    const SizedBox(height: BaraedaSpacing.space2),
+                    WordWrapText(
+                      overLimitReason,
+                      textAlign: TextAlign.center,
+                      style: BaraedaTypography.bodySm,
+                    ),
+                  ],
                   if (!_submitting && emptyFields.isNotEmpty) ...[
                     const SizedBox(height: BaraedaSpacing.space2),
                     WordWrapText(

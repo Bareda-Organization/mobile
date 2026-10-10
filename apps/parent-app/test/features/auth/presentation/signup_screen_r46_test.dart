@@ -174,6 +174,41 @@ void main() {
       );
     });
 
+    // R52 낮음 A5 — 길이 오류는 입력칸 옆에만 뜨고 꺼진 단추 아래는 비어 있었다.
+    testWidgets('아이디가 50자를 넘으면 꺼진 버튼 아래에 줄이라는 안내가 나온다', (tester) async {
+      await _pump(tester, _Repository());
+      await _fillAllButAcademy(tester);
+      await _pickAcademy(tester);
+      await tester.enterText(find.byType(TextField).at(0), 'a' * 51);
+      await tester.pump();
+
+      final button = find.widgetWithText(BaraedaButton, '가입 신청하기');
+      await tester.ensureVisible(button);
+      await tester.pumpAndSettle();
+      expect(tester.widget<BaraedaButton>(button).onPressed, isNull);
+      expect(find.text('아이디를 한도 안으로 줄이면 눌러요'), findsOneWidget);
+    });
+
+    testWidgets('비밀번호가 72바이트(한글 24자)를 넘으면 줄이라는 안내가 나온다', (tester) async {
+      await _pump(tester, _Repository());
+      await _fillAllButAcademy(tester);
+      await _pickAcademy(tester);
+      await tester.enterText(find.byType(TextField).at(1), '가' * 25);
+      await tester.pump();
+
+      await tester.ensureVisible(find.text('가입 신청하기'));
+      await tester.pumpAndSettle();
+      expect(find.text('비밀번호를 한도 안으로 줄이면 눌러요'), findsOneWidget);
+    });
+
+    testWidgets('한도 안이면 이 안내는 없다', (tester) async {
+      await _pump(tester, _Repository());
+      await _fillAllButAcademy(tester);
+      await _pickAcademy(tester);
+
+      expect(find.textContaining('한도 안으로'), findsNothing);
+    });
+
     testWidgets('모두 채우면 안내가 사라지고 버튼이 켜진다', (tester) async {
       await _pump(tester, _Repository());
       await _fillAllButAcademy(tester);
