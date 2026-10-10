@@ -139,7 +139,9 @@ class _Pending extends ConsumerWidget {
                 name: student.name,
                 meta: [
                   student.className,
-                  if (!student.canGoAlone) '혼자 귀가 불가',
+                  if (roster.direction == RunDirection.fromAcademy &&
+                      !student.canGoAlone)
+                    '혼자 귀가 불가',
                 ].whereType<String>().join(' · '),
               ),
     ];

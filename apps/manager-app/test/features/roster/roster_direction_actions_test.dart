@@ -28,16 +28,20 @@ class _NeverResolvingTokenStorage extends TokenStorage {
   Future<String?> readAccessToken() => Completer<String?>().future;
 }
 
-RosterStudent _student(String id, String name, RiderStatus status) =>
-    RosterStudent(
-      riderId: id,
-      studentId: 's$id',
-      name: name,
-      photoUrl: null,
-      guardianPhone: null,
-      canGoAlone: true,
-      status: status,
-    );
+RosterStudent _student(
+  String id,
+  String name,
+  RiderStatus status, {
+  bool canGoAlone = true,
+}) => RosterStudent(
+  riderId: id,
+  studentId: 's$id',
+  name: name,
+  photoUrl: null,
+  guardianPhone: null,
+  canGoAlone: canGoAlone,
+  status: status,
+);
 
 RosterResponse _roster(RunDirection direction) => RosterResponse(
   runId: 'run-1',
@@ -51,7 +55,7 @@ RosterResponse _roster(RunDirection direction) => RosterResponse(
       name: 'A정류장',
       students: [
         _student('r1', '탄아이', RiderStatus.boarded),
-        _student('r2', '대기아이', RiderStatus.waiting),
+        _student('r2', '대기아이', RiderStatus.waiting, canGoAlone: false),
       ],
     ),
   ],
@@ -98,5 +102,15 @@ void main() {
     expect(button('탑승'), findsNothing);
     expect(button('미승차'), findsOneWidget);
     expect(button('되돌리기'), findsOneWidget);
+  });
+
+  // A16 — 혼자 귀가 여부는 하원에서만 뜻이 있다(C-07). 등원 회차에는 경고를 내지 않는다.
+  testWidgets('혼자 귀가 불가 경고는 하원에만 뜨고 등원에는 뜨지 않는다', (tester) async {
+    await pump(tester, RunDirection.toAcademy);
+    expect(find.text('혼자 귀가 불가 · 보호자 확인'), findsNothing);
+
+    await tester.pumpWidget(const SizedBox());
+    await pump(tester, RunDirection.fromAcademy);
+    expect(find.text('혼자 귀가 불가 · 보호자 확인'), findsOneWidget);
   });
 }

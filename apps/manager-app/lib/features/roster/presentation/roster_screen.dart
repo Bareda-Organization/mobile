@@ -561,6 +561,8 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
       metaExtra: expiry,
       badge: badge,
       busy: busy,
+      // 혼자 귀가 여부는 하원에서만 뜻이 있다(C-07) — 등원 회차에는 경고를 내지 않는다.
+      warnCannotGoAlone: roster.direction == RunDirection.fromAcademy,
       actions: badge != null || !canDecide
           ? null
           : _actions(runId, roster, student, busy: busy),

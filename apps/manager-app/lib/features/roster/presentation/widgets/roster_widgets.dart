@@ -257,7 +257,7 @@ class _Node extends StatelessWidget {
 /// 학생 한 명 — 사진(없으면 이름 끝 두 글자) · 이름 · 학급 · 연락처 · 상태 칩, 아래 줄에 단추들.
 ///
 /// 상태 칩은 오른쪽에 늘 보이고 단추는 [actions] 가 이름 아래 한 줄로 놓인다 — 시안은 단추를 칩 자리에서 치우지
-/// 않는다. 혼자 귀가할 수 없는 학생은 빨간 주의 줄을 붙인다(`can_go_alone == false`).
+/// 않는다. 하원에서 혼자 귀가할 수 없는 학생은 빨간 주의 줄을 붙인다(`can_go_alone == false`).
 class RosterStudentTile extends StatelessWidget {
   const new({
     required this.student,
@@ -268,10 +268,14 @@ class RosterStudentTile extends StatelessWidget {
     this.actions,
     this.badge,
     this.busy = false,
+    this.warnCannotGoAlone = true,
   });
 
   final RosterStudent student;
   final RideStatus ride;
+
+  /// `can_go_alone == false` 주의 줄을 낼지 — 혼자 귀가 여부는 하원에서만 뜻이 있어 등원 회차에서는 끈다.
+  final bool warnCannotGoAlone;
   final Map<String, String>? photoHeaders;
 
   /// 학급 · 연락처 줄 뒤에 붙일 것(미승차 만료 시각 등).
@@ -374,7 +378,7 @@ class RosterStudentTile extends StatelessWidget {
                             color: colors.textPrimary,
                           ),
                         ),
-                      if (!student.canGoAlone)
+                      if (warnCannotGoAlone && !student.canGoAlone)
                         Padding(
                           padding: const EdgeInsets.only(top: 4),
                           child: Row(
