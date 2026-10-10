@@ -18,7 +18,9 @@ import 'package:manager_app/features/notifications/presentation/widgets/manager_
 /// 목록 모양 — 행 시각의 형식도 이 모양으로 정해진다(머리에 날짜가 없어 지난 날짜 행에 날짜가 붙는다, Ruling 835).
 const NotificationListStyle _listStyle = NotificationListStyle.segmented;
 
-/// 알림 목록(NTF-08 · §3.12) — 홈 머리말 [알림] 에서 들어온다. 운행 중 화면(운전 화면·명단)에는 진입점이 없다.
+/// 알림 목록(NTF-08 · §3.12) — 아래 탭의 [알림] 에서 들어온다(`Ruling 857`).
+/// 기사가 운전하는 화면에는 진입점·배지가 없다. 동승자 명단은 탭 안의 화면이라
+/// 알림 배지가 보여도 된다(동승자는 운전하지 않는다).
 ///
 /// 목록 그리기(걸러 보기 · 날짜 머리 · 다음 쪽 자동 받기 · 당겨서 새로고침)는
 /// 학부모·학생 앱과 같은 공용 `NotificationListView` 가 맡는다.

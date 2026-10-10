@@ -15,7 +15,9 @@ import 'package:manager_app/features/auth/presentation/widgets/academy_picker.da
 /// UF-X-01 — 회원가입: 아이디·비밀번호·이름·연락처 → 역할 선택(버스기사·동승자) →
 /// 학원 검색·선택 → `POST /auth/signup` → `pending`.
 ///
-/// 성공해도 토큰은 발급되지 않는다(§2.2) — 로그인 화면으로 돌려보낸다.
+/// 가입 응답에는 토큰이 없지만 `pending` 계정도 로그인은 성공하므로(§2.5) 방금 입력한 아이디·비밀번호로
+/// 자동 로그인해 승인 대기 화면으로 간다(UF-X-01, `Ruling 861`). 자동 로그인이 실패하면 로그인 화면으로
+/// 돌려보내고 가입 접수 안내만 보인다.
 /// `parent_app` 의 같은 화면과 구조가 같고, 역할 선택지만 이 앱이 담당하는
 /// 2종(`role_policy.dart` 의 "버스기사(`driver`)"·"동승자(`escort`)")으로
 /// 바뀐다(§1.1).

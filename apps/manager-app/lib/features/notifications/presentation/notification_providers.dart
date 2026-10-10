@@ -13,7 +13,7 @@ final StateProvider<NotificationFilter> notificationFilterProvider =
       return NotificationFilter.all;
     });
 
-/// §3.12 — 알림 목록. 첫 쪽을 받고, `loadMore` 가 다음 쪽을 이어 붙인다. 홈 머리말 배지와 알림 화면이
+/// §3.12 — 알림 목록. 첫 쪽을 받고, `loadMore` 가 다음 쪽을 이어 붙인다. 아래 탭의 알림 배지와 알림 화면이
 /// 같은 값을 본다. 이어 붙이기·읽음 표시 계산은 `baraeda_core` 의
 /// [NotificationFeed] 가 하고(학부모·학생 앱과 같은 규칙), 이 클래스는 요청과 상태 보관만 맡는다.
 ///
