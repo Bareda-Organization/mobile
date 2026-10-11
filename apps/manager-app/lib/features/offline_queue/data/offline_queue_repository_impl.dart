@@ -321,16 +321,20 @@ class OfflineQueueRepositoryImpl implements OfflineQueueRepository {
     return error is Map && error['code'] == 'DUPLICATE_ARRIVE';
   }
 
-  /// 다시 보내도 같은 결과인 4xx 만 확정 거절이다. 401(재발급 실패)·408·429
-  /// 와 5xx·비JSON 프록시 오류는 재시도하면 통과할 수 있어 행을 남긴다.
+  /// 다시 보내도 같은 결과인 4xx 만 확정 거절이다 — 응답 본문이 에러 규격 JSON(`{"error":{…}}` 맵)일 때만(887④ ·
+  /// API_SPEC §1.7 "JSON 4xx"). 401(재발급 실패)·408·429 와 5xx, 본문이 HTML(게이트웨이)·빈 값인 4xx 는
+  /// 서버가 내린 판정이 아니라 중간 장치의 응답일 수 있어 재시도하면 통과할 수 있으므로 행을 남긴다.
   bool _isPermanentRejection(DioException exception) {
     if (exception.type != DioExceptionType.badResponse) return false;
     final status = exception.response?.statusCode ?? 0;
+    final data = exception.response?.data;
     return status >= 400 &&
         status < 500 &&
         status != 401 &&
         status != 408 &&
-        status != 429;
+        status != 429 &&
+        data is Map &&
+        data['error'] is Map;
   }
 
   Future<void> _deleteRow(int id) => (_database.delete(

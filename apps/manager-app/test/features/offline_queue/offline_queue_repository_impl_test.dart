@@ -82,7 +82,10 @@ class _StatusAdapter implements HttpClientAdapter {
     body,
     status,
     headers: {
-      Headers.contentTypeHeader: [Headers.jsonContentType],
+      // 게이트웨이 HTML 은 실제로 text/html 로 온다 — JSON 헤더로 속이면 Dio 가 파싱 실패로 다른 예외 종류를 낸다.
+      Headers.contentTypeHeader: [
+        body.startsWith('<') ? 'text/html' : Headers.jsonContentType,
+      ],
     },
   );
 }
@@ -256,6 +259,9 @@ void main() {
     ('422 검증 실패', 422, errorEnvelope, false),
     ('409 상태 충돌', 409, errorEnvelope, false),
     ('403 권한 없음', 403, errorEnvelope, false),
+    // 887④ — 에러 규격 JSON 이 아닌 4xx(게이트웨이 HTML · 빈 본문)는 서버의 확정 거절이 아니므로 남긴다.
+    ('404 HTML(게이트웨이)', 404, '<html>Not Found</html>', true),
+    ('413 빈 본문', 413, '', true),
   ];
   for (final (name, status, body, keep) in cases) {
     test('재생 중 $name 응답이면 행을 ${keep ? '남기고 재시도 대기로 센다' : '제외한다'}', () async {
