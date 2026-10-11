@@ -164,8 +164,7 @@ Future<void> _discardPendingRequests(
         .addDiscarded(
           count: discarded.length,
           emergencies: emergencies,
-          contact:
-              contact ?? await ref.read(academyContactStoreProvider).read(),
+          contact: contact,
         );
     return;
   }
