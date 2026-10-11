@@ -14,10 +14,13 @@ import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/features/offline_queue/data/models/pending_request_summary.dart';
 import 'package:manager_app/features/offline_queue/data/offline_queue_database.dart';
 import 'package:manager_app/features/offline_queue/data/offline_queue_repository_impl.dart';
+import 'package:manager_app/features/offline_queue/data/unsent_emergency_store.dart';
 import 'package:manager_app/features/offline_queue/presentation/offline_queue_auto_sync.dart';
 import 'package:manager_app/features/offline_queue/presentation/request_notices.dart';
 import 'package:manager_app/features/roster/data/models/roster_response.dart';
 import 'package:manager_app/features/roster/presentation/roster_providers.dart';
+
+import '../../support/fake_unsent_emergency_store.dart';
 
 /// 모든 요청에 [status] 와 에러 본문으로 답한다 — 서버의 확정 거절.
 class _RejectAdapter implements HttpClientAdapter {
@@ -46,8 +49,7 @@ class _RejectAdapter implements HttpClientAdapter {
 const _boarded = {'client_key': 'K', 'status': 'boarded'};
 
 /// Ruling 882 — 큐 재생이 서버의 확정 거절로 행을 지울 때는 반드시 안내를 남긴다. 30초 자동 재생 · 쓰기 직전 재생 ·
-/// 수동
-/// 재시도 어느 경로로 지워져도 사용자가 확인할 때까지 화면에 남고, 비상 신고면 "전송되지 않았습니다" 와 학원 전화를 띄운다.
+/// 수동 재시도 어느 경로로 지워져도 사용자가 확인할 때까지 화면에 남고, 비상 신고면 "전송되지 않았습니다" 와 학원 전화를 띄운다.
 void main() {
   late OfflineQueueDatabase database;
   late List<List<DroppedRequest>> dropped;
@@ -131,6 +133,9 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            unsentEmergencyStoreProvider.overrideWithValue(
+              FakeUnsentEmergencyStore(),
+            ),
             academyContactProvider.overrideWith((ref) => contact),
             rosterProvider.overrideWith(
               (ref) async => const RosterResponse(
@@ -235,7 +240,7 @@ void main() {
       container.read(requestNoticesProvider.notifier).addDropped([emergency()]);
       await tester.pumpAndSettle();
 
-      expect(find.text('비상 신고가 전송되지 않았습니다'), findsOneWidget);
+      expect(find.textContaining('비상 신고 1건이 전송되지 않았습니다'), findsOneWidget);
       await tester.tap(find.text('전화'));
       await tester.pump();
       expect(opened.single, Uri(scheme: 'tel', path: '032-000-1100'));
@@ -270,6 +275,9 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            unsentEmergencyStoreProvider.overrideWithValue(
+              FakeUnsentEmergencyStore(),
+            ),
             offlineQueueRepositoryProvider.overrideWith(
               (ref) => OfflineQueueRepositoryImpl(
                 database: database,
@@ -288,7 +296,7 @@ void main() {
           ),
         ),
       );
-      expect(find.text('비상 신고가 전송되지 않았습니다'), findsNothing);
+      expect(find.textContaining('전송되지 않았습니다'), findsNothing);
 
       await tester.runAsync(() async {
         await tester.pump(OfflineQueueAutoSync.interval);
@@ -296,7 +304,7 @@ void main() {
       });
       await tester.pumpAndSettle();
 
-      expect(find.text('비상 신고가 전송되지 않았습니다'), findsOneWidget);
+      expect(find.textContaining('비상 신고 1건이 전송되지 않았습니다'), findsOneWidget);
       await tester.pumpWidget(const SizedBox.shrink());
     });
   });

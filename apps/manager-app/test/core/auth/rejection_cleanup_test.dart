@@ -12,6 +12,7 @@ import 'package:manager_app/core/auth/last_session_store.dart';
 import 'package:manager_app/features/auth/domain/auth_repository.dart';
 import 'package:manager_app/features/home/data/run_summary_store.dart';
 import 'package:manager_app/features/offline_queue/data/offline_queue_database.dart';
+import 'package:manager_app/features/offline_queue/data/unsent_emergency_store.dart';
 import 'package:manager_app/features/offline_queue/presentation/request_notices.dart';
 
 import '../../support/fake_academy_contact_store.dart';
@@ -19,6 +20,7 @@ import '../../support/fake_last_session_store.dart';
 import '../../support/fake_roster_key_store.dart';
 import '../../support/fake_run_summary_store.dart';
 import '../../support/fake_token_storage.dart';
+import '../../support/fake_unsent_emergency_store.dart';
 import '../../support/manager_run_fixture.dart';
 
 /// `/me` 가 [failure] 로 실패하는 가짜.
@@ -65,6 +67,7 @@ void main() {
   late FakeLastSessionStore lastSession;
   late FakeRunSummaryStore summary;
   late FakeTokenStorage tokens;
+  late FakeUnsentEmergencyStore unsent;
 
   setUp(() {
     database = OfflineQueueDatabase.forTesting(NativeDatabase.memory());
@@ -75,11 +78,16 @@ void main() {
       runs: [managerRunFixture()],
     ));
     tokens = FakeTokenStorage(seedRefreshToken: 'r', seedAccessToken: 'a');
+    unsent = FakeUnsentEmergencyStore();
   });
 
   tearDown(() => database.close());
 
-  ProviderContainer build({AuthRepository? auth, HttpClientAdapter? adapter}) {
+  ProviderContainer build({
+    AuthRepository? auth,
+    HttpClientAdapter? adapter,
+    AcademyContactStore? contacts,
+  }) {
     final container = ProviderContainer(
       overrides: [
         tokenStorageProvider.overrideWithValue(tokens),
@@ -87,8 +95,9 @@ void main() {
         rosterKeyStoreProvider.overrideWithValue(keyStore),
         lastSessionStoreProvider.overrideWithValue(lastSession),
         runSummaryStoreProvider.overrideWithValue(summary),
+        unsentEmergencyStoreProvider.overrideWithValue(unsent),
         academyContactStoreProvider.overrideWithValue(
-          FakeAcademyContactStore(),
+          contacts ?? FakeAcademyContactStore(),
         ),
         if (auth != null) authRepositoryProvider.overrideWithValue(auth),
         if (adapter != null)
@@ -191,10 +200,10 @@ void main() {
     await container.read(authBootstrapProvider.future);
     await expectEverythingForgotten(container);
 
-    final notice = container.read(requestNoticesProvider).single;
-    expect(notice.title, contains('2건'));
-    expect(notice.emergency, isTrue);
-    expect(notice.body, contains('학원에 직접 알려'));
+    // 승하차 1건은 메모리 안내, 비상 신고 1건은 기기에 남기는 안내(Ruling 886).
+    expect(container.read(requestNoticesProvider).single.title, contains('1건'));
+    expect(container.read(unsentEmergencyProvider)?.count, 1);
+    expect(unsent.saved?.count, 1);
   });
 
   test('대기·거절 게이트로 정리하면 버려진 처리 건수와 비상 신고 안내가 남는다', () async {
@@ -210,9 +219,8 @@ void main() {
         .then<void>((_) {}, onError: (_) {});
     await expectEverythingForgotten(container);
 
-    final notice = container.read(requestNoticesProvider).single;
-    expect(notice.title, contains('2건'));
-    expect(notice.emergency, isTrue);
+    expect(container.read(requestNoticesProvider).single.title, contains('1건'));
+    expect(container.read(unsentEmergencyProvider)?.count, 1);
   });
 
   test('버릴 처리가 없으면 안내를 남기지 않는다', () async {
@@ -226,5 +234,6 @@ void main() {
     await expectEverythingForgotten(container);
 
     expect(container.read(requestNoticesProvider), isEmpty);
+    expect(container.read(unsentEmergencyProvider), isNull);
   });
 }
