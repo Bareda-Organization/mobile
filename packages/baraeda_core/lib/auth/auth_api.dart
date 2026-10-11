@@ -23,11 +23,7 @@ class AuthApi {
   ///
   /// `deviceRegistrar` 가 있으면 로그인·`/me` 성공 뒤 푸시 단말을 등록하고 로그아웃에 `device_id` 를 싣는다
   /// (NTF-12 · Ruling 510) — 없으면 예전 그대로다.
-  new({
-    required this._dio,
-    required this._tokenStorage,
-    this._deviceRegistrar,
-  });
+  new({required this._dio, required this._tokenStorage, this._deviceRegistrar});
 
   final Dio _dio;
   final TokenStorage _tokenStorage;
@@ -92,7 +88,7 @@ class AuthApi {
         refreshToken: refreshToken,
       );
       // 세션이 새로 생겼으니 같은 토큰이라도 이 계정으로 다시 등록한다.
-      await _registerDevice(force: true);
+      await _registerDevice(loginResponse.accountId, force: true);
     }
     return loginResponse;
   }
@@ -125,10 +121,7 @@ class AuthApi {
   }) async {
     await _dio.post<void>(
       '/auth/password',
-      data: {
-        'current_password': currentPassword,
-        'new_password': newPassword,
-      },
+      data: {'current_password': currentPassword, 'new_password': newPassword},
     );
   }
 
@@ -154,14 +147,19 @@ class AuthApi {
   Future<MeResponse> me() async {
     final response = await _dio.get<Map<String, dynamic>>('/me');
     // 자동 로그인(앱 재실행)도 이 호출을 지나므로 토큰이 바뀐 경우를 여기서 따라잡는다.
-    await _registerDevice();
-    return MeResponse.fromJson(response.data!);
+    final me = MeResponse.fromJson(response.data!);
+    await _registerDevice(me.accountId);
+    return me;
   }
 
   /// 푸시 단말 등록은 부가 동작이다 — 실패해도 로그인·`/me` 를 막지 않고, 다음 `/me` 가 다시 시도한다.
-  Future<void> _registerDevice({bool force = false}) async {
+  Future<void> _registerDevice(String accountId, {bool force = false}) async {
     try {
-      await _deviceRegistrar?.register(registerDevice, force: force);
+      await _deviceRegistrar?.register(
+        registerDevice,
+        accountId: accountId,
+        force: force,
+      );
     } on Object catch (error) {
       debugPrint('[push] 단말 등록 실패 — 다음 /me 에서 다시 시도: $error');
     }

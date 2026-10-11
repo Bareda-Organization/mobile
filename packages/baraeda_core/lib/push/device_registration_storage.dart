@@ -19,7 +19,10 @@ class DeviceRegistrationStorage {
 
   static const _deviceIdKey = 'device_registration_device_id';
   static const _tokenKey = 'device_registration_token';
-  static const _optedOutKey = 'device_registration_opted_out';
+  static const _accountKey = 'device_registration_account_id';
+
+  /// 계정 구분이 없던 때의 키 — 이행에만 읽고, 계정별 키는 이 뒤에 `_<계정 id>` 를 붙인다.
+  static const _legacyOptedOutKey = 'device_registration_opted_out';
 
   final FlutterSecureStorage _storage;
 
@@ -47,13 +50,43 @@ class DeviceRegistrationStorage {
   /// `DELETE /me/devices/{token}` 또는 로그아웃 직후 호출한다.
   Future<void> clearToken() => _storage.delete(key: _tokenKey);
 
-  /// 사용자가 이 기기의 알림을 직접 꺼 두었는가 — 켜져 있으면 로그인·앱
-  /// 재실행이 자동으로 다시 등록하지 않는다.
-  Future<bool> readOptedOut() async =>
-      await _storage.read(key: _optedOutKey) == 'true';
+  /// 이 기기에서 지금 쓰는 계정으로 정한다 — 로그인과 `/me` 가 부른다(`DeviceRegistrar`). 끔 기록이 계정 단위라서
+  /// 어느 계정의 기록을 읽고 쓸지 여기서 정해진다(Ruling 885④).
+  ///
+  /// 계정 구분이 없던 옛 끔 기록(`_legacyOptedOutKey`)이 남아 있으면 이 기기에 처음 정해지는 계정에 붙이고
+  /// 지운다 — 사용자가 끈 것을 다시 켜지 않는 쪽이다(누가 껐는지는 알 수 없어 처음 들어오는 계정이 받는다).
+  Future<void> selectAccount(String accountId) async {
+    await _storage.write(key: _accountKey, value: accountId);
+    if (await _storage.read(key: _legacyOptedOutKey) == 'true') {
+      await _storage.write(key: _optedOutKeyOf(accountId), value: 'true');
+      await _storage.delete(key: _legacyOptedOutKey);
+    }
+  }
 
-  /// 설정의 "이 기기에서 알림 받기" 스위치를 끌 때 `true`, 켤 때 `false`.
-  Future<void> saveOptedOut({required bool optedOut}) => optedOut
-      ? _storage.write(key: _optedOutKey, value: 'true')
-      : _storage.delete(key: _optedOutKey);
+  /// 사용자가 이 기기에서 지금 계정의 알림을 직접 꺼 두었는가 — 켜져 있으면 로그인·앱 재실행이 자동으로 다시
+  /// 등록하지 않는다. 계정이 정해진 적 없으면 `false`.
+  Future<bool> readOptedOut() async {
+    final key = await _activeOptedOutKey();
+    return key != null && await _storage.read(key: key) == 'true';
+  }
+
+  /// 설정의 "이 기기에서 알림 받기" 스위치를 끌 때 `true`, 켤 때 `false` — 지금 계정에만 적용된다.
+  /// 계정이 정해진 적 없으면(로그인한 적 없음) 아무것도 하지 않는다.
+  Future<void> saveOptedOut({required bool optedOut}) async {
+    final key = await _activeOptedOutKey();
+    if (key == null) return;
+    if (optedOut) {
+      await _storage.write(key: key, value: 'true');
+    } else {
+      await _storage.delete(key: key);
+    }
+  }
+
+  Future<String?> _activeOptedOutKey() async {
+    final accountId = await _storage.read(key: _accountKey);
+    return accountId == null ? null : _optedOutKeyOf(accountId);
+  }
+
+  static String _optedOutKeyOf(String accountId) =>
+      '${_legacyOptedOutKey}_$accountId';
 }

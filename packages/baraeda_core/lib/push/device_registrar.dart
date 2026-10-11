@@ -9,11 +9,8 @@ import 'package:flutter/foundation.dart';
 class DeviceRegistrar {
   /// [platform] 은 서버 CHECK 값(`android` · `ios` · `web`)이다 — 기본은 실행
   /// 중인 플랫폼에서 정한다.
-  new({
-    required this._tokenSource,
-    required this._storage,
-    String? platform,
-  }) : _platform = platform ?? _currentPlatform();
+  new({required this._tokenSource, required this._storage, String? platform})
+    : _platform = platform ?? _currentPlatform();
 
   final PushTokenSource _tokenSource;
   final DeviceRegistrationStorage _storage;
@@ -23,7 +20,7 @@ class DeviceRegistrar {
   /// 되풀이하지 않게 한다.
   String? _registeredToken;
 
-  /// 토큰을 서버에 등록한다. 사용자가 기기 알림을 꺼 두었거나 공급자가 줄
+  /// 토큰을 서버에 등록한다. 사용자가 이 기기에서 [accountId] 계정의 알림을 꺼 두었거나 공급자가 줄
   /// 토큰이 없으면 아무것도 하지 않는다.
   ///
   /// [force] 는 로그인 직후에 켠다 — 세션이 바뀌었으면 같은 토큰이라도 새
@@ -32,8 +29,10 @@ class DeviceRegistrar {
   /// 정한다.
   Future<void> register(
     Future<void> Function(DeviceRegistrationRequest request) send, {
+    required String accountId,
     bool force = false,
   }) async {
+    await _storage.selectAccount(accountId);
     if (await _storage.readOptedOut()) return;
     final token = await _tokenSource.currentToken();
     if (token == null || (!force && token == _registeredToken)) return;

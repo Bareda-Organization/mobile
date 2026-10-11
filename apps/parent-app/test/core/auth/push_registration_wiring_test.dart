@@ -61,6 +61,9 @@ class _MemoryStorage extends DeviceRegistrationStorage {
   Future<void> clearToken() async => token = null;
 
   @override
+  Future<void> selectAccount(String accountId) async {}
+
+  @override
   Future<bool> readOptedOut() async => false;
 }
 

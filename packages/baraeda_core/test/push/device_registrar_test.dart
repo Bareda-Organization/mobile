@@ -62,9 +62,8 @@ class _FakeSecureStoragePlatform
   @override
   Future<SecureStorageUpgradeStatus> checkUpgradeStatus({
     required Map<String, String> options,
-  }) async => const SecureStorageUpgradeStatus(
-    state: SecureStorageUpgradeState.ok,
-  );
+  }) async =>
+      const SecureStorageUpgradeStatus(state: SecureStorageUpgradeState.ok);
 }
 
 /// 지정한 토큰을 돌려주는 가짜 공급자 — `null` 이면 "줄 토큰이 없는" 상태다.
@@ -95,6 +94,9 @@ class _RecordingAdapter implements HttpClientAdapter {
   /// `/me/devices` 가 이 상태 코드로 답한다(기본 201).
   int deviceStatus = 201;
 
+  /// 로그인 · `/me` 가 돌려주는 계정 식별자 — 같은 기기에 다른 계정이 로그인하는 장면에 쓴다.
+  String accountId = '1';
+
   @override
   void close({bool force = false}) {}
 
@@ -110,12 +112,12 @@ class _RecordingAdapter implements HttpClientAdapter {
       '/auth/login' => {
         'access_token': 'a1',
         'refresh_token': 'r1',
-        'account_id': '1',
+        'account_id': accountId,
         'role': 'parent',
         'status': 'active',
       },
       '/me' => {
-        'account_id': '1',
+        'account_id': accountId,
         'login_id': 'p1',
         'name': '학부모',
         'phone': '010-0000-0000',
@@ -241,11 +243,49 @@ void main() {
   });
 
   test('사용자가 기기 알림을 꺼 두었으면 로그인해도 등록하지 않는다', () async {
+    await api.login(loginId: 'p1', password: 'pw');
     await deviceStorage.saveOptedOut(optedOut: true);
+    await api.logout();
+    adapter.calls.clear();
 
     await api.login(loginId: 'p1', password: 'pw');
 
     expect(deviceCalls(), isEmpty);
+  });
+
+  // Ruling 885④ — 푸시 끔은 "이 기기에서 이 계정" 단위다. 기기 단위였을 때는 계정 A 가 끈 기기에서 계정 B 가
+  // 로그인해도 말없이 푸시가 등록되지 않았다.
+  test('계정 A 가 끈 기기에 계정 B 가 로그인하면 B 는 등록되고, A 가 다시 로그인하면 꺼진 채다', () async {
+    adapter.accountId = 'A';
+    await api.login(loginId: 'a', password: 'pw');
+    await deviceStorage.saveOptedOut(optedOut: true);
+    await api.logout();
+    adapter.calls.clear();
+
+    adapter.accountId = 'B';
+    await api.login(loginId: 'b', password: 'pw');
+    expect(deviceCalls(), hasLength(1));
+    await api.logout();
+    adapter.calls.clear();
+
+    adapter.accountId = 'A';
+    await api.login(loginId: 'a', password: 'pw');
+    expect(deviceCalls(), isEmpty);
+  });
+
+  // Ruling 885④ 이행 — 계정 구분이 없던 옛 끔 기록은 "이 기기에서 누군가 껐다" 만 안다. 사용자가 끈 것을 다시
+  // 켜지 않도록 이 기기에 처음 들어오는 계정에 붙이고, 그 뒤로는 계정별로만 읽는다.
+  test('옛 끔 기록은 처음 들어오는 계정에 붙고 다른 계정에는 번지지 않는다', () async {
+    platform.data['device_registration_opted_out'] = 'true';
+
+    adapter.accountId = 'A';
+    await api.login(loginId: 'a', password: 'pw');
+    expect(deviceCalls(), isEmpty);
+    await api.logout();
+
+    adapter.accountId = 'B';
+    await api.login(loginId: 'b', password: 'pw');
+    expect(deviceCalls(), hasLength(1));
   });
 
   test('기본 공급자는 기기 식별자에서 정한 같은 토큰을 매번 준다', () async {
