@@ -114,7 +114,8 @@ class RequestNoticesNotifier extends Notifier<List<RequestNotice>> {
 }
 
 /// 서버가 거절해 지워진 비상 신고의 기기 저장 안내 — 사용자가 [확인] 할 때까지 앱을 끄거나 로그아웃해도 남는다
-/// (Ruling 886). 앱이 켜질 때 저장분을 읽어 오고, 읽기 · 쓰기는 한 줄로 이어 붙여 서로 덮지 않게 한다.
+/// (Ruling 886). 안내([state])는 곧바로 바꾸고 저장소 읽기 · 쓰기만 한 줄로 이어 붙인다 — 저장소가 실패하거나
+/// 응답하지 않아도 이번 실행의 안내와 뒤따르는 작업이 막히지 않는다.
 final NotifierProvider<UnsentEmergencyNotifier, UnsentEmergency?>
 unsentEmergencyProvider =
     NotifierProvider<UnsentEmergencyNotifier, UnsentEmergency?>(
@@ -122,46 +123,99 @@ unsentEmergencyProvider =
     );
 
 class UnsentEmergencyNotifier extends Notifier<UnsentEmergency?> {
+  /// 쓰기 줄이 시작 때 저장분 읽기를 기다리는 최대 시간 — 넘으면 먼저 쓰고, 읽기는 끝나는 대로 합쳐 다시 쓴다.
+  static const _loadLimit = Duration(seconds: 3);
+
   var _tail = Future<void>.value();
+
+  /// 시작 때 저장분 읽기 — 끝나면 `null`.
+  Future<void>? _loading;
+
+  /// 읽기가 끝나기 전에 [dismiss] 했으면, 늦게 도착한 저장분이 안내를 되살리지 않게 한다.
+  var _dismissed = false;
 
   @override
   UnsentEmergency? build() {
-    _enqueue(() async {
-      final saved = await ref.read(unsentEmergencyStoreProvider).read();
-      if (ref.mounted) state = saved;
-    });
+    _loading = _load().whenComplete(() => _loading = null);
     return null;
+  }
+
+  /// 저장분을 읽어 지금 안내([state])와 합친다 — 그 사이 [add] 한 건수가 줄거나 두 번 더해지지 않게 더한다.
+  Future<void> _load() async {
+    try {
+      final saved = await ref.read(unsentEmergencyStoreProvider).read();
+      if (!ref.mounted || saved == null || _dismissed) return;
+      final current = state;
+      if (current == null) {
+        state = saved;
+        return;
+      }
+      state = UnsentEmergency(
+        count: saved.count + current.count,
+        lastAt: current.lastAt,
+        contact: current.contact ?? saved.contact,
+      );
+      _enqueue(_persist);
+    } on Object catch (error) {
+      debugPrint('비상 신고 안내 저장분을 읽지 못했어요: $error');
+    }
   }
 
   /// 비상 신고 [count] 건이 전송되지 못하고 지워졌다 — 건수를 더하고 시각을 지금으로, 번호는 [contact] 를 우선한다
   /// (없으면 앞서 남긴 번호 · 기기에 저장된 번호).
   void add({required int count, required String? contact}) {
-    _enqueue(() async {
-      final previous = state;
-      final next = UnsentEmergency(
-        count: (previous?.count ?? 0) + count,
-        lastAt: ref.read(clockProvider).now(),
-        contact:
-            contact ??
-            previous?.contact ??
-            await ref.read(academyContactStoreProvider).read(),
-      );
-      if (!ref.mounted) return;
-      state = next;
-      await ref.read(unsentEmergencyStoreProvider).write(next);
-    });
+    final previous = state;
+    state = UnsentEmergency(
+      count: (previous?.count ?? 0) + count,
+      lastAt: ref.read(clockProvider).now(),
+      contact: contact ?? previous?.contact,
+    );
+    _enqueue(_persist);
   }
 
   /// 사용자가 확인했다 — 기기의 저장분도 지운다.
   void dismiss() {
-    _enqueue(() async {
-      if (ref.mounted) state = null;
-      await ref.read(unsentEmergencyStoreProvider).clear();
-    });
+    _dismissed = true;
+    state = null;
+    _enqueue(() => ref.read(unsentEmergencyStoreProvider).clear());
   }
 
+  /// 지금 안내를 기기에 쓴다(실행 시점의 값 — 앞선 쓰기가 밀려도 마지막 값이 남는다). 번호가 없으면 저장된 학원 번호로 채운다.
+  Future<void> _persist() async {
+    await _loading?.timeout(_loadLimit, onTimeout: () {});
+    if (!ref.mounted) return;
+    var current = state;
+    if (current == null) return;
+    if (current.contact == null) {
+      final contact = await _savedContact();
+      if (!ref.mounted) return;
+      current = state;
+      if (current == null) return;
+      if (current.contact == null && contact != null) {
+        current = UnsentEmergency(
+          count: current.count,
+          lastAt: current.lastAt,
+          contact: contact,
+        );
+        state = current;
+      }
+    }
+    await ref.read(unsentEmergencyStoreProvider).write(current);
+  }
+
+  Future<String?> _savedContact() async {
+    try {
+      return await ref.read(academyContactStoreProvider).read();
+    } on Object {
+      return null;
+    }
+  }
+
+  /// 작업 하나가 실패해도 줄이 끊기지 않는다 — 오류는 기록만 남기고 다음 작업으로 넘어간다.
   void _enqueue(Future<void> Function() job) {
-    _tail = _tail.then((_) => job());
+    _tail = _tail.then((_) => job()).catchError((Object error) {
+      debugPrint('비상 신고 안내 저장 작업이 실패했어요: $error');
+    });
   }
 }
 
