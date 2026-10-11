@@ -1,5 +1,6 @@
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:parent_app/core/auth/academy_contact.dart';
 import 'package:parent_app/core/auth/data/auth_repository_impl.dart';
 import 'package:parent_app/core/auth/domain/auth_repository.dart';
 import 'package:parent_app/core/change_requests/data/change_request_api.dart';
@@ -124,7 +125,10 @@ final authApiProvider = Provider<AuthApi>((ref) {
 /// `AuthApi`·`AuthRepositoryImpl` 은 직접 import 하지 않는다
 /// (CONVENTIONS_FLUTTER.md §2 "presentation 이 data 를 직접 import 하지 않음").
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
-  return AuthRepositoryImpl(authApi: ref.watch(authApiProvider));
+  return AuthRepositoryImpl(
+    authApi: ref.watch(authApiProvider),
+    contactStorage: ref.watch(academyContactStorageProvider),
+  );
 });
 
 /// API_SPEC §3.1 — `home`·`schedule` 공통(`core/students`).
@@ -172,9 +176,7 @@ final notificationApiProvider = Provider<NotificationApi>((ref) {
   return NotificationApi(dio: ref.watch(apiClientProvider).dio);
 });
 
-final notificationRepositoryProvider = Provider<NotificationRepository>((
-  ref,
-) {
+final notificationRepositoryProvider = Provider<NotificationRepository>((ref) {
   return NotificationRepositoryImpl(
     notificationApi: ref.watch(notificationApiProvider),
   );
@@ -239,9 +241,8 @@ final deviceRegistrationStorageProvider = Provider<DeviceRegistrationStorage>(
 /// 자리표시 토큰이다. Firebase 를 붙일 때 이 provider 한 곳만 바꾼다
 /// (`docs/backend/infra/DEPLOYMENT.md` "외부 연동 준비물").
 final pushTokenSourceProvider = Provider<PushTokenSource>(
-  (ref) => PlaceholderPushTokenSource(
-    ref.watch(deviceRegistrationStorageProvider),
-  ),
+  (ref) =>
+      PlaceholderPushTokenSource(ref.watch(deviceRegistrationStorageProvider)),
 );
 
 /// 로그인 뒤 단말 등록 · 로그아웃 해지 — `AuthApi` 가 부른다.

@@ -1,5 +1,6 @@
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:dio/dio.dart';
+import 'package:parent_app/core/auth/academy_contact.dart';
 import 'package:parent_app/core/auth/domain/auth_repository.dart';
 
 /// [AuthRepository] 의 `data` 계층 구현 — `baraeda_core` 의 [AuthApi] 를
@@ -13,13 +14,13 @@ import 'package:parent_app/core/auth/domain/auth_repository.dart';
 /// `presentation` 은 `DioException` 을 본 적이 없어야 한다
 /// (CONVENTIONS_FLUTTER.md §6).
 class AuthRepositoryImpl implements AuthRepository {
-  /// [authApi] 를 주입받는다 — 이 클래스는 `AuthApi` 를 만들지 않는다.
-  /// 필드를 private 으로 유지하려고 initializing formal 대신 명시 대입을
-  /// 쓴다(필드명과 같은 이름의 public named 파라미터를 두면 캡슐화가 깨진다).
-  // ignore: prefer_initializing_formals
-  const new({required AuthApi authApi}) : _authApi = authApi;
+  /// [_authApi] 를 주입받는다 — 이 클래스는 `AuthApi` 를 만들지 않는다.
+  const new({required this._authApi, required this._contactStorage});
 
   final AuthApi _authApi;
+
+  /// `/me` 가 알려 준 학원 문의처를 남기는 곳 — 차단 화면과 홈 실패 화면의 전화가 읽는다(R53 t3 A4).
+  final AcademyContactStorage _contactStorage;
 
   @override
   Future<List<AcademySummary>> searchAcademies(String query) =>
@@ -70,7 +71,13 @@ class AuthRepositoryImpl implements AuthRepository {
   );
 
   @override
-  Future<MeResponse> me() => _guard(_authApi.me);
+  Future<MeResponse> me() => _guard(() async {
+    final me = await _authApi.me();
+    // 승인 대기 화면을 거치지 않은 계정도 문의처를 알게 한다 — 없으면 이미 남긴 값을 지우지 않는다.
+    final contact = me.academy?.contact;
+    if (contact != null) await _contactStorage.save(contact);
+    return me;
+  });
 
   @override
   Future<DeviceRegistrationResponse> registerDevice(
