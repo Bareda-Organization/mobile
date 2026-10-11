@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:manager_app/core/auth/auth_providers.dart';
@@ -289,6 +291,12 @@ final emergencyRepositoryProvider = Provider<EmergencyRepository>((ref) {
   return EmergencyRepositoryImpl(
     api: ref.watch(emergencyApiProvider),
     offlineQueue: ref.watch(offlineQueueRepositoryProvider),
+    // 직접 전송 중 세션이 끝나 못 보낸 신고 1건은 기기 저장 안내에 더한다(887③) — 대기열에도 없어 달리 남지 않는다.
+    onSessionEndedWhileSending: () => unawaited(
+      ref
+          .read(unsentEmergencyProvider.notifier)
+          .add(count: 1, contact: ref.read(academyContactProvider)),
+    ),
   );
 });
 

@@ -49,6 +49,23 @@ class _RejectAdapter implements HttpClientAdapter {
   );
 }
 
+/// [_RejectAdapter] 처럼 거절하되, 요청이 나갈 때마다 [onFetch] 를 부른다 — 재생 도중의 상태를 읽는다.
+class _ProbeAdapter extends _RejectAdapter {
+  new(super.status, this.onFetch);
+
+  final void Function() onFetch;
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) {
+    onFetch();
+    return super.fetch(options, requestStream, cancelFuture);
+  }
+}
+
 const _boarded = {'client_key': 'K', 'status': 'boarded'};
 
 /// Ruling 882 — 큐 재생이 서버의 확정 거절로 행을 지울 때는 반드시 안내를 남긴다. 30초 자동 재생 · 쓰기 직전 재생 ·
@@ -134,6 +151,31 @@ void main() {
       expect(await repository.fetchPending(), isEmpty);
     });
 
+    // R53 B-6① — 지운 뒤 안내가 루프 끝으로 미뤄지면 그 사이 프로세스가 죽을 때 지운 행의 안내가 사라진다.
+    test('재생이 행을 지울 때마다 그 행의 안내를 바로 올린다(다음 행을 보내기 전에)', () async {
+      final seeding = repo(503);
+      await queue(seeding, '/runs/run-A/riders/7');
+      await queue(seeding, '/runs/run-A/riders/8');
+      final seenAtRequest = <int>[];
+      final repository = OfflineQueueRepositoryImpl(
+        database: database,
+        dio: Dio(BaseOptions(baseUrl: 'https://example.invalid'))
+          ..httpClientAdapter = _ProbeAdapter(
+            409,
+            () => seenAtRequest.add(dropped.length),
+          ),
+        onDropped: dropped.add,
+      );
+
+      await repository.replayPending();
+
+      expect(seenAtRequest, [
+        0,
+        1,
+      ], reason: '두 번째 요청이 나갈 때 첫 행의 안내는 이미 올라가 있어야 한다');
+      expect(dropped, hasLength(2));
+    });
+
     test('에러 본문의 코드 · 문구가 문자열이 아니어도 재생이 멈추지 않고 빈 문자열로 남는다', () async {
       final seeding = repo(503);
       await queue(seeding, '/runs/run-A/riders/7');
@@ -166,12 +208,13 @@ void main() {
       WidgetTester tester, {
       List<Uri>? opened,
       String? contact,
+      UnsentEmergency? savedUnsent,
     }) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
             unsentEmergencyStoreProvider.overrideWithValue(
-              FakeUnsentEmergencyStore(),
+              FakeUnsentEmergencyStore(savedUnsent),
             ),
             academyContactProvider.overrideWith((ref) => contact),
             rosterProvider.overrideWith(
@@ -264,6 +307,66 @@ void main() {
       await tester.tap(find.text('확인'));
       await tester.pumpAndSettle();
       expect(find.textContaining('탑승 처리 · 김하늘'), findsNothing);
+    });
+
+    // R53 F3 — 명단이 메모리에 없거나 다른 회차면 학생 이름을 못 찾는다.
+    // 그래도 어느 처리인지 알아볼 수 있게 기록 시각을 붙인다.
+    testWidgets('학생 이름을 명단에서 못 찾으면 기록 시각으로 대신한다', (tester) async {
+      final container = await pumpHost(tester);
+      final unknown = DroppedRequest(
+        request: PendingRequestSummary(
+          id: 3,
+          endpoint: '/runs/run-A/riders/99',
+          method: 'PATCH',
+          // 기록 시각(occurred_at)이 있으면 큐에 쌓인 시각보다 이것이 실제 처리 시각이다.
+          payload: '{"status":"alighted","occurred_at":"2026-10-11T09:12:00"}',
+          createdAt: DateTime(2026, 10, 11, 9, 30),
+        ),
+        statusCode: 409,
+        code: 'RIDER_TRANSITION_NOT_ALLOWED',
+        message: '서버 문구',
+      );
+
+      container.read(requestNoticesProvider.notifier).addDropped([unknown]);
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('하차 처리 · 10월 11일 09:12 기록'), findsOneWidget);
+      expect(find.textContaining('지워졌어요'), findsOneWidget);
+    });
+
+    testWidgets('기록 시각이 payload 에 없으면 큐에 쌓인 시각을 쓴다', (tester) async {
+      final container = await pumpHost(tester);
+      final unknown = DroppedRequest(
+        request: PendingRequestSummary(
+          id: 4,
+          endpoint: '/runs/run-A/riders/99',
+          method: 'PATCH',
+          payload: '{"status":"boarded"}',
+          createdAt: DateTime(2026, 10, 11, 9, 30),
+        ),
+        statusCode: 409,
+        code: 'RIDER_TRANSITION_NOT_ALLOWED',
+        message: '서버 문구',
+      );
+
+      container.read(requestNoticesProvider.notifier).addDropped([unknown]);
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('탑승 처리 · 10월 11일 09:30 기록'), findsOneWidget);
+    });
+
+    // R53 F4 — 기기에 남은 안내의 번호가 없을 때 지금 로그인한 다른 학원의 번호로 대신하면 엉뚱한 학원에 전화하게 된다.
+    testWidgets('기기 저장 안내에 저장된 번호가 없으면 지금 계정의 학원 번호로 대신하지 않는다', (tester) async {
+      await pumpHost(
+        tester,
+        contact: '032-999-9999',
+        savedUnsent: UnsentEmergency(count: 1, lastAt: DateTime(2026, 10, 11)),
+      );
+
+      expect(find.textContaining('비상 신고 1건이 전송되지 않았습니다'), findsOneWidget);
+      expect(find.textContaining('학원 번호를 모릅니다'), findsOneWidget);
+      expect(find.text('전화'), findsNothing);
+      expect(find.textContaining('032-999-9999'), findsNothing);
     });
 
     testWidgets('비상 신고 행이 지워지면 전송되지 않았다는 안내와 학원 전화 단추가 뜬다', (tester) async {

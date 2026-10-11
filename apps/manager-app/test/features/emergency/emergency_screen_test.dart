@@ -1053,7 +1053,9 @@ void main() {
   });
 
   // 시안 `emergency--ack` — 학원이 확인하면 결과 화면이 확인 화면으로 바뀐다(취소 단추 · 재전송 단추는 없다).
-  testWidgets('학원이 확인한 알림은 확인한 사람과 시각을 보여주고 취소 단추를 없앤다', (tester) async {
+  testWidgets('학원이 확인한 알림은 확인한 사람과 시각을 보여주고 1분 창이 닫힌 뒤에는 취소 단추를 없앤다', (
+    tester,
+  ) async {
     final fakeRepo = _FakeEmergencyRepository(
       raiseOutcome: Sent(
         EmergencyRaiseResult(
@@ -1078,7 +1080,14 @@ void main() {
       ),
     );
     await tester.pumpWidget(
-      _wrap(const EmergencyScreen(), overridesFor(fakeRepo: fakeRepo)),
+      _wrap(
+        const EmergencyScreen(),
+        // 확인(09:02) 뒤 — 발신 1분 창이 닫힌 시각이다.
+        overridesFor(
+          fakeRepo: fakeRepo,
+          now: raisedAt.add(const Duration(minutes: 3)),
+        ),
+      ),
     );
     await tester.pumpAndSettle();
 
@@ -1091,6 +1100,67 @@ void main() {
     expect(find.textContaining('09:02:00'), findsWidgets);
     expect(find.text('보낸 알림 취소'), findsNothing);
     expect(find.text('새 상황으로 다시 보내기'), findsNothing);
+  });
+
+  // 887② — 서버(API_SPEC §4.14)는 확인된 신고도 발신 1분 안이면 취소를
+  // 받는다. 오발신 철회 수단이라 앱도 숨기지 않는다.
+  testWidgets('확인된 알림도 발신 1분 안이면 취소 단추를 보이고 누르면 취소를 부른다', (tester) async {
+    final fakeRepo = _FakeEmergencyRepository(
+      raiseOutcome: Sent(
+        EmergencyRaiseResult(
+          emergencyId: 'e1',
+          raisedAt: raisedAt,
+          cancelableUntil: cancelableUntil,
+          notified: 2,
+        ),
+      ),
+      list: EmergencyListResponse(
+        items: [
+          EmergencyItem(
+            emergencyId: 'e1',
+            type: EmergencyType.accident,
+            raisedAt: raisedAt,
+            cancelableUntil: cancelableUntil,
+            acked: true,
+            ackedAt: raisedAt.add(const Duration(seconds: 20)),
+            ackedByName: '최은영',
+          ),
+          // 이력의 다른 확인 건도 창 안이면 취소 단추를 가진다.
+          EmergencyItem(
+            emergencyId: 'e2',
+            type: EmergencyType.vehicleFault,
+            raisedAt: raisedAt,
+            cancelableUntil: cancelableUntil,
+            acked: true,
+          ),
+        ],
+      ),
+    );
+    await tester.pumpWidget(
+      _wrap(
+        const EmergencyScreen(),
+        overridesFor(
+          fakeRepo: fakeRepo,
+          now: raisedAt.add(const Duration(seconds: 30)),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('비상 알림 보내기'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('학원이 확인했어요'), findsOneWidget);
+    expect(find.text('보낸 알림 취소'), findsOneWidget);
+    expect(
+      find.text('취소'),
+      findsOneWidget,
+      reason: '이력 카드 e2 (e1 은 위 카드가 맡는다)',
+    );
+
+    await tester.tap(find.text('보낸 알림 취소'));
+    await tester.pumpAndSettle();
+
+    expect(fakeRepo.lastCanceledEmergencyId, 'e1');
   });
 
   // 시안 `emergency--failed` — 서버에 닿지 못한 신고가 있으면 맨 위에 연결 끊김 띠가 붙는다.

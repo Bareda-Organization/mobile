@@ -51,8 +51,9 @@ class OfflineQueueRepositoryImpl implements OfflineQueueRepository {
   final Dio _dio;
   final Clock _clock;
 
-  /// 재생이 확정 거절로 행을 지울 때마다 그 내용을 받는다(Ruling 882) — 30초 자동 재생 · 쓰기 직전 재생 ·
-  /// 수동 재시도가 모두 [_replay] 를 거치므로 어느 경로로 지워져도 한 곳에서 알린다.
+  /// 재생이 확정 거절로 행을 지울 때마다 그 행 하나의 내용을 바로 받는다
+  /// (Ruling 882 · R53 B-6①) — 30초 자동 재생 · 쓰기 직전 재생 · 수동 재시도가 모두
+  /// [_replay] 를 거치므로 어느 경로로 지워져도 한 곳에서 알린다.
   final void Function(List<DroppedRequest> dropped)? _onDropped;
 
   @override
@@ -218,8 +219,11 @@ class OfflineQueueRepositoryImpl implements OfflineQueueRepository {
         }
         if (_isPermanentRejection(exception)) {
           // 서버가 확정 거절했다 — 다시 보내도 같은 결과라 큐에서 뺀다. 지운 내용은 호출부가 사용자에게 남긴다(882).
-          dropped.add(_toDropped(row, exception));
+          final item = _toDropped(row, exception);
+          dropped.add(item);
           await _deleteRow(row.id);
+          // 지운 즉시 알린다(R53 B-6①) — 루프 끝으로 미루면 그 사이 앱이 종료될 때 지운 행의 안내가 사라진다.
+          _notifyDropped([item]);
           continue;
         }
         if (_isServerError(exception.response?.statusCode)) {
@@ -243,7 +247,6 @@ class OfflineQueueRepositoryImpl implements OfflineQueueRepository {
     }
     final stillPending =
         rows.length - succeeded - dropped.length - failedPermanently;
-    if (dropped.isNotEmpty) _notifyDropped(dropped);
     return ReplayResult(
       succeeded: succeeded,
       stillPending: stillPending,
@@ -321,16 +324,21 @@ class OfflineQueueRepositoryImpl implements OfflineQueueRepository {
     return error is Map && error['code'] == 'DUPLICATE_ARRIVE';
   }
 
-  /// 다시 보내도 같은 결과인 4xx 만 확정 거절이다. 401(재발급 실패)·408·429
-  /// 와 5xx·비JSON 프록시 오류는 재시도하면 통과할 수 있어 행을 남긴다.
+  /// 다시 보내도 같은 결과인 4xx 만 확정 거절이다 — 응답 본문이 에러 규격 JSON(`{"error":{…}}` 맵)일 때만
+  /// (887④ · API_SPEC §1.7 "JSON 4xx"). 401(재발급 실패)·408·429 와 5xx,
+  /// 본문이 HTML(게이트웨이)·빈 값인 4xx 는
+  /// 서버가 내린 판정이 아니라 중간 장치의 응답일 수 있어 재시도하면 통과할 수 있으므로 행을 남긴다.
   bool _isPermanentRejection(DioException exception) {
     if (exception.type != DioExceptionType.badResponse) return false;
     final status = exception.response?.statusCode ?? 0;
+    final data = exception.response?.data;
     return status >= 400 &&
         status < 500 &&
         status != 401 &&
         status != 408 &&
-        status != 429;
+        status != 429 &&
+        data is Map &&
+        data['error'] is Map;
   }
 
   Future<void> _deleteRow(int id) => (_database.delete(

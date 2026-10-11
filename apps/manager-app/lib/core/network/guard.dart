@@ -38,3 +38,13 @@ bool isServerRejection(Failure failure) =>
     failure is UnauthenticatedFailure ||
     (failure is ApiFailure &&
         (failure.statusCode == 401 || failure.statusCode == 403));
+
+/// 이 실패로 로그인 세션이 끝난다 — 재발급이 거절된 인증 실패(401)와 대기·거절 게이트(`403 AUTH_PENDING` ·
+/// `AUTH_REJECTED`). 그 밖의 403(권한)이나 4xx 는 세션을 끝내지 않으므로 해당하지 않는다.
+bool isSessionEndingFailure(Failure failure) =>
+    failure is UnauthenticatedFailure ||
+    (failure is ApiFailure &&
+        (failure.statusCode == 401 ||
+            (failure.statusCode == 403 &&
+                (failure.code == 'AUTH_PENDING' ||
+                    failure.code == 'AUTH_REJECTED'))));

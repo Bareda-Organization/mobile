@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:baraeda_core/baraeda_core.dart';
@@ -64,6 +65,38 @@ class _PendingAdapter implements HttpClientAdapter {
   );
 }
 
+/// 모든 요청(재발급 포함)에 `401` 을 돌려주는 어댑터 — 앱 시작 `/me` 401 + 재발급 401(세션 만료) 상황.
+class _UnauthorizedAdapter implements HttpClientAdapter {
+  @override
+  void close({bool force = false}) {}
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async => ResponseBody.fromString(
+    '{"error":{"code":"TOKEN_EXPIRED","message":"m"}}',
+    401,
+    headers: {
+      Headers.contentTypeHeader: [Headers.jsonContentType],
+    },
+  );
+}
+
+/// 쓰기가 [gate] 가 풀릴 때까지 끝나지 않는 비상 안내 저장소.
+class _GatedUnsentStore extends FakeUnsentEmergencyStore {
+  new(this.gate);
+
+  final Completer<void> gate;
+
+  @override
+  Future<void> write(UnsentEmergency value) async {
+    await gate.future;
+    saved = value;
+  }
+}
+
 /// R52 최종 대조 — 서버가 계정을 **긍정으로 거절**했다는 증거(부트스트랩 `/me` 403 · 대기·거절 게이트)가 있으면
 /// 로그아웃과 같은 범위(명단 저장본 · 암호 키 · 회차 요약 · 저장 역할 · 대기열)를 지운다(NFR-08).
 void main() {
@@ -117,6 +150,9 @@ void main() {
               tokenStorage: tokens,
               baseUrl: 'https://example.invalid',
               dio: Dio(BaseOptions(baseUrl: 'https://example.invalid'))
+                ..httpClientAdapter = adapter,
+              // 재발급도 같은 어댑터로 — 기본값이면 실제 네트워크로 나간다.
+              refreshDio: Dio(BaseOptions(baseUrl: 'https://example.invalid'))
                 ..httpClientAdapter = adapter,
             ),
           ),
@@ -277,6 +313,54 @@ void main() {
 
     expect(container.read(requestNoticesProvider), isEmpty);
     expect(container.read(unsentEmergencyProvider)?.count, 1);
+    expect(unsent.saved?.count, 1);
+  });
+
+  // R53 F2 — 앱 시작 `/me` 401 + 재발급 401 이면 세션 만료 구독과 부트스트랩 두 경로가 모두 계정 정리를 부른다.
+  // 정리가 한 번만 돌아야 같은 비상 신고 행이 두 번 세어지지 않는다.
+  test('/me 401 + 재발급 401 로 두 정리 경로가 겹쳐도 비상 신고는 한 번만 센다', () async {
+    final container = build(adapter: _UnauthorizedAdapter())
+      ..read(routerRefreshNotifierProvider);
+    await queueEmergency(container);
+
+    await container
+        .read(authBootstrapProvider.future)
+        .then<void>((_) {}, onError: (_) {});
+    await expectEverythingForgotten(container);
+
+    expect(container.read(unsentEmergencyProvider)?.count, 1);
+    expect(unsent.saved?.count, 1);
+  });
+
+  // R53 B-6② — 비상 건수 저장이 끝나기 전에 대기열을 비우면 그 사이 프로세스가 죽을 때 행도 안내도 남지 않는다.
+  test('비상 신고 건수 기기 저장이 끝난 뒤에야 대기열을 비운다', () async {
+    final gate = Completer<void>();
+    unsent = _GatedUnsentStore(gate);
+    final container = build(
+      auth: _FailingMe(
+        const Failure.api(statusCode: 403, code: 'AUTH_REJECTED', message: 'm'),
+      ),
+    );
+    await queueEmergency(container);
+
+    await container.read(authBootstrapProvider.future);
+    for (var i = 0; i < 20; i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 5));
+    }
+    expect(
+      await container.read(offlineQueueRepositoryProvider).fetchPending(),
+      hasLength(1),
+      reason: '저장이 끝나기 전에는 대기열이 그대로여야 한다',
+    );
+
+    gate.complete();
+    for (var i = 0; i < 20; i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 5));
+    }
+    expect(
+      await container.read(offlineQueueRepositoryProvider).fetchPending(),
+      isEmpty,
+    );
     expect(unsent.saved?.count, 1);
   });
 
