@@ -141,7 +141,9 @@ Future<void> _discardOfflineQueue(
   }
 }
 
-/// 대기 요청을 버린다. 세션이 만료돼서 버리는 것이면(로그인 화면에 만료 안내가 있다) 버려지는 건수를 그 안내에
+/// 대기 요청을 버린다. 비상 신고가 섞여 있으면 어느 경로든 기기 저장 안내
+/// ([unsentEmergencyProvider])에 건수를 더한다(Ruling 886).
+/// 세션이 만료돼서 버리는 것이면(로그인 화면에 만료 안내가 있다) 버려지는 건수를 그 안내에
 /// 더한다 — 직접 로그아웃은 확인 창이 이미 알려 준다(`Ruling 388`). 비상 신고가 섞여 있으면 따로 밝힌다:
 /// 서버에 전달되지 못했으니 학원에 직접 알려야 한다(`Ruling 616`). 만료 안내가 없는 경로는
 /// [announceDiscarded] 일 때
@@ -156,16 +158,19 @@ Future<void> _discardPendingRequests(
   await queue.clear();
   if (discarded.isEmpty) return;
   final emergencies = discarded.where((request) => request.isEmergency).length;
+  // 어느 경로로 비우든(로그아웃 · 세션 만료 · 거절 정리) 못 보낸 비상 신고는 확인할 때까지 기기에 남긴다(Ruling 886).
+  // 건수는 이 한 곳에서만 더한다 — 아래 로그인 화면 안내 · 앱 맨 위 안내는 각자 문장만 만든다.
+  if (emergencies > 0) {
+    ref
+        .read(unsentEmergencyProvider.notifier)
+        .add(count: emergencies, contact: contact);
+  }
   final notice = ref.read(sessionExpiredNoticeProvider);
   if (notice == null) {
     if (!announceDiscarded) return;
     ref
         .read(requestNoticesProvider.notifier)
-        .addDiscarded(
-          count: discarded.length,
-          emergencies: emergencies,
-          contact: contact,
-        );
+        .addDiscarded(count: discarded.length, emergencies: emergencies);
     return;
   }
   final emergencyNote = emergencies == 0

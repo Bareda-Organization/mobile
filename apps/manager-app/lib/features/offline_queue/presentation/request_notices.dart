@@ -70,18 +70,9 @@ class RequestNoticesNotifier extends Notifier<List<RequestNotice>> {
   }
 
   /// 이 계정의 저장분을 정리하며 미전송 처리를 버린 일을 안내로 남긴다(앱 시작 `/me` 거절 · 대기·거절 상태).
-  /// [emergencies] 가 있으면 서버에 닿지 못한 비상 신고를 학원에 직접 알리게 하는
-  /// 안내를 기기에 남긴다(`Ruling 616` · 886).
-  void addDiscarded({
-    required int count,
-    required int emergencies,
-    required String? contact,
-  }) {
-    if (emergencies > 0) {
-      ref
-          .read(unsentEmergencyProvider.notifier)
-          .add(count: emergencies, contact: contact);
-    }
+  /// 비상 신고 [emergencies] 건은 기기 저장 안내([unsentEmergencyProvider])가
+  /// 따로 세므로(호출부가 더한다 · Ruling 886) 여기서는 뺀 나머지만 안내로 남긴다.
+  void addDiscarded({required int count, required int emergencies}) {
     final others = count - emergencies;
     if (others <= 0) return;
     state = [

@@ -179,6 +179,82 @@ void main() {
     expect(store.saved?.count, 1);
   });
 
+  /// 아직 서버에 가지 못한 채 대기열에 남은 승하차 1건 + 비상 신고 1건.
+  Future<void> queueRiderAndEmergency(
+    WidgetTester tester,
+    ProviderContainer container,
+  ) => tester.runAsync(() async {
+    for (final (endpoint, payload) in [
+      ('/runs/run-A/riders/7', {'client_key': 'K', 'status': 'boarded'}),
+      ('/runs/run-A/emergency', {'client_key': 'E', 'type': 'accident'}),
+    ]) {
+      await container
+          .read(offlineQueueRepositoryProvider)
+          .sendOrQueue<void>(
+            endpoint: endpoint,
+            method: 'POST',
+            payload: payload,
+            // Failure 는 Exception/Error 를 상속하지 않는다.
+            // ignore: only_throw_errors
+            send: () => throw const Failure.network(),
+          );
+    }
+  });
+
+  /// 대기열째 버려진 뒤 앱을 껐다 켜도 비상 1건만 남고 승하차 건은 세지 않는다(Ruling 886).
+  Future<void> expectOnlyEmergencyKeptAfterRestart(WidgetTester tester) async {
+    // 저장 쓰기까지 이어 붙은 비동기 작업이 끝나도록 한 번 더 돌린다.
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 50)),
+    );
+    await tester.pumpAndSettle();
+    expect(store.saved?.count, 1);
+    await quitApp(tester);
+    final container = await launchApp(tester);
+    expect(bannerText, findsOneWidget);
+    expect(container.read(unsentEmergencyProvider)?.count, 1);
+    expect(container.read(requestNoticesProvider), isEmpty);
+  }
+
+  testWidgets('세션이 만료돼 대기열이 버려져도 못 보낸 비상 신고 안내가 남고 승하차 건은 세지 않는다', (
+    tester,
+  ) async {
+    final container = await launchApp(tester);
+    container.read(routerRefreshNotifierProvider);
+    container.read(currentUserRoleProvider.notifier).state = UserRole.driver;
+    await queueRiderAndEmergency(tester, container);
+
+    endSessionAsExpired(container.read(_refProvider));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 200)),
+    );
+    await tester.pumpAndSettle();
+
+    // 로그인 화면 안내는 건수 · 비상을 자기 문장으로 알리고, 기기 저장 안내는 비상 건만 센다.
+    expect(
+      container.read(sessionExpiredNoticeProvider),
+      allOf(contains('2건'), contains('비상 신고 1건')),
+    );
+    await expectOnlyEmergencyKeptAfterRestart(tester);
+  });
+
+  testWidgets('로그아웃으로 대기열이 버려져도 못 보낸 비상 신고 안내가 남고 승하차 건은 세지 않는다', (
+    tester,
+  ) async {
+    final container = await launchApp(tester);
+    container.read(routerRefreshNotifierProvider);
+    container.read(currentUserRoleProvider.notifier).state = UserRole.driver;
+    await queueRiderAndEmergency(tester, container);
+
+    await tester.runAsync(() async {
+      await signOut(capturedRef);
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+    });
+    await tester.pumpAndSettle();
+
+    await expectOnlyEmergencyKeptAfterRestart(tester);
+  });
+
   testWidgets('[확인] 을 누르면 사라지고 다시 켜도 나오지 않는다', (tester) async {
     var container = await launchApp(tester);
     await rejectEmergency(tester, container);
