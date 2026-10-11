@@ -291,6 +291,8 @@ void main() {
       ),
     ], () => countWhenCleared = container.read(unsentEmergencyProvider)?.count);
     container = await launchApp(tester, queue: queue);
+    // 앞 줄은 대입이라 연쇄 호출로 못 묶는다.
+    // ignore: cascade_invocations
     container.read(routerRefreshNotifierProvider);
     container.read(currentUserRoleProvider.notifier).state = UserRole.driver;
 

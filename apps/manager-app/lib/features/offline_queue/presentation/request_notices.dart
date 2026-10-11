@@ -114,7 +114,7 @@ class RequestNoticesNotifier extends Notifier<List<RequestNotice>> {
 }
 
 /// 서버가 거절해 지워진 비상 신고의 기기 저장 안내 — 사용자가 [확인] 할 때까지 앱을 끄거나 로그아웃해도 남는다
-/// (Ruling 886). 안내([state])는 곧바로 바꾸고 저장소 읽기 · 쓰기만 한 줄로 이어 붙인다 — 저장소가 실패하거나
+/// (Ruling 886). 안내(`state`)는 곧바로 바꾸고 저장소 읽기 · 쓰기만 한 줄로 이어 붙인다 — 저장소가 실패하거나
 /// 응답하지 않아도 이번 실행의 안내와 뒤따르는 작업이 막히지 않는다.
 final NotifierProvider<UnsentEmergencyNotifier, UnsentEmergency?>
 unsentEmergencyProvider =

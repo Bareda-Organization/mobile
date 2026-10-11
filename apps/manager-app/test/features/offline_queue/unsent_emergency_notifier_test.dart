@@ -19,9 +19,10 @@ class _FixedClock implements Clock {
   DateTime now() => _now;
 }
 
-/// 첫 쓰기는 예외를 던지고 이후는 저장하는 저장소 — 읽기는 [readGate] 가 풀어 줄 때까지 끝나지 않는다(없으면 곧바로 [saved]).
+/// 첫 쓰기는 예외를 던지고 이후는 저장하는 저장소.
+/// 읽기는 [readGate] 가 풀어 줄 때까지 끝나지 않는다(없으면 곧바로 [saved]).
 class _FlakyStore implements UnsentEmergencyStore {
-  new({this.saved, this.readGate, this.failFirstWrite = false});
+  new({this.readGate, this.failFirstWrite = false});
 
   UnsentEmergency? saved;
   final Completer<UnsentEmergency?>? readGate;
@@ -66,11 +67,14 @@ void main() {
   test('저장소 쓰기가 예외를 던져도 다음 add 가 반영된다', () async {
     final store = _FlakyStore(failFirstWrite: true);
     final container = open(store);
-    final notifier = container.read(unsentEmergencyProvider.notifier);
 
-    notifier.add(count: 1, contact: null);
+    container
+        .read(unsentEmergencyProvider.notifier)
+        .add(count: 1, contact: null);
     await pumpEventQueue();
-    notifier.add(count: 1, contact: null);
+    container
+        .read(unsentEmergencyProvider.notifier)
+        .add(count: 1, contact: null);
     await pumpEventQueue();
 
     expect(container.read(unsentEmergencyProvider)?.count, 2);
