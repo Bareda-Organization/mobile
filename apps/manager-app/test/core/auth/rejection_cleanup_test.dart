@@ -3,14 +3,19 @@ import 'dart:typed_data';
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:dio/dio.dart';
 import 'package:drift/native.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/auth/academy_contact_store.dart';
 import 'package:manager_app/core/auth/account_session.dart';
+import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/core/auth/last_session_store.dart';
+import 'package:manager_app/core/auth/user_role.dart';
+import 'package:manager_app/core/launcher/device_launchers.dart';
 import 'package:manager_app/features/auth/domain/auth_repository.dart';
 import 'package:manager_app/features/home/data/run_summary_store.dart';
+import 'package:manager_app/features/offline_queue/data/models/pending_request_summary.dart';
 import 'package:manager_app/features/offline_queue/data/offline_queue_database.dart';
 import 'package:manager_app/features/offline_queue/data/unsent_emergency_store.dart';
 import 'package:manager_app/features/offline_queue/presentation/request_notices.dart';
@@ -87,6 +92,7 @@ void main() {
     AuthRepository? auth,
     HttpClientAdapter? adapter,
     AcademyContactStore? contacts,
+    List<Uri>? opened,
   }) {
     final container = ProviderContainer(
       overrides: [
@@ -99,6 +105,11 @@ void main() {
         academyContactStoreProvider.overrideWithValue(
           contacts ?? FakeAcademyContactStore(),
         ),
+        if (opened != null)
+          uriOpenerProvider.overrideWithValue((uri) async {
+            opened.add(uri);
+            return true;
+          }),
         if (auth != null) authRepositoryProvider.overrideWithValue(auth),
         if (adapter != null)
           apiClientProvider.overrideWith(
@@ -235,5 +246,110 @@ void main() {
 
     expect(container.read(requestNoticesProvider), isEmpty);
     expect(container.read(unsentEmergencyProvider), isNull);
+  });
+
+  // Ruling 886 — 앞 계정의 승하차 안내(학생 이름)는 다음 계정에 보이지 않게 비우고, 학생 이름이 없는 비상 안내는 남긴다.
+  test('계정 정리 뒤 지운 처리 안내는 비고 비상 신고 안내는 남는다', () async {
+    final container = build()..read(routerRefreshNotifierProvider);
+    container.read(currentUserRoleProvider.notifier).state = UserRole.driver;
+    DroppedRequest dropped(String endpoint) => DroppedRequest(
+      request: PendingRequestSummary(
+        id: 1,
+        endpoint: endpoint,
+        method: 'POST',
+        payload: '{}',
+        createdAt: DateTime(2026, 10, 11),
+      ),
+      statusCode: 403,
+      code: 'FORBIDDEN',
+      message: 'm',
+    );
+    container.read(requestNoticesProvider.notifier).addDropped([
+      dropped('/runs/run-A/riders/7'),
+      dropped('/runs/run-A/emergency'),
+    ]);
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+    expect(container.read(requestNoticesProvider), hasLength(1));
+    expect(container.read(unsentEmergencyProvider)?.count, 1);
+
+    container.read(currentUserRoleProvider.notifier).state = null;
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+
+    expect(container.read(requestNoticesProvider), isEmpty);
+    expect(container.read(unsentEmergencyProvider)?.count, 1);
+    expect(unsent.saved?.count, 1);
+  });
+
+  // 안내의 학원 전화 단추 — 번호는 기기에 저장된 학원 연락처에서 온다(정리 때 메모리 번호는 이미 비었다).
+  group('정리 안내의 학원 전화 단추', () {
+    final tel = Uri(scheme: 'tel', path: '032-000-1100');
+
+    Future<void> tapCallButton(
+      WidgetTester tester,
+      ProviderContainer container,
+    ) async {
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp(
+            builder: (context, child) => RequestNoticesHost(child: child!),
+            home: const Scaffold(body: Text('본 화면')),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('전화'));
+      await tester.pump();
+    }
+
+    testWidgets('앱을 켤 때 /me 403 으로 정리하면 학원 전화 단추가 번호를 연다', (tester) async {
+      final opened = <Uri>[];
+      final container = build(
+        auth: _FailingMe(
+          const Failure.api(
+            statusCode: 403,
+            code: 'AUTH_REJECTED',
+            message: 'm',
+          ),
+        ),
+        contacts: FakeAcademyContactStore('032-000-1100'),
+        opened: opened,
+      );
+      await tester.runAsync(() async {
+        await seedDeviceState(container);
+        await queueEmergency(container);
+        await container.read(authBootstrapProvider.future);
+        await expectEverythingForgotten(container);
+      });
+
+      await tapCallButton(tester, container);
+
+      expect(opened, [tel]);
+    });
+
+    testWidgets('대기·거절 게이트로 정리하면 학원 전화 단추가 번호를 연다', (tester) async {
+      final opened = <Uri>[];
+      // 게이트 이벤트는 스트림이라 실제 시계 구역에서 만들고 돌려야 전달된다.
+      late ProviderContainer container;
+      await tester.runAsync(() async {
+        container = build(
+          adapter: _PendingAdapter(),
+          contacts: FakeAcademyContactStore('032-000-1100'),
+          opened: opened,
+        )..read(routerRefreshNotifierProvider);
+        await seedDeviceState(container);
+        await queueEmergency(container);
+        await container
+            .read(apiClientProvider)
+            .dio
+            .get<dynamic>('/x')
+            .then<void>((_) {}, onError: (_) {});
+        await expectEverythingForgotten(container);
+      });
+
+      await tapCallButton(tester, container);
+
+      expect(opened, [tel]);
+    });
   });
 }
