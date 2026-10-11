@@ -192,9 +192,7 @@ void main() {
     expect(find.text('학원에서 임시로 취소한 회차입니다. 학원에 문의해 주세요'), findsOneWidget);
   });
 
-  testWidgets('토글이 CHANGE_LIMIT_REACHED 로 실패하면 한도 소진 문구를 보여준다', (
-    tester,
-  ) async {
+  testWidgets('토글이 CHANGE_LIMIT_REACHED 로 실패하면 한도 소진 문구를 보여준다', (tester) async {
     await _pumpWith(
       tester,
       _ThrowingRunRepository(
@@ -250,9 +248,7 @@ void main() {
     expect(find.text('출발 30분 전부터는 탑승으로 되돌릴 수 없습니다'), findsOneWidget);
   });
 
-  testWidgets('canToggle 이 false 면 등원 여부 토글 스위치 자체가 렌더링되지 않는다', (
-    tester,
-  ) async {
+  testWidgets('canToggle 이 false 면 등원 여부 토글 스위치 자체가 렌더링되지 않는다', (tester) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -399,9 +395,7 @@ void main() {
     expect(find.textContaining('바로 반영'), findsNothing);
   });
 
-  testWidgets('P4 스위치 줄을 눌러도 지도 화면으로 이동하지 않는다 — 카드 윗부분은 이동한다', (
-    tester,
-  ) async {
+  testWidgets('P4 스위치 줄을 눌러도 지도 화면으로 이동하지 않는다 — 카드 윗부분은 이동한다', (tester) async {
     final pushed = <String>[];
     await pumpRecording(tester, pushed: pushed);
 
@@ -467,8 +461,34 @@ void main() {
     await tester.tap(find.text('승인 요청 보내기'));
     await tester.pumpAndSettle();
 
+    expect(find.text('학원 관리자 승인 대기 중입니다 (마감 9월 12일 07:30).'), findsOneWidget);
+  });
+
+  // R53 t3 A1 · Ruling 870 — ③ 즉시 반영은 운행이 시작되지 않았어도(출발+10분 경과) 난다. "운행이 시작돼" 로
+  // 단정하면 사실과 다른 안내가 된다.
+  testWidgets('A1 ③ 즉시 반영 안내는 운행 시작을 단정하지 않는다', (tester) async {
+    await pumpRecording(
+      tester,
+      runStatus: RunStatus.confirmed,
+      confirmed: true,
+      recording: _RecordingRunRepository(
+        result: const RunIntentResult(
+          result: RunIntentApplyResult.appliedNoReroute,
+          riding: true,
+          riderStatus: RiderStatus.waiting,
+          changeQuotaLeft: 0,
+        ),
+      ),
+    );
+
+    await tester.tap(find.byType(BaraedaSwitch));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('승인 요청 보내기'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('운행이 시작'), findsNothing);
     expect(
-      find.text('학원 관리자 승인 대기 중입니다 (마감 9월 12일 07:30).'),
+      find.text('승인 요청을 받는 시간이 지나 바로 반영됐어요. 노선은 바뀌지 않아요.'),
       findsOneWidget,
     );
   });

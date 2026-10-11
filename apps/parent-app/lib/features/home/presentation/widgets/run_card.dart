@@ -112,7 +112,8 @@ class _RunCardState extends ConsumerState<RunCard> {
           RunIntentApplyResult.applied => null,
           RunIntentApplyResult.pendingApproval =>
             '학원 관리자 승인 대기 중입니다${deadlineNote(result.deadlineAt)}.',
-          RunIntentApplyResult.appliedNoReroute => '운행이 시작돼 노선은 바뀌지 않고 반영됐습니다.',
+          RunIntentApplyResult.appliedNoReroute =>
+            '승인 요청을 받는 시간이 지나 바로 반영됐어요. 노선은 바뀌지 않아요.',
         };
         _bannerTone = AlertTone.info;
       });
