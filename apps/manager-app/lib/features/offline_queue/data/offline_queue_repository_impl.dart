@@ -51,9 +51,8 @@ class OfflineQueueRepositoryImpl implements OfflineQueueRepository {
   final Dio _dio;
   final Clock _clock;
 
-  /// 재생이 확정 거절로 행을 지울 때마다 그 내용을 받는다(Ruling 882) — 30초 자동 재생 · 쓰기 직전 재생 · 수동
-  /// 재시도가
-  /// 모두 [_replay] 를 거치므로 어느 경로로 지워져도 한 곳에서 알린다.
+  /// 재생이 확정 거절로 행을 지울 때마다 그 내용을 받는다(Ruling 882) — 30초 자동 재생 · 쓰기 직전 재생 ·
+  /// 수동 재시도가 모두 [_replay] 를 거치므로 어느 경로로 지워져도 한 곳에서 알린다.
   final void Function(List<DroppedRequest> dropped)? _onDropped;
 
   @override
@@ -244,7 +243,7 @@ class OfflineQueueRepositoryImpl implements OfflineQueueRepository {
     }
     final stillPending =
         rows.length - succeeded - dropped.length - failedPermanently;
-    if (dropped.isNotEmpty) _onDropped?.call(dropped);
+    if (dropped.isNotEmpty) _notifyDropped(dropped);
     return ReplayResult(
       succeeded: succeeded,
       stillPending: stillPending,
@@ -254,9 +253,18 @@ class OfflineQueueRepositoryImpl implements OfflineQueueRepository {
     );
   }
 
+  /// 안내 콜백이 던진 예외는 삼킨다 — 행은 이미 지워졌고 안내 실패가 재생 호출부(쓰기 직전 재생 · 30초 재생)를
+  /// 깨뜨리면 안 된다. 지운 내용은 [ReplayResult.dropped] 로도 나간다.
+  void _notifyDropped(List<DroppedRequest> dropped) {
+    try {
+      _onDropped?.call(dropped);
+    } on Object {
+      // 안내를 못 남겨도 재생 결과는 그대로 돌려준다.
+    }
+  }
+
   /// 확정 거절로 지우는 행을 사용자에게 남길 내용으로 옮긴다 — 서버 본문(`{"error":{"code","message"}}`)이
-  /// JSON 이
-  /// 아니면 코드 · 문구는 빈 문자열이다.
+  /// JSON 이 아니거나 코드 · 문구가 문자열이 아니면 빈 문자열이다.
   DroppedRequest _toDropped(PendingRequest row, DioException exception) {
     final data = exception.response?.data;
     final error = data is Map ? data['error'] : null;
@@ -269,8 +277,12 @@ class OfflineQueueRepositoryImpl implements OfflineQueueRepository {
         createdAt: row.createdAt,
       ),
       statusCode: exception.response?.statusCode ?? 0,
-      code: error is Map ? (error['code'] as String? ?? '') : '',
-      message: error is Map ? (error['message'] as String? ?? '') : '',
+      code: error is Map && error['code'] is String
+          ? error['code'] as String
+          : '',
+      message: error is Map && error['message'] is String
+          ? error['message'] as String
+          : '',
     );
   }
 

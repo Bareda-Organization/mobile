@@ -24,10 +24,13 @@ import '../../support/fake_unsent_emergency_store.dart';
 
 /// 모든 요청에 [status] 와 에러 본문으로 답한다 — 서버의 확정 거절.
 class _RejectAdapter implements HttpClientAdapter {
-  new(this.status, {this.code = 'RIDER_TRANSITION_NOT_ALLOWED'});
+  new(this.status, {this.code = 'RIDER_TRANSITION_NOT_ALLOWED', this.body});
 
   final int status;
   final String code;
+
+  /// 주면 에러 본문을 이 문자열 그대로 보낸다 — 모양이 어긋난 본문을 흉내 낸다.
+  final String? body;
 
   @override
   void close({bool force = false}) {}
@@ -38,7 +41,7 @@ class _RejectAdapter implements HttpClientAdapter {
     Stream<Uint8List>? requestStream,
     Future<void>? cancelFuture,
   ) async => ResponseBody.fromString(
-    '{"error":{"code":"$code","message":"서버 문구"}}',
+    body ?? '{"error":{"code":"$code","message":"서버 문구"}}',
     status,
     headers: {
       Headers.contentTypeHeader: [Headers.jsonContentType],
@@ -60,11 +63,15 @@ void main() {
   });
   tearDown(() => database.close());
 
-  OfflineQueueRepositoryImpl repo(int status) => OfflineQueueRepositoryImpl(
+  OfflineQueueRepositoryImpl repo(
+    int status, {
+    String? body,
+    void Function(List<DroppedRequest>)? onDropped,
+  }) => OfflineQueueRepositoryImpl(
     database: database,
     dio: Dio(BaseOptions(baseUrl: 'https://example.invalid'))
-      ..httpClientAdapter = _RejectAdapter(status),
-    onDropped: dropped.add,
+      ..httpClientAdapter = _RejectAdapter(status, body: body),
+    onDropped: onDropped ?? dropped.add,
   );
 
   Future<void> queue(
@@ -112,6 +119,36 @@ void main() {
 
       expect(dropped, hasLength(1));
       expect(dropped.single.single.request.endpoint, '/runs/run-A/riders/7');
+    });
+
+    test('안내 콜백이 예외를 던져도 재생은 끝까지 가고 지운 행은 결과에 나온다', () async {
+      // 두 행을 쌓는 동안에는 서버가 거절하지 않게(503) 하고, 재생에서만 거절하게 저장소를 바꿔 쓴다.
+      final seeding = repo(503);
+      await queue(seeding, '/runs/run-A/riders/7');
+      await queue(seeding, '/runs/run-A/riders/8');
+      final repository = repo(409, onDropped: (_) => throw StateError('안내 실패'));
+
+      final result = await repository.replayPending();
+
+      expect(result.droppedPermanently, 2);
+      expect(await repository.fetchPending(), isEmpty);
+    });
+
+    test('에러 본문의 코드 · 문구가 문자열이 아니어도 재생이 멈추지 않고 빈 문자열로 남는다', () async {
+      final seeding = repo(503);
+      await queue(seeding, '/runs/run-A/riders/7');
+      await queue(seeding, '/runs/run-A/riders/8');
+      final repository = repo(
+        409,
+        body: '{"error":{"code":123,"message":{"x":1}}}',
+      );
+
+      final result = await repository.replayPending();
+
+      expect(result.droppedPermanently, 2);
+      expect(result.dropped.first.code, '');
+      expect(result.dropped.first.message, '');
+      expect(await repository.fetchPending(), isEmpty);
     });
 
     test('서버가 5xx 로 답해 남겨 둔 행은 지운 것이 아니므로 알리지 않는다', () async {
