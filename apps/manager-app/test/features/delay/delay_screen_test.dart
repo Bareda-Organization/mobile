@@ -9,6 +9,7 @@ import 'package:manager_app/core/auth/role_policy.dart';
 import 'package:manager_app/core/auth/user_role.dart';
 import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
+import 'package:manager_app/core/time/run_time_labels.dart';
 import 'package:manager_app/features/delay/data/models/delay_request.dart';
 import 'package:manager_app/features/delay/data/models/delay_result.dart';
 import 'package:manager_app/features/delay/domain/delay_repository.dart';
@@ -233,6 +234,42 @@ void main() {
         findsOneWidget,
       );
     });
+
+    // R53 A8 · Ruling 856 — 받는 사람 줄이 방향별 실제 수신자와 같다(현재 승하차지 이후 · 등원 미탑승 / 하원 탑승 중).
+    for (final (direction, expected) in [
+      (RunDirection.toAcademy, '현재 승하차지 이후의 아직 탑승하지 않은 학생 · 학부모(보호자 전원)'),
+      (
+        RunDirection.fromAcademy,
+        '현재 승하차지 이후의 아직 하차하지 않은(탑승 중) 학생 · 학부모(보호자 전원)',
+      ),
+    ]) {
+      testWidgets('${directionLabel(direction)} 회차의 받는 사람 줄은 수신자 규칙대로다', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              todayRunsProvider.overrideWith(
+                (ref) async => [
+                  managerRunFixture(
+                    status: RunStatus.moving,
+                    direction: direction,
+                  ),
+                ],
+              ),
+              selectedRunIdProvider.overrideWith((ref) => runId),
+              roleCapabilitiesProvider.overrideWithValue(
+                RoleCapabilities.of(UserRole.escort),
+              ),
+            ],
+            child: const MaterialApp(home: DelayScreen()),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('받는 사람 · 학원 관계자 + $expected'), findsOneWidget);
+      });
+    }
 
     testWidgets('문구를 입력하면 학부모·학생에게 나갈 문장을 그대로 보여준다', (tester) async {
       await pumpEscort(tester);
