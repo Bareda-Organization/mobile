@@ -17,6 +17,7 @@ import 'package:manager_app/features/drive_mode/presentation/drive_mode_provider
 import 'package:manager_app/features/emergency/presentation/emergency_providers.dart';
 import 'package:manager_app/features/home/data/run_summary_store.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
+import 'package:manager_app/features/offline_queue/presentation/request_notices.dart';
 import 'package:manager_app/features/position/presentation/position_transmitter.dart';
 import 'package:manager_app/features/roster/presentation/roster_providers.dart';
 import 'package:manager_app/features/route_map/presentation/route_providers.dart';
@@ -90,13 +91,20 @@ void _forgetDeviceSession(Ref ref) {
 /// 앱 시작 `/me` 거절 · 대기·거절 게이트). 명단 저장본 · 암호 키 · 회차 요약 · 저장 역할 · 대기열을 한 범위로 지운다.
 /// 다음 계정이 이전 계정의 회차 목록·선택값을 보거나, 이전 계정의 대기 요청을 자기 토큰으로 재생하지
 /// 못하게 한다. 큐에는 사용자 열이 없어 비우는 수밖에 없다 — 로그아웃하면 미전송 처리는 버려진다.
-void _clearAccountScopedState(Ref ref) {
+///
+/// [announceDiscarded] 는 로그인 화면의 만료 안내가 건수를 알려 주지 못하는 경로(앱 시작 `/me` 거절 · 대기·거절 게이트)에서
+/// 켠다 — 버려지는 건수와 비상 신고는 학원에 직접 알리라는 안내를 앱 맨 위에 남긴다(Ruling 882).
+void _clearAccountScopedState(Ref ref, {bool announceDiscarded = false}) {
+  // 메모리의 학원 연락처는 아래에서 비워지므로 안내에 쓸 번호를 먼저 잡는다.
+  final contact = ref.read(academyContactProvider);
   ref
     ..invalidate(todayRunsProvider)
     ..invalidate(emergencyListProvider)
     ..invalidate(rosterProvider)
     ..invalidate(driveModeRosterProvider)
-    ..invalidate(routeProvider);
+    ..invalidate(routeProvider)
+    // 앞 계정의 지운 처리 안내는 다음 사람이 보지 않게 비운다.
+    ..invalidate(requestNoticesProvider);
   ref.read(selectedRunIdProvider.notifier).state = null;
   ref.read(mustChangePasswordProvider.notifier).state = false;
   ref.read(unverifiedSessionProvider.notifier).state = false;
@@ -105,30 +113,62 @@ void _clearAccountScopedState(Ref ref) {
   _forgetDeviceSession(ref);
   ref.read(transmissionEndedRunIdProvider.notifier).state = null;
   ref.read(lastArriveResultProvider.notifier).state = null;
-  unawaited(_discardOfflineQueue(ref));
+  unawaited(
+    _discardOfflineQueue(
+      ref,
+      announceDiscarded: announceDiscarded,
+      contact: contact,
+    ),
+  );
 }
 
 /// 기기에 남긴 이 계정의 것을 지운다. **명단(학생 특이사항 포함)을 먼저** 지운다 — 대기열 쪽이 예외를 던져도
 /// 개인정보는 남지 않는다(M-2). 명단 삭제가 실패해도 대기열 정리는 그대로 이어진다(`finally`).
-Future<void> _discardOfflineQueue(Ref ref) async {
+Future<void> _discardOfflineQueue(
+  Ref ref, {
+  required bool announceDiscarded,
+  required String? contact,
+}) async {
   try {
     // 기기에 저장한 명단도 이 계정의 것이다(M-M3) — 다음 계정이 보면 안 된다.
     await ref.read(rosterCacheProvider).clear();
   } finally {
-    await _discardPendingRequests(ref);
+    await _discardPendingRequests(
+      ref,
+      announceDiscarded: announceDiscarded,
+      contact: contact,
+    );
   }
 }
 
 /// 대기 요청을 버린다. 세션이 만료돼서 버리는 것이면(로그인 화면에 만료 안내가 있다) 버려지는 건수를 그 안내에
 /// 더한다 — 직접 로그아웃은 확인 창이 이미 알려 준다(`Ruling 388`). 비상 신고가 섞여 있으면 따로 밝힌다:
-/// 서버에 전달되지 못했으니 학원에 직접 알려야 한다(`Ruling 616`).
-Future<void> _discardPendingRequests(Ref ref) async {
+/// 서버에 전달되지 못했으니 학원에 직접 알려야 한다(`Ruling 616`). 만료 안내가 없는 경로는
+/// [announceDiscarded] 일 때
+/// 앱 맨 위 안내([requestNoticesProvider])로 알린다(Ruling 882).
+Future<void> _discardPendingRequests(
+  Ref ref, {
+  required bool announceDiscarded,
+  required String? contact,
+}) async {
   final queue = ref.read(offlineQueueRepositoryProvider);
   final discarded = await queue.fetchPending();
   await queue.clear();
-  final notice = ref.read(sessionExpiredNoticeProvider);
-  if (notice == null || discarded.isEmpty) return;
+  if (discarded.isEmpty) return;
   final emergencies = discarded.where((request) => request.isEmergency).length;
+  final notice = ref.read(sessionExpiredNoticeProvider);
+  if (notice == null) {
+    if (!announceDiscarded) return;
+    ref
+        .read(requestNoticesProvider.notifier)
+        .addDiscarded(
+          count: discarded.length,
+          emergencies: emergencies,
+          contact:
+              contact ?? await ref.read(academyContactStoreProvider).read(),
+        );
+    return;
+  }
   final emergencyNote = emergencies == 0
       ? ''
       : ' — 비상 신고 $emergencies건이 서버에 전달되지 못했으니 '
@@ -167,7 +207,7 @@ final authBootstrapProvider = FutureProvider<void>(retry: (_, _) => null, (
       rethrow;
     }
     // 서버의 거절(401 · 403) — 로그인 화면으로 남기고, 이 기기에 남긴 이 계정의 것은 로그아웃과 같은 범위로 지운다.
-    _clearAccountScopedState(ref);
+    _clearAccountScopedState(ref, announceDiscarded: true);
   } on Object {
     // 재발급까지 실패하면 인터셉터가 이미 토큰을 지웠다(§ api_client.dart
     // onError) — 여기서는 로그인 화면으로 남기는 것으로 충분하다.
@@ -400,7 +440,7 @@ class RouterRefreshNotifier extends ChangeNotifier {
         AccountGateReason.rejected => AccountStatus.rejected,
       };
       // 대기 · 거절 계정은 통신 두절로 앱을 켜도 기억한 역할로 들어갈 수 없고, 기기에 남은 명단도 쓸 수 없다.
-      _clearAccountScopedState(_ref);
+      _clearAccountScopedState(_ref, announceDiscarded: true);
     });
     // 재발급이 401 로 거절돼(REST) 로그인이 풀렸다 — WS `sessionExpired` 와 같은 처리(K-02①).
     // 토큰은 재발급기가 이미 지웠으므로 서버에 알릴 것이 없다.

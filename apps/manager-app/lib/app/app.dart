@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:manager_app/app/router.dart';
 import 'package:manager_app/core/auth/account_session.dart';
 import 'package:manager_app/features/offline_queue/presentation/offline_queue_auto_sync.dart';
+import 'package:manager_app/features/offline_queue/presentation/request_notices.dart';
 import 'package:manager_app/features/position/presentation/position_transmitter.dart';
 
 /// 기사·동승자 앱 진입점. **라이트 기본** — 운행 중 화면(`drive*` · 마지막 정차 · 외부 내비 · 오프라인)만
@@ -68,6 +69,9 @@ class BaraedaManagerApp extends ConsumerWidget {
         debugShowCheckedModeBanner: false,
         theme: BaraedaTheme.light(),
         routerConfig: router,
+        // 서버로 가지 못하고 지워진 처리의 안내는 어느 화면에서든 확인할 때까지 맨 위에 남는다(Ruling 882).
+        builder: (context, child) =>
+            RequestNoticesHost(child: child ?? const SizedBox.shrink()),
       ),
     );
   }

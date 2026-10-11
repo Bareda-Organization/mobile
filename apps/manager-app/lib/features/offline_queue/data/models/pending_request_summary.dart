@@ -89,6 +89,30 @@ class PendingRequestSummary {
   }
 }
 
+/// 재생 중 서버가 확정 거절(4xx)해 큐에서 지운 요청 한 건 — 무엇이 지워졌는지(요청) · 왜 거절됐는지(상태 · 코드 · 서버
+/// 문구)를
+/// 사용자에게 남기는 근거다(Ruling 882).
+class DroppedRequest {
+  const new({
+    required this.request,
+    required this.statusCode,
+    required this.code,
+    required this.message,
+  });
+
+  /// 지워진 요청.
+  final PendingRequestSummary request;
+
+  /// 서버가 돌려준 HTTP 상태(4xx).
+  final int statusCode;
+
+  /// 서버 에러 코드 — 본문이 JSON 이 아니면 빈 문자열.
+  final String code;
+
+  /// 서버 에러 문구 — 본문이 JSON 이 아니면 빈 문자열.
+  final String message;
+}
+
 /// `OfflineQueueRepository.replayPending` 결과 — 큐 화면이 "N건 처리, M건
 /// 대기 중" 같은 안내에 쓴다.
 class ReplayResult {
@@ -97,6 +121,7 @@ class ReplayResult {
     required this.stillPending,
     required this.droppedPermanently,
     this.failedPermanently = 0,
+    this.dropped = const [],
   });
 
   /// 재전송이 2xx 로 끝나 큐에서 빠진 건수.
@@ -111,4 +136,7 @@ class ReplayResult {
 
   /// 서버가 5xx 를 시도·나이 상한까지 되풀이해 이번 재생에서 영구 실패로 뺀 건수 — 행은 큐 화면에 남는다.
   final int failedPermanently;
+
+  /// [droppedPermanently] 로 센 요청의 내용 — 건수만으로는 무엇이 지워졌는지 알 수 없다(Ruling 882).
+  final List<DroppedRequest> dropped;
 }

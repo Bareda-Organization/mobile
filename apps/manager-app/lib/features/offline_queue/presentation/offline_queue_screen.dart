@@ -10,6 +10,7 @@ import 'package:manager_app/core/ui/bottom_action_bar.dart';
 import 'package:manager_app/core/ui/manager_header.dart';
 import 'package:manager_app/features/offline_queue/data/models/pending_request_summary.dart';
 import 'package:manager_app/features/offline_queue/presentation/offline_queue_providers.dart';
+import 'package:manager_app/features/offline_queue/presentation/request_notices.dart';
 import 'package:manager_app/features/roster/presentation/roster_providers.dart';
 
 /// OfflineQueueScreen — 오프라인 큐 조회·수동 재전송 (API_SPEC §1.7, M-06,
@@ -211,19 +212,10 @@ class _OfflineQueueScreenState extends ConsumerState<OfflineQueueScreen> {
 
   /// 처리 이름에 학생 이름을 덧붙인다(M2-03) — 페이로드에 이름이 없어, 이미 받아 둔 명단(홈·명단 화면이 채운
   /// 캐시)에서 같은 회차·같은 승차 기록을 찾는다. 명단을 새로 받지 않고(오프라인일 수 있다), 못 찾으면 `null`.
-  String? _studentNameOf(PendingRequestSummary item) {
-    final match = RegExp(r'^/runs/([^/]+)/riders/([^/]+)$')
-        .firstMatch(item.endpoint);
-    if (match == null || !ref.exists(rosterProvider)) return null;
-    final roster = ref.read(rosterProvider).value;
-    if (roster == null || roster.runId != match[1]) return null;
-    for (final stop in roster.stops) {
-      for (final student in stop.students) {
-        if (student.riderId == match[2]) return student.name;
-      }
-    }
-    return null;
-  }
+  String? _studentNameOf(PendingRequestSummary item) => rosterNameOf(
+    ref.exists(rosterProvider) ? ref.read(rosterProvider).value : null,
+    item,
+  );
 
   String _titleOf(PendingRequestSummary item) {
     final name = _studentNameOf(item);

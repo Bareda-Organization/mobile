@@ -12,6 +12,7 @@ import 'package:manager_app/core/auth/last_session_store.dart';
 import 'package:manager_app/features/auth/domain/auth_repository.dart';
 import 'package:manager_app/features/home/data/run_summary_store.dart';
 import 'package:manager_app/features/offline_queue/data/offline_queue_database.dart';
+import 'package:manager_app/features/offline_queue/presentation/request_notices.dart';
 
 import '../../support/fake_academy_contact_store.dart';
 import '../../support/fake_last_session_store.dart';
@@ -162,5 +163,68 @@ void main() {
         .then<void>((_) {}, onError: (_) {});
 
     await expectEverythingForgotten(container);
+  });
+
+  /// 비상 신고 한 건을 더 쌓는다 — 서버에 닿지 못한 채 기기에만 있는 신고.
+  Future<void> queueEmergency(ProviderContainer container) => container
+      .read(offlineQueueRepositoryProvider)
+      .sendOrQueue<void>(
+        endpoint: '/runs/run-A/emergency',
+        method: 'POST',
+        payload: const {'client_key': 'E', 'type': 'accident'},
+        // Failure 는 Exception/Error 를 상속하지 않는다.
+        // ignore: only_throw_errors
+        send: () => throw const Failure.network(),
+      );
+
+  // Ruling 882 — 로그인 화면의 만료 안내가 건수를 알리지 못하는 두 경로(앱 시작 /me 403 · 대기·거절 게이트)도
+  // 지운 건수와 "비상은 학원에 직접" 안내를 앱 맨 위에 남긴다.
+  test('앱을 켤 때 /me 403 으로 정리하면 버려진 처리 건수와 비상 신고 안내가 남는다', () async {
+    final container = build(
+      auth: _FailingMe(
+        const Failure.api(statusCode: 403, code: 'AUTH_REJECTED', message: 'm'),
+      ),
+    );
+    await seedDeviceState(container);
+    await queueEmergency(container);
+
+    await container.read(authBootstrapProvider.future);
+    await expectEverythingForgotten(container);
+
+    final notice = container.read(requestNoticesProvider).single;
+    expect(notice.title, contains('2건'));
+    expect(notice.emergency, isTrue);
+    expect(notice.body, contains('학원에 직접 알려'));
+  });
+
+  test('대기·거절 게이트로 정리하면 버려진 처리 건수와 비상 신고 안내가 남는다', () async {
+    final container = build(adapter: _PendingAdapter())
+      ..read(routerRefreshNotifierProvider);
+    await seedDeviceState(container);
+    await queueEmergency(container);
+
+    await container
+        .read(apiClientProvider)
+        .dio
+        .get<dynamic>('/x')
+        .then<void>((_) {}, onError: (_) {});
+    await expectEverythingForgotten(container);
+
+    final notice = container.read(requestNoticesProvider).single;
+    expect(notice.title, contains('2건'));
+    expect(notice.emergency, isTrue);
+  });
+
+  test('버릴 처리가 없으면 안내를 남기지 않는다', () async {
+    final container = build(
+      auth: _FailingMe(
+        const Failure.api(statusCode: 403, code: 'AUTH_REJECTED', message: 'm'),
+      ),
+    );
+
+    await container.read(authBootstrapProvider.future);
+    await expectEverythingForgotten(container);
+
+    expect(container.read(requestNoticesProvider), isEmpty);
   });
 }
