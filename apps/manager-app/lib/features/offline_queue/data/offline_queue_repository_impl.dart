@@ -52,7 +52,8 @@ class OfflineQueueRepositoryImpl implements OfflineQueueRepository {
   final Clock _clock;
 
   /// 재생이 확정 거절로 행을 지울 때마다 그 행 하나의 내용을 바로 받는다
-  /// (Ruling 882 · R53 B-6①) — 30초 자동 재생 · 쓰기 직전 재생 · 수동 재시도가 모두 [_replay] 를 거치므로 어느 경로로 지워져도 한 곳에서 알린다.
+  /// (Ruling 882 · R53 B-6①) — 30초 자동 재생 · 쓰기 직전 재생 · 수동 재시도가 모두
+  /// [_replay] 를 거치므로 어느 경로로 지워져도 한 곳에서 알린다.
   final void Function(List<DroppedRequest> dropped)? _onDropped;
 
   @override
