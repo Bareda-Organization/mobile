@@ -52,7 +52,7 @@ class _PendingApprovalScreenState extends ConsumerState<PendingApprovalScreen> {
   Future<SignupStatusResponse> _loadStatus() async {
     final status = await ref.read(authRepositoryProvider).signupStatus();
     final contact = status.academyContact;
-    if (contact != null) {
+    if (contact != null && contact.trim().isNotEmpty) {
       unawaited(ref.read(academyContactStorageProvider).save(contact));
     }
     if (mounted) _checkedAt = ref.read(clockProvider).now();

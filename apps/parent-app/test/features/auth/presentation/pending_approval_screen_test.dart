@@ -34,6 +34,9 @@ class _StubAuthRepository implements AuthRepository {
   /// (`academy_contact: null` — API_SPEC §2.3, Ruling 781).
   bool academyContactMissing = false;
 
+  /// 학원 문의처 값 — 공백 응답 시험이 바꿔 끼운다.
+  String academyContactValue = '02-000-0000';
+
   /// 첫 조회가 돌려줄 상태 — 거절 화면 시험이 쓴다. 두 번째 조회부터는 [statusFromSecondCall] 이다
   /// (재신청하면 서버도 다시 대기로 돌려놓는다).
   AccountStatus firstStatus = AccountStatus.pending;
@@ -72,7 +75,7 @@ class _StubAuthRepository implements AuthRepository {
       academyRegion: '서울',
       academyCode: 'A-001',
       requestedAt: DateTime(2026, 9),
-      academyContact: '02-000-0000',
+      academyContact: academyContactValue,
     );
   }
 
@@ -213,6 +216,18 @@ void main() {
 
     expect(find.text('전화'), findsOneWidget);
     expect(storage.saved, '02-000-0000');
+  });
+
+  // /me 경로와 같은 저장 조건 — 공백 문의처는 이미 남긴 번호를 지우지 않는다(R53 최종 대조).
+  testWidgets('문의처가 공백이면 이미 남긴 번호를 덮어쓰지 않는다', (tester) async {
+    final storage = _RecordingContactStorage()..saved = '02-111-1111';
+    await _pumpPendingApproval(
+      tester,
+      _StubAuthRepository()..academyContactValue = '   ',
+      contactStorage: storage,
+    );
+
+    expect(storage.saved, '02-111-1111');
   });
 
   testWidgets('문의처가 null 이면 전화 단추가 없고 아무것도 남기지 않는다', (tester) async {
