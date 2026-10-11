@@ -1,3 +1,4 @@
+import 'package:baraeda_core/baraeda_core.dart';
 import 'package:manager_app/core/network/guard.dart';
 import 'package:manager_app/features/emergency/data/emergency_api.dart';
 import 'package:manager_app/features/emergency/data/models/emergency_item.dart';
@@ -13,16 +14,24 @@ class EmergencyRepositoryImpl implements EmergencyRepository {
   const new({
     required EmergencyApi api,
     required OfflineQueueRepository offlineQueue,
+    void Function()? onSessionEndedWhileSending,
   })
     // 필드를 private 으로 유지하려고 initializing formal 대신 명시 대입을 쓴다.
     // ignore: prefer_initializing_formals
     : _api = api,
        // 위와 같은 이유.
        // ignore: prefer_initializing_formals
-       _offlineQueue = offlineQueue;
+       _offlineQueue = offlineQueue,
+       // 위와 같은 이유.
+       // ignore: prefer_initializing_formals
+       _onSessionEndedWhileSending = onSessionEndedWhileSending;
 
   final EmergencyApi _api;
   final OfflineQueueRepository _offlineQueue;
+
+  /// 직접 전송 중 세션이 끝나(재발급 401 · 대기·거절 게이트 403) 신고가 대기열에도 못 들어간 채 사라질 때 부른다
+  /// (887③) — 호출부가 기기 저장 안내(Ruling 886)에 그 한 건을 더한다.
+  final void Function()? _onSessionEndedWhileSending;
 
   @override
   Future<SendOutcome<EmergencyRaiseResult>> raise({
@@ -32,7 +41,16 @@ class EmergencyRepositoryImpl implements EmergencyRepository {
     endpoint: '/runs/$runId/emergency',
     method: 'POST',
     payload: request.toJson(),
-    send: () => guardDio(() => _api.raise(runId: runId, request: request)),
+    send: () async {
+      try {
+        return await guardDio(() => _api.raise(runId: runId, request: request));
+      } on Failure catch (failure) {
+        if (isSessionEndingFailure(failure)) {
+          _onSessionEndedWhileSending?.call();
+        }
+        rethrow;
+      }
+    },
   );
 
   @override
