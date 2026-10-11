@@ -9,7 +9,6 @@ import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/core/launcher/device_launchers.dart';
 import 'package:manager_app/core/network/failure_messages.dart';
-import 'package:manager_app/core/run/manager_run_channel.dart';
 import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/core/time/run_time_labels.dart';
@@ -18,7 +17,6 @@ import 'package:manager_app/core/ui/manager_header.dart';
 import 'package:manager_app/features/home/data/models/manager_run.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
 import 'package:manager_app/features/home/presentation/widgets/focus_run_card.dart';
-import 'package:manager_app/features/notifications/presentation/notification_providers.dart';
 import 'package:manager_app/features/roster/presentation/widgets/change_ack_banner.dart';
 
 /// 홈 탭 — 오늘의 담당 회차(§4.1, M-02·M-07). 기사는 `오늘 운행`, 동승자는 `오늘 회차`.
@@ -27,8 +25,7 @@ import 'package:manager_app/features/roster/presentation/widgets/change_ack_bann
 /// `운행 준비하기` 가 운행 준비 화면으로 간다 — 운행 시작 요청은 그 화면의 확인 창 뒤에만 나간다(`Ruling 799`).
 /// 동승자는 카드 안 `명단 열기` 가 명단 탭으로 간다.
 ///
-/// 열려 있는 동안 [todayRunsRefreshInterval] 마다, 앱이 백그라운드에서 돌아올 때 목록을 다시 받는다 —
-/// 확정은 서버 배치가 시각에 맞춰 바꾸므로(F06-13) 한 번 받은 목록은 곧 낡는다.
+/// 목록의 주기 갱신 · 앱 복귀 갱신은 쉘(`ManagerShell`)이 맡는다 — 동승자는 홈을 열지 않을 수도 있다(R53 A1).
 class ManagerHomeScreen extends ConsumerStatefulWidget {
   const new({super.key});
 
@@ -36,42 +33,7 @@ class ManagerHomeScreen extends ConsumerStatefulWidget {
   ConsumerState<ManagerHomeScreen> createState() => _ManagerHomeScreenState();
 }
 
-class _ManagerHomeScreenState extends ConsumerState<ManagerHomeScreen>
-    with WidgetsBindingObserver {
-  Timer? _refreshTimer;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addObserver(this);
-    _refreshTimer = Timer.periodic(
-      todayRunsRefreshInterval,
-      (_) => _reloadQuietly(),
-    );
-  }
-
-  @override
-  void dispose() {
-    _refreshTimer?.cancel();
-    WidgetsBinding.instance.removeObserver(this);
-    super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state != AppLifecycleState.resumed) return;
-    _reloadQuietly();
-    // 실시간 연결도 다시 붙게 한다 — REST 만 다시 읽으면 끊긴 소켓이 다음 재연결 타이머(최대 30초)를 기다린다.
-    // 운행 화면이 열려 있지 않으면 듣는 컨트롤러가 없어 아무 일도 일어나지 않는다(R46-FIXRT S-5).
-    ref.read(appResumedProvider.notifier).state++;
-  }
-
-  /// 회차 목록과 알림(배지)을 스피너 없이 다시 받는다 — 푸시 SDK 가 없어 앱 안 갱신이 유일한 통지 수단이다.
-  void _reloadQuietly() {
-    ref.invalidate(todayRunsProvider);
-    unawaited(ref.read(notificationFeedProvider.notifier).refresh());
-  }
-
+class _ManagerHomeScreenState extends ConsumerState<ManagerHomeScreen> {
   @override
   Widget build(BuildContext context) {
     final runsAsync = ref.watch(todayRunsProvider);
