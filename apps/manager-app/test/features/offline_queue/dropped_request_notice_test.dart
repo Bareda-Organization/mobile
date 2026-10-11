@@ -49,6 +49,23 @@ class _RejectAdapter implements HttpClientAdapter {
   );
 }
 
+/// [_RejectAdapter] 처럼 거절하되, 요청이 나갈 때마다 [onFetch] 를 부른다 — 재생 도중의 상태를 읽는다.
+class _ProbeAdapter extends _RejectAdapter {
+  new(super.status, this.onFetch);
+
+  final void Function() onFetch;
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) {
+    onFetch();
+    return super.fetch(options, requestStream, cancelFuture);
+  }
+}
+
 const _boarded = {'client_key': 'K', 'status': 'boarded'};
 
 /// Ruling 882 — 큐 재생이 서버의 확정 거절로 행을 지울 때는 반드시 안내를 남긴다. 30초 자동 재생 · 쓰기 직전 재생 ·
@@ -132,6 +149,31 @@ void main() {
 
       expect(result.droppedPermanently, 2);
       expect(await repository.fetchPending(), isEmpty);
+    });
+
+    // R53 B-6① — 지운 뒤 안내가 루프 끝으로 미뤄지면 그 사이 프로세스가 죽을 때 지운 행의 안내가 사라진다.
+    test('재생이 행을 지울 때마다 그 행의 안내를 바로 올린다(다음 행을 보내기 전에)', () async {
+      final seeding = repo(503);
+      await queue(seeding, '/runs/run-A/riders/7');
+      await queue(seeding, '/runs/run-A/riders/8');
+      final seenAtRequest = <int>[];
+      final repository = OfflineQueueRepositoryImpl(
+        database: database,
+        dio: Dio(BaseOptions(baseUrl: 'https://example.invalid'))
+          ..httpClientAdapter = _ProbeAdapter(
+            409,
+            () => seenAtRequest.add(dropped.length),
+          ),
+        onDropped: dropped.add,
+      );
+
+      await repository.replayPending();
+
+      expect(seenAtRequest, [
+        0,
+        1,
+      ], reason: '두 번째 요청이 나갈 때 첫 행의 안내는 이미 올라가 있어야 한다');
+      expect(dropped, hasLength(2));
     });
 
     test('에러 본문의 코드 · 문구가 문자열이 아니어도 재생이 멈추지 않고 빈 문자열로 남는다', () async {

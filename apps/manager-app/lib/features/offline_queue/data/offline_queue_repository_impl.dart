@@ -51,8 +51,8 @@ class OfflineQueueRepositoryImpl implements OfflineQueueRepository {
   final Dio _dio;
   final Clock _clock;
 
-  /// 재생이 확정 거절로 행을 지울 때마다 그 내용을 받는다(Ruling 882) — 30초 자동 재생 · 쓰기 직전 재생 ·
-  /// 수동 재시도가 모두 [_replay] 를 거치므로 어느 경로로 지워져도 한 곳에서 알린다.
+  /// 재생이 확정 거절로 행을 지울 때마다 그 행 하나의 내용을 바로 받는다
+  /// (Ruling 882 · R53 B-6①) — 30초 자동 재생 · 쓰기 직전 재생 · 수동 재시도가 모두 [_replay] 를 거치므로 어느 경로로 지워져도 한 곳에서 알린다.
   final void Function(List<DroppedRequest> dropped)? _onDropped;
 
   @override
@@ -218,8 +218,11 @@ class OfflineQueueRepositoryImpl implements OfflineQueueRepository {
         }
         if (_isPermanentRejection(exception)) {
           // 서버가 확정 거절했다 — 다시 보내도 같은 결과라 큐에서 뺀다. 지운 내용은 호출부가 사용자에게 남긴다(882).
-          dropped.add(_toDropped(row, exception));
+          final item = _toDropped(row, exception);
+          dropped.add(item);
           await _deleteRow(row.id);
+          // 지운 즉시 알린다(R53 B-6①) — 루프 끝으로 미루면 그 사이 앱이 종료될 때 지운 행의 안내가 사라진다.
+          _notifyDropped([item]);
           continue;
         }
         if (_isServerError(exception.response?.statusCode)) {
@@ -243,7 +246,6 @@ class OfflineQueueRepositoryImpl implements OfflineQueueRepository {
     }
     final stillPending =
         rows.length - succeeded - dropped.length - failedPermanently;
-    if (dropped.isNotEmpty) _notifyDropped(dropped);
     return ReplayResult(
       succeeded: succeeded,
       stillPending: stillPending,
