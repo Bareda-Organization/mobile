@@ -106,8 +106,10 @@ class RequestNoticesNotifier extends Notifier<List<RequestNotice>> {
       ),
     );
     final request = item.request;
+    // 명단(메모리)에서 학생을 못 찾으면 기록 시각으로 대신한다(R53 F3) — 이름 없이는 어느 처리인지 알 수 없다.
     final what = studentName == null
-        ? request.description
+        ? '${request.description} · '
+              '${DateFormat('M월 d일 HH:mm').format(request.recordedAt)} 기록'
         : '${request.description} · $studentName';
     return RequestNotice(
       id: _nextId++,

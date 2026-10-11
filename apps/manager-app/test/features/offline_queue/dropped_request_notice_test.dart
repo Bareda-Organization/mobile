@@ -308,6 +308,52 @@ void main() {
       expect(find.textContaining('탑승 처리 · 김하늘'), findsNothing);
     });
 
+    // R53 F3 — 명단이 메모리에 없거나 다른 회차면 학생 이름을 못 찾는다.
+    // 그래도 어느 처리인지 알아볼 수 있게 기록 시각을 붙인다.
+    testWidgets('학생 이름을 명단에서 못 찾으면 기록 시각으로 대신한다', (tester) async {
+      final container = await pumpHost(tester);
+      final unknown = DroppedRequest(
+        request: PendingRequestSummary(
+          id: 3,
+          endpoint: '/runs/run-A/riders/99',
+          method: 'PATCH',
+          // 기록 시각(occurred_at)이 있으면 큐에 쌓인 시각보다 이것이 실제 처리 시각이다.
+          payload: '{"status":"alighted","occurred_at":"2026-10-11T09:12:00"}',
+          createdAt: DateTime(2026, 10, 11, 9, 30),
+        ),
+        statusCode: 409,
+        code: 'RIDER_TRANSITION_NOT_ALLOWED',
+        message: '서버 문구',
+      );
+
+      container.read(requestNoticesProvider.notifier).addDropped([unknown]);
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('하차 처리 · 10월 11일 09:12 기록'), findsOneWidget);
+      expect(find.textContaining('지워졌어요'), findsOneWidget);
+    });
+
+    testWidgets('기록 시각이 payload 에 없으면 큐에 쌓인 시각을 쓴다', (tester) async {
+      final container = await pumpHost(tester);
+      final unknown = DroppedRequest(
+        request: PendingRequestSummary(
+          id: 4,
+          endpoint: '/runs/run-A/riders/99',
+          method: 'PATCH',
+          payload: '{"status":"boarded"}',
+          createdAt: DateTime(2026, 10, 11, 9, 30),
+        ),
+        statusCode: 409,
+        code: 'RIDER_TRANSITION_NOT_ALLOWED',
+        message: '서버 문구',
+      );
+
+      container.read(requestNoticesProvider.notifier).addDropped([unknown]);
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('탑승 처리 · 10월 11일 09:30 기록'), findsOneWidget);
+    });
+
     testWidgets('비상 신고 행이 지워지면 전송되지 않았다는 안내와 학원 전화 단추가 뜬다', (tester) async {
       final opened = <Uri>[];
       final container = await pumpHost(

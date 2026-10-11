@@ -79,6 +79,14 @@ class PendingRequestSummary {
     return '전송 대기 요청';
   }
 
+  /// 이 처리를 기록한 시각 — 본문의 `occurred_at`(오프라인에서 누른 실제 시각)이 있으면 그것, 없으면 큐에 쌓인 시각.
+  /// 학생 이름을 명단에서 못 찾을 때 어느 처리인지 알아보는 단서로 쓴다(R53 F3).
+  DateTime get recordedAt {
+    final raw = _decodeBody()['occurred_at'];
+    final parsed = raw is String ? DateTime.tryParse(raw) : null;
+    return (parsed ?? createdAt).toLocal();
+  }
+
   Map<String, dynamic> _decodeBody() {
     try {
       final decoded = jsonDecode(payload);
