@@ -28,6 +28,9 @@ import 'package:manager_app/features/offline_queue/domain/send_outcome.dart';
 import 'package:manager_app/features/offline_queue/presentation/offline_queue_providers.dart';
 import 'package:manager_app/features/roster/presentation/roster_providers.dart';
 
+/// 확인 대기 중 비상 이력을 다시 받는 주기 — 실시간 채널이 없는 곳의 대체 수단이라 짧게 잡는다(R53 A3).
+const emergencyAckPollInterval = Duration(seconds: 10);
+
 /// EmergencyScreen — 비상 발신·취소·이력 조회 (API_SPEC §4.14·§4.15, M-15,
 /// UF-X-08). 기사·동승자 둘 다 호출 가능해 역할 제한을 두지 않는다
 /// (`EmergencyRepository` 문서 주석과 같은 판단 — `role_policy.dart` 에
@@ -44,9 +47,6 @@ import 'package:manager_app/features/roster/presentation/roster_providers.dart';
 /// `emergency_acked` 를 받을 때마다 `emergencyListProvider` 를 무효화해 둔다. 그 채널이 없는 곳
 /// (홈 · 알림 · 내 정보 · 운행 준비)에서 보낸 신고는 확인 대기 동안 [emergencyAckPollInterval] 마다 이력을
 /// 다시 받아 "학원이 확인했어요" 로 바뀐다(R53 A3) — 별도 WebSocket 클라이언트를 이 화면에 두지 않는다.
-/// 확인 대기 중 비상 이력을 다시 받는 주기 — 실시간 채널이 없는 곳의 대체 수단이라 짧게 잡는다(R53 A3).
-const emergencyAckPollInterval = Duration(seconds: 10);
-
 class EmergencyScreen extends ConsumerStatefulWidget {
   const new({super.key});
 
