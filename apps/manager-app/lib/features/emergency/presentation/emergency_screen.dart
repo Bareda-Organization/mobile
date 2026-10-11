@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/network/failure_messages.dart';
+import 'package:manager_app/core/refresh/visible_poller.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/core/time/run_time_labels.dart';
 import 'package:manager_app/core/ui/academy_call_card.dart';
@@ -40,9 +41,12 @@ import 'package:manager_app/features/roster/presentation/roster_providers.dart';
 /// 진입점은 홈·운행·명단 화면 머리말의 `EmergencyButton` 이다(R32 M2 — 그 전에는 라우트만
 /// 있고 갈 길이 없었다). 실시간 확인 반영(WS `emergency_acked`, Ruling 277)은 이 화면이
 /// 직접 구독하지 않는다 — `ManagerRunChannelController`(DriveMode·StopRoster 가 호스팅)가
-/// `emergency_acked` 를 받을 때마다 `emergencyListProvider` 를 무효화해 두므로, 이 화면에
-/// 들어오면(재진입 시 재조회) 이미 최신 `acked` 상태를 본다 — 별도 WebSocket 클라이언트를
-/// 이 화면에 두지 않는다(보고서 §1).
+/// `emergency_acked` 를 받을 때마다 `emergencyListProvider` 를 무효화해 둔다. 그 채널이 없는 곳
+/// (홈 · 알림 · 내 정보 · 운행 준비)에서 보낸 신고는 확인 대기 동안 [emergencyAckPollInterval] 마다 이력을
+/// 다시 받아 "학원이 확인했어요" 로 바뀐다(R53 A3) — 별도 WebSocket 클라이언트를 이 화면에 두지 않는다.
+/// 확인 대기 중 비상 이력을 다시 받는 주기 — 실시간 채널이 없는 곳의 대체 수단이라 짧게 잡는다(R53 A3).
+const emergencyAckPollInterval = Duration(seconds: 10);
+
 class EmergencyScreen extends ConsumerStatefulWidget {
   const new({super.key});
 
@@ -68,6 +72,31 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
 
   String? _cancelingId;
   String? _cancelErrorMessage;
+
+  late final VisiblePoller _ackPoller = VisiblePoller(
+    interval: emergencyAckPollInterval,
+    onTick: _pollAck,
+  );
+
+  /// 방금 보낸 신고가 아직 확인 전이면 이력을 다시 받는다. 보내기 전 · 확인된 뒤 · 새 신고 작성 중에는 아무 일도 없다.
+  void _pollAck() {
+    final raised = _lastRaised;
+    if (!mounted || raised == null || _composing) return;
+    final item = ref
+        .read(emergencyListProvider)
+        .value
+        ?.items
+        .where((item) => item.emergencyId == raised.emergencyId)
+        .firstOrNull;
+    if (item != null && item.acked) return;
+    ref.invalidate(emergencyListProvider);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _ackPoller.start();
+  }
 
   static const List<ChoiceTileOption<EmergencyType>> _typeOptions = [
     ChoiceTileOption(
@@ -95,6 +124,7 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
 
   @override
   void dispose() {
+    _ackPoller.dispose();
     _memoController.dispose();
     super.dispose();
   }
@@ -221,7 +251,7 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
             : null,
       ),
       body: runId == null
-          ? const Center(child: WordWrapText('선택된 운행이 없습니다 — 홈에서 운행을 선택하세요'))
+          ? const _NoRunNotice()
           : _buildBody(runId, unsent: unsent, failed: failed),
     );
   }
@@ -722,6 +752,27 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
       variant: BaraedaButtonVariant.dangerOutline,
       size: BaraedaButtonSize.sm,
       onPressed: canceling ? null : () => _cancel(runId, emergencyId),
+    );
+  }
+}
+
+/// 선택된 회차가 없을 때의 막다른 화면 — 안내만 두지 않고 급하면 학원에 바로 전화할 수 있게 한다(R53 A4).
+class _NoRunNotice extends StatelessWidget {
+  const new();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Padding(
+      padding: EdgeInsets.all(16),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Center(child: WordWrapText('선택된 운행이 없습니다 — 홈에서 운행을 선택하세요')),
+          SizedBox(height: 16),
+          AcademyCallCard(lead: '급하면 먼저 전화하세요'),
+        ],
+      ),
     );
   }
 }
