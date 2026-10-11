@@ -311,18 +311,22 @@ class GeolocatorPositionSource implements PositionSource {
     Duration timeout = const Duration(seconds: 5),
   }) async {
     // 권한 창이 응답 없이 떠 있어도 [timeout] 을 넘겨 기다리지 않는다 — 비상 신고는 위치 없이 보낸다(R53 A10).
+    // 권한 대기와 측정을 합쳐 [timeout] 안이어야 하므로 측정에는 남은 시간만 준다.
+    final waited = Stopwatch()..start();
     try {
       await _ready.timeout(timeout);
     } on TimeoutException {
       return null;
     }
+    final remaining = timeout - waited.elapsed;
+    if (remaining <= Duration.zero) return null;
     // 권한·서비스 문제는 이미 알고 있으니 플랫폼을 다시 부르지 않는다.
     if (_availability != PositionAvailability.available) return null;
     try {
       final position = await Geolocator.getCurrentPosition(
         locationSettings: LocationSettings(
           accuracy: LocationAccuracy.high,
-          timeLimit: timeout,
+          timeLimit: remaining,
         ),
       );
       return _toSample(position);
