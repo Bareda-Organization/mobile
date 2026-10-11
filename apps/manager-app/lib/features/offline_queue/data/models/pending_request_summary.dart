@@ -89,9 +89,8 @@ class PendingRequestSummary {
   }
 }
 
-/// 재생 중 서버가 확정 거절(4xx)해 큐에서 지운 요청 한 건 — 무엇이 지워졌는지(요청) · 왜 거절됐는지(상태 · 코드 · 서버
-/// 문구)를
-/// 사용자에게 남기는 근거다(Ruling 882).
+/// 재생 중 서버가 확정 거절(4xx)해 큐에서 지운 요청 한 건 — 무엇이 지워졌는지(요청) · 왜 거절됐는지(상태 · 코드 ·
+/// 서버 문구)를 사용자에게 남기는 근거다(Ruling 882).
 class DroppedRequest {
   const new({
     required this.request,

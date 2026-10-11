@@ -30,9 +30,9 @@ import 'package:manager_app/features/roster/presentation/widgets/change_ack_bann
 import 'package:manager_app/features/route_map/data/models/route_response.dart';
 import 'package:manager_app/features/route_map/presentation/route_providers.dart';
 
-/// 운행 준비(기사, `Ruling 799` · `USER_FLOWS` UF-D-03) — 시작 전에 확정 노선 · 승하차지 · 학생
-/// 수를 확인하고
-/// [운행 시작] 을 누른다. 홈의 `운행 준비하기` 가 여기로 오고, **운행 시작 요청은 이 화면의 확인 창 뒤에만 나간다.**
+/// 운행 준비(기사, `Ruling 799` · `USER_FLOWS` UF-D-03) — 시작 전에 확정 노선 · 승하차지 ·
+/// 학생 수를 확인하고 [운행 시작] 을 누른다. 홈의 `운행 준비하기` 가 여기로 오고,
+/// **운행 시작 요청은 이 화면의 확인 창 뒤에만 나간다.**
 ///
 /// [운행 시작] 은 시작 가능 시간(출발 ±10분, §4.4)이 아니거나 노선을 못 받았으면 꺼져 있고 그 이유가 단추 아래에
 /// 보인다(M20). 노선 변경 확인 띠는 홈과 같은 [ChangeAckBanner] 다. 성공하면 운행 화면으로 바꿔 간다.
