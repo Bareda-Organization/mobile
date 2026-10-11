@@ -19,8 +19,14 @@ class _FakeGeolocatorPlatform extends GeolocatorPlatform {
   @override
   Future<LocationPermission> checkPermission() async => checkPermissionResult;
 
+  /// 권한 창이 응답 없이 떠 있는 상태를 흉내 낸다(R53 A10) — 켜 두면 `requestPermission` 이 끝나지 않는다.
+  bool permissionPromptHangs = false;
+
   @override
-  Future<LocationPermission> requestPermission() async => checkPermissionResult;
+  Future<LocationPermission> requestPermission() {
+    if (permissionPromptHangs) return Completer<LocationPermission>().future;
+    return Future.value(checkPermissionResult);
+  }
 
   @override
   Future<bool> isLocationServiceEnabled() async => serviceEnabled;
@@ -407,6 +413,22 @@ void main() {
       await source.ready;
 
       expect(await source.sampleOnce(), isNull);
+    });
+
+    // R53 A10 — 권한 창이 응답을 안 받은 채 떠 있어도 비상 신고가 그 응답까지 기다리지 않는다.
+    test('권한 준비가 끝나지 않아도 상한 안에 null 을 내고 비상 신고는 위치 없이 간다', () async {
+      final platform = _FakeGeolocatorPlatform()
+        ..checkPermissionResult = LocationPermission.denied
+        ..permissionPromptHangs = true
+        ..currentPositionResult = _position();
+      GeolocatorPlatform.instance = platform;
+      final source = GeolocatorPositionSource();
+
+      final result = await source.sampleOnce(
+        timeout: const Duration(milliseconds: 50),
+      );
+
+      expect(result, isNull);
     });
   });
 }

@@ -310,7 +310,12 @@ class GeolocatorPositionSource implements PositionSource {
   Future<PositionSample?> sampleOnce({
     Duration timeout = const Duration(seconds: 5),
   }) async {
-    await _ready;
+    // 권한 창이 응답 없이 떠 있어도 [timeout] 을 넘겨 기다리지 않는다 — 비상 신고는 위치 없이 보낸다(R53 A10).
+    try {
+      await _ready.timeout(timeout);
+    } on TimeoutException {
+      return null;
+    }
     // 권한·서비스 문제는 이미 알고 있으니 플랫폼을 다시 부르지 않는다.
     if (_availability != PositionAvailability.available) return null;
     try {
