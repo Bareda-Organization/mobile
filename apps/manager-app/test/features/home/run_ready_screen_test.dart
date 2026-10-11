@@ -224,6 +224,25 @@ void main() {
     expect(find.text('ROSTER_VIEW_MARKER'), findsOneWidget);
   });
 
+  // R53 A11 — 통신이 끊겨 노선을 못 받을 때에도(저장 명단이 있다) [명단 보기] 가 열려야 한다.
+  testWidgets('노선을 못 받아도 [명단 보기] 로 조회 전용 명단을 연다', (tester) async {
+    await tester.pumpWidget(
+      wrap(
+        DateTime(2026, 10, 3, 12, 2),
+        _CountingDriveRepository(),
+        routeFails: true,
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('확정 노선을 불러오지 못했어요'), findsOneWidget);
+
+    await tester.ensureVisible(find.widgetWithText(BaraedaButton, '명단 보기'));
+    await tester.tap(find.widgetWithText(BaraedaButton, '명단 보기'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('ROSTER_VIEW_MARKER'), findsOneWidget);
+  });
+
   testWidgets('시작 가능 시간(출발 ±10분) 안이면 [운행 시작] 이 켜지고 시간대가 보인다', (tester) async {
     final repo = _CountingDriveRepository();
     await tester.pumpWidget(wrap(DateTime(2026, 10, 3, 12, 14), repo));

@@ -6,8 +6,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:manager_app/app/app_routes.dart';
+import 'package:manager_app/core/auth/auth_providers.dart';
+import 'package:manager_app/core/launcher/device_launchers.dart';
 import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
+import 'package:manager_app/core/ui/academy_call_card.dart';
 import 'package:manager_app/features/home/data/models/manager_run.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
 
@@ -51,8 +54,21 @@ class EmergencyButton extends ConsumerWidget {
     if (!context.mounted) return;
     final candidates = runs.where(canRaiseEmergency).toList();
     if (candidates.isEmpty) {
+      // 막힌 채로 끝내지 않는다 — 학원 번호가 있으면 바로 전화할 수 있게 한다(R53 A4).
+      final contact = ref.read(academyContactProvider);
+      final opener = ref.read(uriOpenerProvider);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: WordWrapText('확정된 운행이 있을 때 비상 신고를 보낼 수 있습니다')),
+        SnackBar(
+          content: const WordWrapText('확정된 운행이 있을 때 비상 신고를 보낼 수 있습니다'),
+          action: looksLikePhoneNumber(contact)
+              ? SnackBarAction(
+                  label: '학원 전화',
+                  onPressed: () => unawaited(
+                    opener(Uri(scheme: 'tel', path: contact!.trim())),
+                  ),
+                )
+              : null,
+        ),
       );
       return;
     }

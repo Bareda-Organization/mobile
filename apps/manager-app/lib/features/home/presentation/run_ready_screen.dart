@@ -30,9 +30,9 @@ import 'package:manager_app/features/roster/presentation/widgets/change_ack_bann
 import 'package:manager_app/features/route_map/data/models/route_response.dart';
 import 'package:manager_app/features/route_map/presentation/route_providers.dart';
 
-/// 운행 준비(기사, `Ruling 799` · `USER_FLOWS` UF-D-03) — 시작 전에 확정 노선 · 승하차지 · 학생
-/// 수를 확인하고
-/// [운행 시작] 을 누른다. 홈의 `운행 준비하기` 가 여기로 오고, **운행 시작 요청은 이 화면의 확인 창 뒤에만 나간다.**
+/// 운행 준비(기사, `Ruling 799` · `USER_FLOWS` UF-D-03) — 시작 전에 확정 노선 · 승하차지 ·
+/// 학생 수를 확인하고 [운행 시작] 을 누른다. 홈의 `운행 준비하기` 가 여기로 오고,
+/// **운행 시작 요청은 이 화면의 확인 창 뒤에만 나간다.**
 ///
 /// [운행 시작] 은 시작 가능 시간(출발 ±10분, §4.4)이 아니거나 노선을 못 받았으면 꺼져 있고 그 이유가 단추 아래에
 /// 보인다(M20). 노선 변경 확인 띠는 홈과 같은 [ChangeAckBanner] 다. 성공하면 운행 화면으로 바꿔 간다.
@@ -253,15 +253,7 @@ class _RunReadyScreenState extends ConsumerState<RunReadyScreen> {
                   AlertBanner(tone: AlertTone.info, body: _navNotice),
                 ],
                 const SizedBox(height: 8),
-                // 운행을 시작하기 전에도 승하차지 명단을 볼 수 있다(UF-D-02 · 조회 전용).
-                BaraedaButton(
-                  label: '명단 보기',
-                  icon: 'list',
-                  variant: BaraedaButtonVariant.secondary,
-                  block: true,
-                  onPressed: () =>
-                      unawaited(context.push(AppRoutes.rosterView)),
-                ),
+                _rosterViewButton(),
                 const SizedBox(height: 24),
                 _StopsSection(run: run, roster: roster!),
               ],
@@ -296,8 +288,20 @@ class _RunReadyScreenState extends ConsumerState<RunReadyScreen> {
       onPressed: _retry,
     ),
     const SizedBox(height: 12),
+    // 통신이 끊겨 노선을 못 받아도 저장해 둔 명단은 열린다(R53 A11).
+    _rosterViewButton(),
+    const SizedBox(height: 12),
     const AcademyCallCard(lead: '출발 시각이 가까우면'),
   ];
+
+  /// 운행을 시작하기 전에도 승하차지 명단을 볼 수 있다(UF-D-02 · 조회 전용).
+  Widget _rosterViewButton() => BaraedaButton(
+    label: '명단 보기',
+    icon: 'list',
+    variant: BaraedaButtonVariant.secondary,
+    block: true,
+    onPressed: () => unawaited(context.push(AppRoutes.rosterView)),
+  );
 
   void _openRouteMap(BuildContext context) =>
       unawaited(context.push(AppRoutes.routeMap));

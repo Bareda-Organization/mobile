@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/core/auth/user_role.dart';
+import 'package:manager_app/core/run/manager_run_channel.dart';
 import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
@@ -15,6 +18,9 @@ import 'package:manager_app/features/notifications/presentation/notification_pro
 /// (시안 `home-driver` · `home-escort`). 브랜치 번호는 `router.dart` 의
 /// `StatefulShellRoute` 순서와 같다.
 /// 운행 중 화면 · 운행 준비 · 비상 같은 화면은 이 틀 밖에서 위에 덮여 열린다 — 탭 막대가 없다.
+///
+/// 열려 있는 동안 [todayRunsRefreshInterval] 마다, 앱이 백그라운드에서 돌아올 때 오늘 회차 목록 · 알림을 다시
+/// 받는다 — 확정은 서버 배치가 시각에 맞춰 바꾸므로(F06-13) 한 번 받은 목록은 곧 낡는다(R53 A1: 홈 탭에서 옮김).
 class ManagerShell extends ConsumerStatefulWidget {
   const new({required this.navigationShell, super.key});
 
@@ -41,7 +47,45 @@ class ManagerShell extends ConsumerStatefulWidget {
   };
 }
 
-class _ManagerShellState extends ConsumerState<ManagerShell> {
+class _ManagerShellState extends ConsumerState<ManagerShell>
+    with WidgetsBindingObserver {
+  /// 오늘 회차 목록 · 알림을 [todayRunsRefreshInterval] 마다 다시 받는 타이머 —
+  /// 홈 탭이 아니라 쉘이 맡는다(R53 A1). 탭은 처음 갈 때 만들어지므로(`indexedStack` 지연 생성)
+  /// 동승자가 첫 화면인 명단 탭에 머물면 홈은 존재하지 않는다.
+  Timer? _refreshTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _refreshTimer = Timer.periodic(
+      todayRunsRefreshInterval,
+      (_) => _reloadQuietly(),
+    );
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) return;
+    _reloadQuietly();
+    // 실시간 연결도 다시 붙게 한다 — REST 만 다시 읽으면 끊긴 소켓이 다음 재연결 타이머(최대 30초)를 기다린다.
+    // 운행 화면이 열려 있지 않으면 듣는 컨트롤러가 없어 아무 일도 일어나지 않는다(R46-FIXRT S-5).
+    ref.read(appResumedProvider.notifier).state++;
+  }
+
+  /// 회차 목록과 알림(배지)을 스피너 없이 다시 받는다 — 푸시 SDK 가 없어 앱 안 갱신이 유일한 통지 수단이다.
+  void _reloadQuietly() {
+    ref.invalidate(todayRunsProvider);
+    unawaited(ref.read(notificationFeedProvider.notifier).refresh());
+  }
+
   /// 끝나기 전에 쉘이 마지막으로 본 선택 회차 — 갈아타기는 "그 회차가 그 뒤 끝난 경우"에만 한다.
   String? _lastLiveSelectedRunId;
 

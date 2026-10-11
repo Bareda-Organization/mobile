@@ -19,11 +19,23 @@ class _FakeGeolocatorPlatform extends GeolocatorPlatform {
   @override
   Future<LocationPermission> checkPermission() async => checkPermissionResult;
 
-  @override
-  Future<LocationPermission> requestPermission() async => checkPermissionResult;
+  /// 권한 창이 응답 없이 떠 있는 상태를 흉내 낸다(R53 A10) — 켜 두면 `requestPermission` 이 끝나지 않는다.
+  bool permissionPromptHangs = false;
 
   @override
-  Future<bool> isLocationServiceEnabled() async => serviceEnabled;
+  Future<LocationPermission> requestPermission() {
+    if (permissionPromptHangs) return Completer<LocationPermission>().future;
+    return Future.value(checkPermissionResult);
+  }
+
+  /// 위치 서비스 확인에 걸리는 시간 — 권한 대기가 상한의 일부를 쓰는 상황을 흉내 낸다.
+  Duration serviceCheckDelay = Duration.zero;
+
+  @override
+  Future<bool> isLocationServiceEnabled() async {
+    await Future<void>.delayed(serviceCheckDelay);
+    return serviceEnabled;
+  }
 
   /// 위치 스트림이 열린 횟수 — 재확인이 스트림(포그라운드 서비스 알림)을 켜지 않는지 본다.
   int streamOpens = 0;
@@ -50,8 +62,12 @@ class _FakeGeolocatorPlatform extends GeolocatorPlatform {
   Position? currentPositionResult;
   Exception? currentPositionError;
 
+  /// 마지막 `getCurrentPosition` 이 받은 측정 시간 상한.
+  Duration? lastTimeLimit;
+
   @override
   Future<Position> getCurrentPosition({LocationSettings? locationSettings}) {
+    lastTimeLimit = locationSettings?.timeLimit;
     if (currentPositionError != null) throw currentPositionError!;
     return Future.value(currentPositionResult);
   }
@@ -407,6 +423,41 @@ void main() {
       await source.ready;
 
       expect(await source.sampleOnce(), isNull);
+    });
+
+    // R53 A10 — 권한 창이 응답을 안 받은 채 떠 있어도 비상 신고가 그 응답까지 기다리지 않는다.
+    test('권한 준비가 끝나지 않아도 상한 안에 null 을 내고 비상 신고는 위치 없이 간다', () async {
+      final platform = _FakeGeolocatorPlatform()
+        ..checkPermissionResult = LocationPermission.denied
+        ..permissionPromptHangs = true
+        ..currentPositionResult = _position();
+      GeolocatorPlatform.instance = platform;
+      final source = GeolocatorPositionSource();
+
+      final result = await source.sampleOnce(
+        timeout: const Duration(milliseconds: 50),
+      );
+
+      expect(result, isNull);
+    });
+
+    // 권한 대기 + 측정 전체가 상한 안이어야 한다 — 두 단계가 각각 상한만큼 쓰면 비상 신고가 두 배로 늦는다.
+    test('권한 준비에 쓴 시간을 뺀 나머지만 측정 시간 상한으로 넘긴다', () async {
+      final platform = _FakeGeolocatorPlatform()
+        ..serviceCheckDelay = const Duration(milliseconds: 250)
+        ..currentPositionResult = _position();
+      GeolocatorPlatform.instance = platform;
+      final source = GeolocatorPositionSource();
+
+      final result = await source.sampleOnce(
+        timeout: const Duration(milliseconds: 400),
+      );
+
+      expect(result, isNotNull);
+      expect(
+        platform.lastTimeLimit,
+        lessThanOrEqualTo(const Duration(milliseconds: 200)),
+      );
     });
   });
 }

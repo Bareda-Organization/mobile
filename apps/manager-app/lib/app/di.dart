@@ -28,6 +28,7 @@ import 'package:manager_app/features/navigation/domain/navigation_repository.dar
 import 'package:manager_app/features/offline_queue/data/offline_queue_database.dart';
 import 'package:manager_app/features/offline_queue/data/offline_queue_repository_impl.dart';
 import 'package:manager_app/features/offline_queue/domain/offline_queue_repository.dart';
+import 'package:manager_app/features/offline_queue/presentation/request_notices.dart';
 import 'package:manager_app/features/position/data/position_api.dart';
 import 'package:manager_app/features/position/data/position_repository_impl.dart';
 import 'package:manager_app/features/position/domain/position_repository.dart';
@@ -245,6 +246,9 @@ final offlineQueueRepositoryProvider = Provider<OfflineQueueRepository>((ref) {
     database: ref.watch(offlineQueueDatabaseProvider),
     dio: ref.watch(apiClientProvider).dio,
     clock: ref.watch(clockProvider),
+    // 재생이 서버의 확정 거절로 행을 지울 때 사용자에게 남긴다(Ruling 882) — 읽기만 한다(재생 때마다 다시 만들지 않는다).
+    onDropped: (dropped) =>
+        ref.read(requestNoticesProvider.notifier).addDropped(dropped),
   );
 });
 

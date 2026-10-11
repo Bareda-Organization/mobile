@@ -205,6 +205,26 @@ void main() {
     expect(find.text('선택된 운행이 없습니다 — 홈에서 운행을 선택하세요'), findsOneWidget);
   });
 
+  // R53 A4 — 선택된 회차가 없는 막다른 화면에도 학원 전화가 있다.
+  testWidgets('선택된 운행이 없어도 학원 번호가 있으면 전화 단추가 학원 번호를 tel: 로 연다', (tester) async {
+    final opened = <Uri>[];
+    await tester.pumpWidget(
+      _wrap(const EmergencyScreen(), [
+        selectedRunIdProvider.overrideWith((ref) => null),
+        academyContactProvider.overrideWith((ref) => '032-000-1100'),
+        uriOpenerProvider.overrideWithValue((uri) async {
+          opened.add(uri);
+          return true;
+        }),
+      ]),
+    );
+
+    await tester.tap(find.text('전화'));
+    await tester.pump();
+
+    expect(opened.single, Uri(scheme: 'tel', path: '032-000-1100'));
+  });
+
   testWidgets('유형이 기타인데 메모가 비어 있으면 서버 호출 없이 막는다', (tester) async {
     final fakeRepo = _FakeEmergencyRepository(
       list: const EmergencyListResponse(items: []),
@@ -247,10 +267,7 @@ void main() {
 
     // `notified` 는 학원 관계자 + 메인 관리자 수다(서버 EmergencyRaiseResponse).
     // "학원 관계자 N명" 으로 줄여 말하지 않는다.
-    expect(
-      find.textContaining('학원 관계자·메인 관리자 3명에게 전달'),
-      findsOneWidget,
-    );
+    expect(find.textContaining('학원 관계자·메인 관리자 3명에게 전달'), findsOneWidget);
     expect(find.text('처리되지 않았습니다 · 대기 중'), findsNothing);
     // raise 는 client_key 를 반드시 채워 보낸다(§1.7 멱등 대상 ②).
     expect(fakeRepo.lastRequest?.clientKey, isNotEmpty);

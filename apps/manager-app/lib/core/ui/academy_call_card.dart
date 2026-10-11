@@ -18,16 +18,19 @@ bool looksLikePhoneNumber(String? value) {
 /// `<안내> / 학원 032-000-1100 [전화]` 한 줄 카드 — 불러오기 실패 · 운행 준비 실패에서 학원에 바로 전화한다.
 /// 학원 연락처가 번호 모양이 아니면 아무것도 그리지 않는다.
 class AcademyCallCard extends ConsumerWidget {
-  const new({required this.lead, super.key});
+  const new({required this.lead, this.contact, super.key});
 
   /// 굵은 첫 줄 — `운행 시작이 급하면` 같은 상황 문구.
   final String lead;
 
+  /// 번호를 직접 줄 때만 — 비우면 로그인 결과의 학원 연락처([academyContactProvider])를 쓴다.
+  final String? contact;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final contact = ref.watch(academyContactProvider);
-    if (!looksLikePhoneNumber(contact)) return const SizedBox.shrink();
-    final number = contact!.trim();
+    final shown = contact ?? ref.watch(academyContactProvider);
+    if (!looksLikePhoneNumber(shown)) return const SizedBox.shrink();
+    final number = shown!.trim();
     final colors = context.colors;
     return BaraedaCard(
       tone: BaraedaCardTone.mist,

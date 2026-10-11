@@ -112,15 +112,16 @@ class MeScreen extends ConsumerWidget {
             .value
             ?.any((run) => run.runStatus == RunStatus.moving) ??
         false;
-    final pendingCount = _pendingCount(ref);
+    final pending = _pending(ref);
     final choice = await showBaraedaActionDialog<_SignOutChoice>(
       context: context,
       title: '로그아웃하시겠습니까?',
-      content: FutureBuilder<int>(
-        future: pendingCount,
-        initialData: 0,
+      content: FutureBuilder<({int total, int emergencies})>(
+        future: pending,
+        initialData: (total: 0, emergencies: 0),
         builder: (dialogContext, snapshot) {
-          final count = snapshot.data ?? 0;
+          final count = snapshot.data?.total ?? 0;
+          final emergencies = snapshot.data?.emergencies ?? 0;
           final colors = dialogContext.colors;
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -134,6 +135,10 @@ class MeScreen extends ConsumerWidget {
                     '다시 로그인해야 이 앱을 계속 쓸 수 있습니다',
                   // M2-01 — 큐에는 계정 열이 없어 로그아웃하면 비운다(F06-02). 있을 때만 알린다.
                   if (count > 0) '아직 보내지 못한 처리 $count건은 버려집니다',
+                  // Ruling 886 — 비상 신고는 서버에 가지 못했으니 학원에 직접 알려야 한다
+                  // (로그아웃 뒤 기기 안내가 이어 알린다).
+                  if (emergencies > 0)
+                    '비상 신고 $emergencies건은 서버에 가지 못했으니 로그아웃 뒤 학원에 직접 알려 주세요',
                 ].join('\n'),
                 style: BaraedaTypography.body.copyWith(
                   color: colors.textSecondary,
@@ -176,13 +181,18 @@ class MeScreen extends ConsumerWidget {
     }
   }
 
-  /// 아직 서버에 보내지 못한 오프라인 대기 요청 수. 읽지 못하면 0 으로 보고 로그아웃을 막지 않는다.
-  Future<int> _pendingCount(WidgetRef ref) async {
+  /// 아직 서버에 보내지 못한 오프라인 대기 요청 수(그중 비상 신고 수 포함). 읽지 못하면 0 으로 보고 로그아웃을 막지 않는다.
+  Future<({int total, int emergencies})> _pending(WidgetRef ref) async {
     try {
-      return (await ref.read(offlineQueueRepositoryProvider).fetchPending())
-          .length;
+      final pending = await ref
+          .read(offlineQueueRepositoryProvider)
+          .fetchPending();
+      return (
+        total: pending.length,
+        emergencies: pending.where((request) => request.isEmergency).length,
+      );
     } on Object {
-      return 0;
+      return (total: 0, emergencies: 0);
     }
   }
 

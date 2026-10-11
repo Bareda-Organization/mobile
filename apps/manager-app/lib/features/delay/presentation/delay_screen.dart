@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/core/network/failure_messages.dart';
+import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/core/time/run_time_labels.dart';
 import 'package:manager_app/core/ui/bottom_action_bar.dart';
@@ -247,10 +248,23 @@ class _DelayScreenState extends ConsumerState<DelayScreen> {
           const SizedBox(height: 6),
           WordWrapText(first, style: style),
           const SizedBox(height: 8),
-          WordWrapText('받는 사람 · 학원 관계자 + 다음 승하차지 이후의 학생 · 학부모', style: style),
+          WordWrapText(_receiversLine(), style: style),
         ],
       ),
     );
+  }
+
+  /// 미리보기의 "받는 사람" 줄 — 서버의 실제 수신자 규칙과 같다(`Ruling 856`): 현재 승하차지 이후 중 등원은 아직
+  /// 탑승하지 않은 학생, 하원은 아직 하차하지 않은(탑승 중) 학생이고 학부모는 보호자 전원이다. 회차를 모르면 방향을
+  /// 가르지 않는다.
+  String _receiversLine() {
+    final direction = ref.watch(selectedManagerRunProvider)?.direction;
+    final who = switch (direction) {
+      RunDirection.toAcademy => '아직 탑승하지 않은 학생',
+      RunDirection.fromAcademy => '아직 하차하지 않은(탑승 중) 학생',
+      null => '학생',
+    };
+    return '받는 사람 · 학원 관계자 + 현재 승하차지 이후의 $who · 학부모(보호자 전원)';
   }
 
   Widget _buildReceipt(_Receipt receipt) {

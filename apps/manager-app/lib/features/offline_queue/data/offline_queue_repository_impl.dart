@@ -24,6 +24,7 @@ class OfflineQueueRepositoryImpl implements OfflineQueueRepository {
     required OfflineQueueDatabase database,
     required Dio dio,
     Clock clock = const SystemClock(),
+    void Function(List<DroppedRequest> dropped)? onDropped,
   })
     // 필드를 private 으로 유지하려고 initializing formal 대신 명시 대입을 쓴다.
     // ignore: prefer_initializing_formals
@@ -33,7 +34,10 @@ class OfflineQueueRepositoryImpl implements OfflineQueueRepository {
        _dio = dio,
        // 위와 같은 이유.
        // ignore: prefer_initializing_formals
-       _clock = clock;
+       _clock = clock,
+       // 위와 같은 이유.
+       // ignore: prefer_initializing_formals
+       _onDropped = onDropped;
 
   /// 한 행이 5xx 로 재생에 실패하는 횟수 상한 — 닿으면 영구 실패로 재생에서 뺀다. 주기 재생(30초)이 한 번씩
   /// 세므로 약 5분이다. **비상 신고에는 적용하지 않는다**(Ruling 616).
@@ -46,6 +50,10 @@ class OfflineQueueRepositoryImpl implements OfflineQueueRepository {
   final OfflineQueueDatabase _database;
   final Dio _dio;
   final Clock _clock;
+
+  /// 재생이 확정 거절로 행을 지울 때마다 그 내용을 받는다(Ruling 882) — 30초 자동 재생 · 쓰기 직전 재생 ·
+  /// 수동 재시도가 모두 [_replay] 를 거치므로 어느 경로로 지워져도 한 곳에서 알린다.
+  final void Function(List<DroppedRequest> dropped)? _onDropped;
 
   @override
   Future<SendOutcome<T>> sendOrQueue<T>({
@@ -190,7 +198,7 @@ class OfflineQueueRepositoryImpl implements OfflineQueueRepository {
   Future<ReplayResult> _replay({required bool countAttempts}) async {
     final rows = await _activeRows();
     var succeeded = 0;
-    var droppedPermanently = 0;
+    final dropped = <DroppedRequest>[];
     var failedPermanently = 0;
     for (final row in rows) {
       try {
@@ -209,9 +217,9 @@ class OfflineQueueRepositoryImpl implements OfflineQueueRepository {
           continue;
         }
         if (_isPermanentRejection(exception)) {
-          // 서버가 확정 거절했다 — 다시 보내도 같은 결과라 큐에서 뺀다.
+          // 서버가 확정 거절했다 — 다시 보내도 같은 결과라 큐에서 뺀다. 지운 내용은 호출부가 사용자에게 남긴다(882).
+          dropped.add(_toDropped(row, exception));
           await _deleteRow(row.id);
-          droppedPermanently++;
           continue;
         }
         if (_isServerError(exception.response?.statusCode)) {
@@ -234,12 +242,47 @@ class OfflineQueueRepositoryImpl implements OfflineQueueRepository {
       }
     }
     final stillPending =
-        rows.length - succeeded - droppedPermanently - failedPermanently;
+        rows.length - succeeded - dropped.length - failedPermanently;
+    if (dropped.isNotEmpty) _notifyDropped(dropped);
     return ReplayResult(
       succeeded: succeeded,
       stillPending: stillPending,
-      droppedPermanently: droppedPermanently,
+      droppedPermanently: dropped.length,
       failedPermanently: failedPermanently,
+      dropped: dropped,
+    );
+  }
+
+  /// 안내 콜백이 던진 예외는 삼킨다 — 행은 이미 지워졌고 안내 실패가 재생 호출부(쓰기 직전 재생 · 30초 재생)를
+  /// 깨뜨리면 안 된다. 지운 내용은 [ReplayResult.dropped] 로도 나간다.
+  void _notifyDropped(List<DroppedRequest> dropped) {
+    try {
+      _onDropped?.call(dropped);
+    } on Object {
+      // 안내를 못 남겨도 재생 결과는 그대로 돌려준다.
+    }
+  }
+
+  /// 확정 거절로 지우는 행을 사용자에게 남길 내용으로 옮긴다 — 서버 본문(`{"error":{"code","message"}}`)이
+  /// JSON 이 아니거나 코드 · 문구가 문자열이 아니면 빈 문자열이다.
+  DroppedRequest _toDropped(PendingRequest row, DioException exception) {
+    final data = exception.response?.data;
+    final error = data is Map ? data['error'] : null;
+    return DroppedRequest(
+      request: PendingRequestSummary(
+        id: row.id,
+        endpoint: row.endpoint,
+        method: row.method,
+        payload: row.payload,
+        createdAt: row.createdAt,
+      ),
+      statusCode: exception.response?.statusCode ?? 0,
+      code: error is Map && error['code'] is String
+          ? error['code'] as String
+          : '',
+      message: error is Map && error['message'] is String
+          ? error['message'] as String
+          : '',
     );
   }
 

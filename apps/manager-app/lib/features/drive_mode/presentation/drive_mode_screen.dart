@@ -706,7 +706,7 @@ class _NextStopCard extends StatelessWidget {
         ? _lastStopNote(direction)
         : [
             if (stop.change == StopChange.added) '신규',
-            '탑승 예정 ${stop.students.length}명',
+            '${expectedRidersLabel(direction)} ${stop.students.length}명',
           ].join(' · ');
     return BaraedaCard(
       accent: BaraedaStatus.moving,
