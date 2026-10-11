@@ -253,15 +253,7 @@ class _RunReadyScreenState extends ConsumerState<RunReadyScreen> {
                   AlertBanner(tone: AlertTone.info, body: _navNotice),
                 ],
                 const SizedBox(height: 8),
-                // 운행을 시작하기 전에도 승하차지 명단을 볼 수 있다(UF-D-02 · 조회 전용).
-                BaraedaButton(
-                  label: '명단 보기',
-                  icon: 'list',
-                  variant: BaraedaButtonVariant.secondary,
-                  block: true,
-                  onPressed: () =>
-                      unawaited(context.push(AppRoutes.rosterView)),
-                ),
+                _rosterViewButton(),
                 const SizedBox(height: 24),
                 _StopsSection(run: run, roster: roster!),
               ],
@@ -296,8 +288,20 @@ class _RunReadyScreenState extends ConsumerState<RunReadyScreen> {
       onPressed: _retry,
     ),
     const SizedBox(height: 12),
+    // 통신이 끊겨 노선을 못 받아도 저장해 둔 명단은 열린다(R53 A11).
+    _rosterViewButton(),
+    const SizedBox(height: 12),
     const AcademyCallCard(lead: '출발 시각이 가까우면'),
   ];
+
+  /// 운행을 시작하기 전에도 승하차지 명단을 볼 수 있다(UF-D-02 · 조회 전용).
+  Widget _rosterViewButton() => BaraedaButton(
+    label: '명단 보기',
+    icon: 'list',
+    variant: BaraedaButtonVariant.secondary,
+    block: true,
+    onPressed: () => unawaited(context.push(AppRoutes.rosterView)),
+  );
 
   void _openRouteMap(BuildContext context) =>
       unawaited(context.push(AppRoutes.routeMap));
