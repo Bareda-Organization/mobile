@@ -325,7 +325,15 @@ class _UnsentEmergencyBanner extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: 8),
-        AcademyCallCard(lead: '학원에 바로 전화해 주세요', contact: unsent.contact),
+        // 그때 저장한 번호만 쓴다(R53 F4) — 번호가 없다고 지금 로그인한 계정의 학원 번호로 대신하면, 다른 학원에서
+        // 보낸 비상 신고 안내가 엉뚱한 학원 전화로 이어진다.
+        if (looksLikePhoneNumber(unsent.contact))
+          AcademyCallCard(lead: '학원에 바로 전화해 주세요', contact: unsent.contact)
+        else
+          const BaraedaCard(
+            tone: BaraedaCardTone.mist,
+            child: WordWrapText('학원 번호를 모릅니다 · 학원에 직접 연락해 주세요'),
+          ),
       ],
     );
   }

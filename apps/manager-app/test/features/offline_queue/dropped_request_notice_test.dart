@@ -208,12 +208,13 @@ void main() {
       WidgetTester tester, {
       List<Uri>? opened,
       String? contact,
+      UnsentEmergency? savedUnsent,
     }) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
             unsentEmergencyStoreProvider.overrideWithValue(
-              FakeUnsentEmergencyStore(),
+              FakeUnsentEmergencyStore(savedUnsent),
             ),
             academyContactProvider.overrideWith((ref) => contact),
             rosterProvider.overrideWith(
@@ -352,6 +353,20 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.textContaining('탑승 처리 · 10월 11일 09:30 기록'), findsOneWidget);
+    });
+
+    // R53 F4 — 기기에 남은 안내의 번호가 없을 때 지금 로그인한 다른 학원의 번호로 대신하면 엉뚱한 학원에 전화하게 된다.
+    testWidgets('기기 저장 안내에 저장된 번호가 없으면 지금 계정의 학원 번호로 대신하지 않는다', (tester) async {
+      await pumpHost(
+        tester,
+        contact: '032-999-9999',
+        savedUnsent: UnsentEmergency(count: 1, lastAt: DateTime(2026, 10, 11)),
+      );
+
+      expect(find.textContaining('비상 신고 1건이 전송되지 않았습니다'), findsOneWidget);
+      expect(find.textContaining('학원 번호를 모릅니다'), findsOneWidget);
+      expect(find.text('전화'), findsNothing);
+      expect(find.textContaining('032-999-9999'), findsNothing);
     });
 
     testWidgets('비상 신고 행이 지워지면 전송되지 않았다는 안내와 학원 전화 단추가 뜬다', (tester) async {
