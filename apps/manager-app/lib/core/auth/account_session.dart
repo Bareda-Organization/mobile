@@ -152,17 +152,56 @@ Future<void> _discardPendingRequests(
   Ref ref, {
   required bool announceDiscarded,
   required String? contact,
+}) => ref
+    .read(_discardSerialProvider)
+    .run(
+      () => _discardPendingRequestsOnce(
+        ref,
+        announceDiscarded: announceDiscarded,
+        contact: contact,
+      ),
+    );
+
+/// 대기 요청 정리를 한 번에 하나씩만 돌린다(R53 F2) — 앱 시작 `/me` 401 + 재발급 401 이면 세션 만료 구독과
+/// [authBootstrapProvider] 가 같은 정리를 거의 동시에 부른다. 두 번째가 첫 번째의
+/// `fetchPending` ~ `clear` 사이에 끼면
+/// 같은 비상 신고 행을 두 번 세므로, 앞 정리가 대기열을 비운 뒤에 다음이 돌아
+/// 빈 대기열을 본다.
+final Provider<_SerialRunner> _discardSerialProvider = Provider<_SerialRunner>(
+  (ref) => _SerialRunner(),
+);
+
+class _SerialRunner {
+  var _tail = Future<void>.value();
+
+  /// [job] 을 앞선 작업이 끝난 뒤에 돌린다 — 앞 작업이 실패해도 줄은 이어진다.
+  Future<void> run(Future<void> Function() job) {
+    final result = _tail.then((_) => job());
+    _tail = result.then((_) {}, onError: (Object _) {});
+    return result;
+  }
+}
+
+/// 기기 저장 대기를 기다리는 최대 시간 — 저장소가 응답하지 않아도 대기열 정리(다음 계정에 이전 요청을 넘기지 않기)는 끝나야 한다.
+const _persistWaitLimit = Duration(seconds: 5);
+
+Future<void> _discardPendingRequestsOnce(
+  Ref ref, {
+  required bool announceDiscarded,
+  required String? contact,
 }) async {
   final queue = ref.read(offlineQueueRepositoryProvider);
   final discarded = await queue.fetchPending();
   final emergencies = discarded.where((request) => request.isEmergency).length;
   // 어느 경로로 비우든(로그아웃 · 세션 만료 · 거절 정리) 못 보낸 비상 신고는 확인할 때까지 기기에 남긴다(Ruling 886).
   // 건수는 이 한 곳에서만 더한다 — 아래 로그인 화면 안내 · 앱 맨 위 안내는 각자 문장만 만든다.
-  // 대기열을 비우기 **전에** 올린다 — 그 사이 프로세스가 죽으면 행도 안내도 남지 않는다.
+  // 대기열을 비우기 **전에** 올리고 기기 저장이 **끝난 뒤** 비운다(R53 B-6) —
+  // 그 사이 프로세스가 죽으면 행도 안내도 남지 않는다.
   if (emergencies > 0) {
-    ref
+    await ref
         .read(unsentEmergencyProvider.notifier)
-        .add(count: emergencies, contact: contact);
+        .add(count: emergencies, contact: contact)
+        .timeout(_persistWaitLimit, onTimeout: () {});
   }
   await queue.clear();
   if (discarded.isEmpty) return;

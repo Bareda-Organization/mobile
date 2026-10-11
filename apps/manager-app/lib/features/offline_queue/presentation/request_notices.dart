@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
@@ -50,12 +52,14 @@ class RequestNoticesNotifier extends Notifier<List<RequestNotice>> {
   void addDropped(List<DroppedRequest> dropped) {
     final emergencies = dropped.where((item) => item.request.isEmergency);
     if (emergencies.isNotEmpty) {
-      ref
-          .read(unsentEmergencyProvider.notifier)
-          .add(
-            count: emergencies.length,
-            contact: ref.read(academyContactProvider),
-          );
+      unawaited(
+        ref
+            .read(unsentEmergencyProvider.notifier)
+            .add(
+              count: emergencies.length,
+              contact: ref.read(academyContactProvider),
+            ),
+      );
     }
     final others = dropped.where((item) => !item.request.isEmergency);
     if (others.isEmpty) return;
@@ -155,29 +159,30 @@ class UnsentEmergencyNotifier extends Notifier<UnsentEmergency?> {
         lastAt: current.lastAt,
         contact: current.contact ?? saved.contact,
       );
-      _enqueue(_persist);
+      unawaited(_enqueue(_persist));
     } on Object catch (error) {
       debugPrint('비상 신고 안내 저장분을 읽지 못했어요: $error');
     }
   }
 
   /// 비상 신고 [count] 건이 전송되지 못하고 지워졌다 — 건수를 더하고 시각을 지금으로, 번호는 [contact] 를 우선한다
-  /// (없으면 앞서 남긴 번호 · 기기에 저장된 번호).
-  void add({required int count, required String? contact}) {
+  /// (없으면 앞서 남긴 번호 · 기기에 저장된 번호). 돌려주는 Future 는 기기 저장이 끝나면 완료된다 — 대기열을 지우기 전에
+  /// 기다려야 하는 호출부가 쓴다(R53 B-6).
+  Future<void> add({required int count, required String? contact}) {
     final previous = state;
     state = UnsentEmergency(
       count: (previous?.count ?? 0) + count,
       lastAt: ref.read(clockProvider).now(),
       contact: contact ?? previous?.contact,
     );
-    _enqueue(_persist);
+    return _enqueue(_persist);
   }
 
   /// 사용자가 확인했다 — 기기의 저장분도 지운다.
   void dismiss() {
     _dismissed = true;
     state = null;
-    _enqueue(() => ref.read(unsentEmergencyStoreProvider).clear());
+    unawaited(_enqueue(() => ref.read(unsentEmergencyStoreProvider).clear()));
   }
 
   /// 지금 안내를 기기에 쓴다(실행 시점의 값 — 앞선 쓰기가 밀려도 마지막 값이 남는다). 번호가 없으면 저장된 학원 번호로 채운다.
@@ -212,8 +217,8 @@ class UnsentEmergencyNotifier extends Notifier<UnsentEmergency?> {
   }
 
   /// 작업 하나가 실패해도 줄이 끊기지 않는다 — 오류는 기록만 남기고 다음 작업으로 넘어간다.
-  void _enqueue(Future<void> Function() job) {
-    _tail = _tail.then((_) => job()).catchError((Object error) {
+  Future<void> _enqueue(Future<void> Function() job) {
+    return _tail = _tail.then((_) => job()).catchError((Object error) {
       debugPrint('비상 신고 안내 저장 작업이 실패했어요: $error');
     });
   }

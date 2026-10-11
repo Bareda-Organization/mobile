@@ -68,13 +68,17 @@ void main() {
     final store = _FlakyStore(failFirstWrite: true);
     final container = open(store);
 
-    container
-        .read(unsentEmergencyProvider.notifier)
-        .add(count: 1, contact: null);
+    unawaited(
+      container
+          .read(unsentEmergencyProvider.notifier)
+          .add(count: 1, contact: null),
+    );
     await pumpEventQueue();
-    container
-        .read(unsentEmergencyProvider.notifier)
-        .add(count: 1, contact: null);
+    unawaited(
+      container
+          .read(unsentEmergencyProvider.notifier)
+          .add(count: 1, contact: null),
+    );
     await pumpEventQueue();
 
     expect(container.read(unsentEmergencyProvider)?.count, 2);
@@ -85,9 +89,11 @@ void main() {
     final store = _FlakyStore(readGate: Completer<UnsentEmergency?>());
     final container = open(store);
 
-    container
-        .read(unsentEmergencyProvider.notifier)
-        .add(count: 1, contact: null);
+    unawaited(
+      container
+          .read(unsentEmergencyProvider.notifier)
+          .add(count: 1, contact: null),
+    );
 
     expect(container.read(unsentEmergencyProvider)?.count, 1);
   });
@@ -97,9 +103,11 @@ void main() {
     final store = _FlakyStore(readGate: gate);
     final container = open(store);
 
-    container
-        .read(unsentEmergencyProvider.notifier)
-        .add(count: 1, contact: null);
+    unawaited(
+      container
+          .read(unsentEmergencyProvider.notifier)
+          .add(count: 1, contact: null),
+    );
     await pumpEventQueue();
     gate.complete(
       UnsentEmergency(count: 2, lastAt: DateTime(2026, 10, 10), contact: '010'),

@@ -82,12 +82,15 @@ class _StatusAdapter implements HttpClientAdapter {
     body,
     status,
     headers: {
-      // 게이트웨이 HTML 은 실제로 text/html 로 온다 — JSON 헤더로 속이면 Dio 가 파싱 실패로 다른 예외 종류를 낸다.
-      Headers.contentTypeHeader: [
-        body.startsWith('<') ? 'text/html' : Headers.jsonContentType,
-      ],
+      Headers.contentTypeHeader: [_contentTypeOf(body)],
     },
   );
+}
+
+/// 게이트웨이 HTML 은 실제로 text/html 로 온다 — JSON 헤더로 속이면 Dio 가 파싱 실패로 다른 예외 종류를 낸다.
+String _contentTypeOf(String body) {
+  if (body.startsWith('<')) return 'text/html';
+  return Headers.jsonContentType;
 }
 
 void main() {
