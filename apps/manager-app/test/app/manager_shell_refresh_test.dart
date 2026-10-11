@@ -104,6 +104,40 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
+  testWidgets(
+    '앱이 내려가는 중(inactive · hidden · paused)에는 목록 · 알림 갱신과 재접속 신호가 없다',
+    (tester) async {
+      final container = await pump(tester, UserRole.escort);
+      final before = notifications.requests.length;
+
+      for (final state in [
+        AppLifecycleState.inactive,
+        AppLifecycleState.hidden,
+        AppLifecycleState.paused,
+      ]) {
+        tester.binding.handleAppLifecycleStateChanged(state);
+        await tester.pumpAndSettle();
+      }
+
+      expect(fetches, 1);
+      expect(notifications.requests.length, before);
+      expect(container.read(appResumedProvider), 0);
+
+      // 올라오는 단계(inactive 를 거쳐 resumed)에서는 resumed 때만 한 번 갱신한다.
+      for (final state in [
+        AppLifecycleState.hidden,
+        AppLifecycleState.inactive,
+        AppLifecycleState.resumed,
+      ]) {
+        tester.binding.handleAppLifecycleStateChanged(state);
+        await tester.pumpAndSettle();
+      }
+      expect(fetches, 2);
+      expect(container.read(appResumedProvider), 1);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
   testWidgets('홈 탭을 열어도 한 주기에 목록을 두 번 받지 않는다', (tester) async {
     await pump(tester, UserRole.driver);
     expect(find.byType(ManagerHomeScreen), findsOneWidget);
