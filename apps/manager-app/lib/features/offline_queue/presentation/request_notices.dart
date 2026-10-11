@@ -154,36 +154,40 @@ class RequestNoticesHost extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final notices = ref.watch(requestNoticesProvider);
-    if (notices.isEmpty) return child;
     final maxHeight = MediaQuery.sizeOf(context).height * 0.45;
+    // 안내가 있든 없든 [child] 는 같은 자리에 둔다 — 안내가 뜨고 지워질 때 아래 화면(내비게이터)이 새로 만들어져
+    // 입력 중인 내용과 화면 이동 상태를 잃지 않게 한다.
     return Column(
       children: [
-        Material(
-          color: context.colors.bgBase,
-          child: SafeArea(
-            bottom: false,
-            child: ConstrainedBox(
-              constraints: BoxConstraints(maxHeight: maxHeight),
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    for (final notice in notices) ...[
-                      _NoticeBanner(notice: notice),
-                      const SizedBox(height: 8),
+        if (notices.isEmpty)
+          const SizedBox.shrink()
+        else
+          Material(
+            color: context.colors.bgBase,
+            child: SafeArea(
+              bottom: false,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxHeight: maxHeight),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      for (final notice in notices) ...[
+                        _NoticeBanner(notice: notice),
+                        const SizedBox(height: 8),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
               ),
             ),
           ),
-        ),
-        // 안내가 상태 막대 아래를 차지하므로 아래 화면은 위쪽 안전 영역을 다시 비키지 않는다.
+        // 안내가 상태 막대 아래를 차지하는 동안 아래 화면은 위쪽 안전 영역을 다시 비키지 않는다.
         Expanded(
           child: MediaQuery.removePadding(
             context: context,
-            removeTop: true,
+            removeTop: notices.isNotEmpty,
             child: child,
           ),
         ),

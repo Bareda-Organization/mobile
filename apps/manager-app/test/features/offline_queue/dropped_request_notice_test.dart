@@ -241,6 +241,29 @@ void main() {
       expect(opened.single, Uri(scheme: 'tel', path: '032-000-1100'));
     });
 
+    testWidgets('안내가 뜨고 지워져도 아래 화면의 입력 내용이 사라지지 않는다', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            builder: (context, child) => RequestNoticesHost(child: child!),
+            home: const Scaffold(body: TextField()),
+          ),
+        ),
+      );
+      await tester.enterText(find.byType(TextField), '작성 중');
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(TextField)),
+      );
+
+      container.read(requestNoticesProvider.notifier).addDropped([rider()]);
+      await tester.pumpAndSettle();
+      expect(find.text('작성 중'), findsOneWidget);
+
+      await tester.tap(find.text('확인'));
+      await tester.pumpAndSettle();
+      expect(find.text('작성 중'), findsOneWidget);
+    });
+
     testWidgets('30초 자동 재생이 확정 거절로 지우면 안내가 앱 맨 위에 뜬다', (tester) async {
       final repository = repo(403);
       await queue(repository, '/runs/run-A/emergency', method: 'POST');
