@@ -51,6 +51,7 @@ class ParentLinkView extends StatelessWidget {
         const SizedBox(height: BaraedaSpacing.space4),
         BaraedaCodeInput(
           label: '연결 코드 6자리',
+          numeric: true,
           value: code,
           invalid: invalid,
           onChanged: onCodeChanged,

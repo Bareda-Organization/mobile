@@ -166,6 +166,19 @@ void main() {
       expect(find.text('연결 코드 6자리를 모두 입력하면 눌러요'), findsOneWidget);
     });
 
+    // R53 t3 확신4 — 서버 코드는 숫자 6자리다. 영문 키보드가 뜨거나 글자가 들어가면 안 된다.
+    testWidgets('연결 코드 칸은 숫자 키패드이고 숫자만 받는다', (tester) async {
+      await _pumpAsParent(tester, _StubLinkRepository());
+
+      expect(
+        tester.widget<BaraedaCodeInput>(find.byType(BaraedaCodeInput)).numeric,
+        isTrue,
+      );
+      await tester.enterText(_codeField(), 'ab12cd');
+      await tester.pump();
+      expect(find.text('연결 코드 6자리를 모두 입력하면 눌러요'), findsOneWidget);
+    });
+
     testWidgets('5자리까지는 꺼져 있고 6자리를 채우면 켜진다 — 그때 이유가 사라진다', (tester) async {
       final repository = _StubLinkRepository();
       await _pumpAsParent(tester, repository);
