@@ -252,6 +252,14 @@ void main() {
       expect(find.text('운행 시작 알림'), findsNothing);
     });
 
+    // R53 Ruling 887⑥ — 미승차 설명은 "안 탔거나 하차가 확인되지 않을 때" 까지 포함한다.
+    testWidgets('미승차 스위치 설명은 하차 미확인까지 포함한다', (tester) async {
+      await pump(tester, isParent: true);
+
+      expect(find.text('버스를 타지 않았거나 하차가 확인되지 않을 때'), findsOneWidget);
+      expect(find.text('버스가 왔는데 타지 않았을 때'), findsNothing);
+    });
+
     testWidgets('지연 알림은 스위치 없이 "항상 켜짐" 칩이다 — 학부모 · 학생 공통', (tester) async {
       for (final isParent in [true, false]) {
         await pump(tester, isParent: isParent);

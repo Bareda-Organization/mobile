@@ -112,7 +112,7 @@ class _NotificationSwitchesState extends ConsumerState<_NotificationSwitches> {
           BaraedaSwitch(
             checked: _current.noShow,
             label: '미승차 알림',
-            sublabel: '버스가 왔는데 타지 않았을 때',
+            sublabel: '버스를 타지 않았거나 하차가 확인되지 않을 때',
             disabled: _submitting,
             onChanged: (value) => _update(_current.copyWith(noShow: value)),
           ),
