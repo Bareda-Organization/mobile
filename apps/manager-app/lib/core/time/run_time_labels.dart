@@ -23,3 +23,7 @@ String _spanLabel(int minutes) {
 /// `등원` · `하원`.
 String directionLabel(RunDirection direction) =>
     direction == RunDirection.toAcademy ? '등원' : '하원';
+
+/// 운행 방향별 학생 수 이름 — 등원은 `탑승 예정`, 하원은 이미 타고 있다가 내리므로 `하차 예정`(R53 A9).
+String expectedRidersLabel(RunDirection direction) =>
+    direction == RunDirection.toAcademy ? '탑승 예정' : '하차 예정';

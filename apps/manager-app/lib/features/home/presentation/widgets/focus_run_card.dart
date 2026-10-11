@@ -100,7 +100,8 @@ class FocusRunCard extends StatelessWidget {
             const SizedBox(height: BaraedaSpacing.space3),
             _StatsRow(
               stats: [
-                if (riders != null) _Stat('$riders명', '탑승 예정'),
+                if (riders != null)
+                  _Stat('$riders명', expectedRidersLabel(run.direction)),
                 if (stops != null) _Stat('$stops곳', '승하차지'),
                 if (forEscort && run.absentCount != null)
                   _Stat('${run.absentCount}명', '미등원'),

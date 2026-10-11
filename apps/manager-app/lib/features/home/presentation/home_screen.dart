@@ -280,7 +280,7 @@ class _OtherRunRow extends ConsumerWidget {
     }
     return run.riderCount == null
         ? '출발 ${hhmm(run.departTime)}'
-        : '탑승 예정 ${run.riderCount}명';
+        : '${expectedRidersLabel(run.direction)} ${run.riderCount}명';
   }
 }
 

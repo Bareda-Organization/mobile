@@ -267,6 +267,38 @@ void main() {
     expect(find.text('12:10~12:30'), findsOneWidget);
   });
 
+  // R53 A9 — 하원 회차는 "탑승 예정" 이 아니라 "하차 예정" 이다(큰 카드 숫자 칸 · 목록 부제).
+  testWidgets('하원 회차 큰 카드와 목록 부제는 하차 예정이다', (tester) async {
+    await tester.pumpWidget(
+      wrap([
+        todayRunsProvider.overrideWith(
+          (ref) async => [
+            managerRunFixture(
+              departTime: depart,
+              direction: RunDirection.fromAcademy,
+              riderCount: 14,
+              stopCount: 6,
+            ),
+            managerRunFixture(
+              runId: 'run-2',
+              busNo: '4호차',
+              departTime: depart.add(const Duration(hours: 3)),
+              direction: RunDirection.fromAcademy,
+              riderCount: 9,
+            ),
+          ],
+        ),
+        currentUserRoleProvider.overrideWith((ref) => UserRole.driver),
+      ]),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('하차 예정'), findsOneWidget);
+    expect(find.text('탑승 예정'), findsNothing);
+    expect(find.textContaining('하차 예정 9명'), findsOneWidget);
+    expect(find.textContaining('탑승 예정'), findsNothing);
+  });
+
   // R32 M9 — 확정 전 카드는 눌러도 반응이 없는데 이유를 알려 주지 않았다.
   testWidgets('확정 전 회차는 언제 열리는지 알려 준다', (tester) async {
     await tester.pumpWidget(

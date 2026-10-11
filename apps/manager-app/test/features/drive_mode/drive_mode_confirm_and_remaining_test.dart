@@ -649,6 +649,23 @@ void main() {
       expect(find.text('탑승 예정 2명'), findsOneWidget);
     });
 
+    // R53 A9 — 하원 회차의 학생은 타는 것이 아니라 내리므로 "하차 예정".
+    testWidgets('하원 회차의 다음 승하차지 부제는 탑승 예정이 아니라 하차 예정이다', (tester) async {
+      await pumpDrive(
+        tester,
+        status: RunStatus.moving,
+        direction: RunDirection.fromAcademy,
+        stops: [
+          _stop(1, arrived: true),
+          _stop(2, students: ['김바래', '이다솜']),
+          _stop(3),
+        ],
+      );
+
+      expect(find.text('하차 예정 2명'), findsOneWidget);
+      expect(find.text('탑승 예정 2명'), findsNothing);
+    });
+
     testWidgets('조회 전용 — 승하차 처리 버튼이 없다(M-12)', (tester) async {
       await pumpDrive(
         tester,
