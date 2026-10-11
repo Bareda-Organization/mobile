@@ -15,6 +15,7 @@ import 'package:manager_app/features/home/data/run_summary_store.dart';
 import 'package:manager_app/features/offline_queue/data/models/pending_request_summary.dart';
 import 'package:manager_app/features/offline_queue/data/offline_queue_database.dart';
 import 'package:manager_app/features/offline_queue/data/unsent_emergency_store.dart';
+import 'package:manager_app/features/offline_queue/domain/offline_queue_repository.dart';
 import 'package:manager_app/features/offline_queue/presentation/request_notices.dart';
 
 import '../../support/fake_academy_contact_store.dart';
@@ -36,6 +37,23 @@ class _FixedClock implements Clock {
 class _StubAuthRepository implements AuthRepository {
   @override
   Future<void> logout() async {}
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
+}
+
+/// 대기 요청을 비비는 순간([clear])에 기기 저장 안내가 이미 올라와 있는지 보려고 그 시점의 건수를 적어 두는 대기열.
+class _RecordingQueue implements OfflineQueueRepository {
+  new(this.pending, this.onClear);
+
+  final List<PendingRequestSummary> pending;
+  final void Function() onClear;
+
+  @override
+  Future<List<PendingRequestSummary>> fetchPending() async => pending;
+
+  @override
+  Future<void> clear() async => onClear();
 
   @override
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
@@ -71,6 +89,7 @@ void main() {
   Future<ProviderContainer> launchApp(
     WidgetTester tester, {
     List<Uri>? opened,
+    OfflineQueueRepository? queue,
   }) async {
     await tester.pumpWidget(
       ProviderScope(
@@ -80,6 +99,8 @@ void main() {
             _FixedClock(DateTime(2026, 10, 11, 9, 30)),
           ),
           offlineQueueDatabaseProvider.overrideWithValue(database),
+          if (queue != null)
+            offlineQueueRepositoryProvider.overrideWithValue(queue),
           rosterKeyStoreProvider.overrideWithValue(FakeRosterKeyStore()),
           lastSessionStoreProvider.overrideWithValue(FakeLastSessionStore()),
           runSummaryStoreProvider.overrideWithValue(FakeRunSummaryStore()),
@@ -253,6 +274,33 @@ void main() {
     await tester.pumpAndSettle();
 
     await expectOnlyEmergencyKeptAfterRestart(tester);
+  });
+
+  testWidgets('대기열을 비우기 전에 비상 신고 건수가 먼저 안내에 올라간다(그 사이 앱이 죽어도 안내가 남게)', (
+    tester,
+  ) async {
+    int? countWhenCleared;
+    late ProviderContainer container;
+    final queue = _RecordingQueue([
+      PendingRequestSummary(
+        id: 1,
+        endpoint: '/runs/run-A/emergency',
+        method: 'POST',
+        payload: '{}',
+        createdAt: DateTime(2026, 10, 11),
+      ),
+    ], () => countWhenCleared = container.read(unsentEmergencyProvider)?.count);
+    container = await launchApp(tester, queue: queue);
+    container.read(routerRefreshNotifierProvider);
+    container.read(currentUserRoleProvider.notifier).state = UserRole.driver;
+
+    endSessionAsExpired(container.read(_refProvider));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 100)),
+    );
+
+    await tester.pumpAndSettle();
+    expect(countWhenCleared, 1);
   });
 
   testWidgets('[확인] 을 누르면 사라지고 다시 켜도 나오지 않는다', (tester) async {

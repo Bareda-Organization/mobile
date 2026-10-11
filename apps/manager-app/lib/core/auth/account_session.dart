@@ -155,16 +155,17 @@ Future<void> _discardPendingRequests(
 }) async {
   final queue = ref.read(offlineQueueRepositoryProvider);
   final discarded = await queue.fetchPending();
-  await queue.clear();
-  if (discarded.isEmpty) return;
   final emergencies = discarded.where((request) => request.isEmergency).length;
   // 어느 경로로 비우든(로그아웃 · 세션 만료 · 거절 정리) 못 보낸 비상 신고는 확인할 때까지 기기에 남긴다(Ruling 886).
   // 건수는 이 한 곳에서만 더한다 — 아래 로그인 화면 안내 · 앱 맨 위 안내는 각자 문장만 만든다.
+  // 대기열을 비우기 **전에** 올린다 — 그 사이 프로세스가 죽으면 행도 안내도 남지 않는다.
   if (emergencies > 0) {
     ref
         .read(unsentEmergencyProvider.notifier)
         .add(count: emergencies, contact: contact);
   }
+  await queue.clear();
+  if (discarded.isEmpty) return;
   final notice = ref.read(sessionExpiredNoticeProvider);
   if (notice == null) {
     if (!announceDiscarded) return;
