@@ -294,7 +294,7 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
       footer = [_resendButton()];
     } else if (raised != null) {
       content = focus != null && focus.acked
-          ? _buildAcked(focus)
+          ? _buildAcked(runId, focus, now)
           : _buildSent(runId, raised);
       footer = focus != null && focus.acked ? const [] : [_resendButton()];
     } else {
@@ -465,20 +465,38 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
 
   // ── 학원이 확인함(시안 `emergency--ack`) ────────────────────────────
 
-  Widget _buildAcked(EmergencyItem item) {
+  /// 확인된 뒤에도 발신 1분 안이면 [취소] 를 남긴다(887②) — 서버(`§4.14`)가 받는 오발신 철회 수단이다.
+  Widget _buildAcked(String runId, EmergencyItem item, DateTime now) {
     final colors = context.colors;
+    final cancelable =
+        item.canceledAt == null && now.isBefore(item.cancelableUntil);
     final by = item.ackedByName;
     final who = (by == null || by.isEmpty) ? '학원' : '$by 관계자';
     final ackedAt = item.ackedAt;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        if (_cancelErrorMessage != null) ...[
+          AlertBanner(tone: AlertTone.missed, body: _cancelErrorMessage),
+          const SizedBox(height: 12),
+        ],
         EmergencyStatusCard(
           title: '학원이 확인했어요',
           subtitle:
               '$who · ${ackedAt == null ? '' : '${_time(ackedAt)} · '}'
               '${item.type.label}',
-          below: const [EmergencyCallButton()],
+          below: [
+            if (cancelable) ...[
+              EmergencyCancelWindow(
+                raisedAt: item.raisedAt,
+                cancelableUntil: item.cancelableUntil,
+                canceling: _cancelingId == item.emergencyId,
+                onCancel: () => _cancel(runId, item.emergencyId),
+              ),
+              const SizedBox(height: 12),
+            ],
+            const EmergencyCallButton(),
+          ],
         ),
         const SizedBox(height: 12),
         EmergencySteps(
@@ -671,7 +689,6 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
     // 방금 보낸 알림의 취소는 위 카드가 맡는다 — 같은 알림에 취소 단추가 둘이 되지 않게 한다.
     final canCancel =
         !canceled &&
-        !item.acked &&
         now.isBefore(item.cancelableUntil) &&
         item.emergencyId != excludeId;
     return BaraedaCard(
