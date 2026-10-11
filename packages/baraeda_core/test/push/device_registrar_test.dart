@@ -289,25 +289,28 @@ void main() {
   });
 
   // R53 — 계정 구분 없는 옛 끔 기록과 저장된 토큰만 남은 기기는 /me 로도 계정이 정해져야 이행된다.
-  test('옛 끔 기록과 저장 토큰만 있는 기기에서 /me 를 계정 A 로 부르면 등록하지 않고, 계정 B 는 1건 등록한다', () async {
-    platform.data['device_registration_token'] = 'old-token';
-    platform.data['device_registration_opted_out'] = 'true';
+  test(
+    '옛 끔 기록과 저장 토큰만 있는 기기에서 /me 를 계정 A 로 부르면 등록하지 않고, 계정 B 는 1건 등록한다',
+    () async {
+      platform.data['device_registration_token'] = 'old-token';
+      platform.data['device_registration_opted_out'] = 'true';
 
-    adapter.accountId = 'A';
-    await api.me();
-    expect(deviceCalls(), isEmpty);
+      adapter.accountId = 'A';
+      await api.me();
+      expect(deviceCalls(), isEmpty);
 
-    adapter.accountId = 'B';
-    await api.me();
-    expect(deviceCalls(), hasLength(1));
+      adapter.accountId = 'B';
+      await api.me();
+      expect(deviceCalls(), hasLength(1));
 
-    // 옛 끔 기록은 A 에 붙었어야 하므로, A 가 다시 로그인해도 여전히 꺼진 채다.
-    await api.logout();
-    adapter.calls.clear();
-    adapter.accountId = 'A';
-    await api.login(loginId: 'a', password: 'pw');
-    expect(deviceCalls(), isEmpty);
-  });
+      // 옛 끔 기록은 A 에 붙었어야 하므로, A 가 다시 로그인해도 여전히 꺼진 채다.
+      await api.logout();
+      adapter.calls.clear();
+      adapter.accountId = 'A';
+      await api.login(loginId: 'a', password: 'pw');
+      expect(deviceCalls(), isEmpty);
+    },
+  );
 
   // R53 — 끔 → 켬 뒤 로그아웃·재로그인하면 같은 계정이 다시 등록돼야 한다.
   test('끔을 켬으로 되돌린 뒤 로그아웃하고 같은 계정으로 재로그인하면 1건 등록한다', () async {
