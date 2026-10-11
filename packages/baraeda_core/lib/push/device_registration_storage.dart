@@ -56,7 +56,9 @@ class DeviceRegistrationStorage {
   /// 계정 구분이 없던 옛 끔 기록(`_legacyOptedOutKey`)이 남아 있으면 이 기기에 처음 정해지는 계정에 붙이고
   /// 지운다 — 사용자가 끈 것을 다시 켜지 않는 쪽이다(누가 껐는지는 알 수 없어 처음 들어오는 계정이 받는다).
   Future<void> selectAccount(String accountId) async {
-    await _storage.write(key: _accountKey, value: accountId);
+    if (await _storage.read(key: _accountKey) != accountId) {
+      await _storage.write(key: _accountKey, value: accountId);
+    }
     if (await _storage.read(key: _legacyOptedOutKey) == 'true') {
       await _storage.write(key: _optedOutKeyOf(accountId), value: 'true');
       await _storage.delete(key: _legacyOptedOutKey);
