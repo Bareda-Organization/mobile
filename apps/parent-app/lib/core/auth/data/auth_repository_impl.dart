@@ -1,5 +1,6 @@
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:parent_app/core/auth/academy_contact.dart';
 import 'package:parent_app/core/auth/domain/auth_repository.dart';
 
@@ -73,9 +74,16 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<MeResponse> me() => _guard(() async {
     final me = await _authApi.me();
-    // 승인 대기 화면을 거치지 않은 계정도 문의처를 알게 한다 — 없으면 이미 남긴 값을 지우지 않는다.
+    // 승인 대기 화면을 거치지 않은 계정도 문의처를 알게 한다 — 비었으면 이미 남긴 값을 지우지 않는다.
+    // 저장 실패가 `/me` 를 실패시키지 않게 한다(`AuthApi._registerDevice` 와 같은 방식).
     final contact = me.academy?.contact;
-    if (contact != null) await _contactStorage.save(contact);
+    if (contact != null && contact.trim().isNotEmpty) {
+      try {
+        await _contactStorage.save(contact);
+      } on Object catch (error) {
+        debugPrint('[contact] 문의처 저장 실패 — /me 는 그대로 성공: $error');
+      }
+    }
     return me;
   });
 

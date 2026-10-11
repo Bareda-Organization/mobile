@@ -22,6 +22,14 @@ class _MemoryContactStorage extends AcademyContactStorage {
   Future<void> save(String contact) async => value = contact;
 }
 
+/// 저장할 때마다 예외를 던지는 문의처 저장소 — 저장 실패가 `/me` 를 막지 않는지 본다.
+class _ThrowingContactStorage extends AcademyContactStorage {
+  @override
+  Future<void> save(String contact) async {
+    throw StateError('저장소 쓰기 실패');
+  }
+}
+
 /// `/me` 에 정해 둔 `academy.contact` 로 답하는 가짜 어댑터.
 class _MeAdapter implements HttpClientAdapter {
   new(this.contact);
@@ -58,13 +66,18 @@ class _MeAdapter implements HttpClientAdapter {
 void main() {
   late _MemoryContactStorage storage;
 
-  ProviderContainer containerWith(String? contact) {
+  ProviderContainer containerWith(
+    String? contact, {
+    AcademyContactStorage? contactStorage,
+  }) {
     storage = _MemoryContactStorage();
     final dio = Dio(BaseOptions(baseUrl: 'https://api.test'))
       ..httpClientAdapter = _MeAdapter(contact);
     final container = ProviderContainer(
       overrides: [
-        academyContactStorageProvider.overrideWithValue(storage),
+        academyContactStorageProvider.overrideWithValue(
+          contactStorage ?? storage,
+        ),
         authApiProvider.overrideWithValue(
           AuthApi(dio: dio, tokenStorage: FakeTokenStorage()),
         ),
@@ -89,6 +102,26 @@ void main() {
     await container.read(authRepositoryProvider).me();
 
     expect(storage.value, '전에 저장한 032-000-1100');
+  });
+
+  test('문의처가 공백뿐이면 이미 저장한 문의처를 지우지 않는다', () async {
+    final container = containerWith('   ');
+    storage.value = '전에 저장한 032-000-1100';
+
+    await container.read(authRepositoryProvider).me();
+
+    expect(storage.value, '전에 저장한 032-000-1100');
+  });
+
+  test('문의처 저장이 예외를 던져도 /me 는 성공한다', () async {
+    final container = containerWith(
+      '하늘학원 032-000-1100',
+      contactStorage: _ThrowingContactStorage(),
+    );
+
+    final me = await container.read(authRepositoryProvider).me();
+
+    expect(me.accountId, 'a-1');
   });
 
   testWidgets('/me 로 저장한 문의처가 차단 화면의 전화 단추가 된다', (tester) async {
