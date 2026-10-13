@@ -65,7 +65,7 @@ void main() {
       ]),
     );
 
-    expect(find.text('선택된 운행이 없습니다 — 홈에서 운행을 선택하세요'), findsOneWidget);
+    expect(find.text('선택된 운행이 없어요 — 홈에서 운행을 선택하세요'), findsOneWidget);
   });
 
   testWidgets('기사 역할이면 전송 폼 대신 권한 안내만 보여준다 (canSendDelayNotification=false)', (
@@ -80,7 +80,7 @@ void main() {
       ]),
     );
 
-    expect(find.text('동승자만 지연 알림을 보낼 수 있습니다'), findsOneWidget);
+    expect(find.text('동승자만 지연 알림을 보낼 수 있어요'), findsOneWidget);
     expect(find.textContaining('지연 알림 보내기'), findsNothing);
   });
 
@@ -331,6 +331,6 @@ void main() {
     await tester.tap(find.text('5분 지연 알림 보내기'));
     await tester.pumpAndSettle();
 
-    expect(find.text('직전과 같은 지연 알림은 다시 보낼 수 없습니다'), findsOneWidget);
+    expect(find.text('직전과 같은 지연 알림은 다시 보낼 수 없어요'), findsOneWidget);
   });
 }

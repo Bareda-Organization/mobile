@@ -139,7 +139,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      find.text('미승차가 이미 되돌려져 연락을 기록할 수 없습니다 — 명단을 새로 불러왔습니다'),
+      find.text('미승차가 이미 되돌려져 연락을 기록할 수 없어요 — 명단을 새로 불러왔어요'),
       findsOneWidget,
     );
     expect(find.text('서버 원문'), findsNothing);

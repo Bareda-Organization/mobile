@@ -67,7 +67,7 @@ class _AcademyPickerState extends State<AcademyPicker> {
         _error = switch (failure) {
           ApiFailure(:final message) => message,
           NetworkFailure() => '네트워크 상태를 확인해 주세요',
-          _ => '학원 검색에 실패했습니다',
+          _ => '학원 검색에 실패했어요',
         };
       });
     }
@@ -117,7 +117,7 @@ class _AcademyPickerState extends State<AcademyPicker> {
           Padding(
             padding: const EdgeInsets.only(top: BaraedaSpacing.space2),
             child: WordWrapText(
-              '학원을 찾을 수 없습니다 — 학원에 문의해 주세요',
+              '학원을 찾을 수 없어요 — 학원에 문의해 주세요',
               style: BaraedaTypography.caption.copyWith(
                 color: context.colors.textSecondary,
               ),

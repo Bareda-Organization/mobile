@@ -17,7 +17,7 @@ import 'package:manager_app/features/route_map/presentation/route_map_screen.dar
 /// (`NaverMapAdapter._initSdk` → `FlutterNaverMap().init()`)는 플랫폼
 /// 채널을 필요로 하는데, 위젯 시험 환경에는 그 채널이 없다. `init()` 은
 /// `MissingPluginException` 으로 항상 실패하고 화면은 "지도를 불러오지
-/// 못했습니다" 자리표시만 그린다 — 이 경로는 위젯 시험으로 도달이
+/// 못했어요" 자리표시만 그린다 — 이 경로는 위젯 시험으로 도달이
 /// 원천적으로 불가능하다(같은 결론을 `parent-app` 의
 /// `naver_map_adapter_dispose_test.dart` 가 이미 문서화했다).
 ///
@@ -82,7 +82,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('선택된 운행이 없습니다 — 홈에서 운행을 선택하세요'), findsOneWidget);
+    expect(find.text('선택된 운행이 없어요 — 홈에서 운행을 선택하세요'), findsOneWidget);
     expect(find.byType(MapSurface), findsNothing);
   });
 
@@ -92,7 +92,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('표시할 승하차지가 없습니다'), findsOneWidget);
+    expect(find.text('표시할 승하차지가 없어요'), findsOneWidget);
     expect(find.byType(MapSurface), findsNothing);
   });
 
@@ -251,7 +251,7 @@ void main() {
     await tester.pump();
     await tester.pump();
 
-    expect(find.text('근사 경로 — 실제 도로와 다를 수 있습니다'), findsOneWidget);
+    expect(find.text('근사 경로 — 실제 도로와 다를 수 있어요'), findsOneWidget);
   });
 
   testWidgets('카메라를 노선이 보이게 맞추도록 지시한다', (tester) async {

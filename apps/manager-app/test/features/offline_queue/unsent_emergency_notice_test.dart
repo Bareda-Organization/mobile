@@ -139,7 +139,7 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  final bannerText = find.text('이 기기에서 보낸 비상 신고 1건이 전송되지 않았습니다');
+  final bannerText = find.text('이 기기에서 보낸 비상 신고 1건이 전송되지 않았어요');
 
   Future<void> rejectEmergency(
     WidgetTester tester,
@@ -327,7 +327,7 @@ void main() {
     await rejectEmergency(tester, container);
     await rejectEmergency(tester, container);
 
-    expect(find.text('이 기기에서 보낸 비상 신고 2건이 전송되지 않았습니다'), findsOneWidget);
+    expect(find.text('이 기기에서 보낸 비상 신고 2건이 전송되지 않았어요'), findsOneWidget);
   });
 
   // 892 — 승하차·도착 거절 안내는 건수와 마지막 시각만 기기에 남아 앱을 껐다 켜도 뜨고, [확인] 으로만 지워진다.

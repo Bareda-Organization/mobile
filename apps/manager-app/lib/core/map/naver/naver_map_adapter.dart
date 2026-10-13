@@ -113,7 +113,7 @@ class _NaverMapAdapterState extends State<NaverMapAdapter> {
     if (_initError != null) {
       return const ColoredBox(
         color: Colors.black12,
-        child: Center(child: WordWrapText('지도를 불러오지 못했습니다')),
+        child: Center(child: WordWrapText('지도를 불러오지 못했어요')),
       );
     }
     if (!_initialized) {

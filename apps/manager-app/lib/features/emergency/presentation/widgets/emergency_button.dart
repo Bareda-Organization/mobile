@@ -59,7 +59,7 @@ class EmergencyButton extends ConsumerWidget {
       final opener = ref.read(uriOpenerProvider);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const WordWrapText('확정된 운행이 있을 때 비상 신고를 보낼 수 있습니다'),
+          content: const WordWrapText('확정된 운행이 있을 때 비상 신고를 보낼 수 있어요'),
           action: looksLikePhoneNumber(contact)
               ? SnackBarAction(
                   label: '학원 전화',

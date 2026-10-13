@@ -91,7 +91,7 @@ class _GatedRejectAdapter extends _RejectAdapter {
 const _boarded = {'client_key': 'K', 'status': 'boarded'};
 
 /// Ruling 882 — 큐 재생이 서버의 확정 거절로 행을 지울 때는 반드시 안내를 남긴다. 30초 자동 재생 · 쓰기 직전 재생 ·
-/// 수동 재시도 어느 경로로 지워져도 사용자가 확인할 때까지 화면에 남고, 비상 신고면 "전송되지 않았습니다" 와 학원 전화를 띄운다.
+/// 수동 재시도 어느 경로로 지워져도 사용자가 확인할 때까지 화면에 남고, 비상 신고면 "전송되지 않았어요" 와 학원 전화를 띄운다.
 void main() {
   late OfflineQueueDatabase database;
   late List<List<DroppedRequest>> dropped;
@@ -353,7 +353,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.textContaining('탑승 처리 · 김하늘'), findsOneWidget);
-      expect(find.textContaining('이미 처리된 학생입니다'), findsOneWidget);
+      expect(find.textContaining('이미 처리된 학생이에요'), findsOneWidget);
       // 시간이 지나도 사라지지 않는다.
       await tester.pump(const Duration(minutes: 5));
       expect(find.textContaining('탑승 처리 · 김하늘'), findsOneWidget);
@@ -435,8 +435,8 @@ void main() {
         savedUnsent: UnsentEmergency(count: 1, lastAt: DateTime(2026, 10, 11)),
       );
 
-      expect(find.textContaining('비상 신고 1건이 전송되지 않았습니다'), findsOneWidget);
-      expect(find.textContaining('학원 번호를 모릅니다'), findsOneWidget);
+      expect(find.textContaining('비상 신고 1건이 전송되지 않았어요'), findsOneWidget);
+      expect(find.textContaining('학원 번호를 몰라요'), findsOneWidget);
       expect(find.text('전화'), findsNothing);
       expect(find.textContaining('032-999-9999'), findsNothing);
     });
@@ -452,7 +452,7 @@ void main() {
       container.read(requestNoticesProvider.notifier).addDropped([emergency()]);
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('비상 신고 1건이 전송되지 않았습니다'), findsOneWidget);
+      expect(find.textContaining('비상 신고 1건이 전송되지 않았어요'), findsOneWidget);
       await tester.tap(find.text('전화'));
       await tester.pump();
       expect(opened.single, Uri(scheme: 'tel', path: '032-000-1100'));
@@ -516,7 +516,7 @@ void main() {
           ),
         ),
       );
-      expect(find.textContaining('전송되지 않았습니다'), findsNothing);
+      expect(find.textContaining('전송되지 않았어요'), findsNothing);
 
       await tester.runAsync(() async {
         await tester.pump(OfflineQueueAutoSync.interval);
@@ -524,7 +524,7 @@ void main() {
       });
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('비상 신고 1건이 전송되지 않았습니다'), findsOneWidget);
+      expect(find.textContaining('비상 신고 1건이 전송되지 않았어요'), findsOneWidget);
       await tester.pumpWidget(const SizedBox.shrink());
     });
   });

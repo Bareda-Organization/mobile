@@ -105,22 +105,22 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         _submitting = false;
         switch (failure) {
           case ApiFailure(code: 'DUPLICATE_LOGIN_ID'):
-            _loginIdError = '이미 사용 중인 아이디입니다';
+            _loginIdError = '이미 사용 중인 아이디예요';
           case ApiFailure(code: 'ACADEMY_NOT_FOUND'):
-            _formError = '학원을 찾을 수 없습니다 — 학원에 문의해 주세요';
+            _formError = '학원을 찾을 수 없어요 — 학원에 문의해 주세요';
           case ApiFailure(:final message):
             _formError = message;
           case NetworkFailure():
             _formError = '네트워크 상태를 확인해 주세요';
           default:
-            _formError = '가입 신청에 실패했습니다';
+            _formError = '가입 신청에 실패했어요';
         }
       });
     } on Object {
       if (!mounted) return;
       setState(() {
         _submitting = false;
-        _formError = '가입 신청에 실패했습니다';
+        _formError = '가입 신청에 실패했어요';
       });
     }
   }
@@ -146,7 +146,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: WordWrapText('가입 신청이 접수되었습니다. 로그인 후 진행 상황을 볼 수 있습니다.'),
+        content: WordWrapText('가입 신청이 접수되었어요. 로그인 후 진행 상황을 볼 수 있어요.'),
       ),
     );
     context.go(AppRoutes.login);

@@ -27,7 +27,7 @@ final driveModeRunProvider = Provider<ManagerRun?>((ref) {
 final driveModeRosterProvider = FutureProvider<RosterResponse>((ref) {
   final runId = ref.watch(selectedRunIdProvider);
   if (runId == null) {
-    throw StateError('선택된 운행이 없습니다');
+    throw StateError('선택된 운행이 없어요');
   }
   return ref.watch(rosterRepositoryProvider).fetchRoster(runId);
 });

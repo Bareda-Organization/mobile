@@ -31,7 +31,7 @@ class _RouteMapScreenState extends ConsumerState<RouteMapScreen> {
 
   void _handleMapAuthFailed(Object exception) {
     if (!mounted) return;
-    setState(() => _mapErrorMessage = '지도 인증에 실패했습니다 — 잠시 후 다시 시도해 주세요');
+    setState(() => _mapErrorMessage = '지도 인증에 실패했어요 — 잠시 후 다시 시도해 주세요');
   }
 
   @override
@@ -46,7 +46,7 @@ class _RouteMapScreenState extends ConsumerState<RouteMapScreen> {
         actions: EmergencyButton(),
       ),
       body: runId == null
-          ? const Center(child: WordWrapText('선택된 운행이 없습니다 — 홈에서 운행을 선택하세요'))
+          ? const Center(child: WordWrapText('선택된 운행이 없어요 — 홈에서 운행을 선택하세요'))
           : _buildBody(context, runId),
     );
   }
@@ -61,7 +61,7 @@ class _RouteMapScreenState extends ConsumerState<RouteMapScreen> {
           child: routeAsync.when(
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (error, _) => Center(
-              child: WordWrapText('노선을 불러오지 못했습니다: ${describeError(error)}'),
+              child: WordWrapText('노선을 불러오지 못했어요: ${describeError(error)}'),
             ),
             data: _buildMap,
           ),
@@ -96,7 +96,7 @@ class _RouteMapScreenState extends ConsumerState<RouteMapScreen> {
       // §4.3 은 "노선 없음" 을 별도 상태로 정의하지 않는다 — stops[] 가
       // 빈 배열인 것도 정상 응답이다(연결 끊김과는 다른 경우 — 그쪽은
       // 위 배너가 맡는다).
-      return const Center(child: WordWrapText('표시할 승하차지가 없습니다'));
+      return const Center(child: WordWrapText('표시할 승하차지가 없어요'));
     }
     return RouteMapView(
       route: route,
@@ -162,7 +162,7 @@ class _LegendCard extends StatelessWidget {
           const SizedBox(height: 6),
           if (notice != null) WordWrapText(notice, style: body),
           if (route.fallbackUsed && route.roadPath.length >= 2)
-            const WordWrapText('근사 경로 — 실제 도로와 다를 수 있습니다'),
+            const WordWrapText('근사 경로 — 실제 도로와 다를 수 있어요'),
           WordWrapText('지도 선은 안내용이고, 실제 길은 기사 판단이에요.', style: body),
         ],
       ),

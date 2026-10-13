@@ -239,7 +239,7 @@ class _UnsentEmergencyBanner extends ConsumerWidget {
       children: [
         AlertBanner(
           tone: AlertTone.missed,
-          title: '이 기기에서 보낸 비상 신고 ${unsent.count}건이 전송되지 않았습니다',
+          title: '이 기기에서 보낸 비상 신고 ${unsent.count}건이 전송되지 않았어요',
           body: '학원에 직접 알려 주세요 · 마지막 $lastAt',
           action: BaraedaButton(
             label: '확인',
@@ -258,7 +258,7 @@ class _UnsentEmergencyBanner extends ConsumerWidget {
         else
           const BaraedaCard(
             tone: BaraedaCardTone.mist,
-            child: WordWrapText('학원 번호를 모릅니다 · 학원에 직접 연락해 주세요'),
+            child: WordWrapText('학원 번호를 몰라요 · 학원에 직접 연락해 주세요'),
           ),
       ],
     );

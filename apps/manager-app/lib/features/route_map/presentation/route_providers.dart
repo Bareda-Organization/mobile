@@ -13,7 +13,7 @@ import 'package:manager_app/features/route_map/data/models/route_response.dart';
 final routeProvider = FutureProvider<RouteResponse>((ref) {
   final runId = ref.watch(selectedRunIdProvider);
   if (runId == null) {
-    throw StateError('선택된 운행이 없습니다');
+    throw StateError('선택된 운행이 없어요');
   }
   return ref.watch(routeRepositoryProvider).fetchRoute(runId);
 });

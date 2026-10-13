@@ -48,7 +48,7 @@ class _OfflineQueueScreenState extends ConsumerState<OfflineQueueScreen> {
           .replayPending();
       message = _describeResult(result);
     } on Object {
-      message = '재시도를 완료하지 못했습니다';
+      message = '재시도를 완료하지 못했어요';
     }
     if (!mounted) return;
     setState(() {
@@ -160,7 +160,7 @@ class _OfflineQueueScreenState extends ConsumerState<OfflineQueueScreen> {
                         child: Center(child: CircularProgressIndicator()),
                       ),
                       error: (error, _) => WordWrapText(
-                        '대기열을 불러오지 못했습니다: ${describeError(error)}',
+                        '대기열을 불러오지 못했어요: ${describeError(error)}',
                       ),
                       data: _buildList,
                     ),

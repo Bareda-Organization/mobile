@@ -69,7 +69,7 @@ LocationSettings buildLocationSettings(TargetPlatform platform) {
       accuracy: accuracy,
       foregroundNotificationConfig: const ForegroundNotificationConfig(
         notificationTitle: '운행 중',
-        notificationText: '학부모에게 버스 위치를 보내고 있습니다',
+        notificationText: '학부모에게 버스 위치를 보내고 있어요',
         enableWakeLock: true,
       ),
     ),

@@ -151,7 +151,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text(_emergencyMarker), findsNothing);
-    expect(find.text('확정된 운행이 있을 때 비상 신고를 보낼 수 있습니다'), findsOneWidget);
+    expect(find.text('확정된 운행이 있을 때 비상 신고를 보낼 수 있어요'), findsOneWidget);
   });
 
   // R53 A4 — 신고할 수 있는 회차가 없어 막혔을 때도 급하면 학원에 전화할 수단이 있어야 한다.

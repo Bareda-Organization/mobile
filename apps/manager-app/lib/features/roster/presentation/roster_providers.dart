@@ -13,7 +13,7 @@ import 'package:manager_app/features/roster/data/models/roster_response.dart';
 final rosterProvider = FutureProvider<RosterResponse>((ref) {
   final runId = ref.watch(selectedRunIdProvider);
   if (runId == null) {
-    throw StateError('선택된 운행이 없습니다');
+    throw StateError('선택된 운행이 없어요');
   }
   return ref.watch(rosterRepositoryProvider).fetchRoster(runId);
 });

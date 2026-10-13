@@ -356,7 +356,7 @@ void main() {
       failure: const ApiFailure(
         statusCode: 409,
         code: 'RUN_CANCELED',
-        message: '취소된 회차입니다',
+        message: '취소된 회차예요',
       ),
     );
     await tester.pumpWidget(wrap(DateTime(2026, 10, 3, 12, 14), repo));
@@ -367,7 +367,7 @@ void main() {
     await tester.tap(find.text('시작하기'));
     await tester.pumpAndSettle();
 
-    expect(find.text('취소된 회차입니다'), findsOneWidget);
+    expect(find.text('취소된 회차예요'), findsOneWidget);
     expect(find.text('DRIVE_MARKER'), findsNothing);
   });
 }

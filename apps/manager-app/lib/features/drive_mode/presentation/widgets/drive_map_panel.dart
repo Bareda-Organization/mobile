@@ -33,14 +33,14 @@ class DriveMapPanel extends ConsumerWidget {
             child: Center(child: CircularProgressIndicator()),
           ),
           error: (_, _) => _Notice(
-            message: '노선을 불러오지 못했습니다',
+            message: '노선을 불러오지 못했어요',
             action: TextButton(
               onPressed: () => ref.invalidate(routeProvider),
               child: const Text('다시 시도'),
             ),
           ),
           data: (route) => route.stops.isEmpty
-              ? const _Notice(message: '표시할 승하차지가 없습니다')
+              ? const _Notice(message: '표시할 승하차지가 없어요')
               : RouteMapView(route: route, busPosition: busPosition),
         ),
       ),

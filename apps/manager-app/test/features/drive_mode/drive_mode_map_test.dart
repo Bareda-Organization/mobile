@@ -152,10 +152,7 @@ void main() {
     positionRepositoryProvider.overrideWithValue(_NoopPositionRepository()),
   ];
 
-  Future<void> pumpScreen(
-    WidgetTester tester,
-    List<Override> overrides,
-  ) async {
+  Future<void> pumpScreen(WidgetTester tester, List<Override> overrides) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: overrides,
@@ -183,12 +180,7 @@ void main() {
     expect(pins, hasLength(stops.length));
     expect(
       {for (final m in pins) m.id: m.seq},
-      {
-        's1': 1,
-        's2': 2,
-        's3': 3,
-        's4': 4,
-      },
+      {'s1': 1, 's2': 2, 's3': 3, 's4': 4},
     );
   });
 
@@ -284,7 +276,7 @@ void main() {
     final surface = tester.widget<MapSurface>(find.byType(MapSurface));
     expect(surface.polylines, hasLength(1));
     expect(surface.polylines.single.points, route.roadPath);
-    expect(find.text('근사 경로 — 실제 도로와 다를 수 있습니다'), findsNothing);
+    expect(find.text('근사 경로 — 실제 도로와 다를 수 있어요'), findsNothing);
   });
 
   testWidgets('road_path 가 없거나 1점이면 선 없이 핀만 그린다', (tester) async {
@@ -317,7 +309,7 @@ void main() {
     );
     await pumpScreen(tester, overrides(route: route));
 
-    expect(find.text('근사 경로 — 실제 도로와 다를 수 있습니다'), findsOneWidget);
+    expect(find.text('근사 경로 — 실제 도로와 다를 수 있어요'), findsOneWidget);
   });
 
   testWidgets('카메라를 노선이 보이게 맞추도록 지시한다', (tester) async {
