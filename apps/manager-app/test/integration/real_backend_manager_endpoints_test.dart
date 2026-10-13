@@ -450,9 +450,10 @@ void main() {
         await api.recordNoShowContact(
           runId: '3',
           riderId: '6',
-          request: const NoShowContactRequest(
+          request: NoShowContactRequest(
             attemptType: NoShowAttemptType.call,
             result: NoShowContactResult.noAnswer,
+            clientKey: IdempotencyKeys.generate(),
           ),
         );
       },
@@ -634,9 +635,10 @@ void main() {
 
         final response = await dio.post<Map<String, dynamic>>(
           '/runs/3/reports',
-          data: const ReportRequest(
+          data: ReportRequest(
             type: ReportType.etc,
             memo: 'F5 M 실백엔드 계약 시험 — §4.13 연결 확인용 보고서',
+            clientKey: IdempotencyKeys.generate(),
           ).toJson(),
         );
 

@@ -201,7 +201,7 @@ void main() {
   // R46-FUFEAT ③(Ruling 542) — 알림에 회차 식별자(run_id)가 실려 와서, 눌러서 관련 화면으로 간다.
   group('알림 눌러 이동', () {
     final marker = <String, GoRoute>{
-      for (final path in [AppRoutes.runReady, AppRoutes.roster])
+      for (final path in [AppRoutes.runReady, AppRoutes.roster, AppRoutes.home])
         path: GoRoute(path: path, builder: (_, _) => Text('MARKER $path')),
     };
     Future<ProviderContainer> pumpWith(
@@ -252,6 +252,27 @@ void main() {
 
       expect(find.text('MARKER ${AppRoutes.roster}'), findsOneWidget);
     });
+
+    // R56 · Ruling 894 ⑤(K3) — 확정된 회차가 취소되면 배치된 기사 · 동승자에게 `run_canceled` 가 온다.
+    // 취소된 회차는 목록에서 빠지므로 그 회차를 고르지 않고 홈으로 보낸다.
+    for (final role in [UserRole.driver, UserRole.escort]) {
+      testWidgets('회차 취소 알림은 중요 표시와 함께 보이고 누르면 ${role.name} 을 홈으로 보낸다', (
+        tester,
+      ) async {
+        final container = await pumpWith(tester, [
+          _item('1', type: 'run_canceled', runId: 'run-7'),
+        ], role: role);
+        container.read(selectedRunIdProvider.notifier).state = 'run-A';
+
+        expect(find.text('중요'), findsOneWidget);
+        await tester.tap(find.text('알림 1'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('MARKER ${AppRoutes.home}'), findsOneWidget);
+        expect(container.read(selectedRunIdProvider), 'run-A');
+        expect(container.read(notificationFeedProvider).value!.unreadCount, 0);
+      });
+    }
 
     testWidgets('이미 읽은 알림도 눌러서 이동한다', (tester) async {
       final fake = FakeNotificationRepository([

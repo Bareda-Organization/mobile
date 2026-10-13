@@ -227,4 +227,39 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
     });
   }
+
+  // R56 M-a — 옆 화면(페이지)이 쉘을 덮으면 쉘의 구독이 멈춘다. 그 사이 선택이 B 로 바뀌고 B 가 끝나도 쉘은 B 가
+  // 살아 있던 것을 본 적이 없어, 화면을 닫아도 끝난 B 에 머물렀다.
+  testWidgets('쉘이 덮인 동안 선택이 B 로 바뀌고 B 가 끝나도, 덮은 화면을 닫으면 다음 회차로 갈아탄다', (
+    tester,
+  ) async {
+    final container = await pump(tester, UserRole.driver, [
+      confirmedA(),
+      confirmedB(),
+    ]);
+    final context = tester.element(find.byType(BaraedaTabBar));
+    Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (_) => const Scaffold(body: Text('덮은 화면')),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // 덮인 동안: 선택이 B(살아 있음) → B 가 끝나고 C 가 확정된다.
+    container.read(selectedRunIdProvider.notifier).state = 'run-B';
+    await tester.pumpAndSettle();
+    container.read(_runs.notifier).state = [
+      finishedA(),
+      finishedB(),
+      confirmedC(),
+    ];
+    await tester.pumpAndSettle();
+    expect(container.read(selectedRunIdProvider), 'run-B');
+
+    Navigator.of(context).pop();
+    await tester.pumpAndSettle();
+
+    expect(container.read(selectedRunIdProvider), 'run-C');
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
 }

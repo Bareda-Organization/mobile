@@ -9,6 +9,8 @@ import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/core/time/run_time_labels.dart';
 import 'package:manager_app/core/ui/limited_text_controller.dart';
 import 'package:manager_app/core/ui/manager_header.dart';
+import 'package:manager_app/features/offline_queue/domain/send_outcome.dart';
+import 'package:manager_app/features/offline_queue/presentation/offline_queue_providers.dart';
 import 'package:manager_app/features/roster/presentation/roster_providers.dart';
 import 'package:manager_app/features/run_end/data/models/report_request.dart';
 import 'package:manager_app/features/run_end/data/models/report_result.dart';
@@ -38,6 +40,9 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
   bool _submitting = false;
   String? _errorMessage;
   ReportResult? _result;
+
+  /// 보고가 통신 두절로 기기에 쌓였는가 — 서버에 아직 접수되지 않았다(R56). 같은 보고가 두 번 쌓이지 않게 제출 단추를 끈다.
+  bool _queued = false;
 
   static const _typeOptions = [
     BaraedaSegmentedOption('road_block', label: '도로 통제'),
@@ -79,18 +84,26 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
       _errorMessage = null;
     });
     try {
-      final result = await ref
+      final outcome = await ref
           .read(reportsRepositoryProvider)
           .submitReport(
             runId: runId,
             request: ReportRequest(
               type: _effectiveType,
               memo: memo,
+              // 즉시 전송과 오프라인 재생이 같은 키를 쓰도록 제출하는 순간 한 번만 만든다(R56).
+              clientKey: IdempotencyKeys.generate(),
               riderId: _isGuardianAbsent ? _selectedRiderId : null,
             ),
           );
       if (!mounted) return;
-      setState(() => _result = result);
+      switch (outcome) {
+        case Sent(:final value):
+          setState(() => _result = value);
+        case Queued():
+          ref.invalidate(pendingRequestsProvider);
+          setState(() => _queued = true);
+      }
     } on Failure catch (failure) {
       if (!mounted) return;
       setState(() => _errorMessage = describeFailure(failure));
@@ -159,6 +172,14 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
                           tone: AlertTone.boarded,
                           title: '보고가 접수됐어요',
                           body: hhmm(_result!.reportedAt),
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                      if (_queued) ...[
+                        const AlertBanner(
+                          tone: AlertTone.info,
+                          title: '보고를 기기에 저장했어요',
+                          body: '통신이 끊겨 아직 학원에 전달되지 못했어요 · 연결되면 자동으로 보내요',
                         ),
                         const SizedBox(height: 12),
                       ],
@@ -261,7 +282,7 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
                         size: BaraedaButtonSize.xl,
                         block: true,
                         // 접수된 뒤에는 끈다 — 다시 누르면 같은 보고가 한 번 더 관계자에게 통지된다(R32 M11).
-                        onPressed: (_submitting || _result != null)
+                        onPressed: (_submitting || _result != null || _queued)
                             ? null
                             : () => _submit(runId),
                       ),

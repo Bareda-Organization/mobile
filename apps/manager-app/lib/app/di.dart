@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/core/constants/api_constants.dart';
 import 'package:manager_app/core/constants/navigation_constants.dart';
@@ -30,6 +31,7 @@ import 'package:manager_app/features/navigation/domain/navigation_repository.dar
 import 'package:manager_app/features/offline_queue/data/offline_queue_database.dart';
 import 'package:manager_app/features/offline_queue/data/offline_queue_repository_impl.dart';
 import 'package:manager_app/features/offline_queue/domain/offline_queue_repository.dart';
+import 'package:manager_app/features/offline_queue/domain/replay_gate.dart';
 import 'package:manager_app/features/offline_queue/presentation/request_notices.dart';
 import 'package:manager_app/features/position/data/position_api.dart';
 import 'package:manager_app/features/position/data/position_repository_impl.dart';
@@ -134,8 +136,14 @@ final managerRunRepositoryProvider = Provider<ManagerRunRepository>((ref) {
     store: ref.watch(runSummaryStoreProvider),
     clock: ref.watch(clockProvider),
     isSignedIn: () => ref.read(currentUserRoleProvider) != null,
+    onSource: (savedAt) =>
+        ref.read(savedRunsAtProvider.notifier).state = savedAt,
   );
 });
+
+/// 오늘 회차 목록이 서버가 아니라 기기 저장본이면 그 요약을 받은 시각, 서버에서 새로 받았으면 `null`(R56) —
+/// 통신 두절 중 홈이 그 사실을 알리는 근거다. 로그아웃 · 계정 정리가 비운다.
+final savedRunsAtProvider = StateProvider<DateTime?>((ref) => null);
 
 /// API_SPEC §4.4·§4.5 — 운행 시작·승하차지 도착(기사 전용).
 final driveModeApiProvider = Provider<DriveModeApi>((ref) {
@@ -232,7 +240,10 @@ final reportsApiProvider = Provider<ReportsApi>((ref) {
 });
 
 final reportsRepositoryProvider = Provider<ReportsRepository>((ref) {
-  return ReportsRepositoryImpl(api: ref.watch(reportsApiProvider));
+  return ReportsRepositoryImpl(
+    api: ref.watch(reportsApiProvider),
+    offlineQueue: ref.watch(offlineQueueRepositoryProvider),
+  );
 });
 
 /// API_SPEC §1.7 오프라인 큐(M-06) — drift 로컬 DB 하나를 앱 전역에서
@@ -243,8 +254,13 @@ final offlineQueueDatabaseProvider = Provider<OfflineQueueDatabase>((ref) {
   return database;
 });
 
+/// 로그아웃이 시작된 뒤 대기열 재생을 막는 빗장(R56) — `signOut` 이 잠그고 대기열 정리 · 새 로그인이 푼다.
+final replayGateProvider = Provider<ReplayGate>((ref) => ReplayGate());
+
 final offlineQueueRepositoryProvider = Provider<OfflineQueueRepository>((ref) {
   return OfflineQueueRepositoryImpl(
+    replayGate: ref.watch(replayGateProvider),
+    cipher: ref.watch(rosterCipherProvider),
     database: ref.watch(offlineQueueDatabaseProvider),
     dio: ref.watch(apiClientProvider).dio,
     clock: ref.watch(clockProvider),

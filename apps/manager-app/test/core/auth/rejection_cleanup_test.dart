@@ -106,6 +106,7 @@ void main() {
   late FakeRunSummaryStore summary;
   late FakeTokenStorage tokens;
   late FakeUnsentEmergencyStore unsent;
+  late FakeUnsentEmergencyStore droppedTally;
 
   setUp(() {
     database = OfflineQueueDatabase.forTesting(NativeDatabase.memory());
@@ -117,6 +118,7 @@ void main() {
     ));
     tokens = FakeTokenStorage(seedRefreshToken: 'r', seedAccessToken: 'a');
     unsent = FakeUnsentEmergencyStore();
+    droppedTally = FakeUnsentEmergencyStore();
   });
 
   tearDown(() => database.close());
@@ -135,6 +137,7 @@ void main() {
         lastSessionStoreProvider.overrideWithValue(lastSession),
         runSummaryStoreProvider.overrideWithValue(summary),
         unsentEmergencyStoreProvider.overrideWithValue(unsent),
+        droppedTallyStoreProvider.overrideWithValue(droppedTally),
         academyContactStoreProvider.overrideWithValue(
           contacts ?? FakeAcademyContactStore(),
         ),
@@ -251,6 +254,59 @@ void main() {
     expect(container.read(requestNoticesProvider).single.title, contains('1건'));
     expect(container.read(unsentEmergencyProvider)?.count, 1);
     expect(unsent.saved?.count, 1);
+  });
+
+  // R56 t4 · R55 ② — 앱 시작 `/me` 403 정리 안내(`보내지 못한 처리 N건이 지워졌어요`)가 메모리뿐이라 앱을 껐다 켜면 사라졌다.
+  // 건수와 마지막 시각만 기기에 남긴다(892 와 같은 방식 — 학생 이름은 남기지 않는다).
+  test('/me 403 정리 안내의 건수와 시각이 기기에 남아 앱을 다시 켜도 이름 없이 남는다', () async {
+    final container = build(
+      auth: _FailingMe(
+        const Failure.api(statusCode: 403, code: 'AUTH_REJECTED', message: 'm'),
+      ),
+    );
+    await seedDeviceState(container);
+    await container
+        .read(offlineQueueRepositoryProvider)
+        .sendOrQueue<void>(
+          endpoint: '/runs/run-A/riders/8',
+          method: 'PATCH',
+          payload: const {'client_key': 'K2', 'status': 'boarded'},
+          // Failure 는 Exception/Error 를 상속하지 않는다.
+          // ignore: only_throw_errors
+          send: () => throw const Failure.network(),
+        );
+
+    await container.read(authBootstrapProvider.future);
+    await expectEverythingForgotten(container);
+
+    expect(droppedTally.saved?.count, 2);
+    expect(droppedTally.saved?.toJson().keys, {'count', 'last_at', 'contact'});
+    expect(droppedTally.saved?.contact, isNull);
+
+    // 앱을 껐다 켠다 — 같은 기기 저장소를 넘긴 새 컨테이너.
+    final restarted = build()..read(droppedTallyProvider);
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    expect(restarted.read(droppedTallyProvider)?.count, 2);
+    expect(restarted.read(requestNoticesProvider), isEmpty);
+  });
+
+  test('/me 403 정리 안내를 확인하면 기기에 남긴 건수도 그 안내가 센 만큼 줄어든다', () async {
+    final container = build(
+      auth: _FailingMe(
+        const Failure.api(statusCode: 403, code: 'AUTH_REJECTED', message: 'm'),
+      ),
+    );
+    await seedDeviceState(container);
+    await container.read(authBootstrapProvider.future);
+    await expectEverythingForgotten(container);
+    final notice = container.read(requestNoticesProvider).single;
+    expect(container.read(droppedTallyProvider)?.count, 1);
+
+    container.read(requestNoticesProvider.notifier).dismiss(notice.id);
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+
+    expect(container.read(droppedTallyProvider), isNull);
+    expect(droppedTally.saved, isNull);
   });
 
   test('대기·거절 게이트로 정리하면 버려진 처리 건수와 비상 신고 안내가 남는다', () async {

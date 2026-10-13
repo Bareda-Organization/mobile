@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
+import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -11,6 +12,7 @@ import 'package:manager_app/core/auth/user_role.dart';
 import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
+import 'package:manager_app/features/offline_queue/data/offline_queue_database.dart';
 import 'package:manager_app/features/offline_queue/domain/send_outcome.dart';
 import 'package:manager_app/features/roster/data/models/ack_changes_result.dart';
 import 'package:manager_app/features/roster/data/models/boarding_update_request.dart';
@@ -26,9 +28,12 @@ import '../../support/manager_run_fixture.dart';
 /// Z-05(BR-254) — 미승차를 되돌려 `waiting` 으로 돌아간 탑승자에게 연락 기록을 보내면 서버가
 /// `404 NO_SHOW_CASE_NOT_FOUND` 를 준다. 화면이 죽지 않고 이유를 알리며, 낡은 명단을 다시 불러온다.
 class _ContactFailingRepository implements RosterRepository {
-  new(this.roster);
+  new(this.roster, {this.failure});
 
   final RosterResponse roster;
+
+  /// 주면 이 실패를 던진다 — 기본은 `404 NO_SHOW_CASE_NOT_FOUND`.
+  final Failure? failure;
   int fetchCount = 0;
 
   @override
@@ -45,11 +50,12 @@ class _ContactFailingRepository implements RosterRepository {
   }) async {
     // Failure 는 Exception/Error 를 상속하지 않는다(다른 시험의 같은 패턴).
     // ignore: only_throw_errors
-    throw const ApiFailure(
-      statusCode: 404,
-      code: 'NO_SHOW_CASE_NOT_FOUND',
-      message: '서버 원문',
-    );
+    throw failure ??
+        const ApiFailure(
+          statusCode: 404,
+          code: 'NO_SHOW_CASE_NOT_FOUND',
+          message: '서버 원문',
+        );
   }
 
   @override
@@ -118,6 +124,10 @@ void main() {
     tester,
   ) async {
     final repository = _ContactFailingRepository(_roster);
+    final queueDatabase = OfflineQueueDatabase.forTesting(
+      NativeDatabase.memory(),
+    );
+    addTearDown(queueDatabase.close);
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -126,6 +136,8 @@ void main() {
           currentUserRoleProvider.overrideWith((ref) => UserRole.escort),
           todayRunsProvider.overrideWith((ref) async => [managerRunFixture()]),
           rosterRepositoryProvider.overrideWithValue(repository),
+          // 연락 기록은 오프라인 대기열을 거친다(R56) — 기기 DB 대신 메모리 DB.
+          offlineQueueDatabaseProvider.overrideWithValue(queueDatabase),
         ],
         child: const MaterialApp(home: NoShowScreen(riderId: 'r1')),
       ),
@@ -144,5 +156,40 @@ void main() {
     );
     expect(find.text('서버 원문'), findsNothing);
     expect(repository.fetchCount, 2);
+  });
+
+  // R56 · Ruling 894 ⑧ — 통신 두절이면 연락 기록이 기기 대기열에 쌓인다. 서버에 반영된 것처럼 명단을 다시 받거나 그리지
+  // 않고, 저장했다고 알린다(§1.9).
+  testWidgets('통신 두절이면 연락 기록을 기기에 저장했다고 알리고 명단은 다시 받지 않는다', (tester) async {
+    final repository = _ContactFailingRepository(
+      _roster,
+      failure: const Failure.network(),
+    );
+    final queueDatabase = OfflineQueueDatabase.forTesting(
+      NativeDatabase.memory(),
+    );
+    addTearDown(queueDatabase.close);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          tokenStorageProvider.overrideWithValue(_NeverResolvingTokenStorage()),
+          selectedRunIdProvider.overrideWith((ref) => 'run-1'),
+          currentUserRoleProvider.overrideWith((ref) => UserRole.escort),
+          todayRunsProvider.overrideWith((ref) async => [managerRunFixture()]),
+          rosterRepositoryProvider.overrideWithValue(repository),
+          offlineQueueDatabaseProvider.overrideWithValue(queueDatabase),
+        ],
+        child: const MaterialApp(home: NoShowScreen(riderId: 'r1')),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.widgetWithText(BaraedaButton, '연락 기록 남기기'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(BaraedaButton, '기록 저장'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('연락 기록을 기기에 저장했어요'), findsOneWidget);
+    expect(repository.fetchCount, 1);
   });
 }

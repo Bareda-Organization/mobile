@@ -141,6 +141,8 @@ class _NoShowContactSheetState extends State<NoShowContactSheet> {
             NoShowContactRequest(
               attemptType: _attemptType,
               result: _result,
+              // 즉시 전송과 오프라인 재생이 같은 키를 쓰도록 기록을 저장하는 순간 한 번만 만든다(R56).
+              clientKey: IdempotencyKeys.generate(),
               decision: _decision,
             ),
           ),

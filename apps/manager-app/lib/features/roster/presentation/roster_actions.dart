@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/launcher/device_launchers.dart';
 import 'package:manager_app/core/network/failure_messages.dart';
+import 'package:manager_app/features/offline_queue/domain/send_outcome.dart';
+import 'package:manager_app/features/offline_queue/presentation/offline_queue_providers.dart';
 import 'package:manager_app/features/roster/data/models/no_show_contact_request.dart';
 import 'package:manager_app/features/roster/presentation/roster_providers.dart';
 
@@ -30,24 +32,45 @@ Future<String?> callGuardian(
   }
 }
 
-/// 미승차 연락 기록(§4.8)을 보낸다. 성공하면 명단을 다시 받고 `null`, 실패하면 이유를 돌려준다.
-/// 다른 사람이 미승차를 되돌렸다면(`NO_SHOW_CASE_NOT_FOUND`) 이 화면의 명단이 낡았으니 그때도 다시 받는다(Z-05).
-Future<String?> submitNoShowContact(
+/// 미승차 연락 기록(§4.8)을 보낸다. 서버가 받았으면 명단을 다시 받고 `error` 없이 돌아온다.
+/// 통신 두절이면 오프라인 큐에 쌓고(`queued`) 명단은 다시 받지 않는다 — 서버에 아직 반영되지 않았으니
+/// 낙관적으로 그리지 않는다(§1.9). 실패하면 이유를 돌려준다. 다른 사람이 미승차를 되돌렸다면
+/// (`NO_SHOW_CASE_NOT_FOUND`) 이 화면의 명단이 낡았으니 그때도 다시 받는다(Z-05).
+///
+/// 큐에 쌓인 기록은 승하차와 같은 재생 · 거절 안내 규칙을 따른다(R56 · Ruling 894 ⑧).
+Future<({String? error, bool queued})> submitNoShowContact(
   ProviderContainer container, {
   required String runId,
   required String riderId,
   required NoShowContactRequest request,
 }) async {
   try {
-    await container
-        .read(rosterRepositoryProvider)
-        .recordNoShowContact(runId: runId, riderId: riderId, request: request);
-    container.invalidate(rosterProvider);
-    return null;
+    final outcome = await container
+        .read(offlineQueueRepositoryProvider)
+        .sendOrQueue<void>(
+          endpoint: '/runs/$runId/riders/$riderId/no-show-contacts',
+          method: 'POST',
+          payload: request.toJson(),
+          send: () => container
+              .read(rosterRepositoryProvider)
+              .recordNoShowContact(
+                runId: runId,
+                riderId: riderId,
+                request: request,
+              ),
+        );
+    switch (outcome) {
+      case Sent():
+        container.invalidate(rosterProvider);
+        return (error: null, queued: false);
+      case Queued():
+        container.invalidate(pendingRequestsProvider);
+        return (error: null, queued: true);
+    }
   } on Failure catch (failure) {
     if (failure case ApiFailure(code: 'NO_SHOW_CASE_NOT_FOUND')) {
       container.invalidate(rosterProvider);
     }
-    return describeFailure(failure);
+    return (error: describeFailure(failure), queued: false);
   }
 }

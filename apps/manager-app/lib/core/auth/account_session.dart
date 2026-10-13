@@ -106,6 +106,7 @@ void _clearAccountScopedState(Ref ref, {bool announceDiscarded = false}) {
     // 앞 계정의 지운 처리 안내는 다음 사람이 보지 않게 비운다.
     ..invalidate(requestNoticesProvider);
   ref.read(selectedRunIdProvider.notifier).state = null;
+  ref.read(savedRunsAtProvider.notifier).state = null;
   ref.read(mustChangePasswordProvider.notifier).state = false;
   ref.read(unverifiedSessionProvider.notifier).state = false;
   ref.read(academyContactProvider.notifier).state = null;
@@ -203,16 +204,17 @@ Future<void> _discardPendingRequestsOnce(
         .add(count: emergencies, contact: contact)
         .timeout(_persistWaitLimit, onTimeout: () {});
   }
-  await queue.clear();
-  if (discarded.isEmpty) return;
   final notice = ref.read(sessionExpiredNoticeProvider);
-  if (notice == null) {
-    if (!announceDiscarded) return;
-    ref
+  // 앱 맨 위 안내의 건수는 비상 안내와 같은 이유로 기기 저장이 끝난 뒤 비운다(R56) — 안내 문장은 메모리에 먼저 올라간다.
+  if (notice == null && announceDiscarded && discarded.isNotEmpty) {
+    await ref
         .read(requestNoticesProvider.notifier)
-        .addDiscarded(count: discarded.length, emergencies: emergencies);
-    return;
+        .addDiscarded(count: discarded.length, emergencies: emergencies)
+        .timeout(_persistWaitLimit, onTimeout: () {});
   }
+  await queue.clear();
+  ref.read(replayGateProvider).resume();
+  if (discarded.isEmpty || notice == null) return;
   final emergencyNote = emergencies == 0
       ? ''
       : ' — 비상 신고 $emergencies건이 서버에 전달되지 못했으니 '
@@ -391,6 +393,9 @@ Future<void> signOut(WidgetRef ref) async {
   final unsupported = ref.read(unsupportedRoleProvider.notifier);
   final role = ref.read(currentUserRoleProvider.notifier);
   final status = ref.read(currentAccountStatusProvider.notifier);
+  // 로그아웃이 시작되면 새 재생을 막는다(R56) — 대기열이 비워지기 전에 앞 계정의 처리가 전송되지 않게. 풀리는 곳은
+  // 대기열 정리와 새 로그인이다.
+  ref.read(replayGateProvider).pause();
   try {
     await repository.logout();
   } finally {
@@ -410,6 +415,8 @@ void applyLoginResponse(WidgetRef ref, LoginResponse response) {
     status: response.status,
   );
   ref.read(sessionExpiredNoticeProvider.notifier).state = null;
+  // 앞 로그아웃이 잠근 재생을 새 로그인이 푼다(R56) — 대기열 정리가 어떤 이유로 끝나지 않았어도 영구히 잠기지 않는다.
+  ref.read(replayGateProvider).resume();
   ref.read(mustChangePasswordProvider.notifier).state =
       response.mustChangePassword;
   ref.read(academyContactProvider.notifier).state = response.academy?.contact;

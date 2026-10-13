@@ -9,6 +9,7 @@ import 'package:manager_app/core/auth/user_role.dart';
 import 'package:manager_app/core/run/manager_run_channel.dart';
 import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
+import 'package:manager_app/features/home/data/models/manager_run.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
 import 'package:manager_app/features/notifications/presentation/notification_providers.dart';
 
@@ -54,10 +55,25 @@ class _ManagerShellState extends ConsumerState<ManagerShell>
   /// 동승자가 첫 화면인 명단 탭에 머물면 홈은 존재하지 않는다.
   Timer? _refreshTimer;
 
+  /// 쉘이 다른 화면에 덮여 있는 동안에도 선택 · 회차 목록의 변화를 보는 구독 — 위젯 구독(`ref.watch`)은 덮이면
+  /// 멈추므로, 그 사이 선택이 바뀌고 끝난 회차를 쉘이 살아 있던 것으로 본 적이 없게 된다(R56 M-a).
+  final List<ProviderSubscription<Object?>> _selectionSubscriptions = [];
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    final container = ProviderScope.containerOf(context, listen: false);
+    void remember(Object? previous, Object? next) {
+      _rememberLiveSelection(
+        container.read(selectedRunIdProvider),
+        container.read(todayRunsProvider).value ?? const [],
+      );
+    }
+
+    _selectionSubscriptions
+      ..add(container.listen(selectedRunIdProvider, remember))
+      ..add(container.listen(todayRunsProvider, remember));
     _refreshTimer = Timer.periodic(
       todayRunsRefreshInterval,
       (_) => _reloadQuietly(),
@@ -67,6 +83,9 @@ class _ManagerShellState extends ConsumerState<ManagerShell>
   @override
   void dispose() {
     _refreshTimer?.cancel();
+    for (final subscription in _selectionSubscriptions) {
+      subscription.close();
+    }
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -88,6 +107,19 @@ class _ManagerShellState extends ConsumerState<ManagerShell>
 
   /// 끝나기 전에 쉘이 마지막으로 본 선택 회차 — 갈아타기는 "그 회차가 그 뒤 끝난 경우"에만 한다.
   String? _lastLiveSelectedRunId;
+
+  /// 지금 선택이 살아 있는 회차면 기억하고, 끝난 다른 회차를 골랐으면 기억을 비운다.
+  void _rememberLiveSelection(String? selected, List<ManagerRun> runs) {
+    final selectedRun = runs.where((run) => run.runId == selected).firstOrNull;
+    if (selectedRun == null) return;
+    if (selectedRun.runStatus != RunStatus.finished) {
+      _lastLiveSelectedRunId = selectedRun.runId;
+    } else if (selectedRun.runId != _lastLiveSelectedRunId) {
+      // 끝난 다른 회차를 골랐으면 기억한 살아 있던 회차는 낡은 값이다 — 비워 두지 않으면 나중에 그 회차를
+      // 알림으로 고를 때 쉘이 다음 회차로 덮어 버린다.
+      _lastLiveSelectedRunId = null;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -112,14 +144,7 @@ class _ManagerShellState extends ConsumerState<ManagerShell>
     final selectedRun = runs.where((run) => run.runId == selected).firstOrNull;
     final isTop = ModalRoute.of(context)?.isCurrent ?? true;
     final selectedFinished = selectedRun?.runStatus == RunStatus.finished;
-    if (selectedRun != null && !selectedFinished) {
-      _lastLiveSelectedRunId = selectedRun.runId;
-    } else if (selectedRun != null &&
-        selectedRun.runId != _lastLiveSelectedRunId) {
-      // 끝난 다른 회차를 골랐으면 기억한 살아 있던 회차는 낡은 값이다 — 비워 두지 않으면 나중에 그 회차를
-      // 알림으로 고를 때 쉘이 다음 회차로 덮어 버린다.
-      _lastLiveSelectedRunId = null;
-    }
+    _rememberLiveSelection(selected, runs);
     if (focus != null &&
         (selectedRun == null ||
             (isTop &&
