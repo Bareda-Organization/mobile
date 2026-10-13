@@ -6,7 +6,7 @@ import 'package:manager_app/core/auth/auth_providers.dart';
 /// 내 이름·학원 이름 — 머리줄 부제와 내 정보 화면이 읽는다(`/me`). 역할이 바뀌면(로그인·로그아웃) 다시 받는다.
 final meProvider = FutureProvider<MeResponse>((ref) {
   if (ref.watch(currentUserRoleProvider) == null) {
-    throw StateError('로그인 전입니다');
+    throw StateError('로그인 전이에요');
   }
   return ref.watch(authRepositoryProvider).me();
 });

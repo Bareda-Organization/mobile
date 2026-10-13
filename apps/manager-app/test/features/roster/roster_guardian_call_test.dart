@@ -207,7 +207,7 @@ void main() {
 
     expect(opened, isEmpty);
     expect(find.textContaining('보호자 번호를 가져오지 못했어요'), findsOneWidget);
-    expect(find.textContaining('이 회차를 이용할 권한이 없습니다'), findsOneWidget);
+    expect(find.textContaining('이 회차를 이용할 권한이 없어요'), findsOneWidget);
   });
 
   testWidgets('통신이 끊기면 전화를 걸지 않고 네트워크 안내를 한다', (tester) async {

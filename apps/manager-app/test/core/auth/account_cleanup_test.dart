@@ -164,7 +164,7 @@ void main() {
     await Future<void>.delayed(Duration.zero);
 
     final notice = container.read(sessionExpiredNoticeProvider);
-    expect(notice, contains('로그인이 만료됐습니다'));
+    expect(notice, contains('로그인이 만료됐어요'));
     expect(notice, contains('보내지 못한 처리 2건'));
     expect(notice, contains('비상 신고 1건'));
   });
@@ -181,9 +181,9 @@ void main() {
   // M-M3 — 기기에 저장한 명단은 계정이 볼 수 있던 학생의 정보라, 로그아웃·세션 만료에 함께 비운다.
   test('역할이 비면 기기에 저장한 명단도 비운다', () async {
     await loginWithLeftovers();
-    await container
-        .read(rosterCacheProvider)
-        .save('run-A', {'run_id': 'run-A'});
+    await container.read(rosterCacheProvider).save('run-A', {
+      'run_id': 'run-A',
+    });
     expect(await container.read(rosterCacheProvider).read('run-A'), isNotNull);
 
     container.read(currentUserRoleProvider.notifier).state = null;

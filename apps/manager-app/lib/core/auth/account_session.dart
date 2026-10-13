@@ -63,8 +63,8 @@ final StateProvider<String?> sessionExpiredNoticeProvider =
 void endSessionAsExpired(Ref ref) {
   final wasTransmitting = ref.read(transmittingRunIdProvider) != null;
   ref.read(sessionExpiredNoticeProvider.notifier).state = wasTransmitting
-      ? '로그인이 만료돼 위치 전송이 멈췄습니다. 다시 로그인하면 운행 중인 회차의 위치를 이어서 보냅니다'
-      : '로그인이 만료됐습니다. 다시 로그인해 주세요';
+      ? '로그인이 만료돼 위치 전송이 멈췄어요. 다시 로그인하면 운행 중인 회차의 위치를 이어서 보내요'
+      : '로그인이 만료됐어요. 다시 로그인해 주세요';
   applyRoleAndStatus(
     ref.read(unsupportedRoleProvider.notifier),
     ref.read(currentUserRoleProvider.notifier),
@@ -219,7 +219,7 @@ Future<void> _discardPendingRequestsOnce(
             '학원에 직접 알려 주세요';
   ref.read(sessionExpiredNoticeProvider.notifier).state =
       '$notice 보내지 못한 처리 ${discarded.length}건은 '
-      '버려졌습니다$emergencyNote';
+      '버려졌어요$emergencyNote';
 }
 
 /// 앱 시작 시 저장된 refresh 토큰으로 자동 로그인을 시도한다(UF-X-03 분기

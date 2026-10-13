@@ -69,18 +69,18 @@ ManagerChannelBannerContent? managerChannelBannerContentFor(
   ManagerChannelStatus.reconnecting => const ManagerChannelBannerContent(
     tone: AlertTone.moving,
     title: WsConnectionNotice.reconnectingTitle,
-    body: '연결이 돌아올 때까지 자동으로 계속 다시 붙습니다 — 그동안 다른 직원의 변경이 늦게 보일 수 있습니다',
+    body: '연결이 돌아올 때까지 자동으로 계속 다시 붙어요 — 그동안 다른 직원의 변경이 늦게 보일 수 있어요',
   ),
   // 기본 재연결 정책은 포기하지 않는다(R46-FIXRT S-5) — 상한을 준 정책에서만 이 상태에 든다.
   ManagerChannelStatus.gaveUp => const ManagerChannelBannerContent(
     tone: AlertTone.missed,
     title: WsConnectionNotice.gaveUpTitle,
-    body: '자동 재연결이 중단됐습니다. 새로고침해 다시 시도하세요',
+    body: '자동 재연결이 중단됐어요. 새로고침해 다시 시도하세요',
   ),
   ManagerChannelStatus.forbidden => const ManagerChannelBannerContent(
     tone: AlertTone.missed,
     title: WsConnectionNotice.forbiddenTitle,
-    body: '이 운행에 배정되지 않았습니다 — 홈 화면에서 배정 현황을 다시 확인하세요',
+    body: '이 운행에 배정되지 않았어요 — 홈 화면에서 배정 현황을 다시 확인하세요',
   ),
 };
 
@@ -88,11 +88,7 @@ ManagerChannelBannerContent? managerChannelBannerContentFor(
 /// 필요한 값만 담는다(위젯을 직접 만들지 않는 이유는 위 함수 문서 참고).
 @immutable
 class ManagerChannelBannerContent {
-  const new({
-    required this.tone,
-    required this.title,
-    required this.body,
-  });
+  const new({required this.tone, required this.title, required this.body});
 
   final AlertTone tone;
   final String title;

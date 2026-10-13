@@ -64,11 +64,13 @@ class _RecordingQueue implements OfflineQueueRepository {
 void main() {
   late OfflineQueueDatabase database;
   late FakeUnsentEmergencyStore store;
+  late FakeUnsentEmergencyStore droppedStore;
   late WidgetRef capturedRef;
 
   setUp(() {
     database = OfflineQueueDatabase.forTesting(NativeDatabase.memory());
     store = FakeUnsentEmergencyStore();
+    droppedStore = FakeUnsentEmergencyStore();
   });
   tearDown(() => database.close());
 
@@ -95,6 +97,7 @@ void main() {
       ProviderScope(
         overrides: [
           unsentEmergencyStoreProvider.overrideWithValue(store),
+          droppedTallyStoreProvider.overrideWithValue(droppedStore),
           clockProvider.overrideWithValue(
             _FixedClock(DateTime(2026, 10, 11, 9, 30)),
           ),
@@ -136,7 +139,7 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  final bannerText = find.text('이 기기에서 보낸 비상 신고 1건이 전송되지 않았습니다');
+  final bannerText = find.text('이 기기에서 보낸 비상 신고 1건이 전송되지 않았어요');
 
   Future<void> rejectEmergency(
     WidgetTester tester,
@@ -324,22 +327,66 @@ void main() {
     await rejectEmergency(tester, container);
     await rejectEmergency(tester, container);
 
-    expect(find.text('이 기기에서 보낸 비상 신고 2건이 전송되지 않았습니다'), findsOneWidget);
+    expect(find.text('이 기기에서 보낸 비상 신고 2건이 전송되지 않았어요'), findsOneWidget);
   });
 
-  testWidgets('승하차 행 안내는 앱을 다시 켜면 없다(메모리에만 둔다)', (tester) async {
-    var container = await launchApp(tester);
-    container.read(requestNoticesProvider.notifier).addDropped([
-      dropped('/runs/run-A/riders/7'),
-    ]);
-    await tester.pumpAndSettle();
-    expect(find.textContaining('서버로 보내지 못하고'), findsOneWidget);
+  // 892 — 승하차·도착 거절 안내는 건수와 마지막 시각만 기기에 남아 앱을 껐다 켜도 뜨고, [확인] 으로만 지워진다.
+  group('승하차 거절 안내의 기기 저장', () {
+    Future<ProviderContainer> rejectTwoRiders(WidgetTester tester) async {
+      final container = await launchApp(tester);
+      container.read(requestNoticesProvider.notifier).addDropped([
+        dropped('/runs/run-A/riders/7'),
+        dropped('/runs/run-A/riders/8'),
+      ]);
+      await tester.pumpAndSettle();
+      return container;
+    }
 
-    await quitApp(tester);
-    container = await launchApp(tester);
+    final restoredBanner = find.text('서버로 보내지 못하고 지워진 처리가 2건 있어요');
 
-    expect(find.textContaining('서버로 보내지 못하고'), findsNothing);
-    expect(container.read(requestNoticesProvider), isEmpty);
+    testWidgets('거절 2건은 건수 2 · 마지막 시각으로 저장되고 앱을 다시 켜면 이름 없이 뜬다', (
+      tester,
+    ) async {
+      var container = await rejectTwoRiders(tester);
+      // 이번 실행에는 처리마다 이름 안내가 뜨고, 기기에 남긴 건수 안내는 겹쳐 뜨지 않는다.
+      expect(find.textContaining('서버로 보내지 못하고 지워졌어요'), findsNWidgets(2));
+      expect(restoredBanner, findsNothing);
+      expect(droppedStore.saved?.count, 2);
+      expect(droppedStore.saved?.lastAt, DateTime(2026, 10, 11, 9, 30));
+      expect(droppedStore.saved?.contact, isNull);
+
+      await quitApp(tester);
+      container = await launchApp(tester);
+
+      expect(restoredBanner, findsOneWidget);
+      expect(find.textContaining('10월 11일 09:30'), findsOneWidget);
+      expect(container.read(requestNoticesProvider), isEmpty);
+    });
+
+    testWidgets('[확인] 을 누르면 사라지고 기기 저장분도 비며 다시 켜도 나오지 않는다', (tester) async {
+      await rejectTwoRiders(tester);
+      await quitApp(tester);
+      await launchApp(tester);
+
+      await tester.tap(find.text('확인'));
+      await tester.pumpAndSettle();
+      expect(restoredBanner, findsNothing);
+      expect(droppedStore.saved, isNull);
+
+      await quitApp(tester);
+      await launchApp(tester);
+      expect(find.textContaining('서버로 보내지 못하고'), findsNothing);
+    });
+
+    testWidgets('이번 실행의 이름 안내를 확인하면 기기에 남긴 건수도 하나 줄어든다', (tester) async {
+      await rejectTwoRiders(tester);
+
+      await tester.tap(find.text('확인').first);
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('서버로 보내지 못하고 지워졌어요'), findsOneWidget);
+      expect(droppedStore.saved?.count, 1);
+    });
   });
 }
 

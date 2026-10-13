@@ -115,7 +115,7 @@ class MeScreen extends ConsumerWidget {
     final pending = _pending(ref);
     final choice = await showBaraedaActionDialog<_SignOutChoice>(
       context: context,
-      title: '로그아웃하시겠습니까?',
+      title: '로그아웃하시겠어요?',
       content: FutureBuilder<({int total, int emergencies})>(
         future: pending,
         initialData: (total: 0, emergencies: 0),
@@ -130,11 +130,11 @@ class MeScreen extends ConsumerWidget {
               Text(
                 [
                   if (hasMovingRun)
-                    '운행 중에 로그아웃하면 명단·위치 송신이 멈춥니다'
+                    '운행 중에 로그아웃하면 명단·위치 송신이 멈춰요'
                   else
-                    '다시 로그인해야 이 앱을 계속 쓸 수 있습니다',
+                    '다시 로그인해야 이 앱을 계속 쓸 수 있어요',
                   // M2-01 — 큐에는 계정 열이 없어 로그아웃하면 비운다(F06-02). 있을 때만 알린다.
-                  if (count > 0) '아직 보내지 못한 처리 $count건은 버려집니다',
+                  if (count > 0) '아직 보내지 못한 처리 $count건은 버려져요',
                   // Ruling 886 — 비상 신고는 서버에 가지 못했으니 학원에 직접 알려야 한다
                   // (로그아웃 뒤 기기 안내가 이어 알린다).
                   if (emergencies > 0)

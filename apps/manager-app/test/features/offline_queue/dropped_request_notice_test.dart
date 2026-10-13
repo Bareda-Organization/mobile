@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:baraeda_core/baraeda_core.dart';
@@ -66,10 +68,30 @@ class _ProbeAdapter extends _RejectAdapter {
   }
 }
 
+/// 요청이 나가면 [gate] 가 풀릴 때까지 답하지 않다가 [status] 로 거절한다 — 재생 도중의 일을 만든다.
+class _GatedRejectAdapter extends _RejectAdapter {
+  new(super.status, this.gate);
+
+  final Completer<void> gate;
+  int requests = 0;
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) {
+    requests++;
+    return gate.future.then(
+      (_) => super.fetch(options, requestStream, cancelFuture),
+    );
+  }
+}
+
 const _boarded = {'client_key': 'K', 'status': 'boarded'};
 
 /// Ruling 882 — 큐 재생이 서버의 확정 거절로 행을 지울 때는 반드시 안내를 남긴다. 30초 자동 재생 · 쓰기 직전 재생 ·
-/// 수동 재시도 어느 경로로 지워져도 사용자가 확인할 때까지 화면에 남고, 비상 신고면 "전송되지 않았습니다" 와 학원 전화를 띄운다.
+/// 수동 재시도 어느 경로로 지워져도 사용자가 확인할 때까지 화면에 남고, 비상 신고면 "전송되지 않았어요" 와 학원 전화를 띄운다.
 void main() {
   late OfflineQueueDatabase database;
   late List<List<DroppedRequest>> dropped;
@@ -193,6 +215,54 @@ void main() {
       expect(await repository.fetchPending(), isEmpty);
     });
 
+    // R53 d — 재생이 요청을 기다리는 사이 로그아웃이 대기열을 비워도 재생이 남은 행을 다음 계정의 토큰으로 계속 보내고,
+    // 이미 비운 행의 거절 안내를 앞 계정 몫으로 올렸다.
+    test('d: 재생 도중 대기열이 비워지면 남은 행을 보내지 않고 안내도 올리지 않는다', () async {
+      final seeding = repo(503);
+      await queue(seeding, '/runs/run-A/riders/7');
+      await queue(seeding, '/runs/run-A/riders/8');
+      final gate = Completer<void>();
+      final adapter = _GatedRejectAdapter(409, gate);
+      final repository = OfflineQueueRepositoryImpl(
+        database: database,
+        dio: Dio(BaseOptions(baseUrl: 'https://example.invalid'))
+          ..httpClientAdapter = adapter,
+        onDropped: dropped.add,
+      );
+
+      final replay = repository.replayPending();
+      await pumpEventQueue();
+      expect(adapter.requests, 1);
+      await repository.clear(); // 로그아웃이 대기열을 비운다
+      gate.complete();
+      final result = await replay;
+
+      expect(adapter.requests, 1, reason: '비워진 뒤에는 남은 행을 보내지 않는다');
+      expect(dropped, isEmpty);
+      expect(result.dropped, isEmpty);
+    });
+
+    test('d: 응답이 성공이어도 그 사이 대기열이 비워졌으면 다음 행을 보내지 않는다', () async {
+      final seeding = repo(503);
+      await queue(seeding, '/runs/run-A/riders/7');
+      await queue(seeding, '/runs/run-A/riders/8');
+      final gate = Completer<void>();
+      final adapter = _GatedRejectAdapter(200, gate);
+      final repository = OfflineQueueRepositoryImpl(
+        database: database,
+        dio: Dio(BaseOptions(baseUrl: 'https://example.invalid'))
+          ..httpClientAdapter = adapter,
+      );
+
+      final replay = repository.replayPending();
+      await pumpEventQueue();
+      await repository.clear();
+      gate.complete();
+      await replay;
+
+      expect(adapter.requests, 1);
+    });
+
     test('서버가 5xx 로 답해 남겨 둔 행은 지운 것이 아니므로 알리지 않는다', () async {
       final repository = repo(503);
       await queue(repository, '/runs/run-A/riders/7');
@@ -204,6 +274,10 @@ void main() {
   });
 
   group('안내 띠', () {
+    late FakeUnsentEmergencyStore droppedStore;
+
+    setUp(() => droppedStore = FakeUnsentEmergencyStore());
+
     Future<ProviderContainer> pumpHost(
       WidgetTester tester, {
       List<Uri>? opened,
@@ -216,6 +290,7 @@ void main() {
             unsentEmergencyStoreProvider.overrideWithValue(
               FakeUnsentEmergencyStore(savedUnsent),
             ),
+            droppedTallyStoreProvider.overrideWithValue(droppedStore),
             academyContactProvider.overrideWith((ref) => contact),
             rosterProvider.overrideWith(
               (ref) async => const RosterResponse(
@@ -299,7 +374,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.textContaining('탑승 처리 · 김하늘'), findsOneWidget);
-      expect(find.textContaining('이미 처리된 학생입니다'), findsOneWidget);
+      expect(find.textContaining('이미 처리된 학생이에요'), findsOneWidget);
       // 시간이 지나도 사라지지 않는다.
       await tester.pump(const Duration(minutes: 5));
       expect(find.textContaining('탑승 처리 · 김하늘'), findsOneWidget);
@@ -307,6 +382,24 @@ void main() {
       await tester.tap(find.text('확인'));
       await tester.pumpAndSettle();
       expect(find.textContaining('탑승 처리 · 김하늘'), findsNothing);
+    });
+
+    // 892 — 기기에는 건수와 마지막 시각만 남기고 학생 이름은 남기지 않는다.
+    testWidgets('승하차 행이 지워지면 건수와 시각만 기기에 남고 학생 이름은 남지 않는다', (tester) async {
+      final container = await pumpHost(tester);
+      await container.read(rosterProvider.future);
+
+      container.read(requestNoticesProvider.notifier).addDropped([rider()]);
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('탑승 처리 · 김하늘'), findsOneWidget);
+      expect(droppedStore.saved?.count, 1);
+      expect(droppedStore.saved?.toJson().keys, {
+        'count',
+        'last_at',
+        'contact',
+      });
+      expect(jsonEncode(droppedStore.saved?.toJson()), isNot(contains('김하늘')));
     });
 
     // R53 F3 — 명단이 메모리에 없거나 다른 회차면 학생 이름을 못 찾는다.
@@ -363,8 +456,8 @@ void main() {
         savedUnsent: UnsentEmergency(count: 1, lastAt: DateTime(2026, 10, 11)),
       );
 
-      expect(find.textContaining('비상 신고 1건이 전송되지 않았습니다'), findsOneWidget);
-      expect(find.textContaining('학원 번호를 모릅니다'), findsOneWidget);
+      expect(find.textContaining('비상 신고 1건이 전송되지 않았어요'), findsOneWidget);
+      expect(find.textContaining('학원 번호를 몰라요'), findsOneWidget);
       expect(find.text('전화'), findsNothing);
       expect(find.textContaining('032-999-9999'), findsNothing);
     });
@@ -380,7 +473,7 @@ void main() {
       container.read(requestNoticesProvider.notifier).addDropped([emergency()]);
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('비상 신고 1건이 전송되지 않았습니다'), findsOneWidget);
+      expect(find.textContaining('비상 신고 1건이 전송되지 않았어요'), findsOneWidget);
       await tester.tap(find.text('전화'));
       await tester.pump();
       expect(opened.single, Uri(scheme: 'tel', path: '032-000-1100'));
@@ -389,6 +482,11 @@ void main() {
     testWidgets('안내가 뜨고 지워져도 아래 화면의 입력 내용이 사라지지 않는다', (tester) async {
       await tester.pumpWidget(
         ProviderScope(
+          overrides: [
+            droppedTallyStoreProvider.overrideWithValue(
+              FakeUnsentEmergencyStore(),
+            ),
+          ],
           child: MaterialApp(
             builder: (context, child) => RequestNoticesHost(child: child!),
             home: const Scaffold(body: TextField()),
@@ -418,6 +516,9 @@ void main() {
             unsentEmergencyStoreProvider.overrideWithValue(
               FakeUnsentEmergencyStore(),
             ),
+            droppedTallyStoreProvider.overrideWithValue(
+              FakeUnsentEmergencyStore(),
+            ),
             offlineQueueRepositoryProvider.overrideWith(
               (ref) => OfflineQueueRepositoryImpl(
                 database: database,
@@ -436,7 +537,7 @@ void main() {
           ),
         ),
       );
-      expect(find.textContaining('전송되지 않았습니다'), findsNothing);
+      expect(find.textContaining('전송되지 않았어요'), findsNothing);
 
       await tester.runAsync(() async {
         await tester.pump(OfflineQueueAutoSync.interval);
@@ -444,7 +545,7 @@ void main() {
       });
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('비상 신고 1건이 전송되지 않았습니다'), findsOneWidget);
+      expect(find.textContaining('비상 신고 1건이 전송되지 않았어요'), findsOneWidget);
       await tester.pumpWidget(const SizedBox.shrink());
     });
   });

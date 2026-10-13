@@ -94,7 +94,7 @@ class RouteMapView extends StatelessWidget {
             bottom: 8,
             child: AlertBanner(
               tone: AlertTone.info,
-              body: '근사 경로 — 실제 도로와 다를 수 있습니다',
+              body: '근사 경로 — 실제 도로와 다를 수 있어요',
             ),
           ),
       ],

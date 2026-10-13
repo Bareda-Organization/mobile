@@ -15,7 +15,7 @@ void main() {
   );
 
   group('endSessionAsExpired (R46)', () {
-    test('로그인이 풀리면 역할을 비우고 "로그인이 만료됐습니다" 안내를 남긴다', () {
+    test('로그인이 풀리면 역할을 비우고 "로그인이 만료됐어요" 안내를 남긴다', () {
       final container = ProviderContainer(
         overrides: [
           currentUserRoleProvider.overrideWith((ref) => UserRole.escort),
@@ -28,7 +28,7 @@ void main() {
       expect(container.read(currentUserRoleProvider), isNull);
       expect(
         container.read(sessionExpiredNoticeProvider),
-        '로그인이 만료됐습니다. 다시 로그인해 주세요',
+        '로그인이 만료됐어요. 다시 로그인해 주세요',
       );
     });
 
@@ -45,7 +45,7 @@ void main() {
 
       expect(
         container.read(sessionExpiredNoticeProvider),
-        contains('위치 전송이 멈췄습니다'),
+        contains('위치 전송이 멈췄어요'),
       );
     });
   });
@@ -62,9 +62,9 @@ void main() {
         );
 
     testWidgets('만료로 돌아왔으면 안내를 보여준다', (tester) async {
-      await pumpLogin(tester, notice: '로그인이 만료됐습니다. 다시 로그인해 주세요');
+      await pumpLogin(tester, notice: '로그인이 만료됐어요. 다시 로그인해 주세요');
 
-      expect(find.text('로그인이 만료됐습니다. 다시 로그인해 주세요'), findsOneWidget);
+      expect(find.text('로그인이 만료됐어요. 다시 로그인해 주세요'), findsOneWidget);
     });
 
     testWidgets('처음 열었거나 직접 로그아웃했으면 안내가 없다', (tester) async {

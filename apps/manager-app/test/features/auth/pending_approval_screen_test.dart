@@ -241,7 +241,7 @@ void main() {
     await tester.tap(find.text('상태 다시 확인'));
     await tester.pumpAndSettle();
 
-    expect(find.text('상태를 불러오지 못했습니다'), findsOneWidget);
+    expect(find.text('상태를 불러오지 못했어요'), findsOneWidget);
     expect(find.byType(ManagerHomeScreen), findsNothing);
   });
 
@@ -284,7 +284,7 @@ void main() {
       await tester.pump();
 
       expect(repository.signupStatusCalls, 2);
-      expect(find.text('상태를 불러오지 못했습니다'), findsNothing);
+      expect(find.text('상태를 불러오지 못했어요'), findsNothing);
       expect(find.text('가입 승인을 기다리고 있어요'), findsOneWidget);
     });
 

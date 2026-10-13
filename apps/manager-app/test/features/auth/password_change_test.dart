@@ -100,7 +100,7 @@ void main() {
 
     await fillAndSubmit(tester);
 
-    expect(find.text('현재 비밀번호가 올바르지 않습니다'), findsOneWidget);
+    expect(find.text('현재 비밀번호가 올바르지 않아요'), findsOneWidget);
     expect(repository.logoutCalls, 0);
     expect(container.read(currentUserRoleProvider), UserRole.driver);
   });
@@ -134,9 +134,8 @@ void main() {
   testWidgets('두 칸 모두 비밀번호 보기 눈 아이콘이 있고 칸마다 따로 바뀐다', (tester) async {
     final handle = tester.ensureSemantics();
     await pumpScreen(tester, _RecordingAuthRepository());
-    bool obscured(int index) => tester
-        .widget<TextField>(find.byType(TextField).at(index))
-        .obscureText;
+    bool obscured(int index) =>
+        tester.widget<TextField>(find.byType(TextField).at(index)).obscureText;
     expect(obscured(0), isTrue);
     expect(obscured(1), isTrue);
 

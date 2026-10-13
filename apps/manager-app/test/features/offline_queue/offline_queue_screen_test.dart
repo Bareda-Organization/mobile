@@ -410,7 +410,7 @@ void main() {
     await tester.tap(find.text('지금 다시 보내기'));
     await tester.pumpAndSettle();
 
-    expect(find.text('재시도를 완료하지 못했습니다'), findsOneWidget);
+    expect(find.text('재시도를 완료하지 못했어요'), findsOneWidget);
     final button = tester.widget<BaraedaButton>(
       find.widgetWithText(BaraedaButton, '지금 다시 보내기'),
     );

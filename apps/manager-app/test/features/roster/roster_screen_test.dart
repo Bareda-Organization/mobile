@@ -428,7 +428,7 @@ void main() {
     await tester.tap(find.text('변경 확인'));
     await tester.pumpAndSettle();
 
-    expect(find.text('아직 확정되지 않은 운행입니다'), findsOneWidget);
+    expect(find.text('아직 확정되지 않은 운행이에요'), findsOneWidget);
     expect(find.text('변경 확인'), findsOneWidget);
   });
 
@@ -442,7 +442,7 @@ void main() {
       revertFailure: const ApiFailure(
         statusCode: 409,
         code: 'REVERT_WINDOW_EXPIRED',
-        message: '되돌리기 가능 시간이 지났습니다',
+        message: '되돌리기 가능 시간이 지났어요',
       ),
     );
 
@@ -469,7 +469,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('되돌리기 가능 시간이 지났습니다'), findsOneWidget);
+    expect(find.text('되돌리기 가능 시간이 지났어요'), findsOneWidget);
   });
 
   group('되돌리기 확인 창 (시안 undo)', () {
@@ -665,7 +665,7 @@ void main() {
       updateFailure: const ApiFailure(
         statusCode: 409,
         code: 'RUN_NOT_MOVING',
-        message: '운행 중이 아닙니다',
+        message: '운행 중이 아니에요',
       ),
     );
 
@@ -719,7 +719,7 @@ void main() {
     await tester.tap(find.widgetWithText(BaraedaButton, '탑승'));
     await tester.pumpAndSettle();
 
-    expect(find.text('이미 처리된 학생입니다 — 명단을 새로 불러왔습니다'), findsOneWidget);
+    expect(find.text('이미 처리된 학생이에요 — 명단을 새로 불러왔어요'), findsOneWidget);
     expect(fakeRepo.fetchRosterCallCount, 2);
   });
 

@@ -148,9 +148,9 @@ class _DelayScreenState extends ConsumerState<DelayScreen> {
             : '${run.busNo} · ${directionLabel(run.direction)}',
       ),
       body: runId == null
-          ? const Center(child: WordWrapText('선택된 운행이 없습니다 — 홈에서 운행을 선택하세요'))
+          ? const Center(child: WordWrapText('선택된 운행이 없어요 — 홈에서 운행을 선택하세요'))
           : !canSend
-          ? const Center(child: WordWrapText('동승자만 지연 알림을 보낼 수 있습니다'))
+          ? const Center(child: WordWrapText('동승자만 지연 알림을 보낼 수 있어요'))
           : _receipt != null
           ? _buildReceipt(_receipt!)
           : _buildForm(runId),

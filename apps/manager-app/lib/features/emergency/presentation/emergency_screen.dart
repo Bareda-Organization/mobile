@@ -139,7 +139,7 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
     if (_submitting) return;
     final memo = _memoController.text.trim();
     if (_type == EmergencyType.etc && memo.isEmpty) {
-      setState(() => _errorMessage = '기타 유형은 상황 메모가 필요합니다');
+      setState(() => _errorMessage = '기타 유형은 상황 메모가 필요해요');
       return;
     }
     setState(() {
@@ -641,7 +641,7 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
             child: Center(child: CircularProgressIndicator()),
           ),
           error: (error, _) =>
-              WordWrapText('이력을 불러오지 못했습니다: ${describeError(error)}'),
+              WordWrapText('이력을 불러오지 못했어요: ${describeError(error)}'),
           data: (list) => _buildList(runId, list.items, now, excludeId),
         ),
       ],
@@ -657,8 +657,8 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
     if (items.isEmpty) {
       return const EmptyState(
         icon: 'bell',
-        title: '발신한 비상 알림이 없습니다',
-        body: '비상 상황이 생기면 위에서 바로 보낼 수 있습니다',
+        title: '발신한 비상 알림이 없어요',
+        body: '비상 상황이 생기면 위에서 바로 보낼 수 있어요',
       );
     }
     // stretch 가 없으면 카드가 내용 폭으로 줄어 가운데에 뜬다(R46-SCREEN 화면 확인 — 폭 ~30%).
@@ -785,7 +785,7 @@ class _NoRunNotice extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Center(child: WordWrapText('선택된 운행이 없습니다 — 홈에서 운행을 선택하세요')),
+          Center(child: WordWrapText('선택된 운행이 없어요 — 홈에서 운행을 선택하세요')),
           SizedBox(height: 16),
           AcademyCallCard(lead: '급하면 먼저 전화하세요'),
         ],

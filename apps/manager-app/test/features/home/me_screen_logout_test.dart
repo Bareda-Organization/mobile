@@ -200,7 +200,7 @@ void main() {
     await tester.tap(find.text('로그아웃'));
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('운행 중에 로그아웃하면 명단·위치 송신이 멈춥니다'), findsOneWidget);
+    expect(find.textContaining('운행 중에 로그아웃하면 명단·위치 송신이 멈춰요'), findsOneWidget);
   });
 
   testWidgets('운행 중인 회차가 없으면 경고 문구가 없다', (tester) async {
@@ -209,7 +209,7 @@ void main() {
     await tester.tap(find.text('로그아웃'));
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('운행 중에 로그아웃하면 명단·위치 송신이 멈춥니다'), findsNothing);
+    expect(find.textContaining('운행 중에 로그아웃하면 명단·위치 송신이 멈춰요'), findsNothing);
   });
 
   // M2-01(Ruling 388) — 로그아웃하면 미전송 대기열이 버려진다. 비어 있지 않을 때만 알린다.
@@ -219,7 +219,7 @@ void main() {
     await tester.tap(find.text('로그아웃'));
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('아직 보내지 못한 처리 2건은 버려집니다'), findsOneWidget);
+    expect(find.textContaining('아직 보내지 못한 처리 2건은 버려져요'), findsOneWidget);
     // 대기열을 먼저 볼 길이 맨 위에 있다(M8).
     expect(find.text('대기열 2건 먼저 보기'), findsOneWidget);
   });
@@ -230,7 +230,7 @@ void main() {
     await tester.tap(find.text('로그아웃'));
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('버려집니다'), findsNothing);
+    expect(find.textContaining('버려져요'), findsNothing);
   });
 
   // Ruling 886 — 대기열에 비상 신고가 있으면 그 건수를 따로 밝힌다(전체 건수 문구는 그대로).
@@ -245,7 +245,7 @@ void main() {
     await tester.tap(find.text('로그아웃'));
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('아직 보내지 못한 처리 3건은 버려집니다'), findsOneWidget);
+    expect(find.textContaining('아직 보내지 못한 처리 3건은 버려져요'), findsOneWidget);
     expect(
       find.textContaining('비상 신고 2건은 서버에 가지 못했으니 로그아웃 뒤 학원에 직접 알려 주세요'),
       findsOneWidget,

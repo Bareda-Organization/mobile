@@ -202,6 +202,8 @@ class OfflineQueueRepositoryImpl implements OfflineQueueRepository {
     final dropped = <DroppedRequest>[];
     var failedPermanently = 0;
     for (final row in rows) {
+      // 재생 도중 대기열이 비워졌으면(로그아웃 · 계정 정리) 남은 행은 앞 계정의 것이다 — 다음 계정의 토큰으로 보내지 않는다.
+      if (!await _rowExists(row.id)) break;
       try {
         await _dio.request<dynamic>(
           row.endpoint,
@@ -218,6 +220,8 @@ class OfflineQueueRepositoryImpl implements OfflineQueueRepository {
           continue;
         }
         if (_isPermanentRejection(exception)) {
+          // 응답을 기다리는 사이 대기열이 비워졌으면 이 행은 계정 정리가 이미 버렸다 — 앞 계정의 거절을 안내로 올리지 않는다.
+          if (!await _rowExists(row.id)) break;
           // 서버가 확정 거절했다 — 다시 보내도 같은 결과라 큐에서 뺀다. 지운 내용은 호출부가 사용자에게 남긴다(882).
           final item = _toDropped(row, exception);
           dropped.add(item);
@@ -255,6 +259,14 @@ class OfflineQueueRepositoryImpl implements OfflineQueueRepository {
       dropped: dropped,
     );
   }
+
+  /// 이 행이 아직 대기열에 있는가 — 재생 도중 [clear] 나 [cancel] 로 사라졌는지 가른다.
+  Future<bool> _rowExists(int id) async =>
+      (await (_database.select(_database.pendingRequests)
+                ..where((t) => t.id.equals(id))
+                ..limit(1))
+              .get())
+          .isNotEmpty;
 
   /// 안내 콜백이 던진 예외는 삼킨다 — 행은 이미 지워졌고 안내 실패가 재생 호출부(쓰기 직전 재생 · 30초 재생)를
   /// 깨뜨리면 안 된다. 지운 내용은 [ReplayResult.dropped] 로도 나간다.

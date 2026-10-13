@@ -202,7 +202,7 @@ void main() {
       ]),
     );
 
-    expect(find.text('선택된 운행이 없습니다 — 홈에서 운행을 선택하세요'), findsOneWidget);
+    expect(find.text('선택된 운행이 없어요 — 홈에서 운행을 선택하세요'), findsOneWidget);
   });
 
   // R53 A4 — 선택된 회차가 없는 막다른 화면에도 학원 전화가 있다.
@@ -240,7 +240,7 @@ void main() {
     await tester.tap(find.text('비상 알림 보내기'));
     await tester.pumpAndSettle();
 
-    expect(find.text('기타 유형은 상황 메모가 필요합니다'), findsOneWidget);
+    expect(find.text('기타 유형은 상황 메모가 필요해요'), findsOneWidget);
     expect(fakeRepo.raiseCallCount, 0);
   });
 
@@ -268,7 +268,7 @@ void main() {
     // `notified` 는 학원 관계자 + 메인 관리자 수다(서버 EmergencyRaiseResponse).
     // "학원 관계자 N명" 으로 줄여 말하지 않는다.
     expect(find.textContaining('학원 관계자·메인 관리자 3명에게 전달'), findsOneWidget);
-    expect(find.text('처리되지 않았습니다 · 대기 중'), findsNothing);
+    expect(find.text('처리되지 않았어요 · 대기 중'), findsNothing);
     // raise 는 client_key 를 반드시 채워 보낸다(§1.7 멱등 대상 ②).
     expect(fakeRepo.lastRequest?.clientKey, isNotEmpty);
   });
@@ -732,9 +732,9 @@ void main() {
     await tester.tap(find.text('비상 알림 보내기'));
     await tester.pumpAndSettle();
 
-    expect(find.text('이 회차를 이용할 권한이 없습니다'), findsOneWidget);
+    expect(find.text('이 회차를 이용할 권한이 없어요'), findsOneWidget);
     // 존재하지 않는 회차만을 위한 별도 문구는 없다 — 하나로 묶여 있다.
-    expect(find.textContaining('찾을 수 없습니다'), findsNothing);
+    expect(find.textContaining('찾을 수 없어요'), findsNothing);
   });
 
   testWidgets('중복 발신을 막지 않는다 — 연속으로 두 번 보내도 둘 다 성공한다', (tester) async {
@@ -823,7 +823,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('발신한 비상 알림이 없습니다'), findsOneWidget);
+    expect(find.text('발신한 비상 알림이 없어요'), findsOneWidget);
   });
 
   testWidgets('목록 항목은 각자의 cancelable_until 기준으로 취소 버튼을 보여준다', (tester) async {
@@ -959,7 +959,7 @@ void main() {
     await tester.tap(find.text('취소'));
     await tester.pumpAndSettle();
 
-    expect(find.text('비상 알림 취소 가능 시간(발신 후 1분)이 지났습니다'), findsOneWidget);
+    expect(find.text('비상 알림 취소 가능 시간(발신 후 1분)이 지났어요'), findsOneWidget);
     expect(fakeRepo.lastCanceledEmergencyId, 'e1');
   });
 
@@ -1021,7 +1021,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('이력을 불러오지 못했습니다: 네트워크 상태를 확인해 주세요'), findsOneWidget);
+    expect(find.text('이력을 불러오지 못했어요: 네트워크 상태를 확인해 주세요'), findsOneWidget);
     expect(find.textContaining('SocketException'), findsNothing);
   });
 

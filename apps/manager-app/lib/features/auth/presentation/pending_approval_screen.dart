@@ -145,7 +145,7 @@ class _PendingApprovalScreenState extends ConsumerState<PendingApprovalScreen> {
         _reapplyError = switch (failure) {
           ApiFailure(:final message) => message,
           NetworkFailure() => '네트워크 상태를 확인해 주세요',
-          _ => '재신청에 실패했습니다',
+          _ => '재신청에 실패했어요',
         };
       });
     }
@@ -214,7 +214,7 @@ class _ErrorBody extends StatelessWidget {
         padding: const EdgeInsets.all(BaraedaSpacing.gutterMobile),
         child: EmptyState(
           icon: 'triangle-alert',
-          title: '상태를 불러오지 못했습니다',
+          title: '상태를 불러오지 못했어요',
           body: '잠시 후 다시 시도해 주세요',
           action: BaraedaButton(label: '다시 시도하기', onPressed: onRetry),
         ),

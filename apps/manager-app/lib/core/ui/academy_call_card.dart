@@ -72,3 +72,26 @@ class AcademyCallCard extends ConsumerWidget {
     );
   }
 }
+
+/// `[학원에 전화 · 번호]` 단추 — 계정 차단 화면과 삭제된 매니저의 로그인 거절 안내가 같이 쓴다(§12.7).
+/// 번호가 전화번호 모양이 아니면 아무것도 그리지 않는다.
+class AcademyCallButton extends ConsumerWidget {
+  const new({required this.contact, super.key});
+
+  final String? contact;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (!looksLikePhoneNumber(contact)) return const SizedBox.shrink();
+    final number = contact!.trim();
+    return BaraedaButton(
+      label: '학원에 전화 · $number',
+      icon: 'phone',
+      size: BaraedaButtonSize.xl,
+      block: true,
+      onPressed: () => unawaited(
+        ref.read(uriOpenerProvider)(Uri(scheme: 'tel', path: number)),
+      ),
+    );
+  }
+}
