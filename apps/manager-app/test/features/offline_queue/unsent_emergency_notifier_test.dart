@@ -21,15 +21,28 @@ class _FixedClock implements Clock {
 
 /// 첫 쓰기는 예외를 던지고 이후는 저장하는 저장소.
 /// 읽기는 [readGate] 가 풀어 줄 때까지 끝나지 않는다(없으면 곧바로 [saved]).
+/// [failReads] 번까지는 읽기가 예외를 던진다.
 class _FlakyStore implements UnsentEmergencyStore {
-  new({this.readGate, this.failFirstWrite = false});
+  new({
+    this.readGate,
+    this.failFirstWrite = false,
+    this.failReads = 0,
+    this.saved,
+  });
 
   UnsentEmergency? saved;
   final Completer<UnsentEmergency?>? readGate;
   bool failFirstWrite;
+  int failReads;
 
   @override
-  Future<UnsentEmergency?> read() => readGate?.future ?? Future.value(saved);
+  Future<UnsentEmergency?> read() {
+    if (failReads > 0) {
+      failReads--;
+      return Future.error(StateError('저장소 읽기 실패'));
+    }
+    return readGate?.future ?? Future.value(saved);
+  }
 
   @override
   Future<void> write(UnsentEmergency value) async {
@@ -118,5 +131,82 @@ void main() {
     expect(merged?.count, 3);
     expect(merged?.lastAt, lastAt);
     expect(store.saved?.count, 3);
+  });
+
+  group('R53 경합', () {
+    // a — 읽기가 실패한 채 새 건을 쓰면 기기에 있던 앞 건수가 새 건 하나로 덮였다.
+    test('a: 저장소 읽기가 한 번 실패해도 앞 건수 위에 새 건을 더해 쓴다', () async {
+      final store = _FlakyStore(
+        saved: UnsentEmergency(count: 2, lastAt: DateTime(2026, 10, 10)),
+        failReads: 1,
+      );
+      final container = open(store);
+      await pumpEventQueue();
+
+      unawaited(
+        container
+            .read(unsentEmergencyProvider.notifier)
+            .add(count: 1, contact: null),
+      );
+      await pumpEventQueue();
+
+      expect(store.saved?.count, 3);
+      expect(container.read(unsentEmergencyProvider)?.count, 3);
+    });
+
+    test('a: 읽기가 계속 실패하면 앞 저장분을 덮어쓰지 않는다(메모리 안내는 뜬다)', () async {
+      final prior = UnsentEmergency(count: 2, lastAt: DateTime(2026, 10, 10));
+      final store = _FlakyStore(saved: prior, failReads: 99);
+      final container = open(store);
+      await pumpEventQueue();
+
+      unawaited(
+        container
+            .read(unsentEmergencyProvider.notifier)
+            .add(count: 1, contact: null),
+      );
+      await pumpEventQueue();
+
+      expect(store.saved, prior);
+      expect(container.read(unsentEmergencyProvider)?.count, 1);
+    });
+
+    // b — 읽기가 3초 상한을 넘겨 쓰기가 먼저 나간 뒤, 읽기가 그 쓰기를 담은 값을 돌려주면 같은 건이 두 번 셌다.
+    testWidgets('b: 읽기가 3초 상한을 넘겨 늦게 끝나도 같은 건을 두 번 세지 않는다', (tester) async {
+      final gate = Completer<UnsentEmergency?>();
+      final store = _FlakyStore(readGate: gate);
+      final container = open(store);
+
+      unawaited(
+        container
+            .read(unsentEmergencyProvider.notifier)
+            .add(count: 1, contact: null),
+      );
+      await tester.pump(const Duration(seconds: 4));
+      // 늦은 읽기가 끝나는 순간 저장소에 있는 값을 돌려준다(쓰기가 나갔다면 그 값을 담는다).
+      gate.complete(store.saved);
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 4));
+
+      expect(container.read(unsentEmergencyProvider)?.count, 1);
+      expect(store.saved?.count, 1);
+    });
+
+    // c — 확인을 누른 안내(건수 2)를 지우는 사이 새 건이 들어오면 새 건까지 지워졌다.
+    test('c: 확인은 사용자가 본 건수만 지우고 그 사이 들어온 새 건은 남긴다', () async {
+      final store = _FlakyStore();
+      final container = open(store);
+      final notifier = container.read(unsentEmergencyProvider.notifier);
+
+      unawaited(notifier.add(count: 2, contact: null));
+      await pumpEventQueue();
+      final seen = container.read(unsentEmergencyProvider)!;
+      unawaited(notifier.add(count: 1, contact: null));
+      notifier.dismiss(seen.count);
+      await pumpEventQueue();
+
+      expect(container.read(unsentEmergencyProvider)?.count, 3 - seen.count);
+      expect(store.saved?.count, 3 - seen.count);
+    });
   });
 }
