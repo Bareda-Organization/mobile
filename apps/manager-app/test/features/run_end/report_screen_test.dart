@@ -18,7 +18,6 @@ import 'package:manager_app/features/run_end/data/models/report_request.dart';
 import 'package:manager_app/features/run_end/data/models/report_result.dart';
 import 'package:manager_app/features/run_end/domain/reports_repository.dart';
 import 'package:manager_app/features/run_end/presentation/report_screen.dart';
-
 import '../../support/manager_run_fixture.dart';
 
 /// 테스트 전용 대역 — 실제 네트워크 대신 호출 여부·인자만 기록한다.
@@ -89,32 +88,37 @@ Override _boardedRoster(
   RunDirection direction = RunDirection.toAcademy,
   Set<String> goAloneIds = const {},
 }) => rosterProvider.overrideWith(
-  (ref) async => RosterResponse(
-    runId: 'run-1',
-    busNo: '3호차',
-    direction: direction,
-    counts: const RosterCounts(boarded: 0, waiting: 0, noShow: 0, absentN: 0),
-    stops: [
-      RosterStop(
-        stopId: 's1',
-        seq: 1,
-        name: 'A정류장',
-        students: [
-          for (final rider in riders)
-            RosterStudent(
-              riderId: rider.id,
-              studentId: 'st-${rider.id}',
-              name: rider.name,
-              photoUrl: null,
-              guardianPhone: null,
-              canGoAlone: goAloneIds.contains(rider.id),
-              status: RiderStatus.boarded,
-            ),
+      (ref) async => RosterResponse(
+        runId: 'run-1',
+        busNo: '3호차',
+        direction: direction,
+        counts: const RosterCounts(
+          boarded: 0,
+          waiting: 0,
+          noShow: 0,
+          absentN: 0,
+        ),
+        stops: [
+          RosterStop(
+            stopId: 's1',
+            seq: 1,
+            name: 'A정류장',
+            students: [
+              for (final rider in riders)
+                RosterStudent(
+                  riderId: rider.id,
+                  studentId: 'st-${rider.id}',
+                  name: rider.name,
+                  photoUrl: null,
+                  guardianPhone: null,
+                  canGoAlone: goAloneIds.contains(rider.id),
+                  status: RiderStatus.boarded,
+                ),
+            ],
+          ),
         ],
       ),
-    ],
-  ),
-);
+    );
 
 ArriveStopResult _terminationWith({
   required bool finishPending,
@@ -150,11 +154,15 @@ void main() {
           ),
     );
     await tester.pumpWidget(
-      _wrap(ReportScreen(guardianAbsent: guardianAbsent), [
-        selectedRunIdProvider.overrideWith((ref) => runId),
-        lastArriveResultProvider.overrideWith((ref) => termination),
-        reportsRepositoryProvider.overrideWithValue(fakeRepo),
-      ], roster: roster),
+      _wrap(
+        ReportScreen(guardianAbsent: guardianAbsent),
+        [
+          selectedRunIdProvider.overrideWith((ref) => runId),
+          lastArriveResultProvider.overrideWith((ref) => termination),
+          reportsRepositoryProvider.overrideWithValue(fakeRepo),
+        ],
+        roster: roster,
+      ),
     );
     await tester.pumpAndSettle();
     return fakeRepo;
@@ -343,16 +351,23 @@ void main() {
   });
 
   testWidgets('등원 회차에는 보호자 부재 항목이 없다(하원 승하차지의 일)', (tester) async {
-    await pumpReport(tester, roster: _boardedRoster([(id: 'r1', name: '김바래')]));
+    await pumpReport(
+      tester,
+      roster: _boardedRoster([(id: 'r1', name: '김바래')]),
+    );
 
     expect(find.text('통제'), findsOneWidget);
     expect(find.text('부재'), findsNothing);
   });
 
+
   testWidgets('보호자 부재인데 대상 학생이 없으면 이유를 알려 준다', (tester) async {
     await pumpReport(tester, guardianAbsent: true);
 
-    expect(find.textContaining('보호자 부재로 보고할 학생이 없어요'), findsOneWidget);
+    expect(
+      find.textContaining('보호자 부재로 보고할 학생이 없어요'),
+      findsOneWidget,
+    );
     expect(find.byType(BaraedaListRow), findsNothing);
   });
 
