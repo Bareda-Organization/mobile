@@ -102,9 +102,12 @@ class _ItemRow extends ConsumerWidget {
     return () {
       if (item.isUnread) unawaited(_markRead(context, ref));
       if (destination != null) {
-        ref.read(selectedRunIdProvider.notifier).state = item.runId;
-        // 명단은 동승자의 탭이라 탭을 바꿔 가고, 운행 준비는 위에 덮어 연다.
-        if (destination == AppRoutes.roster) {
+        // 취소된 회차는 목록에서 빠지므로 고르지 않는다(홈으로만 보낸다).
+        if (destination != AppRoutes.home) {
+          ref.read(selectedRunIdProvider.notifier).state = item.runId;
+        }
+        // 명단과 홈은 탭이라 탭을 바꿔 가고, 운행 준비는 위에 덮어 연다.
+        if (destination == AppRoutes.roster || destination == AppRoutes.home) {
           context.go(destination);
         } else {
           unawaited(context.push(destination));
