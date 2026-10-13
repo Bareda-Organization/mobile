@@ -196,6 +196,35 @@ void main() {
       expect(store.saved?.count, 3);
     });
 
+    // R56 ⑦ — 시작 때 읽기가 실패한 채 [확인] 하면 다음 저장 재시도가 기기 저장분을 다시 띄운다는 우려.
+    // 확인한 건이 되살아나는지(결함)와 한 번도 보이지 않은 기기 저장분이 보이는지(옳은 동작)를 가른다.
+    test('⑦: 시작 때 읽기가 실패한 채 확인해도 확인한 건은 돌아오지 않고 기기에 있던 앞 건수만 알린다', () async {
+      final store = _FlakyStore(
+        saved: UnsentEmergency(count: 2, lastAt: DateTime(2026, 10, 10)),
+        // 시작 읽기 + add 의 저장 재시도 읽기가 실패하고, 확인 뒤 저장 재시도에서 읽힌다.
+        failReads: 2,
+      );
+      final container = open(store);
+      final notifier = container.read(unsentEmergencyProvider.notifier);
+      await pumpEventQueue();
+
+      unawaited(notifier.add(count: 1, contact: null));
+      await pumpEventQueue();
+      expect(container.read(unsentEmergencyProvider)?.count, 1);
+      notifier.dismiss(1);
+      await pumpEventQueue();
+
+      // 확인한 1건은 돌아오지 않는다 — 남는 2건은 이 실행에서 한 번도 보이지 않은 기기 저장분이다.
+      expect(container.read(unsentEmergencyProvider)?.count, 2);
+      expect(store.saved?.count, 2);
+
+      // 그 2건도 확인하면 기기 저장분까지 비어 다시 뜨지 않는다.
+      notifier.dismiss(2);
+      await pumpEventQueue();
+      expect(container.read(unsentEmergencyProvider), isNull);
+      expect(store.saved, isNull);
+    });
+
     // c — 확인을 누른 안내(건수 2)를 지우는 사이 새 건이 들어오면 새 건까지 지워졌다.
     test('c: 확인은 사용자가 본 건수만 지우고 그 사이 들어온 새 건은 남긴다', () async {
       final store = _FlakyStore();
