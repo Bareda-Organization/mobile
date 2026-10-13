@@ -182,14 +182,14 @@ void main() {
   testWidgets('알림이 없으면 빈 화면을 보인다', (tester) async {
     await _pump(tester, const []);
 
-    expect(find.text('새 알림이 없습니다'), findsOneWidget);
+    expect(find.text('새 알림이 없어요'), findsOneWidget);
   });
 
   testWidgets('첫 쪽 받기가 실패하면 오류 띠와 다시 시도를 보이고 누르면 다시 받는다', (tester) async {
     final fake = FakeNotificationRepository([_item('1')])
       ..getFailure = const NetworkFailure();
     await _pump(tester, const [], repository: fake);
-    expect(find.text('알림을 불러오지 못했습니다'), findsOneWidget);
+    expect(find.text('알림을 불러오지 못했어요'), findsOneWidget);
 
     fake.getFailure = null;
     await tester.tap(find.text('다시 시도'));
