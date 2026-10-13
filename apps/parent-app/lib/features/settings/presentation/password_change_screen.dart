@@ -103,7 +103,7 @@ class _PasswordChangeScreenState extends ConsumerState<PasswordChangeScreen> {
         _submitting = false;
         switch (failure) {
           case ApiFailure(code: 'INVALID_CREDENTIALS'):
-            _currentPasswordError = '현재 비밀번호가 올바르지 않습니다';
+            _currentPasswordError = '현재 비밀번호가 올바르지 않아요';
           case ApiFailure(code: 'VALIDATION_FAILED'):
             _formError = '입력값을 다시 확인해 주세요';
           case ApiFailure(:final message):
@@ -111,7 +111,7 @@ class _PasswordChangeScreenState extends ConsumerState<PasswordChangeScreen> {
           case NetworkFailure():
             _formError = '네트워크 상태를 확인해 주세요';
           default:
-            _formError = '비밀번호를 바꾸지 못했습니다';
+            _formError = '비밀번호를 바꾸지 못했어요';
         }
       });
     }

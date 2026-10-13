@@ -42,8 +42,8 @@ class LiveMapBefore extends StatelessWidget {
             ?switcher,
             if (run == null)
               const EmptyState(
-                title: '아직 위치 정보가 없습니다',
-                body: '버스가 운행을 시작하면 실시간 위치가 표시됩니다',
+                title: '아직 위치 정보가 없어요',
+                body: '버스가 운행을 시작하면 실시간 위치가 표시돼요',
               )
             else ...[
               _Hero(run: run),

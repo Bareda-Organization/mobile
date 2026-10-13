@@ -173,7 +173,7 @@ void main() {
     await _pumpWith(tester, _ThrowingRunRepository(const Failure.network()));
 
     expect(find.text('네트워크 상태를 확인해 주세요'), findsOneWidget);
-    expect(find.text('변경을 처리하지 못했습니다'), findsNothing);
+    expect(find.text('변경을 처리하지 못했어요'), findsNothing);
   });
 
   // N-02 · Ruling 376 — 임시 취소된 회차의 탑승 토글은 409 RUN_CANCELED.
@@ -189,7 +189,7 @@ void main() {
       ),
     );
 
-    expect(find.text('학원에서 임시로 취소한 회차입니다. 학원에 문의해 주세요'), findsOneWidget);
+    expect(find.text('학원에서 임시로 취소한 회차예요. 학원에 문의해 주세요'), findsOneWidget);
   });
 
   testWidgets('토글이 CHANGE_LIMIT_REACHED 로 실패하면 한도 소진 문구를 보여준다', (tester) async {
@@ -204,7 +204,7 @@ void main() {
       ),
     );
 
-    expect(find.text('이 회차는 변경 가능 횟수를 모두 사용했습니다'), findsOneWidget);
+    expect(find.text('이 회차는 변경 가능 횟수를 모두 사용했어요'), findsOneWidget);
   });
 
   // Ruling 334 · BR-029 — 같은 CHANGE_WINDOW_CLOSED 가 끄기(이미 승하차 처리된 학생)와
@@ -225,7 +225,7 @@ void main() {
     );
 
     expect(
-      find.text('이미 탑승 처리가 진행돼 앱에서는 바꿀 수 없습니다. 학원에 문의해 주세요'),
+      find.text('이미 탑승 처리가 진행돼 앱에서는 바꿀 수 없어요. 학원에 문의해 주세요'),
       findsOneWidget,
     );
   });
@@ -245,7 +245,7 @@ void main() {
       riding: false,
     );
 
-    expect(find.text('출발 30분 전부터는 탑승으로 되돌릴 수 없습니다'), findsOneWidget);
+    expect(find.text('출발 30분 전부터는 탑승으로 되돌릴 수 없어요'), findsOneWidget);
   });
 
   testWidgets('canToggle 이 false 면 등원 여부 토글 스위치 자체가 렌더링되지 않는다', (tester) async {
@@ -461,7 +461,7 @@ void main() {
     await tester.tap(find.text('승인 요청 보내기'));
     await tester.pumpAndSettle();
 
-    expect(find.text('학원 관리자 승인 대기 중입니다 (마감 9월 12일 07:30).'), findsOneWidget);
+    expect(find.text('학원 관리자 승인 대기 중이에요 (마감 9월 12일 07:30).'), findsOneWidget);
   });
 
   // R53 t3 A1 · Ruling 870 — ③ 즉시 반영은 운행이 시작되지 않았어도(출발+10분 경과) 난다. "운행이 시작돼" 로

@@ -54,7 +54,7 @@ class BlockedScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: BaraedaSpacing.space3),
                     Text(
-                      '비밀번호를 5번 틀려서 이 계정이 잠겼습니다.\n'
+                      '비밀번호를 5번 틀려서 이 계정이 잠겼어요.\n'
                       '직접 풀 수는 없으니 다니는 학원에 문의해 주세요.',
                       textAlign: TextAlign.center,
                       style: BaraedaTypography.body.copyWith(

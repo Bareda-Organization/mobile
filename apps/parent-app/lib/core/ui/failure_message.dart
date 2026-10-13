@@ -8,16 +8,16 @@ String failureMessage(Failure failure, {required String fallback}) =>
     switch (failure) {
       NetworkFailure() => '네트워크 상태를 확인해 주세요',
       ApiFailure(:final message) => message,
-      UnauthenticatedFailure() => '로그인이 만료되었습니다. 다시 로그인해 주세요',
+      UnauthenticatedFailure() => '로그인이 만료되었어요. 다시 로그인해 주세요',
       _ => fallback,
     };
 
 /// 임시 취소된 회차(`409 RUN_CANCELED`, Ruling 376)에 탑승 토글·변경 신청을 보냈을 때의 문구.
-const String runCanceledMessage = '학원에서 임시로 취소한 회차입니다. 학원에 문의해 주세요';
+const String runCanceledMessage = '학원에서 임시로 취소한 회차예요. 학원에 문의해 주세요';
 
 /// 퇴원한 학생(`404 STUDENT_NOT_FOUND`, BR-212 — 학부모 경로의 자녀와 학생 본인 계정 모두)의 조회 문구.
 /// 다시 시도해도 같은 결과라 이 문구에는 [다시 시도] 를 붙이지 않는다.
-const String withdrawnStudentMessage = '퇴원 처리된 학생이라 조회할 수 없습니다. 학원에 문의해 주세요';
+const String withdrawnStudentMessage = '퇴원 처리된 학생이라 조회할 수 없어요. 학원에 문의해 주세요';
 
 /// [error] 가 퇴원한 학생 조회 실패(`404 STUDENT_NOT_FOUND`)인가.
 bool isWithdrawnStudent(Object error) =>

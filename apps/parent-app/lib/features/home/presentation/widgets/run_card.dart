@@ -111,7 +111,7 @@ class _RunCardState extends ConsumerState<RunCard> {
         _banner = switch (result.result) {
           RunIntentApplyResult.applied => null,
           RunIntentApplyResult.pendingApproval =>
-            '학원 관리자 승인 대기 중입니다${deadlineNote(result.deadlineAt)}.',
+            '학원 관리자 승인 대기 중이에요${deadlineNote(result.deadlineAt)}.',
           RunIntentApplyResult.appliedNoReroute =>
             '승인 요청을 받는 시간이 지나 바로 반영됐어요. 노선은 바뀌지 않아요.',
         };
@@ -133,15 +133,15 @@ class _RunCardState extends ConsumerState<RunCard> {
         _bannerTone = AlertTone.missed;
         _banner = switch (failure) {
           ApiFailure(code: 'CHANGE_LIMIT_REACHED') =>
-            '이 회차는 변경 가능 횟수를 모두 사용했습니다',
+            '이 회차는 변경 가능 횟수를 모두 사용했어요',
           // 같은 코드가 끄기(이미 승하차 처리된 학생, Ruling 334)와 켜기(출발 30분 전부터
           // 탑승 복귀 불가)에서 뜻이 다르다.
           ApiFailure(code: 'CHANGE_WINDOW_CLOSED') =>
             value
-                ? '출발 30분 전부터는 탑승으로 되돌릴 수 없습니다'
-                : '이미 탑승 처리가 진행돼 앱에서는 바꿀 수 없습니다. 학원에 문의해 주세요',
+                ? '출발 30분 전부터는 탑승으로 되돌릴 수 없어요'
+                : '이미 탑승 처리가 진행돼 앱에서는 바꿀 수 없어요. 학원에 문의해 주세요',
           ApiFailure(code: 'RUN_CANCELED') => runCanceledMessage,
-          _ => failureMessage(failure, fallback: '변경을 처리하지 못했습니다'),
+          _ => failureMessage(failure, fallback: '변경을 처리하지 못했어요'),
         };
       });
     }

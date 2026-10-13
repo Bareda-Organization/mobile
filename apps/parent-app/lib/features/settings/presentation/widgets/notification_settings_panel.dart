@@ -28,7 +28,7 @@ class NotificationSettingsPanel extends ConsumerWidget {
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stack) => const AlertBanner(
         tone: AlertTone.missed,
-        body: '알림 설정을 불러오지 못했습니다',
+        body: '알림 설정을 불러오지 못했어요',
       ),
       data: (settings) =>
           _NotificationSwitches(settings: settings, isParent: isParent),
@@ -80,7 +80,7 @@ class _NotificationSwitchesState extends ConsumerState<_NotificationSwitches> {
         _bannerTone = AlertTone.missed;
         _banner = failureMessage(
           failure,
-          fallback: '알림 설정을 바꾸지 못했습니다',
+          fallback: '알림 설정을 바꾸지 못했어요',
         );
       });
     }

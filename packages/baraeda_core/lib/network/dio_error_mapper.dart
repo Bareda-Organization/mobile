@@ -37,7 +37,7 @@ Failure _mapBadResponse(DioException exception) {
     return Failure.api(
       statusCode: statusCode ?? 0,
       code: error['code'] as String? ?? 'UNKNOWN',
-      message: error['message'] as String? ?? '알 수 없는 오류가 발생했습니다',
+      message: error['message'] as String? ?? '알 수 없는 오류가 발생했어요',
       details: error['details'] as Map<String, dynamic>?,
     );
   }

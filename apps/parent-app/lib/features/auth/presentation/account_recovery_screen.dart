@@ -81,14 +81,14 @@ class _AccountRecoveryScreenState extends ConsumerState<AccountRecoveryScreen> {
     ApiFailure(
       code: 'VERIFICATION_CODE_INVALID',
     ) =>
-      '휴대폰 번호 또는 인증번호를 확인할 수 없습니다',
+      '휴대폰 번호 또는 인증번호를 확인할 수 없어요',
     ApiFailure(code: 'RECOVERY_UNAVAILABLE') => _unavailableNotice,
     ApiFailure(code: 'RECOVERY_RATE_LIMITED') =>
       '인증번호는 잠시 뒤에 다시 받을 수 있어요. 조금만 기다려 주세요',
     ApiFailure(code: 'VALIDATION_FAILED') => '입력값을 다시 확인해 주세요',
     ApiFailure(:final message) => message,
     NetworkFailure() => '네트워크 상태를 확인해 주세요',
-    _ => '요청을 처리하지 못했습니다',
+    _ => '요청을 처리하지 못했어요',
   };
 
   Future<void> _requestCode() async {

@@ -164,13 +164,13 @@ class _ChangeRequestPanelState extends ConsumerState<ChangeRequestPanel> {
         _submitting = false;
         _bannerTone = AlertTone.missed;
         _banner = switch (failure) {
-          ApiFailure(code: 'CHANGE_WINDOW_CLOSED') => '변경 신청 마감이 지났습니다',
+          ApiFailure(code: 'CHANGE_WINDOW_CLOSED') => '변경 신청 마감이 지났어요',
           ApiFailure(code: 'CHANGE_LIMIT_REACHED') =>
-            '이 회차는 변경 가능 횟수를 모두 사용했습니다',
+            '이 회차는 변경 가능 횟수를 모두 사용했어요',
           ApiFailure(code: 'ADDRESS_VERIFICATION_FAILED') =>
-            '주소를 확인할 수 없습니다. 다시 입력해 주세요',
+            '주소를 확인할 수 없어요. 다시 입력해 주세요',
           ApiFailure(code: 'RUN_CANCELED') => runCanceledMessage,
-          _ => failureMessage(failure, fallback: '신청을 처리하지 못했습니다'),
+          _ => failureMessage(failure, fallback: '신청을 처리하지 못했어요'),
         };
       });
     }

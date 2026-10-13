@@ -142,7 +142,7 @@ Future<void> _open(
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: WordWrapText(
-          failureMessage(failure, fallback: '읽음 처리하지 못했습니다'),
+          failureMessage(failure, fallback: '읽음 처리하지 못했어요'),
         ),
       ),
     );

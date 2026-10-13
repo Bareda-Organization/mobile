@@ -140,7 +140,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(repository.registeredTokens, isEmpty);
-    expect(find.text('이 기기에서는 아직 푸시 알림을 받을 수 없습니다'), findsOneWidget);
+    expect(find.text('이 기기에서는 아직 푸시 알림을 받을 수 없어요'), findsOneWidget);
     expect(
       tester.widget<BaraedaSwitch>(find.byType(BaraedaSwitch)).checked,
       isFalse,
@@ -156,7 +156,7 @@ void main() {
       tokenSource: _FixedTokenSource('placeholder-device-1'),
     );
 
-    expect(find.text('이 기기에서는 아직 푸시 알림을 받을 수 없습니다'), findsOneWidget);
+    expect(find.text('이 기기에서는 아직 푸시 알림을 받을 수 없어요'), findsOneWidget);
   });
 
   testWidgets('진짜 토큰이면 그 안내가 없다', (tester) async {
@@ -167,6 +167,6 @@ void main() {
       tokenSource: _FixedTokenSource('fcm-1'),
     );
 
-    expect(find.text('이 기기에서는 아직 푸시 알림을 받을 수 없습니다'), findsNothing);
+    expect(find.text('이 기기에서는 아직 푸시 알림을 받을 수 없어요'), findsNothing);
   });
 }

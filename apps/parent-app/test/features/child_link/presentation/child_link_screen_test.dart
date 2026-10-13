@@ -282,7 +282,7 @@ void main() {
       await tester.tap(find.text('연결 완료하기'));
       await tester.pumpAndSettle();
 
-      expect(find.text('이미 연결된 자녀입니다'), findsOneWidget);
+      expect(find.text('이미 연결된 자녀예요'), findsOneWidget);
       // P2 안내는 LINK_CODE_INVALID 전용 — 다른 에러 코드까지 번지면 무관한 상황(이미 연결된 자녀)에도 시도 상한
       // 얘기가 뜬다.
       expect(find.text(_invalidNotice), findsNothing);

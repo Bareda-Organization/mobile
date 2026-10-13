@@ -21,7 +21,7 @@ import '../../support/fake_token_storage.dart';
 import '../../support/no_bus_position.dart';
 
 /// R46 B2 #22 배선 — ① 모든 REST 요청이 연결 감시를 지난다 ② 끊기면 앱 맨 위에 한 줄이 뜬다
-/// ③ 끊긴 동안 홈은 카드 위에 "이전 정보입니다" 띠를 또 나열하지 않는다(맨 위 한 줄이 그 말을 한다).
+/// ③ 끊긴 동안 홈은 카드 위에 "이전 정보예요" 띠를 또 나열하지 않는다(맨 위 한 줄이 그 말을 한다).
 class _Adapter implements HttpClientAdapter {
   @override
   Future<ResponseBody> fetch(
@@ -80,7 +80,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('네트워크 연결이 끊겼습니다'), findsOneWidget);
+    expect(find.text('네트워크 연결이 끊겼어요'), findsOneWidget);
   });
 
   // 실기기(iOS 시뮬레이터)에서 표시줄 위 상태 표시줄 영역이 검게 비고 글자에 노란 밑줄이 떴다 —
@@ -108,7 +108,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final label = find.text('네트워크 연결이 끊겼습니다');
+    final label = find.text('네트워크 연결이 끊겼어요');
     final material = find.ancestor(
       of: label,
       matching: find.byType(Material),
@@ -163,12 +163,12 @@ void main() {
 
     testWidgets('연결 중에 갱신이 실패하면 이전 정보 띠가 뜬다', (tester) async {
       await pumpHome(tester, isOffline: false);
-      expect(find.textContaining('이전 정보입니다'), findsOneWidget);
+      expect(find.textContaining('이전 정보예요'), findsOneWidget);
     });
 
     testWidgets('끊긴 동안 갱신이 실패해도 카드 위 띠를 또 만들지 않는다', (tester) async {
       await pumpHome(tester, isOffline: true);
-      expect(find.textContaining('이전 정보입니다'), findsNothing);
+      expect(find.textContaining('이전 정보예요'), findsNothing);
     });
   });
 }

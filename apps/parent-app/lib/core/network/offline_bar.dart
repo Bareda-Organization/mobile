@@ -18,8 +18,8 @@ class OfflineBar extends ConsumerWidget {
 
     final lastReachableAt = ref.read(networkStatusProvider).lastReachableAt;
     final text = lastReachableAt == null
-        ? '네트워크 연결이 끊겼습니다'
-        : '네트워크 연결이 끊겼습니다 · 마지막 갱신 '
+        ? '네트워크 연결이 끊겼어요'
+        : '네트워크 연결이 끊겼어요 · 마지막 갱신 '
               '${DateFormat('H:mm').format(lastReachableAt.toLocal())}';
     final colors = context.colors;
     // 앱 틀(MaterialApp.builder)은 Scaffold 밖이라 Material 도 배경도 없다 — 직접 가진다.

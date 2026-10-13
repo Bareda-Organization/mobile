@@ -172,7 +172,7 @@ class _RateLimitedResendAuthRepository extends _OkAuthRepository {
   }
 }
 
-const _expectedSharedMessage = '휴대폰 번호 또는 인증번호를 확인할 수 없습니다';
+const _expectedSharedMessage = '휴대폰 번호 또는 인증번호를 확인할 수 없어요';
 
 Future<void> _pumpAndRequestCode(
   WidgetTester tester,

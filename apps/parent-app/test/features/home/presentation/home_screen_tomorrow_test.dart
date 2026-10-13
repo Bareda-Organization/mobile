@@ -173,7 +173,7 @@ void main() {
     await tester.tap(find.text('내일'));
     await tester.pumpAndSettle();
 
-    expect(find.text('내일 예정된 회차가 없습니다'), findsOneWidget);
+    expect(find.text('내일 예정된 회차가 없어요'), findsOneWidget);
   });
 
   testWidgets('학생은 내일 회차를 볼 수 있지만 탑승 스위치는 없다', (tester) async {
