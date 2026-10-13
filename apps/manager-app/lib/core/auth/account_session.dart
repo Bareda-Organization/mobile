@@ -203,16 +203,16 @@ Future<void> _discardPendingRequestsOnce(
         .add(count: emergencies, contact: contact)
         .timeout(_persistWaitLimit, onTimeout: () {});
   }
-  await queue.clear();
-  if (discarded.isEmpty) return;
   final notice = ref.read(sessionExpiredNoticeProvider);
-  if (notice == null) {
-    if (!announceDiscarded) return;
-    ref
+  // 앱 맨 위 안내의 건수는 비상 안내와 같은 이유로 기기 저장이 끝난 뒤 비운다(R56) — 안내 문장은 메모리에 먼저 올라간다.
+  if (notice == null && announceDiscarded && discarded.isNotEmpty) {
+    await ref
         .read(requestNoticesProvider.notifier)
-        .addDiscarded(count: discarded.length, emergencies: emergencies);
-    return;
+        .addDiscarded(count: discarded.length, emergencies: emergencies)
+        .timeout(_persistWaitLimit, onTimeout: () {});
   }
+  await queue.clear();
+  if (discarded.isEmpty || notice == null) return;
   final emergencyNote = emergencies == 0
       ? ''
       : ' — 비상 신고 $emergencies건이 서버에 전달되지 못했으니 '

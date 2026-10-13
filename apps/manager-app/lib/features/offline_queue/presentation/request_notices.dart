@@ -28,7 +28,7 @@ class RequestNotice {
     required this.id,
     required this.title,
     required this.body,
-    this.counted = false,
+    this.tallied = 0,
   });
 
   /// 확인(닫기) 대상을 가르는 번호 — 같은 내용이 두 번 나와도 서로 다른 안내다.
@@ -40,8 +40,8 @@ class RequestNotice {
   /// 학생 · 처리 · 이유(또는 건수).
   final String body;
 
-  /// 기기에 남기는 거절 건수([droppedTallyProvider])에 한 건으로 세어진 안내인가 — 확인하면 그 건수도 하나 줄인다.
-  final bool counted;
+  /// 이 안내가 기기에 남기는 거절 건수([droppedTallyProvider])에 센 건수 — 확인하면 그 건수도 그만큼 줄인다. 0 이면 세지 않은 안내다.
+  final int tallied;
 }
 
 /// 지운 처리의 안내 목록 — 사용자가 [RequestNoticesNotifier.dismiss] 로 확인할 때까지 남는다.
@@ -91,23 +91,32 @@ class RequestNoticesNotifier extends Notifier<List<RequestNotice>> {
   /// 이 계정의 저장분을 정리하며 미전송 처리를 버린 일을 안내로 남긴다(앱 시작 `/me` 거절 · 대기·거절 상태).
   /// 비상 신고 [emergencies] 건은 기기 저장 안내([unsentEmergencyProvider])가
   /// 따로 세므로(호출부가 더한다 · Ruling 886) 여기서는 뺀 나머지만 안내로 남긴다.
-  void addDiscarded({required int count, required int emergencies}) {
+  /// 건수와 시각은 기기에도 남겨 앱을 껐다 켜도 알린다(R56 · 학생 이름은 남기지 않는다) — 돌려주는 Future 는 기기 저장이
+  /// 끝나면 완료되며, 대기열을 비우기 전에 기다려야 하는 호출부가 쓴다.
+  Future<void> addDiscarded({required int count, required int emergencies}) {
     final others = count - emergencies;
-    if (others <= 0) return;
+    if (others <= 0) return Future<void>.value();
     state = [
       ...state,
       RequestNotice(
         id: _nextId++,
         title: '보내지 못한 처리 $others건이 지워졌어요',
         body: '계정 상태가 바뀌어 이 기기에 쌓아 둔 처리를 서버로 보낼 수 없어요.',
+        tallied: others,
       ),
     ];
+    return ref
+        .read(droppedTallyProvider.notifier)
+        .add(count: others, contact: null);
   }
 
-  /// 사용자가 안내를 확인했다 — 기기에 남긴 거절 건수로 세어진 안내면 그 건수도 하나 줄인다.
+  /// 사용자가 안내를 확인했다 — 기기에 남긴 거절 건수로 세어진 안내면 그 건수도 센 만큼 줄인다.
   void dismiss(int id) {
-    if (state.any((notice) => notice.id == id && notice.counted)) {
-      ref.read(droppedTallyProvider.notifier).dismiss(1);
+    final tallied = state
+        .where((notice) => notice.id == id)
+        .fold<int>(0, (sum, notice) => sum + notice.tallied);
+    if (tallied > 0) {
+      ref.read(droppedTallyProvider.notifier).dismiss(tallied);
     }
     state = [
       for (final notice in state)
@@ -133,7 +142,7 @@ class RequestNoticesNotifier extends Notifier<List<RequestNotice>> {
       id: _nextId++,
       title: '$what — 서버로 보내지 못하고 지워졌어요',
       body: '이유: $reason. 필요하면 다시 처리해 주세요.',
-      counted: true,
+      tallied: 1,
     );
   }
 }
@@ -170,7 +179,7 @@ class RequestNoticesHost extends ConsumerWidget {
     final droppedTally = ref.watch(droppedTallyProvider);
     final restored =
         (droppedTally?.count ?? 0) -
-        notices.where((notice) => notice.counted).length;
+        notices.fold<int>(0, (sum, notice) => sum + notice.tallied);
     final hasBanner = notices.isNotEmpty || unsent != null || restored > 0;
     final maxHeight = MediaQuery.sizeOf(context).height * 0.45;
     // 안내가 있든 없든 [child] 는 같은 자리에 둔다 — 안내가 뜨고 지워질 때 아래 화면(내비게이터)이 새로 만들어져
