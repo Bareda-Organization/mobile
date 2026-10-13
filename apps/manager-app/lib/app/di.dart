@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/core/constants/api_constants.dart';
 import 'package:manager_app/core/constants/navigation_constants.dart';
@@ -135,8 +136,14 @@ final managerRunRepositoryProvider = Provider<ManagerRunRepository>((ref) {
     store: ref.watch(runSummaryStoreProvider),
     clock: ref.watch(clockProvider),
     isSignedIn: () => ref.read(currentUserRoleProvider) != null,
+    onSource: (savedAt) =>
+        ref.read(savedRunsAtProvider.notifier).state = savedAt,
   );
 });
+
+/// 오늘 회차 목록이 서버가 아니라 기기 저장본이면 그 요약을 받은 시각, 서버에서 새로 받았으면 `null`(R56) —
+/// 통신 두절 중 홈이 그 사실을 알리는 근거다. 로그아웃 · 계정 정리가 비운다.
+final savedRunsAtProvider = StateProvider<DateTime?>((ref) => null);
 
 /// API_SPEC §4.4·§4.5 — 운행 시작·승하차지 도착(기사 전용).
 final driveModeApiProvider = Provider<DriveModeApi>((ref) {

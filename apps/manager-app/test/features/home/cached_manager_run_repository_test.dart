@@ -41,6 +41,7 @@ void main() {
     Object result = const <ManagerRun>[],
     FakeRunSummaryStore? store,
     bool signedIn = true,
+    void Function(DateTime?)? onSource,
   }) {
     final inner = _Inner(result);
     final summary = store ?? FakeRunSummaryStore();
@@ -52,6 +53,7 @@ void main() {
         store: summary,
         clock: _FixedClock(now),
         isSignedIn: () => signedIn,
+        onSource: onSource,
       ),
     );
   }
@@ -133,6 +135,42 @@ void main() {
     );
 
     await expectLater(t.repo.fetchRuns(), throwsA(isA<UnknownFailure>()));
+  });
+
+  // R56 — 홈이 "저장해 둔 목록으로 보고 있어요" 를 띄우는 근거: 서버에서 새로 받으면 null, 저장본이면 받은 시각.
+  test('출처를 알린다 — 새로 받으면 null · 저장본이면 그 요약을 받은 시각', () async {
+    final sources = <DateTime?>[];
+    final savedAt = DateTime(2026, 10, 10, 9, 12);
+    final fresh = build(result: [run], onSource: sources.add);
+    await fresh.repo.fetchRuns();
+    expect(sources, [null]);
+
+    final offline = build(
+      result: const Failure.network(),
+      store: FakeRunSummaryStore((savedAt: savedAt, runs: [run])),
+      onSource: sources.add,
+    );
+    await offline.repo.fetchRuns();
+    expect(sources, [null, savedAt]);
+  });
+
+  test('다른 날짜 조회와 서버의 판단(4xx)은 출처를 알리지 않는다', () async {
+    final sources = <DateTime?>[];
+    final store = FakeRunSummaryStore((savedAt: now, runs: [run]));
+    await build(
+      result: [run],
+      onSource: sources.add,
+    ).repo.fetchRuns(date: DateTime(2026, 10, 11));
+    await expectLater(
+      build(
+        result: const Failure.api(statusCode: 403, code: 'X', message: 'm'),
+        store: store,
+        onSource: sources.add,
+      ).repo.fetchRuns(),
+      throwsA(isA<ApiFailure>()),
+    );
+
+    expect(sources, isEmpty);
   });
 
   test('날짜를 지정한 조회는 요약을 남기지 않는다', () async {

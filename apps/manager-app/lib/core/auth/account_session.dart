@@ -106,6 +106,7 @@ void _clearAccountScopedState(Ref ref, {bool announceDiscarded = false}) {
     // 앞 계정의 지운 처리 안내는 다음 사람이 보지 않게 비운다.
     ..invalidate(requestNoticesProvider);
   ref.read(selectedRunIdProvider.notifier).state = null;
+  ref.read(savedRunsAtProvider.notifier).state = null;
   ref.read(mustChangePasswordProvider.notifier).state = false;
   ref.read(unverifiedSessionProvider.notifier).state = false;
   ref.read(academyContactProvider.notifier).state = null;

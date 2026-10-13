@@ -15,6 +15,7 @@ class CachedManagerRunRepository implements ManagerRunRepository {
     required RunSummaryStore store,
     required Clock clock,
     required bool Function() isSignedIn,
+    void Function(DateTime? savedAt)? onSource,
   })
     // 위와 같은 이유.
     // ignore: prefer_initializing_formals
@@ -27,7 +28,10 @@ class CachedManagerRunRepository implements ManagerRunRepository {
        _clock = clock,
        // 위와 같은 이유.
        // ignore: prefer_initializing_formals
-       _isSignedIn = isSignedIn;
+       _isSignedIn = isSignedIn,
+       // 위와 같은 이유.
+       // ignore: prefer_initializing_formals
+       _onSource = onSource;
 
   final ManagerRunRepository _inner;
   final RunSummaryStore _store;
@@ -36,16 +40,22 @@ class CachedManagerRunRepository implements ManagerRunRepository {
   /// 로그아웃 뒤에 늦게 도착한 응답을 기기에 남기지 않는다.
   final bool Function() _isSignedIn;
 
+  /// 오늘 목록의 출처를 알린다(R56) — 서버에서 새로 받았으면 `null`, 저장본으로 돌아섰으면 그 요약을 받은 시각.
+  /// 홈이 "저장해 둔 목록으로 보고 있어요" 를 띄우는 근거다. 다른 날짜 조회는 알리지 않는다.
+  final void Function(DateTime? savedAt)? _onSource;
+
   @override
   Future<List<ManagerRun>> fetchRuns({DateTime? date}) async {
     try {
       final runs = await _inner.fetchRuns(date: date);
       if (date == null && _isSignedIn()) await _store.save(_clock.now(), runs);
+      if (date == null) _onSource?.call(null);
       return runs;
     } on Failure catch (failure) {
       if (date != null || !isUnreachableFailure(failure)) rethrow;
       final saved = await _store.read();
       if (saved == null || !_isSameDay(saved.savedAt, _clock.now())) rethrow;
+      _onSource?.call(saved.savedAt);
       return saved.runs;
     }
   }
