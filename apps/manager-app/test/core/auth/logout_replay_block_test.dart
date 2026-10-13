@@ -51,7 +51,8 @@ class _CountingAdapter implements HttpClientAdapter {
 
 /// `logout` 이 [gate] 가 풀릴 때까지 끝나지 않는 가짜 — 로그아웃이 시작됐지만
 /// 아직 대기열이 비워지지 않은 구간을 만든다.
-/// [gate] 는 `runAsync` 안에서 만들어야 한다(가짜 시계 영역에서 만든 Completer 는 pump 전에는 이어지지 않는다).
+/// [gate] 는 `runAsync` 안에서 만들어야 한다(가짜 시계 영역에서 만든
+/// Completer 는 pump 전에는 이어지지 않는다).
 class _GatedLogoutAuth implements AuthRepository {
   late Completer<void> gate;
 
