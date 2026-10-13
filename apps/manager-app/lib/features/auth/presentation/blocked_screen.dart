@@ -1,12 +1,9 @@
-import 'dart:async';
-
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:manager_app/core/auth/academy_contact_store.dart';
 import 'package:manager_app/core/auth/auth_providers.dart';
-import 'package:manager_app/core/launcher/device_launchers.dart';
 import 'package:manager_app/core/ui/academy_call_card.dart';
 import 'package:manager_app/core/ui/manager_header.dart';
 
@@ -100,17 +97,7 @@ class BlockedScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 12),
                 if (number != null)
-                  BaraedaButton(
-                    label: '학원에 전화 · $number',
-                    icon: 'phone',
-                    size: BaraedaButtonSize.xl,
-                    block: true,
-                    onPressed: () => unawaited(
-                      ref.read(uriOpenerProvider)(
-                        Uri(scheme: 'tel', path: number),
-                      ),
-                    ),
-                  )
+                  AcademyCallButton(contact: number)
                 else
                   BaraedaCard(
                     tone: BaraedaCardTone.mist,

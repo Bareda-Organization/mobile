@@ -7,7 +7,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:manager_app/app/app_routes.dart';
 import 'package:manager_app/app/di.dart';
+import 'package:manager_app/core/auth/academy_contact_store.dart';
 import 'package:manager_app/core/auth/account_session.dart';
+import 'package:manager_app/core/auth/auth_providers.dart';
+import 'package:manager_app/core/ui/academy_call_card.dart';
 
 /// UF-X-03 — 로그인 폼 → `POST /auth/login` → 성공하면 역할·상태 provider 를
 /// 채운다. 이후 화면 전환은 이 화면이 직접 `go` 하지 않는다 —
@@ -18,6 +21,10 @@ import 'package:manager_app/core/auth/account_session.dart';
 /// 수 없는 것들):
 /// - **지원하지 않는 역할**(`role` 이 이 앱이 모르는 값) — 5번째 화면을
 ///   새로 만들지 않고 인라인 안내 + 로그아웃으로 끝낸다.
+/// - **삭제된 매니저**(`403 AUTH_STAFF_INACTIVE` · `Ruling 891`) — 비밀번호가
+///   맞은 뒤의 거절이라 이유를 알려 줘야 재로그인을 되풀이하지 않는다. 같은
+///   화면에 안내를 보이고, 기기에 저장된 학원 번호가 번호 모양일 때만 전화
+///   단추를 둔다.
 /// - **차단 계정**(`403 AUTH_ACCOUNT_BLOCKED`) — 로그인 자체가 실패해
 ///   토큰·role·status 어느 것도 생기지 않으므로 라우터 게이트로 잡을 수
 ///   없다. [AppRoutes.blockedAccount] 로 직접 `push` 한다(UF-X-04).
@@ -48,8 +55,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   String? _passwordError;
   String? _formError;
 
+  /// 삭제된 매니저로 거절됐는가 — 안내 아래에 학원 전화 단추를 둔다.
+  bool _staffInactive = false;
+
   /// 서버가 알려 준 남은 시도 횟수(`remaining_attempts`) — 한도 안내(M14)에 쓴다. 모르면 `null`.
   int? _remainingAttempts;
+
+  static const _staffInactiveNotice = '이 계정은 더 이상 쓸 수 없어요. 다니는 학원에 문의해 주세요';
 
   /// 잔여 시도가 이 값 이하이면 잠금 경고 띠를 보인다(학부모 앱과 같다, B2).
   static const _lockWarningThreshold = 2;
@@ -70,6 +82,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       _submitting = true;
       _passwordError = null;
       _formError = null;
+      _staffInactive = false;
       _remainingAttempts = null;
     });
 
@@ -111,6 +124,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (mounted) unawaited(context.push(AppRoutes.blockedAccount));
             });
+          case ApiFailure(code: 'AUTH_STAFF_INACTIVE'):
+            _formError = _staffInactiveNotice;
+            _staffInactive = true;
           case ApiFailure(:final message):
             _formError = message;
           case NetworkFailure():
@@ -215,6 +231,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     if (_formError != null) ...[
                       const SizedBox(height: 12),
                       AlertBanner(tone: AlertTone.missed, body: _formError),
+                    ],
+                    if (_staffInactive) ...[
+                      const SizedBox(height: 8),
+                      // 기기에 저장된 번호가 우선, 메모리 값이 보조다(차단 화면과 같다).
+                      AcademyCallButton(
+                        contact:
+                            ref.watch(savedAcademyContactProvider).value ??
+                            ref.watch(academyContactProvider),
+                      ),
                     ],
                     const SizedBox(height: 12),
                     Text(
