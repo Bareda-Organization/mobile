@@ -8,6 +8,7 @@ import 'package:manager_app/features/offline_queue/data/offline_queue_database.d
 import 'package:manager_app/features/offline_queue/domain/offline_queue_repository.dart';
 import 'package:manager_app/features/offline_queue/domain/replay_gate.dart';
 import 'package:manager_app/features/offline_queue/domain/send_outcome.dart';
+import 'package:manager_app/features/roster/data/roster_cipher.dart';
 
 /// `OfflineQueueRepository` 구현 — drift(로컬 저장) + `Dio`(재생 전송).
 ///
@@ -27,6 +28,7 @@ class OfflineQueueRepositoryImpl implements OfflineQueueRepository {
     Clock clock = const SystemClock(),
     void Function(List<DroppedRequest> dropped)? onDropped,
     ReplayGate? replayGate,
+    RosterCipher? cipher,
   })
     // 필드를 private 으로 유지하려고 initializing formal 대신 명시 대입을 쓴다.
     // ignore: prefer_initializing_formals
@@ -42,7 +44,10 @@ class OfflineQueueRepositoryImpl implements OfflineQueueRepository {
        _onDropped = onDropped,
        // 위와 같은 이유.
        // ignore: prefer_initializing_formals
-       _replayGate = replayGate;
+       _replayGate = replayGate,
+       // 위와 같은 이유.
+       // ignore: prefer_initializing_formals
+       _cipher = cipher;
 
   /// 한 행이 5xx 로 재생에 실패하는 횟수 상한 — 닿으면 영구 실패로 재생에서 뺀다. 주기 재생(30초)이 한 번씩
   /// 세므로 약 5분이다. **비상 신고에는 적용하지 않는다**(Ruling 616).
@@ -63,6 +68,10 @@ class OfflineQueueRepositoryImpl implements OfflineQueueRepository {
 
   /// 로그아웃이 시작되면 재생을 막는 빗장(R56) — 없으면 막지 않는다.
   final ReplayGate? _replayGate;
+
+  /// 사용자가 쓴 글이 든 요청(예외 보고 메모)의 본문을 기기에서 암호문으로 두는 도구(R56 · 명단 저장본과 같은
+  /// `RosterCipher` — AES-GCM 256, 키는 기기 보안 저장소, 로그아웃 때 키 삭제). 없으면 평문이다(시험 전용).
+  final RosterCipher? _cipher;
 
   @override
   Future<SendOutcome<T>> sendOrQueue<T>({
@@ -149,9 +158,37 @@ class OfflineQueueRepositoryImpl implements OfflineQueueRepository {
             // 필드를 `Value<String>` 로 받는다 — 기본값이 없는 다른 컬럼과
             // 달리 명시적으로 감싸야 한다.
             method: Value(method),
-            payload: jsonEncode(payload),
+            payload: await _seal(endpoint, payload),
           ),
         );
+  }
+
+  /// 자유 입력 글이 들어가는 요청인가 — 예외 보고(`memo`)만 해당한다. 승하차 · 도착은 상태값뿐이고 연락 기록은
+  /// 고정 선택지뿐이라 평문으로 둔다.
+  bool _hasFreeText(String endpoint) =>
+      PendingRequestSummary.isReportEndpoint(endpoint);
+
+  /// 저장할 본문 문자열 — 글이 든 요청은 암호화한다. 암호화에 실패하면 평문으로 내리지 않고 실패로 알린다.
+  Future<String> _seal(String endpoint, Map<String, dynamic> payload) async {
+    final json = jsonEncode(payload);
+    final cipher = _cipher;
+    if (cipher == null || !_hasFreeText(endpoint)) return json;
+    try {
+      return await cipher.encrypt(json);
+    } on Object {
+      // Failure 는 Exception/Error 를 상속하지 않는다.
+      // ignore: only_throw_errors
+      throw const Failure.unknown();
+    }
+  }
+
+  /// 행의 본문을 읽는다 — 글이 든 요청은 복호화하고, 읽을 수 없으면(키 없음 · 손상 · 암호화 이전 평문) `null`.
+  Future<String?> _open(PendingRequest row) {
+    final cipher = _cipher;
+    if (cipher == null || !_hasFreeText(row.endpoint)) {
+      return Future.value(row.payload);
+    }
+    return cipher.decrypt(row.payload);
   }
 
   /// 같은 학생(같은 [endpoint])에게 같은 승하차 `status` 가 이미 기다리고 있으면 중복이다(R46) — 두 번 눌러도
@@ -185,18 +222,18 @@ class OfflineQueueRepositoryImpl implements OfflineQueueRepository {
     final rows = await (_database.select(
       _database.pendingRequests,
     )..orderBy([(t) => OrderingTerm.asc(t.id)])).get();
-    return rows
-        .map(
-          (row) => PendingRequestSummary(
-            id: row.id,
-            endpoint: row.endpoint,
-            method: row.method,
-            payload: row.payload,
-            createdAt: row.createdAt,
-            failed: row.attempts >= maxAttempts,
-          ),
-        )
-        .toList();
+    return [
+      for (final row in rows)
+        PendingRequestSummary(
+          id: row.id,
+          endpoint: row.endpoint,
+          method: row.method,
+          // 읽을 수 없는 행은 암호문 그대로 둔다 — 화면은 본문을 이름 짓는 데만 쓰고 파싱하지 못하면 기본 이름이다.
+          payload: await _open(row) ?? row.payload,
+          createdAt: row.createdAt,
+          failed: row.attempts >= maxAttempts,
+        ),
+    ];
   }
 
   @override
@@ -214,10 +251,31 @@ class OfflineQueueRepositoryImpl implements OfflineQueueRepository {
       if (_replayGate?.isPaused ?? false) break;
       // 재생 도중 대기열이 비워졌으면(로그아웃 · 계정 정리) 남은 행은 앞 계정의 것이다 — 다음 계정의 토큰으로 보내지 않는다.
       if (!await _rowExists(row.id)) break;
+      final body = await _open(row);
+      if (body == null) {
+        // 키가 지워졌거나 손상된 행 — 다시 보낼 수 없고 남겨 두면 뒤 행의 재생을 막는다. 지우고 거절로 지운 것과 같은
+        // 안내 건수에 센다(명단 저장본이 읽을 수 없는 행을 지우는 것과 같은 규칙).
+        final item = DroppedRequest(
+          request: PendingRequestSummary(
+            id: row.id,
+            endpoint: row.endpoint,
+            method: row.method,
+            payload: '{}',
+            createdAt: row.createdAt,
+          ),
+          statusCode: 0,
+          code: '',
+          message: '기기에 저장한 내용을 읽을 수 없어요',
+        );
+        dropped.add(item);
+        await _deleteRow(row.id);
+        _notifyDropped([item]);
+        continue;
+      }
       try {
         await _dio.request<dynamic>(
           row.endpoint,
-          data: jsonDecode(row.payload),
+          data: jsonDecode(body),
           options: Options(method: row.method),
         );
         await _deleteRow(row.id);
@@ -233,7 +291,7 @@ class OfflineQueueRepositoryImpl implements OfflineQueueRepository {
           // 응답을 기다리는 사이 대기열이 비워졌으면 이 행은 계정 정리가 이미 버렸다 — 앞 계정의 거절을 안내로 올리지 않는다.
           if (!await _rowExists(row.id)) break;
           // 서버가 확정 거절했다 — 다시 보내도 같은 결과라 큐에서 뺀다. 지운 내용은 호출부가 사용자에게 남긴다(882).
-          final item = _toDropped(row, exception);
+          final item = _toDropped(row, body, exception);
           dropped.add(item);
           await _deleteRow(row.id);
           // 지운 즉시 알린다(R53 B-6①) — 루프 끝으로 미루면 그 사이 앱이 종료될 때 지운 행의 안내가 사라진다.
@@ -290,7 +348,11 @@ class OfflineQueueRepositoryImpl implements OfflineQueueRepository {
 
   /// 확정 거절로 지우는 행을 사용자에게 남길 내용으로 옮긴다 — 서버 본문(`{"error":{"code","message"}}`)이
   /// JSON 이 아니거나 코드 · 문구가 문자열이 아니면 빈 문자열이다.
-  DroppedRequest _toDropped(PendingRequest row, DioException exception) {
+  DroppedRequest _toDropped(
+    PendingRequest row,
+    String body,
+    DioException exception,
+  ) {
     final data = exception.response?.data;
     final error = data is Map ? data['error'] : null;
     return DroppedRequest(
@@ -298,7 +360,7 @@ class OfflineQueueRepositoryImpl implements OfflineQueueRepository {
         id: row.id,
         endpoint: row.endpoint,
         method: row.method,
-        payload: row.payload,
+        payload: body,
         createdAt: row.createdAt,
       ),
       statusCode: exception.response?.statusCode ?? 0,

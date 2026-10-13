@@ -260,6 +260,7 @@ final replayGateProvider = Provider<ReplayGate>((ref) => ReplayGate());
 final offlineQueueRepositoryProvider = Provider<OfflineQueueRepository>((ref) {
   return OfflineQueueRepositoryImpl(
     replayGate: ref.watch(replayGateProvider),
+    cipher: ref.watch(rosterCipherProvider),
     database: ref.watch(offlineQueueDatabaseProvider),
     dio: ref.watch(apiClientProvider).dio,
     clock: ref.watch(clockProvider),

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:baraeda_core/baraeda_core.dart';
 import 'package:dio/dio.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,6 +16,7 @@ import 'package:manager_app/features/offline_queue/presentation/request_notices.
 import 'package:manager_app/features/roster/data/models/no_show_contact_request.dart';
 import 'package:manager_app/features/roster/data/models/roster_response.dart';
 import 'package:manager_app/features/roster/data/roster_api.dart';
+import 'package:manager_app/features/roster/data/roster_cipher.dart';
 import 'package:manager_app/features/roster/data/roster_repository_impl.dart';
 import 'package:manager_app/features/roster/domain/roster_cache.dart';
 import 'package:manager_app/features/roster/presentation/roster_actions.dart';
@@ -22,6 +24,8 @@ import 'package:manager_app/features/roster/presentation/roster_providers.dart';
 import 'package:manager_app/features/run_end/data/models/report_request.dart';
 import 'package:manager_app/features/run_end/data/reports_api.dart';
 import 'package:manager_app/features/run_end/data/reports_repository_impl.dart';
+
+import '../../support/fake_roster_key_store.dart';
 
 /// 서버 대역 — `offline` 이면 연결이 끊기고, 아니면 정해진 상태로 답하고, 나간 요청의 본문을 기록한다.
 class _Server implements HttpClientAdapter {
@@ -108,6 +112,7 @@ void main() {
   late Dio dio;
   late List<List<DroppedRequest>> dropped;
   late OfflineQueueRepositoryImpl queue;
+  late FakeRosterKeyStore keyStore;
 
   setUp(() {
     database = OfflineQueueDatabase.forTesting(NativeDatabase.memory());
@@ -115,17 +120,22 @@ void main() {
     dio = Dio(BaseOptions(baseUrl: 'https://example.invalid'))
       ..httpClientAdapter = server;
     dropped = [];
+    keyStore = FakeRosterKeyStore();
     queue = OfflineQueueRepositoryImpl(
       database: database,
       dio: dio,
       onDropped: dropped.add,
+      cipher: RosterCipher(keyStore),
     );
   });
   tearDown(() => database.close());
 
-  ReportRequest report({String key = 'K-REPORT'}) => ReportRequest(
+  ReportRequest report({
+    String key = 'K-REPORT',
+    String memo = '보호자가 안 나왔어요',
+  }) => ReportRequest(
     type: ReportType.guardianAbsent,
-    memo: '보호자가 안 나왔어요',
+    memo: memo,
     clientKey: key,
     riderId: '7',
   );
@@ -158,6 +168,58 @@ void main() {
         'K-REPORT',
       ]);
     });
+
+    // R56 후속 1 — 메모에는 학생 이름 · 사정이 들어갈 수 있어 기기 DB 에 평문으로 두지 않는다(명단 저장본과 같은 암호화).
+    test('F1-1: 대기열 DB 원본 행에는 메모 글자가 없고, 재생 요청 본문에는 원문 메모가 실린다', () async {
+      await submitReport(report(memo: '홍길동 보호자 부재'));
+
+      final raw = await database.select(database.pendingRequests).get();
+      expect(raw, hasLength(1));
+      expect(raw.single.payload, isNot(contains('홍길동')));
+      expect(raw.single.payload, isNot(contains('보호자 부재')));
+      expect(raw.single.payload, startsWith('v1:'));
+      // 화면(큐 목록)은 복호화한 본문으로 처리 이름을 짓는다.
+      expect((await queue.fetchPending()).single.description, '보호자 부재 보고');
+
+      server
+        ..offline = false
+        ..status = 201;
+      final result = await queue.replayPending();
+
+      expect(result.succeeded, 1);
+      expect(server.sentBodies.last['memo'], '홍길동 보호자 부재');
+    });
+
+    test(
+      'F1-2: 키가 지워져 읽을 수 없는 행은 재생하지 않고 지우며 안내 건수에 센다 — 뒤 행은 막히지 않는다',
+      () async {
+        await submitReport(report(memo: '홍길동 보호자 부재'));
+        await queue.sendOrQueue<void>(
+          endpoint: '/runs/run-A/riders/8',
+          method: 'PATCH',
+          payload: const {'client_key': 'K2', 'status': 'boarded'},
+          // Failure 는 Exception/Error 를 상속하지 않는다.
+          // ignore: only_throw_errors
+          send: () => throw const Failure.network(),
+        );
+        final sentBefore = server.sentBodies.length;
+        keyStore.key = null; // 로그아웃이 키를 지운 뒤와 같다
+        server
+          ..offline = false
+          ..status = 200
+          ..body = '{}';
+
+        final result = await queue.replayPending();
+
+        expect(result.droppedPermanently, 1);
+        expect(result.dropped.single.request.endpoint, '/runs/run-A/reports');
+        expect(dropped.single.single.message, '기기에 저장한 내용을 읽을 수 없어요');
+        // 깨진 행의 요청은 나가지 않았고(보고 본문 0건) 뒤 행(승하차)만 나갔다.
+        expect(server.sentBodies.length - sentBefore, 1);
+        expect(server.sentBodies.last['status'], 'boarded');
+        expect(await queue.fetchPending(), isEmpty);
+      },
+    );
 
     test('서버가 받으면 바로 접수되고 큐에는 아무것도 남지 않는다', () async {
       server.offline = false;
