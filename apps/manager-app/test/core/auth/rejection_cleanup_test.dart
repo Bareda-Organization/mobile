@@ -300,6 +300,7 @@ void main() {
     await container.read(authBootstrapProvider.future);
     await expectEverythingForgotten(container);
     final notice = container.read(requestNoticesProvider).single;
+    expect(container.read(droppedTallyProvider)?.count, 1);
 
     container.read(requestNoticesProvider.notifier).dismiss(notice.id);
     await Future<void>.delayed(const Duration(milliseconds: 50));
