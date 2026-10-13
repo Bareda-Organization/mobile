@@ -46,16 +46,28 @@ enum NoShowDecision {
 /// `POST /runs/{runId}/riders/{riderId}/no-show-contacts` 요청 본문 — §4.8.
 /// 응답 필드가 사양에 명시되지 않아(§4.8, 에러 코드만 정의) 요청 성공 여부만
 /// 반환한다(repository 는 `Future<void>`).
+///
+/// 통신 두절이면 오프라인 큐에 쌓였다가 재생되므로(R56 · Ruling 894 ⑧) [clientKey] 를 요청마다 한 번 만들어
+/// 즉시 전송과 재생이 같은 값을 쓴다 — 서버가 같은 키 재전송을 중복으로 무시한다(§1.7).
 class NoShowContactRequest {
-  const new({required this.attemptType, required this.result, this.decision});
+  const new({
+    required this.attemptType,
+    required this.result,
+    required this.clientKey,
+    this.decision,
+  });
 
   Map<String, dynamic> toJson() => {
     'attempt_type': attemptType.wireValue,
     'result': result.wireValue,
+    'client_key': clientKey,
     if (decision != null) 'decision': decision!.wireValue,
   };
 
   final NoShowAttemptType attemptType;
   final NoShowContactResult result;
+
+  /// 오프라인 큐 멱등키(UUID) — `IdempotencyKeys.generate()` 로 만든다.
+  final String clientKey;
   final NoShowDecision? decision;
 }

@@ -51,10 +51,24 @@ class PendingRequestSummary {
   /// 이 요청이 비상 신고인가 — [isEmergencyEndpoint].
   bool get isEmergency => isEmergencyEndpoint(endpoint);
 
+  /// 예외 보고(`POST /runs/{runId}/reports`)의 경로인가(R56 · Ruling 894 ⑧) — 통신 두절 때 승하차와 같은 대기열에 쌓인다.
+  static bool isReportEndpoint(String endpoint) =>
+      endpoint.endsWith('/reports');
+
+  /// 미승차 연락 기록(`POST /runs/{runId}/riders/{riderId}/no-show-contacts`)의 경로인가(R56 · Ruling 894 ⑧).
+  static bool isNoShowContactEndpoint(String endpoint) =>
+      endpoint.endsWith('/no-show-contacts');
+
+  /// 이 요청이 예외 보고인가 — [isReportEndpoint].
+  bool get isReport => isReportEndpoint(endpoint);
+
+  /// 이 요청이 미승차 연락 기록인가 — [isNoShowContactEndpoint].
+  bool get isNoShowContact => isNoShowContactEndpoint(endpoint);
+
   /// 승하차 처리(`/runs/{runId}/riders/{riderId}`)면 그 학생의 rider id, 아니면 `null` — 명단 행이 "전송 대기"
-  /// 로 바뀌는 근거다(R46).
+  /// 로 바뀌는 근거다(R46). 같은 학생 경로 아래의 연락 기록은 상태 처리가 아니라 행을 "전송 대기" 로 바꾸지 않는다.
   String? get riderId {
-    if (!endpoint.contains('/riders/')) return null;
+    if (!endpoint.contains('/riders/') || isNoShowContact) return null;
     return endpoint.split('/riders/').last.split('/').first;
   }
 
@@ -66,6 +80,10 @@ class PendingRequestSummary {
       return type == null ? '비상 신고' : '비상 신고 · ${type.label}';
     }
     if (isArrive) return '승하차지 도착 처리';
+    if (isNoShowContact) return '미승차 연락 기록';
+    if (isReport) {
+      return body['type'] == 'guardian_absent' ? '보호자 부재 보고' : '현장 상황 보고';
+    }
     if (endpoint.contains('/riders/')) {
       return switch (RiderStatus.fromWireValueOrNull(
         body['status'] as String?,

@@ -35,6 +35,9 @@ class _NoShowScreenState extends ConsumerState<NoShowScreen> {
   bool _busy = false;
   String? _error;
 
+  /// 방금 남긴 연락 기록이 통신 두절로 기기에 쌓였는가 — 서버에 아직 반영되지 않았다(R56).
+  bool _queued = false;
+
   @override
   void initState() {
     super.initState();
@@ -80,8 +83,9 @@ class _NoShowScreenState extends ConsumerState<NoShowScreen> {
     setState(() {
       _busy = true;
       _error = null;
+      _queued = false;
     });
-    final error = await submitNoShowContact(
+    final result = await submitNoShowContact(
       container,
       runId: runId,
       riderId: riderId,
@@ -90,7 +94,8 @@ class _NoShowScreenState extends ConsumerState<NoShowScreen> {
     if (!mounted) return;
     setState(() {
       _busy = false;
-      _error = error;
+      _error = result.error;
+      _queued = result.queued;
     });
   }
 
@@ -178,6 +183,14 @@ class _NoShowScreenState extends ConsumerState<NoShowScreen> {
               // 실패 이유는 맨 위에 둔다 — 아래 이력 · 단추 줄 때문에 화면 밖에 있으면 못 본다.
               if (_error != null) ...[
                 AlertBanner(tone: AlertTone.missed, body: _error),
+                const SizedBox(height: 12),
+              ],
+              if (_queued) ...[
+                const AlertBanner(
+                  tone: AlertTone.info,
+                  title: '연락 기록을 기기에 저장했어요',
+                  body: '통신이 끊겨 아직 서버에 보내지 못했어요 · 연결되면 자동으로 보내요',
+                ),
                 const SizedBox(height: 12),
               ],
               BaraedaCard(

@@ -10,6 +10,7 @@ import 'package:manager_app/core/run/run_termination_provider.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/features/drive_mode/data/models/arrive_stop_result.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
+import 'package:manager_app/features/offline_queue/domain/send_outcome.dart';
 import 'package:manager_app/features/position/presentation/position_transmitter.dart';
 import 'package:manager_app/features/roster/data/models/roster_response.dart';
 import 'package:manager_app/features/roster/presentation/roster_providers.dart';
@@ -17,11 +18,15 @@ import 'package:manager_app/features/run_end/data/models/report_request.dart';
 import 'package:manager_app/features/run_end/data/models/report_result.dart';
 import 'package:manager_app/features/run_end/domain/reports_repository.dart';
 import 'package:manager_app/features/run_end/presentation/report_screen.dart';
+
 import '../../support/manager_run_fixture.dart';
 
 /// 테스트 전용 대역 — 실제 네트워크 대신 호출 여부·인자만 기록한다.
 class _FakeReportsRepository implements ReportsRepository {
-  new({this.result});
+  new({this.result, this.queued = false});
+
+  /// 참이면 통신 두절로 큐에 쌓이는 쪽(`Queued`)으로 답한다.
+  final bool queued;
 
   final ReportResult? result;
   ReportRequest? lastRequest;
@@ -29,14 +34,15 @@ class _FakeReportsRepository implements ReportsRepository {
   int callCount = 0;
 
   @override
-  Future<ReportResult> submitReport({
+  Future<SendOutcome<ReportResult>> submitReport({
     required String runId,
     required ReportRequest request,
   }) async {
     callCount++;
     lastRunId = runId;
     lastRequest = request;
-    return result!;
+    if (queued) return const Queued();
+    return Sent(result!);
   }
 }
 
@@ -83,37 +89,32 @@ Override _boardedRoster(
   RunDirection direction = RunDirection.toAcademy,
   Set<String> goAloneIds = const {},
 }) => rosterProvider.overrideWith(
-      (ref) async => RosterResponse(
-        runId: 'run-1',
-        busNo: '3호차',
-        direction: direction,
-        counts: const RosterCounts(
-          boarded: 0,
-          waiting: 0,
-          noShow: 0,
-          absentN: 0,
-        ),
-        stops: [
-          RosterStop(
-            stopId: 's1',
-            seq: 1,
-            name: 'A정류장',
-            students: [
-              for (final rider in riders)
-                RosterStudent(
-                  riderId: rider.id,
-                  studentId: 'st-${rider.id}',
-                  name: rider.name,
-                  photoUrl: null,
-                  guardianPhone: null,
-                  canGoAlone: goAloneIds.contains(rider.id),
-                  status: RiderStatus.boarded,
-                ),
-            ],
-          ),
+  (ref) async => RosterResponse(
+    runId: 'run-1',
+    busNo: '3호차',
+    direction: direction,
+    counts: const RosterCounts(boarded: 0, waiting: 0, noShow: 0, absentN: 0),
+    stops: [
+      RosterStop(
+        stopId: 's1',
+        seq: 1,
+        name: 'A정류장',
+        students: [
+          for (final rider in riders)
+            RosterStudent(
+              riderId: rider.id,
+              studentId: 'st-${rider.id}',
+              name: rider.name,
+              photoUrl: null,
+              guardianPhone: null,
+              canGoAlone: goAloneIds.contains(rider.id),
+              status: RiderStatus.boarded,
+            ),
         ],
       ),
-    );
+    ],
+  ),
+);
 
 ArriveStopResult _terminationWith({
   required bool finishPending,
@@ -137,8 +138,10 @@ void main() {
     ArriveStopResult? termination,
     Override? roster,
     ReportResult? result,
+    bool queued = false,
   }) async {
     final fakeRepo = _FakeReportsRepository(
+      queued: queued,
       result:
           result ??
           ReportResult(
@@ -147,15 +150,11 @@ void main() {
           ),
     );
     await tester.pumpWidget(
-      _wrap(
-        ReportScreen(guardianAbsent: guardianAbsent),
-        [
-          selectedRunIdProvider.overrideWith((ref) => runId),
-          lastArriveResultProvider.overrideWith((ref) => termination),
-          reportsRepositoryProvider.overrideWithValue(fakeRepo),
-        ],
-        roster: roster,
-      ),
+      _wrap(ReportScreen(guardianAbsent: guardianAbsent), [
+        selectedRunIdProvider.overrideWith((ref) => runId),
+        lastArriveResultProvider.overrideWith((ref) => termination),
+        reportsRepositoryProvider.overrideWithValue(fakeRepo),
+      ], roster: roster),
     );
     await tester.pumpAndSettle();
     return fakeRepo;
@@ -186,6 +185,24 @@ void main() {
     expect(fakeRepo.lastRequest?.memo, '타이어 점검이 필요해요');
     expect(fakeRepo.lastRequest?.riderId, isNull);
     expect(find.text('보고가 접수됐어요'), findsOneWidget);
+  });
+
+  // R56 · Ruling 894 ⑧ — 통신 두절이면 보고가 기기 대기열에 쌓인다. 서버에 접수된 것처럼 그리지 않고(§1.9)
+  // 저장했다고 알리며, 같은 보고가 두 번 쌓이지 않게 제출 단추를 끈다.
+  testWidgets('통신 두절로 큐에 쌓이면 접수가 아니라 저장했다고 알리고 제출 단추를 끈다', (tester) async {
+    final fakeRepo = await pumpReport(tester, queued: true);
+
+    await tester.enterText(find.byType(TextField), '도로가 막혔어요');
+    await tester.tap(find.text('보고 제출'));
+    await tester.pumpAndSettle();
+
+    expect(fakeRepo.callCount, 1);
+    expect(fakeRepo.lastRequest?.clientKey, isNotEmpty);
+    expect(find.text('보고가 접수됐어요'), findsNothing);
+    expect(find.text('보고를 기기에 저장했어요'), findsOneWidget);
+    await tester.tap(find.text('보고 제출'));
+    await tester.pumpAndSettle();
+    expect(fakeRepo.callCount, 1);
   });
 
   testWidgets('보호자 부재는 학생을 고르고 메모를 적어야 제출된다(riderId 를 함께 보낸다)', (tester) async {
@@ -326,23 +343,16 @@ void main() {
   });
 
   testWidgets('등원 회차에는 보호자 부재 항목이 없다(하원 승하차지의 일)', (tester) async {
-    await pumpReport(
-      tester,
-      roster: _boardedRoster([(id: 'r1', name: '김바래')]),
-    );
+    await pumpReport(tester, roster: _boardedRoster([(id: 'r1', name: '김바래')]));
 
     expect(find.text('통제'), findsOneWidget);
     expect(find.text('부재'), findsNothing);
   });
 
-
   testWidgets('보호자 부재인데 대상 학생이 없으면 이유를 알려 준다', (tester) async {
     await pumpReport(tester, guardianAbsent: true);
 
-    expect(
-      find.textContaining('보호자 부재로 보고할 학생이 없어요'),
-      findsOneWidget,
-    );
+    expect(find.textContaining('보호자 부재로 보고할 학생이 없어요'), findsOneWidget);
     expect(find.byType(BaraedaListRow), findsNothing);
   });
 

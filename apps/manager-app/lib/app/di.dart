@@ -240,7 +240,10 @@ final reportsApiProvider = Provider<ReportsApi>((ref) {
 });
 
 final reportsRepositoryProvider = Provider<ReportsRepository>((ref) {
-  return ReportsRepositoryImpl(api: ref.watch(reportsApiProvider));
+  return ReportsRepositoryImpl(
+    api: ref.watch(reportsApiProvider),
+    offlineQueue: ref.watch(offlineQueueRepositoryProvider),
+  );
 });
 
 /// API_SPEC §1.7 오프라인 큐(M-06) — drift 로컬 DB 하나를 앱 전역에서
