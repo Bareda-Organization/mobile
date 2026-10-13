@@ -242,6 +242,27 @@ void main() {
       expect(result.dropped, isEmpty);
     });
 
+    test('d: 응답이 성공이어도 그 사이 대기열이 비워졌으면 다음 행을 보내지 않는다', () async {
+      final seeding = repo(503);
+      await queue(seeding, '/runs/run-A/riders/7');
+      await queue(seeding, '/runs/run-A/riders/8');
+      final gate = Completer<void>();
+      final adapter = _GatedRejectAdapter(200, gate);
+      final repository = OfflineQueueRepositoryImpl(
+        database: database,
+        dio: Dio(BaseOptions(baseUrl: 'https://example.invalid'))
+          ..httpClientAdapter = adapter,
+      );
+
+      final replay = repository.replayPending();
+      await pumpEventQueue();
+      await repository.clear();
+      gate.complete();
+      await replay;
+
+      expect(adapter.requests, 1);
+    });
+
     test('서버가 5xx 로 답해 남겨 둔 행은 지운 것이 아니므로 알리지 않는다', () async {
       final repository = repo(503);
       await queue(repository, '/runs/run-A/riders/7');

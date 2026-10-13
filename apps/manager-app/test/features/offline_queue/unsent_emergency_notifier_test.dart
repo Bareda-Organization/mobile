@@ -174,7 +174,10 @@ void main() {
     // b — 읽기가 3초 상한을 넘겨 쓰기가 먼저 나간 뒤, 읽기가 그 쓰기를 담은 값을 돌려주면 같은 건이 두 번 셌다.
     testWidgets('b: 읽기가 3초 상한을 넘겨 늦게 끝나도 같은 건을 두 번 세지 않는다', (tester) async {
       final gate = Completer<UnsentEmergency?>();
-      final store = _FlakyStore(readGate: gate);
+      final store = _FlakyStore(
+        readGate: gate,
+        saved: UnsentEmergency(count: 2, lastAt: DateTime(2026, 10, 10)),
+      );
       final container = open(store);
 
       unawaited(
@@ -188,8 +191,9 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(seconds: 4));
 
-      expect(container.read(unsentEmergencyProvider)?.count, 1);
-      expect(store.saved?.count, 1);
+      // 앞 건수 2 + 새 건 1 — 새 건이 두 번 세어지지도(4) 앞 건수가 덮이지도(1) 않는다.
+      expect(container.read(unsentEmergencyProvider)?.count, 3);
+      expect(store.saved?.count, 3);
     });
 
     // c — 확인을 누른 안내(건수 2)를 지우는 사이 새 건이 들어오면 새 건까지 지워졌다.
