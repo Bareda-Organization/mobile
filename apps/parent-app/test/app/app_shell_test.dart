@@ -207,7 +207,7 @@ void main() {
 
       expect(find.byType(HomeScreen), findsOneWidget);
       expect(find.text('알림 a'), findsNothing);
-      expect(find.text('새 알림이 없습니다'), findsNothing);
+      expect(find.text('새 알림이 없어요'), findsNothing);
       // 탭 막대 밖에서 '알림' 머리말이 하나도 없다.
       expect(
         find.descendant(of: find.byType(HomeScreen), matching: find.text('알림')),

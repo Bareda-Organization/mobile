@@ -306,7 +306,7 @@ void main() {
       await pumpAsStudent(tester, studentId: null);
       await tester.pumpAndSettle();
 
-      expect(find.text('학생 계정 정보가 없습니다'), findsOneWidget);
+      expect(find.text('학생 계정 정보가 없어요'), findsOneWidget);
     });
 
     testWidgets(
@@ -317,7 +317,7 @@ void main() {
 
         expect(find.byType(MapSheetSkeleton), findsOneWidget);
         expect(find.text(_gaveUpTitle), findsNothing);
-        expect(find.text('아직 위치 정보가 없습니다'), findsNothing);
+        expect(find.text('아직 위치 정보가 없어요'), findsNothing);
       },
     );
   });
@@ -340,7 +340,7 @@ void main() {
       await pumpAsParent(tester, students: const []);
       await tester.pumpAndSettle();
 
-      expect(find.text('연결된 자녀가 없습니다'), findsOneWidget);
+      expect(find.text('연결된 자녀가 없어요'), findsOneWidget);
       expect(find.text('자녀 연결하기'), findsOneWidget);
     });
 
@@ -473,7 +473,7 @@ void main() {
         '"연결 끊김"은 뜨지 않는다', (tester) async {
       await pumpConnected(tester);
 
-      expect(find.text('아직 위치 정보가 없습니다'), findsOneWidget);
+      expect(find.text('아직 위치 정보가 없어요'), findsOneWidget);
       expect(find.text(_gaveUpTitle), findsNothing);
       expect(
         client.subscribedDestinations,
@@ -496,7 +496,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('아직 위치 정보가 없습니다'), findsNothing);
+      expect(find.text('아직 위치 정보가 없어요'), findsNothing);
       expect(find.text('정문 앞'), findsOneWidget);
       expect(find.text('마지막으로 지난 곳'), findsOneWidget);
 
@@ -543,7 +543,7 @@ void main() {
         await tester.pump();
 
         expect(find.text(_gaveUpTitle), findsOneWidget);
-        expect(find.text('아직 위치 정보가 없습니다'), findsNothing);
+        expect(find.text('아직 위치 정보가 없어요'), findsNothing);
       },
     );
 
@@ -556,7 +556,7 @@ void main() {
         await tester.pump();
 
         expect(find.text(WsConnectionNotice.forbiddenTitle), findsOneWidget);
-        expect(find.text('아직 위치 정보가 없습니다'), findsNothing);
+        expect(find.text('아직 위치 정보가 없어요'), findsNothing);
       },
     );
 
@@ -693,7 +693,7 @@ void main() {
       // 받은 데이터가 아직 없으니 재연결 배너 대신 "데이터 없음" 화면이다 —
       // 요지는 시도마다 전체 스피너로 돌아가지 않는다는 것.
       expect(find.byType(MapSheetSkeleton), findsNothing);
-      expect(find.text('아직 위치 정보가 없습니다'), findsOneWidget);
+      expect(find.text('아직 위치 정보가 없어요'), findsOneWidget);
     });
   });
 

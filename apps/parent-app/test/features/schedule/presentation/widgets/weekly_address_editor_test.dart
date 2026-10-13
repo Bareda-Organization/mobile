@@ -60,7 +60,7 @@ void main() {
     await tester.tap(find.text('저장하기'));
     await tester.pumpAndSettle();
 
-    expect(find.text('주소를 확인할 수 없습니다. 다시 입력해 주세요'), findsOneWidget);
+    expect(find.text('주소를 확인할 수 없어요. 다시 입력해 주세요'), findsOneWidget);
   });
 
   // R51 — 서버는 검증에 실패한 주소 글자를 `details.failed_entries` 로 준다(API_SPEC §3.7).
@@ -104,7 +104,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      find.text('화요일 하원, 수요일 등원: 주소를 확인할 수 없습니다. 다시 입력해 주세요'),
+      find.text('화요일 하원, 수요일 등원: 주소를 확인할 수 없어요. 다시 입력해 주세요'),
       findsOneWidget,
     );
     // 실패한 첫 칸의 요일로 옮겨 가 바로 고칠 수 있다.
@@ -157,7 +157,7 @@ void main() {
     expect(repository.saved, isEmpty);
     // 어느 칸인지 요일 · 방향까지 밝힌다 — 문구에 "주소" 만 있으면 14칸 중 어디인지 모른다.
     expect(
-      find.text('월요일 등원: 비어 있는 주소가 있습니다. 주소를 입력해 주세요'),
+      find.text('월요일 등원: 비어 있는 주소가 있어요. 주소를 입력해 주세요'),
       findsOneWidget,
     );
   });
@@ -193,7 +193,7 @@ void main() {
 
     expect(repository.saved, isEmpty);
     expect(
-      find.text('화요일 하원: 비어 있는 주소가 있습니다. 주소를 입력해 주세요'),
+      find.text('화요일 하원: 비어 있는 주소가 있어요. 주소를 입력해 주세요'),
       findsOneWidget,
     );
     expect(find.text('화요일 · 하원', findRichText: true), findsOneWidget);
@@ -424,7 +424,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(repository.saved, isEmpty);
-      expect(find.textContaining('비어 있는 주소가 있습니다'), findsOneWidget);
+      expect(find.textContaining('비어 있는 주소가 있어요'), findsOneWidget);
     });
   });
 

@@ -168,7 +168,7 @@ void main() {
 
     expect(runs.calls, 2);
     expect(find.byType(RunCard), findsOneWidget);
-    expect(find.textContaining('이전 정보입니다'), findsOneWidget);
+    expect(find.textContaining('이전 정보예요'), findsOneWidget);
     await tester.pumpWidget(const SizedBox.shrink());
   });
 }

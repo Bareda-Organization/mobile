@@ -10,7 +10,7 @@ import 'package:parent_app/core/devices/presentation/push_receivable.dart';
 import 'package:parent_app/core/ui/failure_message.dart';
 
 /// 푸시를 받을 수 없는 기기에 보이는 안내(UF-X-09 ④).
-const _pushUnavailableNotice = '이 기기에서는 아직 푸시 알림을 받을 수 없습니다';
+const _pushUnavailableNotice = '이 기기에서는 아직 푸시 알림을 받을 수 없어요';
 
 /// NTF-12 · API_SPEC §2.11 — 이 기기의 푸시 알림 수신 등록. (이전 판은
 /// `AUTH-11` 로 잘못 표기돼 있었다 — `FEATURE_SPEC.md:269` 의 `AUTH-11` 은
@@ -35,7 +35,7 @@ const _pushUnavailableNotice = '이 기기에서는 아직 푸시 알림을 받�
 class DeviceRegistrationPanel extends ConsumerStatefulWidget {
   const new({
     super.key,
-    this.sublabel = '꺼두면 이 기기로는 푸시 알림이 오지 않습니다',
+    this.sublabel = '꺼두면 이 기기로는 푸시 알림이 오지 않아요',
   });
 
   /// 스위치 아래 설명 — 화면마다 이 알림이 무엇을 알려 주는지 다르게 적는다.
@@ -120,7 +120,7 @@ class _DeviceRegistrationPanelState
         _submitting = false;
         _bannerTone = AlertTone.missed;
         _banner = switch (failure) {
-          _ => failureMessage(failure, fallback: '기기 등록 상태를 바꾸지 못했습니다'),
+          _ => failureMessage(failure, fallback: '기기 등록 상태를 바꾸지 못했어요'),
         };
       });
     }

@@ -363,7 +363,7 @@ class _KitGalleryState extends State<KitGallery> {
       onPressed: () => showBaraedaActionDialog<String>(
         context: context,
         title: '로그아웃 전에 확인해 주세요',
-        body: '아직 보내지 못한 처리 3건은 버려집니다.',
+        body: '아직 보내지 못한 처리 3건은 버려져요.',
         actions: const [
           BaraedaDialogAction(label: '대기열 3건 먼저 보기', value: 'queue'),
           BaraedaDialogAction(

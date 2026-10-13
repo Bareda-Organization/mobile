@@ -22,7 +22,7 @@ class _FailingLoginRepository implements AuthRepository {
     Failure.api(
       statusCode: 401,
       code: 'INVALID_CREDENTIALS',
-      message: '아이디 또는 비밀번호가 올바르지 않습니다',
+      message: '아이디 또는 비밀번호가 올바르지 않아요',
       details: {'remaining_attempts': remaining},
     ),
   );
@@ -45,7 +45,7 @@ class _RecordingLoginRepository implements AuthRepository {
       const Failure.api(
         statusCode: 401,
         code: 'INVALID_CREDENTIALS',
-        message: '아이디 또는 비밀번호가 올바르지 않습니다',
+        message: '아이디 또는 비밀번호가 올바르지 않아요',
       ),
     );
   }

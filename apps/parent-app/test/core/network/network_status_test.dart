@@ -148,14 +148,14 @@ void main() {
       final local = reachable.toLocal();
       final hhmm = '${local.hour}:${local.minute.toString().padLeft(2, '0')}';
       expect(
-        find.text('네트워크 연결이 끊겼습니다 · 마지막 갱신 $hhmm'),
+        find.text('네트워크 연결이 끊겼어요 · 마지막 갱신 $hhmm'),
         findsOneWidget,
       );
     });
 
     testWidgets('한 번도 닿은 적이 없으면 시각 없이 알린다', (tester) async {
       await pump(tester, const NetworkStatus(isOffline: true));
-      expect(find.text('네트워크 연결이 끊겼습니다'), findsOneWidget);
+      expect(find.text('네트워크 연결이 끊겼어요'), findsOneWidget);
     });
   });
 }

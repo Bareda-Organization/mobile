@@ -123,11 +123,11 @@ void main() {
     await tester.pumpAndSettle();
 
     // 회차 목록을 다시 받는 동안(응답 1초 지연)과 다 받은 뒤 모두 안내가 남는다.
-    expect(find.textContaining('학원 관리자 승인 대기 중입니다'), findsOneWidget);
+    expect(find.textContaining('학원 관리자 승인 대기 중이에요'), findsOneWidget);
     expect(find.text('처리 대기 · 1'), findsOneWidget);
     await tester.pump(const Duration(seconds: 2));
     await tester.pumpAndSettle();
-    expect(find.textContaining('학원 관리자 승인 대기 중입니다'), findsOneWidget);
+    expect(find.textContaining('학원 관리자 승인 대기 중이에요'), findsOneWidget);
     expect(find.text('처리 대기 · 1'), findsOneWidget);
   });
 }

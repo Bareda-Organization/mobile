@@ -64,11 +64,11 @@ class _ParentRouteDetail extends ConsumerWidget {
     return studentsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stack) =>
-          const AlertBanner(tone: AlertTone.missed, body: '자녀 목록을 불러오지 못했습니다'),
+          const AlertBanner(tone: AlertTone.missed, body: '자녀 목록을 불러오지 못했어요'),
       data: (students) {
         if (students.isEmpty) {
           return EmptyState(
-            title: '연결된 자녀가 없습니다',
+            title: '연결된 자녀가 없어요',
             body: '자녀 연결을 먼저 진행해 주세요',
             action: BaraedaButton(
               label: '자녀 연결하기',
@@ -113,9 +113,9 @@ class _StudentRouteDetail extends ConsumerWidget {
     return studentIdAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stack) =>
-          const AlertBanner(tone: AlertTone.missed, body: '내 정보를 불러오지 못했습니다'),
+          const AlertBanner(tone: AlertTone.missed, body: '내 정보를 불러오지 못했어요'),
       data: (studentId) => studentId == null
-          ? const EmptyState(title: '학생 계정 정보가 없습니다')
+          ? const EmptyState(title: '학생 계정 정보가 없어요')
           : Padding(
               padding: const EdgeInsets.all(BaraedaSpacing.gutterMobile),
               child: _RouteDetailBody(
@@ -153,7 +153,7 @@ class _RouteDetailBody extends ConsumerWidget {
         tone: AlertTone.missed,
         body: isWithdrawnStudent(error)
             ? withdrawnStudentMessage
-            : '노선 정보를 불러오지 못했습니다',
+            : '노선 정보를 불러오지 못했어요',
       ),
       data: (route) => _RouteDetailView(
         route: route,

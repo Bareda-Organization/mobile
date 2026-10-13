@@ -99,7 +99,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         if (!mounted) return;
         setState(() {
           _submitting = false;
-          _formError = '이 계정은 이 앱에서 지원하지 않는 계정입니다';
+          _formError = '이 계정은 이 앱에서 지원하지 않는 계정이에요';
         });
         return;
       }
@@ -115,8 +115,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             final remaining = details?['remaining_attempts'];
             _remainingAttempts = remaining is int ? remaining : null;
             _passwordError = remaining == null
-                ? '아이디 또는 비밀번호가 올바르지 않습니다'
-                : '아이디 또는 비밀번호가 올바르지 않습니다 (잔여 시도 $remaining회)';
+                ? '아이디 또는 비밀번호가 올바르지 않아요'
+                : '아이디 또는 비밀번호가 올바르지 않아요 (잔여 시도 $remaining회)';
           case ApiFailure(code: 'AUTH_ACCOUNT_BLOCKED'):
             _formError = null;
             _passwordError = null;
@@ -128,14 +128,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           case NetworkFailure():
             _formError = '네트워크 상태를 확인해 주세요';
           default:
-            _formError = '로그인에 실패했습니다';
+            _formError = '로그인에 실패했어요';
         }
       });
     } on Object {
       if (!mounted) return;
       setState(() {
         _submitting = false;
-        _formError = '로그인에 실패했습니다';
+        _formError = '로그인에 실패했어요';
       });
     }
   }

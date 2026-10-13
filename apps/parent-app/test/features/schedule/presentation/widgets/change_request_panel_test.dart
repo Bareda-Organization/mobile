@@ -452,7 +452,7 @@ void main() {
       ),
     );
 
-    expect(find.text('학원에서 임시로 취소한 회차입니다. 학원에 문의해 주세요'), findsOneWidget);
+    expect(find.text('학원에서 임시로 취소한 회차예요. 학원에 문의해 주세요'), findsOneWidget);
   });
 
   testWidgets(
@@ -467,7 +467,7 @@ void main() {
         ),
       );
 
-      expect(find.text('변경 신청 마감이 지났습니다'), findsOneWidget);
+      expect(find.text('변경 신청 마감이 지났어요'), findsOneWidget);
     },
   );
 
@@ -481,7 +481,7 @@ void main() {
       ),
     );
 
-    expect(find.text('이 회차는 변경 가능 횟수를 모두 사용했습니다'), findsOneWidget);
+    expect(find.text('이 회차는 변경 가능 횟수를 모두 사용했어요'), findsOneWidget);
   });
 
   testWidgets('신청이 ADDRESS_VERIFICATION_FAILED 로 실패하면 주소 재입력 문구를 보여준다', (
@@ -496,7 +496,7 @@ void main() {
       ),
     );
 
-    expect(find.text('주소를 확인할 수 없습니다. 다시 입력해 주세요'), findsOneWidget);
+    expect(find.text('주소를 확인할 수 없어요. 다시 입력해 주세요'), findsOneWidget);
   });
 
   // R48 — 회차 라디오 칸 · 구간 안내 · 영수증(시안 `daily-change` · `--approval` · `--done`).

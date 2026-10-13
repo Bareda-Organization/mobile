@@ -348,7 +348,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('알림 n-19', skipOffstage: false), findsOneWidget);
-      expect(find.text('더 불러오지 못했습니다'), findsOneWidget);
+      expect(find.text('더 불러오지 못했어요'), findsOneWidget);
 
       repository.getFailure = null;
       await tester.tap(find.text('다시 시도'));

@@ -223,7 +223,7 @@ class _NotificationListViewState<T> extends State<NotificationListView<T>> {
         padding: const EdgeInsets.all(BaraedaSpacing.gutterMobile),
         child: AlertBanner(
           tone: AlertTone.missed,
-          body: '알림을 불러오지 못했습니다',
+          body: '알림을 불러오지 못했어요',
           action: BaraedaButton(
             label: '다시 시도',
             size: BaraedaButtonSize.sm,
@@ -264,7 +264,7 @@ class _NotificationListViewState<T> extends State<NotificationListView<T>> {
                 else
                   EmptyState(
                     icon: 'bell',
-                    title: w.unreadOnly ? '안 읽은 알림이 없습니다' : '새 알림이 없습니다',
+                    title: w.unreadOnly ? '안 읽은 알림이 없어요' : '새 알림이 없어요',
                   ),
               ],
             )
@@ -324,7 +324,7 @@ class _NotificationListViewState<T> extends State<NotificationListView<T>> {
         child: Column(
           children: [
             Text(
-              '더 불러오지 못했습니다',
+              '더 불러오지 못했어요',
               style: BaraedaTypography.caption.copyWith(
                 color: context.colors.textSecondary,
               ),

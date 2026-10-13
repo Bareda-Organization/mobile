@@ -126,7 +126,7 @@ class _ParentSection extends ConsumerWidget {
       data: (students) {
         if (students.isEmpty) {
           return EmptyState(
-            title: '연결된 자녀가 없습니다',
+            title: '연결된 자녀가 없어요',
             body: '자녀 연결을 먼저 진행해 주세요',
             action: BaraedaButton(
               label: '자녀 연결하기',
@@ -254,7 +254,7 @@ class _StudentSection extends ConsumerWidget {
       error: (error, stack) =>
           _LoadFailure(onRetry: () => ref.invalidate(myStudentIdProvider)),
       data: (studentId) => studentId == null
-          ? const EmptyState(title: '학생 계정 정보가 없습니다')
+          ? const EmptyState(title: '학생 계정 정보가 없어요')
           : Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -358,14 +358,14 @@ class _RunsSectionState extends ConsumerState<_RunsSection> {
                   tone: AlertTone.missed,
                   body: withdrawnStudentMessage,
                 )
-              : retryBanner('$dayWord 회차를 불러오지 못했습니다'),
+              : retryBanner('$dayWord 회차를 불러오지 못했어요'),
           data: (runs) => Column(
             children: [
               // 끊긴 동안은 맨 위 한 줄(`OfflineBar`)이 같은 말을 한다 — 카드마다 또 알리지 않는다.
               if (runsAsync.hasError && !isOffline)
-                retryBanner('최신 $dayWord 회차를 불러오지 못했습니다 · 이전 정보입니다'),
+                retryBanner('최신 $dayWord 회차를 불러오지 못했어요 · 이전 정보예요'),
               if (runs.isEmpty)
-                EmptyState(title: '$dayWord 예정된 회차가 없습니다')
+                EmptyState(title: '$dayWord 예정된 회차가 없어요')
               else
                 for (final run in runs)
                   RunCard(

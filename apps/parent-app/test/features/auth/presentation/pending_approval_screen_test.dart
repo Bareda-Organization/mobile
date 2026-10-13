@@ -333,7 +333,7 @@ void main() {
 
       expect(authRepository.signupStatusCalls, 2);
       expect(find.text('가입 승인을 기다리고 있어요'), findsOneWidget);
-      expect(find.text('상태를 불러오지 못했습니다'), findsNothing);
+      expect(find.text('상태를 불러오지 못했어요'), findsNothing);
     });
   });
 

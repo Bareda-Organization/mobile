@@ -106,13 +106,13 @@ void main() {
 
   testWidgets('P7 오늘 회차 오류 띠의 [다시 시도] 가 다시 불러온다', (tester) async {
     final calls = await _pump(tester, role: UserRole.parent, failRuns: true);
-    expect(find.text('오늘 회차를 불러오지 못했습니다'), findsOneWidget);
+    expect(find.text('오늘 회차를 불러오지 못했어요'), findsOneWidget);
 
     await tester.tap(find.text('다시 시도'));
     await tester.pumpAndSettle();
 
     expect(calls.runs, 2);
-    expect(find.text('오늘 회차를 불러오지 못했습니다'), findsNothing);
+    expect(find.text('오늘 회차를 불러오지 못했어요'), findsNothing);
   });
 
   testWidgets('P7 화면을 아래로 당기면 회차를 다시 불러온다', (tester) async {

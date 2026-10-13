@@ -162,7 +162,7 @@ class _WeeklyAddressEditorState extends ConsumerState<WeeklyAddressEditor> {
         if (slot.isRegistered) {
           return (
             entries: null,
-            error: '$label: 비어 있는 주소가 있습니다. 주소를 입력해 주세요',
+            error: '$label: 비어 있는 주소가 있어요. 주소를 입력해 주세요',
             day: slot.weekday,
           );
         }
@@ -229,10 +229,10 @@ class _WeeklyAddressEditorState extends ConsumerState<WeeklyAddressEditor> {
         _banner = switch (failure) {
           ApiFailure(code: 'ADDRESS_VERIFICATION_FAILED') =>
             failed.isEmpty
-                ? '주소를 확인할 수 없습니다. 다시 입력해 주세요'
+                ? '주소를 확인할 수 없어요. 다시 입력해 주세요'
                 : '${failed.map(_slotLabel).join(', ')}: '
-                      '주소를 확인할 수 없습니다. 다시 입력해 주세요',
-          _ => failureMessage(failure, fallback: '저장하지 못했습니다'),
+                      '주소를 확인할 수 없어요. 다시 입력해 주세요',
+          _ => failureMessage(failure, fallback: '저장하지 못했어요'),
         };
         // 실패한 첫 칸의 요일로 옮겨 가 바로 고칠 수 있게 한다.
         if (failed.isNotEmpty) _selectedDay = failed.first.weekday;

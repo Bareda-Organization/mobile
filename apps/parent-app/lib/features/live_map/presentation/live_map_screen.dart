@@ -82,13 +82,13 @@ class _ParentLiveMap extends ConsumerWidget {
       loading: () =>
           const _PlainPage(child: Center(child: CircularProgressIndicator())),
       error: (error, stack) => const _PlainPage(
-        child: AlertBanner(tone: AlertTone.missed, body: '자녀 목록을 불러오지 못했습니다'),
+        child: AlertBanner(tone: AlertTone.missed, body: '자녀 목록을 불러오지 못했어요'),
       ),
       data: (students) {
         if (students.isEmpty) {
           return _PlainPage(
             child: EmptyState(
-              title: '연결된 자녀가 없습니다',
+              title: '연결된 자녀가 없어요',
               body: '자녀 연결을 먼저 진행해 주세요',
               action: BaraedaButton(
                 label: '자녀 연결하기',
@@ -125,10 +125,10 @@ class _StudentLiveMap extends ConsumerWidget {
       loading: () =>
           const _PlainPage(child: Center(child: CircularProgressIndicator())),
       error: (error, stack) => const _PlainPage(
-        child: AlertBanner(tone: AlertTone.missed, body: '내 정보를 불러오지 못했습니다'),
+        child: AlertBanner(tone: AlertTone.missed, body: '내 정보를 불러오지 못했어요'),
       ),
       data: (studentId) => studentId == null
-          ? const _PlainPage(child: EmptyState(title: '학생 계정 정보가 없습니다'))
+          ? const _PlainPage(child: EmptyState(title: '학생 계정 정보가 없어요'))
           : _LiveMapBody(studentId: studentId),
     );
   }
@@ -203,7 +203,7 @@ class _LiveMapBodyState extends ConsumerState<_LiveMapBody> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             ?widget.switcher,
-            const Expanded(child: EmptyState(title: '오늘은 버스를 이용하지 않습니다')),
+            const Expanded(child: EmptyState(title: '오늘은 버스를 이용하지 않아요')),
           ],
         ),
       ),
@@ -366,7 +366,7 @@ class _MapPageState extends ConsumerState<_MapPage> {
               notice: _authFailed
                   ? const AlertBanner(
                       tone: AlertTone.missed,
-                      body: '지도를 불러오지 못했습니다',
+                      body: '지도를 불러오지 못했어요',
                     )
                   : null,
             ),
@@ -658,7 +658,7 @@ class _Sheet extends StatelessWidget {
           title: view.forbidden
               ? WsConnectionNotice.forbiddenTitle
               : WsConnectionNotice.gaveUpTitle,
-          body: view.forbidden ? '이 회차의 위치 정보를 볼 권한이 없습니다' : '네트워크를 확인해 주세요.',
+          body: view.forbidden ? '이 회차의 위치 정보를 볼 권한이 없어요' : '네트워크를 확인해 주세요.',
           inlineAction: !view.forbidden,
           // 권한 거절은 다시 해도 같은 결과라 단추를 두지 않는다. 그 외에는 이 자녀의 연결 상태를 새로 만들어
           // (구독·재연결·위치 스냅샷 재조회) 화면을 나갔다 오는 것과 같게 한다(R32 P7).

@@ -5,7 +5,7 @@
 /// `ws_connection_notice_test.dart` 가 웹 파일과 대조한다.
 abstract final class WsConnectionNotice {
   /// 끊겨 재연결 대기·시도 중.
-  static const reconnectingTitle = '재연결 시도 중입니다';
+  static const reconnectingTitle = '재연결 시도 중';
 
   /// 재연결을 포기했다 — 기본 정책은 포기하지 않아 상한을 준 정책에서만 쓰인다.
   static const gaveUpTitle = '실시간 연결 끊김';

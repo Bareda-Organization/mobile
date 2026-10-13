@@ -58,7 +58,7 @@ class _ThrowingAuthRepository implements AuthRepository {
     const Failure.api(
       statusCode: 500,
       code: 'DEVICE_REGISTER_FAILED',
-      message: '기기 등록 상태를 바꾸지 못했습니다',
+      message: '기기 등록 상태를 바꾸지 못했어요',
     ),
   );
 
@@ -114,6 +114,6 @@ void main() {
       isFalse,
       reason: '서버 등록이 실패했으면 스위치가 켜진 것으로 표시되면 안 된다',
     );
-    expect(find.text('기기 등록 상태를 바꾸지 못했습니다'), findsOneWidget);
+    expect(find.text('기기 등록 상태를 바꾸지 못했어요'), findsOneWidget);
   });
 }
