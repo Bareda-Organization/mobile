@@ -30,6 +30,7 @@ import 'package:manager_app/features/navigation/domain/navigation_repository.dar
 import 'package:manager_app/features/offline_queue/data/offline_queue_database.dart';
 import 'package:manager_app/features/offline_queue/data/offline_queue_repository_impl.dart';
 import 'package:manager_app/features/offline_queue/domain/offline_queue_repository.dart';
+import 'package:manager_app/features/offline_queue/domain/replay_gate.dart';
 import 'package:manager_app/features/offline_queue/presentation/request_notices.dart';
 import 'package:manager_app/features/position/data/position_api.dart';
 import 'package:manager_app/features/position/data/position_repository_impl.dart';
@@ -243,8 +244,12 @@ final offlineQueueDatabaseProvider = Provider<OfflineQueueDatabase>((ref) {
   return database;
 });
 
+/// 로그아웃이 시작된 뒤 대기열 재생을 막는 빗장(R56) — `signOut` 이 잠그고 대기열 정리 · 새 로그인이 푼다.
+final replayGateProvider = Provider<ReplayGate>((ref) => ReplayGate());
+
 final offlineQueueRepositoryProvider = Provider<OfflineQueueRepository>((ref) {
   return OfflineQueueRepositoryImpl(
+    replayGate: ref.watch(replayGateProvider),
     database: ref.watch(offlineQueueDatabaseProvider),
     dio: ref.watch(apiClientProvider).dio,
     clock: ref.watch(clockProvider),

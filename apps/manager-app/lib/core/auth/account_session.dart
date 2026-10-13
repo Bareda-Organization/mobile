@@ -212,6 +212,7 @@ Future<void> _discardPendingRequestsOnce(
         .timeout(_persistWaitLimit, onTimeout: () {});
   }
   await queue.clear();
+  ref.read(replayGateProvider).resume();
   if (discarded.isEmpty || notice == null) return;
   final emergencyNote = emergencies == 0
       ? ''
@@ -391,6 +392,9 @@ Future<void> signOut(WidgetRef ref) async {
   final unsupported = ref.read(unsupportedRoleProvider.notifier);
   final role = ref.read(currentUserRoleProvider.notifier);
   final status = ref.read(currentAccountStatusProvider.notifier);
+  // 로그아웃이 시작되면 새 재생을 막는다(R56) — 대기열이 비워지기 전에 앞 계정의 처리가 전송되지 않게. 풀리는 곳은
+  // 대기열 정리와 새 로그인이다.
+  ref.read(replayGateProvider).pause();
   try {
     await repository.logout();
   } finally {
@@ -410,6 +414,8 @@ void applyLoginResponse(WidgetRef ref, LoginResponse response) {
     status: response.status,
   );
   ref.read(sessionExpiredNoticeProvider.notifier).state = null;
+  // 앞 로그아웃이 잠근 재생을 새 로그인이 푼다(R56) — 대기열 정리가 어떤 이유로 끝나지 않았어도 영구히 잠기지 않는다.
+  ref.read(replayGateProvider).resume();
   ref.read(mustChangePasswordProvider.notifier).state =
       response.mustChangePassword;
   ref.read(academyContactProvider.notifier).state = response.academy?.contact;

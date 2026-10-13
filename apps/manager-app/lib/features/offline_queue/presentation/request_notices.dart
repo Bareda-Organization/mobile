@@ -40,7 +40,8 @@ class RequestNotice {
   /// 학생 · 처리 · 이유(또는 건수).
   final String body;
 
-  /// 이 안내가 기기에 남기는 거절 건수([droppedTallyProvider])에 센 건수 — 확인하면 그 건수도 그만큼 줄인다. 0 이면 세지 않은 안내다.
+  /// 이 안내가 기기에 남기는 거절 건수([droppedTallyProvider])에 센 건수 —
+  /// 확인하면 그 건수도 그만큼 줄인다. 0 이면 세지 않은 안내다.
   final int tallied;
 }
 

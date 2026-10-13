@@ -6,6 +6,7 @@ import 'package:drift/drift.dart' show ComparableExpr, OrderingTerm, Value;
 import 'package:manager_app/features/offline_queue/data/models/pending_request_summary.dart';
 import 'package:manager_app/features/offline_queue/data/offline_queue_database.dart';
 import 'package:manager_app/features/offline_queue/domain/offline_queue_repository.dart';
+import 'package:manager_app/features/offline_queue/domain/replay_gate.dart';
 import 'package:manager_app/features/offline_queue/domain/send_outcome.dart';
 
 /// `OfflineQueueRepository` 구현 — drift(로컬 저장) + `Dio`(재생 전송).
@@ -25,6 +26,7 @@ class OfflineQueueRepositoryImpl implements OfflineQueueRepository {
     required Dio dio,
     Clock clock = const SystemClock(),
     void Function(List<DroppedRequest> dropped)? onDropped,
+    ReplayGate? replayGate,
   })
     // 필드를 private 으로 유지하려고 initializing formal 대신 명시 대입을 쓴다.
     // ignore: prefer_initializing_formals
@@ -37,7 +39,10 @@ class OfflineQueueRepositoryImpl implements OfflineQueueRepository {
        _clock = clock,
        // 위와 같은 이유.
        // ignore: prefer_initializing_formals
-       _onDropped = onDropped;
+       _onDropped = onDropped,
+       // 위와 같은 이유.
+       // ignore: prefer_initializing_formals
+       _replayGate = replayGate;
 
   /// 한 행이 5xx 로 재생에 실패하는 횟수 상한 — 닿으면 영구 실패로 재생에서 뺀다. 주기 재생(30초)이 한 번씩
   /// 세므로 약 5분이다. **비상 신고에는 적용하지 않는다**(Ruling 616).
@@ -55,6 +60,9 @@ class OfflineQueueRepositoryImpl implements OfflineQueueRepository {
   /// (Ruling 882 · R53 B-6①) — 30초 자동 재생 · 쓰기 직전 재생 · 수동 재시도가 모두
   /// [_replay] 를 거치므로 어느 경로로 지워져도 한 곳에서 알린다.
   final void Function(List<DroppedRequest> dropped)? _onDropped;
+
+  /// 로그아웃이 시작되면 재생을 막는 빗장(R56) — 없으면 막지 않는다.
+  final ReplayGate? _replayGate;
 
   @override
   Future<SendOutcome<T>> sendOrQueue<T>({
@@ -202,6 +210,8 @@ class OfflineQueueRepositoryImpl implements OfflineQueueRepository {
     final dropped = <DroppedRequest>[];
     var failedPermanently = 0;
     for (final row in rows) {
+      // 로그아웃이 시작됐으면 새 행을 보내지 않는다 — 이미 나간 요청 1건은 막을 수 없다(R56).
+      if (_replayGate?.isPaused ?? false) break;
       // 재생 도중 대기열이 비워졌으면(로그아웃 · 계정 정리) 남은 행은 앞 계정의 것이다 — 다음 계정의 토큰으로 보내지 않는다.
       if (!await _rowExists(row.id)) break;
       try {

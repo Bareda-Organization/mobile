@@ -284,8 +284,7 @@ void main() {
     expect(droppedTally.saved?.contact, isNull);
 
     // 앱을 껐다 켠다 — 같은 기기 저장소를 넘긴 새 컨테이너.
-    final restarted = build();
-    restarted.read(droppedTallyProvider);
+    final restarted = build()..read(droppedTallyProvider);
     await Future<void>.delayed(const Duration(milliseconds: 50));
     expect(restarted.read(droppedTallyProvider)?.count, 2);
     expect(restarted.read(requestNoticesProvider), isEmpty);
