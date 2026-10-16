@@ -11,6 +11,8 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission
         android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <!-- 위치 포그라운드 서비스가 enableWakeLock 으로 뜬다(position_source.dart) — 없으면 서비스 시작이 SecurityException 으로 실패해 위치를 보내지 못한다. -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
     <application
         android:label="manager_app"
         android:name="${applicationName}"
