@@ -1,4 +1,5 @@
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:manager_app/app/app.dart';
@@ -10,7 +11,6 @@ import 'package:manager_app/features/auth/presentation/login_screen.dart';
 import 'package:manager_app/features/auth/presentation/pending_approval_screen.dart';
 import 'package:manager_app/features/home/presentation/home_screen.dart';
 
-import '../support/fake_token_storage.dart';
 
 /// `router.dart` 의 계정 상태 게이트(docs/archive/rounds/fe-phases-f2-f5.md §5.0 목표 7항 · `API_SPEC §1.4`)를
 /// 직접 무는 시험 — parent-app 의 같은 이름 파일과 동일한 목적이다.

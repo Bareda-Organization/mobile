@@ -1,4 +1,5 @@
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart' show DropdownButtonFormField, TextField;
 import 'package:flutter/widgets.dart' show AppLifecycleState;
@@ -20,7 +21,6 @@ import 'package:manager_app/features/home/presentation/home_screen.dart';
 
 import '../../support/fake_academy_contact_store.dart';
 import '../../support/fake_last_session_store.dart';
-import '../../support/fake_token_storage.dart';
 
 class _NoRuns implements ManagerRunRepository {
   @override

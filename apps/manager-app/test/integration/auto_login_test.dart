@@ -13,7 +13,6 @@ import 'package:manager_app/app/di.dart';
 import 'package:manager_app/features/auth/presentation/login_screen.dart';
 import 'package:manager_app/features/home/presentation/home_screen.dart';
 
-import '../support/fake_token_storage.dart';
 
 /// `localhost:8080` 을 실제로 때리는 계약 시험 — F2 목표 표 5항(재실행 시
 /// 자동 로그인). `flutter test` 가 도는 동안 로컬 백엔드가 떠 있어야 하고,

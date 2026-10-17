@@ -23,7 +23,6 @@ import '../../support/fake_academy_contact_store.dart';
 import '../../support/fake_last_session_store.dart';
 import '../../support/fake_roster_key_store.dart';
 import '../../support/fake_run_summary_store.dart';
-import '../../support/fake_token_storage.dart';
 import '../../support/fake_unsent_emergency_store.dart';
 
 class _StubAuthRepository implements AuthRepository {

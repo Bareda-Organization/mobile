@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -8,7 +9,6 @@ import 'package:parent_app/app/app.dart';
 import 'package:parent_app/app/di.dart';
 import 'package:parent_app/features/auth/presentation/login_screen.dart';
 
-import '../../support/fake_token_storage.dart';
 
 /// 모든 요청에 `401` 을 돌려주는 어댑터 — access 도 refresh 도 거절된 상황.
 class _RejectAllAdapter implements HttpClientAdapter {

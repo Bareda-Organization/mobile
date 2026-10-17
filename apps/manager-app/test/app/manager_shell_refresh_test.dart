@@ -1,4 +1,5 @@
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -16,8 +17,6 @@ import 'package:manager_app/features/home/presentation/home_screen.dart';
 import 'package:manager_app/features/roster/data/models/roster_response.dart';
 import 'package:manager_app/features/roster/presentation/roster_providers.dart';
 
-import '../support/fake_notification_repository.dart';
-import '../support/fake_token_storage.dart';
 import '../support/manager_run_fixture.dart';
 
 /// R53 t4 A1 — 오늘 회차 목록 30초 새로 고침 · 앱 복귀 처리는 홈 탭이 아니라 쉘이 맡는다. 동승자의 첫 화면은 명단

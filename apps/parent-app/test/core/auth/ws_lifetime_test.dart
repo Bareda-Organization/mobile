@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -18,7 +19,6 @@ import 'package:parent_app/features/live_map/presentation/live_map_providers.dar
 // (`live_map_screen_test.dart` 와 같은 사정).
 import 'package:riverpod/misc.dart' show Override;
 
-import '../../support/fake_token_storage.dart';
 
 /// R46-FIXCONN C-2 — 실시간 연결은 앱 전역 하나라 로그아웃·지도 화면 이탈
 /// 뒤에도 옛 계정의 토큰으로 살아 있었다. 같은 단말에서 계정을 바꿔 지도를

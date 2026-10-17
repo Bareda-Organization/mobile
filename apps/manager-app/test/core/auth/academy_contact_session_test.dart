@@ -1,4 +1,5 @@
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -8,7 +9,6 @@ import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/features/auth/domain/auth_repository.dart';
 import 'package:manager_app/features/auth/presentation/login_screen.dart';
 
-import '../../support/fake_token_storage.dart';
 
 const _academy = AcademyRef(id: '1', name: '바래다학원 A', contact: '02-1234-5678');
 

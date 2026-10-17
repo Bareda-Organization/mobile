@@ -14,7 +14,6 @@ import 'package:manager_app/features/notifications/presentation/notification_pro
 import 'package:manager_app/features/notifications/presentation/notifications_screen.dart';
 import 'package:manager_app/features/notifications/presentation/widgets/manager_notification_row.dart';
 
-import '../../support/fake_notification_repository.dart';
 
 /// 2026-09-30 10:00 KST (수요일).
 final _now = DateTime.utc(2026, 9, 30, 1);

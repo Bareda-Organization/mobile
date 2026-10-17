@@ -1,4 +1,5 @@
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -10,7 +11,6 @@ import 'package:manager_app/core/auth/account_session.dart';
 import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/core/auth/user_role.dart';
 
-import '../support/fake_token_storage.dart';
 
 /// L8(`Ruling 830`) — 매니저 앱은 라이트 기본이고 **운행 중 흐름의 화면만** 다크
 /// 구역(`BaraedaDriveZone`)으로 감싼다: 운행 중 · 운행 종료 · 조회 전용 명단 ·

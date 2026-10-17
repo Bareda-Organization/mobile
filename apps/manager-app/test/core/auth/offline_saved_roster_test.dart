@@ -25,10 +25,8 @@ import 'package:manager_app/features/roster/data/roster_cipher.dart';
 
 import '../../support/fake_academy_contact_store.dart';
 import '../../support/fake_last_session_store.dart';
-import '../../support/fake_notification_repository.dart';
 import '../../support/fake_roster_key_store.dart';
 import '../../support/fake_run_summary_store.dart';
-import '../../support/fake_token_storage.dart';
 import '../../support/manager_run_fixture.dart';
 
 /// 서버에 닿지 못하는 연결 — 어떤 요청이든 연결 두절로 실패한다.

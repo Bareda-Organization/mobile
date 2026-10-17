@@ -16,7 +16,6 @@ import 'package:parent_app/core/students/presentation/student_providers.dart';
 import 'package:parent_app/features/notifications/presentation/notification_providers.dart';
 import 'package:parent_app/features/notifications/presentation/notifications_screen.dart';
 
-import '../../../support/fake_notification_repository.dart';
 
 /// 2026-09-30 10:00 KST (수요일).
 final _now = DateTime.utc(2026, 9, 30, 1);

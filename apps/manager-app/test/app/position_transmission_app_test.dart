@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
@@ -32,7 +33,6 @@ import 'package:manager_app/features/roster/data/models/roster_response.dart';
 import 'package:manager_app/features/route_map/data/models/route_response.dart';
 import 'package:manager_app/features/route_map/presentation/route_providers.dart';
 
-import '../support/fake_token_storage.dart';
 import '../support/manager_run_fixture.dart';
 
 /// R33 M1 — 위치 송신은 화면이 아니라 앱 전역이다. 운행 중(`moving`)인 기사 회차면 어느 화면에서든

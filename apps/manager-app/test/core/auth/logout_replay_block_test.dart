@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:dio/dio.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -22,7 +23,6 @@ import '../../support/fake_academy_contact_store.dart';
 import '../../support/fake_last_session_store.dart';
 import '../../support/fake_roster_key_store.dart';
 import '../../support/fake_run_summary_store.dart';
-import '../../support/fake_token_storage.dart';
 import '../../support/fake_unsent_emergency_store.dart';
 
 /// 요청이 나갈 때마다 세고 `200` 으로 답한다.

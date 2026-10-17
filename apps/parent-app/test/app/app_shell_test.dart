@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -26,8 +27,6 @@ import 'package:parent_app/features/settings/domain/notification_settings.dart';
 import 'package:parent_app/features/settings/presentation/settings_providers.dart';
 import 'package:parent_app/features/settings/presentation/settings_screen.dart';
 
-import '../support/fake_notification_repository.dart';
-import '../support/fake_token_storage.dart';
 
 /// 소켓 없이 "앱 복귀 때 재연결을 요청하는가" 만 보려는 가짜 클라이언트 — 세션 시작이 읽는 `sessionExpired` 와
 /// 복귀 때 부르는 `reconnectNow` 만 구현한다.

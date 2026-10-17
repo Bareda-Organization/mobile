@@ -1,4 +1,5 @@
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,7 +15,6 @@ import 'package:parent_app/features/auth/presentation/login_screen.dart';
 import 'package:parent_app/features/home/presentation/home_screen.dart';
 import 'package:parent_app/features/settings/presentation/password_change_screen.dart';
 
-import '../../support/fake_token_storage.dart';
 
 /// Ruling 540 · R46-LAST `Ruling 581` — 관리자가 초기화한 임시 비밀번호로 들어온
 /// 학부모·학생 계정은 비밀번호를 바꾸기 전까지 다른 화면을 쓰지 못한다. 서버도

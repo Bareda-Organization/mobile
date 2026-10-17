@@ -1,3 +1,4 @@
+import 'package:baraeda_core/testing.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -7,7 +8,6 @@ import 'package:manager_app/features/roster/domain/roster_repository.dart';
 import 'package:manager_app/features/roster/presentation/roster_photo.dart';
 import 'package:manager_app/features/roster/presentation/roster_providers.dart';
 
-import '../../support/fake_token_storage.dart';
 
 /// Ruling 377 — 학생 사진은 로그인 토큰이 있어야 받는다. 앱이 주소를 호스트에 붙이고
 /// 토큰 헤더를 만들어 `StudentRow` 에 넘긴다.

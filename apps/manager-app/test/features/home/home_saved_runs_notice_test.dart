@@ -16,7 +16,6 @@ import 'package:manager_app/features/home/data/run_summary_store.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
 import 'package:manager_app/features/home/presentation/home_screen.dart';
 
-import '../../support/fake_notification_repository.dart';
 import '../../support/fake_run_summary_store.dart';
 import '../../support/manager_run_fixture.dart';
 

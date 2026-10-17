@@ -16,7 +16,6 @@ import 'package:manager_app/features/drive_mode/presentation/drive_mode_provider
 import 'package:manager_app/features/home/presentation/home_providers.dart';
 import 'package:manager_app/features/home/presentation/home_screen.dart';
 
-import '../../support/fake_notification_repository.dart';
 import '../../support/manager_run_fixture.dart';
 
 /// R52 H1 — 앞 회차(A)가 끝난 뒤에도 선택 회차([selectedRunIdProvider])가

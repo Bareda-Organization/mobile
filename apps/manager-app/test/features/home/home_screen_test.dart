@@ -22,7 +22,6 @@ import 'package:manager_app/features/home/presentation/home_providers.dart';
 import 'package:manager_app/features/home/presentation/home_screen.dart';
 import 'package:manager_app/features/offline_queue/domain/send_outcome.dart';
 
-import '../../support/fake_notification_repository.dart';
 import '../../support/manager_run_fixture.dart';
 
 /// 운행 시작 요청이 나가는지만 세는 가짜 — 홈은 시작을 요청하지 않는다(`Ruling 799`).

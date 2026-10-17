@@ -20,7 +20,6 @@ import 'package:manager_app/features/roster/presentation/roster_screen.dart';
 import 'package:manager_app/features/route_map/data/models/route_response.dart';
 import 'package:manager_app/features/route_map/presentation/route_providers.dart';
 
-import '../../support/fake_notification_repository.dart';
 import '../../support/manager_run_fixture.dart';
 
 class _NoSample implements PositionSource {

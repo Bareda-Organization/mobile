@@ -6,11 +6,8 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 /// 쓰기 · 지우기는 없던 일로 한다. 읽지 못한 것과 값이 없는 것을 구분해야 하면 `strict: true` 로 부른다.
 /// 앱의 `*Store` / `*Storage` 는 이 칸 위의 얇은 접근자다(값 해석만 맡는다).
 class SecureSlot {
-  /// [key] 한 칸. [storage] 는 시험에서 가짜를 넣을 때만 준다.
-  const new(
-    this.key, {
-    FlutterSecureStorage storage = const FlutterSecureStorage(),
-  }) : _storage = storage;
+  /// `key` 한 칸. `storage` 는 시험에서 가짜를 넣을 때만 준다.
+  const new(this.key, {this._storage = const FlutterSecureStorage()});
 
   /// 저장 키.
   final String key;

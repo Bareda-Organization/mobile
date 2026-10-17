@@ -1,4 +1,5 @@
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:manager_app/app/di.dart';
@@ -12,7 +13,6 @@ import 'package:manager_app/features/home/domain/manager_run_repository.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
 import 'package:manager_app/features/position/presentation/position_transmitter.dart';
 
-import '../../support/fake_token_storage.dart';
 import '../../support/manager_run_fixture.dart';
 
 class _MeAuthRepository implements AuthRepository {
