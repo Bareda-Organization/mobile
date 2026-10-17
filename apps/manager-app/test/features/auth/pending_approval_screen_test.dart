@@ -28,7 +28,7 @@ class _NoRuns implements ManagerRunRepository {
 }
 
 /// 승인 대기 화면은 상태를 한 번만 조회해, 관리자가 승인·거절해도 앱을 껐다 켜야 알 수 있었다.
-/// [상태 다시 확인] 은 다시 조회해 화면에 반영하고, 승인(`active`)이면 홈으로 보낸다(학부모 앱 R32 P9 와 같은 동작).
+/// [상태 다시 확인] 은 다시 조회해 화면에 반영하고, 승인(`active`)이면 홈으로 보낸다(학부모 앱과 같은 동작).
 class _StubAuthRepository implements AuthRepository {
   /// `signupStatus` 호출 횟수 — [다시 확인] 이 실제로 서버를 다시 부르는지 본다.
   int signupStatusCalls = 0;

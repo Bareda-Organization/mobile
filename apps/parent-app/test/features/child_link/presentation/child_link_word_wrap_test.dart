@@ -7,7 +7,7 @@ import 'package:parent_app/core/auth/user_role.dart';
 import 'package:parent_app/features/child_link/presentation/child_link_screen.dart';
 
 /// 학생의 연결 코드 설명은 여러 줄 문단이다 — 낱말 한가운데서 줄이 바뀌면 안 된다
-/// (R46-POLISH Ruling 594, R46-SCREEN 에서 `없습니 / 다.` 로 끊겼다).
+/// (Ruling 594).
 void main() {
   testWidgets('연결 코드 설명은 낱말 경계에서만 줄이 바뀐다 (375pt · 글자 1.3배)', (tester) async {
     useNarrowLargeText(tester);

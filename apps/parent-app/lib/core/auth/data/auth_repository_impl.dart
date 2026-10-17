@@ -19,7 +19,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
   final AuthApi _authApi;
 
-  /// `/me` 가 알려 준 학원 문의처를 남기는 곳 — 차단 화면과 홈 실패 화면의 전화가 읽는다(R53 t3 A4).
+  /// `/me` 가 알려 준 학원 문의처를 남기는 곳 — 차단 화면과 홈 실패 화면의 전화가 읽는다.
   final AcademyContactStorage _contactStorage;
 
   @override

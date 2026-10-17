@@ -235,8 +235,8 @@ void main() {
           expect(noticeScroll.position.maxScrollExtent, 0);
         }
         // 어떤 넘침도 없다 — 공용 `RunSummaryCard` 의 큰 글자 가로 넘침
-        // (R46-FUMGR `Ruling 573`)을 고친 뒤로 이 시험이 허용하던 예외를
-        // 걷었다(R46-LAST `Ruling 582`).
+        // (`Ruling 573`)을 고친 뒤로 이 시험이 허용하던 예외를
+        // 걷었다(`Ruling 582`).
         expect(errors.map((e) => e.toString()).toList(), isEmpty);
       });
     }

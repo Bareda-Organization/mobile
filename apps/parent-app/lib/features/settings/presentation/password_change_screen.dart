@@ -19,7 +19,7 @@ import 'package:parent_app/core/ui/sticky_action_bar.dart';
 /// 상관없다(`AuthApi.logout()` 이 성패와 무관하게 로컬 토큰을 지우는
 /// `finally` 를 갖고 있음, `auth_api.dart` 참고) — 그래서 실패를 무시한다.
 ///
-/// 임시 비밀번호 강제 변경(Ruling 540 · R46-LAST `Ruling 581`) 중이면 라우터가 이 화면에 고정한다 — 뒤로 갈
+/// 임시 비밀번호 강제 변경(Ruling 540 · `Ruling 581`) 중이면 라우터가 이 화면에 고정한다 — 뒤로 갈
 /// 길을 없애고 로그아웃만 연다(매니저 앱과 같은 갈래).
 class PasswordChangeScreen extends ConsumerStatefulWidget {
   const new({super.key});

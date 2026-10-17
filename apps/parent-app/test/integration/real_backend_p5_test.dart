@@ -12,6 +12,7 @@ import 'package:parent_app/core/students/data/student_api.dart';
 import 'package:parent_app/features/live_map/data/bus_position_api.dart';
 import 'package:parent_app/features/route/data/route_api.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
+
 import '../support/real_backend_target.dart';
 
 // 실제 시크릿 스토리지 없이 값만 메모리에 담아 두는 가짜 구현
@@ -112,9 +113,8 @@ Future<void> _expectApiError(
 /// — 반복 실행해도 두 번째부터는 0행이 갱신되고 상태가 더 나빠지지
 /// 않는다(`phase-goal-loop.md §5.4` 의 "연속 4회 실행" 요구를 만족한다).
 ///
-/// ⚠ **DB 이름을 하드코딩하지 않는다(2026-09-14, 이월 4번 — 이 갈래가
-/// 그 의존을 없앤다).** 예전엔 `schoolbus_fer3_p` 를 문자열로 박아
-/// 뒀는데, `API_BASE_URL` 이 가리키는 서버가 실제로 어느 DB 를 물고
+/// ⚠ **DB 이름을 하드코딩하지 않는다.** `schoolbus_fer3_p` 같은 이름을 문자열로 박아 두면
+/// `API_BASE_URL` 이 가리키는 서버가 실제로 어느 DB 를 물고
 /// 있는지는 그 서버를 띄운 사람만 안다 — 회차마다 이름이 바뀌고(이
 /// 파일은 `schoolbus_r4_assert` 를 겨냥해 돈다), 둘이 갈리면 **픽스처는
 /// 옛 DB 에 심기고 검사는 새 서버를 읽어 조용히 실패한다**(조율자가
@@ -196,162 +196,143 @@ void main() {
     return (dio: client.dio, auth: auth);
   }
 
-  test(
-    '목표 — §3.10 연결된 자녀(학생1/parentA1)의 상세 노선을 반환하고, '
-    'ETA·승하차지별 탑승 인원·기사 연락처가 부재하다',
-    () async {
-      if (!backendReachable) {
-        markTestSkipped('환경 문제: $baseUrl 백엔드 미기동');
-        return;
-      }
-      final parent = buildClientFor('p5-a-parent');
-      await parent.auth.login(loginId: 'parentA1', password: 'password');
-      final students = await StudentApi(dio: parent.dio).getMyStudents();
-      final chulsoo = students.firstWhere((s) => s.name == '김철수');
+  test('목표 — §3.10 연결된 자녀(학생1/parentA1)의 상세 노선을 반환하고, '
+      'ETA·승하차지별 탑승 인원·기사 연락처가 부재하다', () async {
+    if (!backendReachable) {
+      markTestSkipped('환경 문제: $baseUrl 백엔드 미기동');
+      return;
+    }
+    final parent = buildClientFor('p5-a-parent');
+    await parent.auth.login(loginId: 'parentA1', password: 'password');
+    final students = await StudentApi(dio: parent.dio).getMyStudents();
+    final chulsoo = students.firstWhere((s) => s.name == '김철수');
 
-      // 원본 JSON(봉투는 인터셉터가 이미 벗긴 상태)에서 직접 부재를
-      // 확인한다 — 모델에 필드가 없는 것만으로는 "서버가 안 보낸다" 를
-      // 보장하지 못한다(모델이 무시했을 수도 있다).
-      final raw = await parent.dio.get<Map<String, dynamic>>(
-        '/students/${chulsoo.studentId}/route',
+    // 원본 JSON(봉투는 인터셉터가 이미 벗긴 상태)에서 직접 부재를
+    // 확인한다 — 모델에 필드가 없는 것만으로는 "서버가 안 보낸다" 를
+    // 보장하지 못한다(모델이 무시했을 수도 있다).
+    final raw = await parent.dio.get<Map<String, dynamic>>(
+      '/students/${chulsoo.studentId}/route',
+    );
+    final body = raw.data!;
+    expect(body.containsKey('eta'), isFalse);
+    expect(body['driver'], isA<Map<String, dynamic>>());
+    expect(
+      (body['driver'] as Map<String, dynamic>).containsKey('phone'),
+      isFalse,
+    );
+    final stops = (body['stops'] as List<dynamic>).cast<Map<String, dynamic>>();
+    expect(stops, isNotEmpty);
+    for (final stop in stops) {
+      expect(stop.containsKey('eta'), isFalse);
+      expect(stop.containsKey('passenger_count'), isFalse);
+      expect(stop.containsKey('rider_count'), isFalse);
+    }
+
+    final route = await RouteApi(dio: parent.dio).getRoute(chulsoo.studentId);
+    expect(route.runId, isNotEmpty);
+    expect(route.busNo, isNotEmpty);
+    expect(route.driver.name, isNotEmpty);
+    expect(route.escort.name, isNotEmpty);
+    expect(route.escort.phone, isNotEmpty);
+    expect(route.myStopId, isNotEmpty);
+    expect(route.stops, isNotEmpty);
+  });
+
+  test('목표 — §3.11 연결된 자녀(학생1/parentA1)의 실시간 위치를 반환한다', () async {
+    if (!backendReachable) {
+      markTestSkipped('환경 문제: $baseUrl 백엔드 미기동');
+      return;
+    }
+    final parent = buildClientFor('p5-b-parent');
+    await parent.auth.login(loginId: 'parentA1', password: 'password');
+    final students = await StudentApi(dio: parent.dio).getMyStudents();
+    final chulsoo = students.firstWhere((s) => s.name == '김철수');
+
+    final raw = await parent.dio.get<Map<String, dynamic>>(
+      '/students/${chulsoo.studentId}/bus-position',
+    );
+    expect(raw.data!.containsKey('eta'), isFalse);
+
+    final position = await BusPositionApi(dio: parent.dio)
+        .getBusPosition(chulsoo.studentId);
+    expect(position.runId, isNotEmpty);
+    expect(position.busNo, isNotEmpty);
+  });
+
+  test('목표 — §3.10·§3.11 연결 부재 자녀(학생3, parentA1 은 미연결)는 '
+      '403 FORBIDDEN 을 반환한다', () async {
+    if (!backendReachable) {
+      markTestSkipped('환경 문제: $baseUrl 백엔드 미기동');
+      return;
+    }
+    final parent = buildClientFor('p5-c-parent');
+    await parent.auth.login(loginId: 'parentA1', password: 'password');
+    final routeApi = RouteApi(dio: parent.dio);
+    final busPositionApi = BusPositionApi(dio: parent.dio);
+
+    await _expectApiError(
+      () => routeApi.getRoute('3'),
+      statusCode: 403,
+      errorCode: 'FORBIDDEN',
+    );
+    await _expectApiError(
+      () => busPositionApi.getBusPosition('3'),
+      statusCode: 403,
+      errorCode: 'FORBIDDEN',
+    );
+  });
+
+  test('목표 — §3.10·§3.11 존재하지 않는 학생 ID 도 403 FORBIDDEN 을 '
+      '반환한다(연결 부재와 동일 취급 — 존재 자체를 숨긴다)', () async {
+    if (!backendReachable) {
+      markTestSkipped('환경 문제: $baseUrl 백엔드 미기동');
+      return;
+    }
+    final parent = buildClientFor('p5-d-parent');
+    await parent.auth.login(loginId: 'parentA1', password: 'password');
+    final routeApi = RouteApi(dio: parent.dio);
+    final busPositionApi = BusPositionApi(dio: parent.dio);
+
+    await _expectApiError(
+      () => routeApi.getRoute('999999'),
+      statusCode: 403,
+      errorCode: 'FORBIDDEN',
+    );
+    await _expectApiError(
+      () => busPositionApi.getBusPosition('999999'),
+      statusCode: 403,
+      errorCode: 'FORBIDDEN',
+    );
+  });
+
+  test('목표 — §3.10·§3.11 연결은 살아 있는데 학생이 소프트 삭제된 상태 '
+      '(학생5/parentA3)는 404 STUDENT_NOT_FOUND 를 반환한다', () async {
+    if (!backendReachable) {
+      markTestSkipped('환경 문제: $baseUrl 백엔드 미기동');
+      return;
+    }
+    if (!student5FixtureReady) {
+      markTestSkipped(
+        '환경 문제: student5 소프트 삭제 픽스처를 만들지 못했다 — '
+        '--dart-define=FIXTURE_DB 미지정이거나 docker exec '
+        'school-bus-postgres-1 실패(고정 컨테이너 전제가 깨졌을 가능성)',
       );
-      final body = raw.data!;
-      expect(body.containsKey('eta'), isFalse);
-      expect(body['driver'], isA<Map<String, dynamic>>());
-      expect(
-        (body['driver'] as Map<String, dynamic>).containsKey('phone'),
-        isFalse,
-      );
-      final stops = (body['stops'] as List<dynamic>)
-          .cast<Map<String, dynamic>>();
-      expect(stops, isNotEmpty);
-      for (final stop in stops) {
-        expect(stop.containsKey('eta'), isFalse);
-        expect(stop.containsKey('passenger_count'), isFalse);
-        expect(stop.containsKey('rider_count'), isFalse);
-      }
+      return;
+    }
+    final parent = buildClientFor('p5-e-parent');
+    await parent.auth.login(loginId: 'parentA3', password: 'password');
+    final routeApi = RouteApi(dio: parent.dio);
+    final busPositionApi = BusPositionApi(dio: parent.dio);
 
-      final route = await RouteApi(
-        dio: parent.dio,
-      ).getRoute(chulsoo.studentId);
-      expect(route.runId, isNotEmpty);
-      expect(route.busNo, isNotEmpty);
-      expect(route.driver.name, isNotEmpty);
-      expect(route.escort.name, isNotEmpty);
-      expect(route.escort.phone, isNotEmpty);
-      expect(route.myStopId, isNotEmpty);
-      expect(route.stops, isNotEmpty);
-    },
-  );
-
-  test(
-    '목표 — §3.11 연결된 자녀(학생1/parentA1)의 실시간 위치를 반환한다',
-    () async {
-      if (!backendReachable) {
-        markTestSkipped('환경 문제: $baseUrl 백엔드 미기동');
-        return;
-      }
-      final parent = buildClientFor('p5-b-parent');
-      await parent.auth.login(loginId: 'parentA1', password: 'password');
-      final students = await StudentApi(dio: parent.dio).getMyStudents();
-      final chulsoo = students.firstWhere((s) => s.name == '김철수');
-
-      final raw = await parent.dio.get<Map<String, dynamic>>(
-        '/students/${chulsoo.studentId}/bus-position',
-      );
-      expect(raw.data!.containsKey('eta'), isFalse);
-
-      final position = await BusPositionApi(
-        dio: parent.dio,
-      ).getBusPosition(chulsoo.studentId);
-      expect(position.runId, isNotEmpty);
-      expect(position.busNo, isNotEmpty);
-    },
-  );
-
-  test(
-    '목표 — §3.10·§3.11 연결 부재 자녀(학생3, parentA1 은 미연결)는 '
-    '403 FORBIDDEN 을 반환한다',
-    () async {
-      if (!backendReachable) {
-        markTestSkipped('환경 문제: $baseUrl 백엔드 미기동');
-        return;
-      }
-      final parent = buildClientFor('p5-c-parent');
-      await parent.auth.login(loginId: 'parentA1', password: 'password');
-      final routeApi = RouteApi(dio: parent.dio);
-      final busPositionApi = BusPositionApi(dio: parent.dio);
-
-      await _expectApiError(
-        () => routeApi.getRoute('3'),
-        statusCode: 403,
-        errorCode: 'FORBIDDEN',
-      );
-      await _expectApiError(
-        () => busPositionApi.getBusPosition('3'),
-        statusCode: 403,
-        errorCode: 'FORBIDDEN',
-      );
-    },
-  );
-
-  test(
-    '목표 — §3.10·§3.11 존재하지 않는 학생 ID 도 403 FORBIDDEN 을 '
-    '반환한다(연결 부재와 동일 취급 — 존재 자체를 숨긴다)',
-    () async {
-      if (!backendReachable) {
-        markTestSkipped('환경 문제: $baseUrl 백엔드 미기동');
-        return;
-      }
-      final parent = buildClientFor('p5-d-parent');
-      await parent.auth.login(loginId: 'parentA1', password: 'password');
-      final routeApi = RouteApi(dio: parent.dio);
-      final busPositionApi = BusPositionApi(dio: parent.dio);
-
-      await _expectApiError(
-        () => routeApi.getRoute('999999'),
-        statusCode: 403,
-        errorCode: 'FORBIDDEN',
-      );
-      await _expectApiError(
-        () => busPositionApi.getBusPosition('999999'),
-        statusCode: 403,
-        errorCode: 'FORBIDDEN',
-      );
-    },
-  );
-
-  test(
-    '목표 — §3.10·§3.11 연결은 살아 있는데 학생이 소프트 삭제된 상태 '
-    '(학생5/parentA3)는 404 STUDENT_NOT_FOUND 를 반환한다',
-    () async {
-      if (!backendReachable) {
-        markTestSkipped('환경 문제: $baseUrl 백엔드 미기동');
-        return;
-      }
-      if (!student5FixtureReady) {
-        markTestSkipped(
-          '환경 문제: student5 소프트 삭제 픽스처를 만들지 못했다 — '
-          '--dart-define=FIXTURE_DB 미지정이거나 docker exec '
-          'school-bus-postgres-1 실패(고정 컨테이너 전제가 깨졌을 가능성)',
-        );
-        return;
-      }
-      final parent = buildClientFor('p5-e-parent');
-      await parent.auth.login(loginId: 'parentA3', password: 'password');
-      final routeApi = RouteApi(dio: parent.dio);
-      final busPositionApi = BusPositionApi(dio: parent.dio);
-
-      await _expectApiError(
-        () => routeApi.getRoute('5'),
-        statusCode: 404,
-        errorCode: 'STUDENT_NOT_FOUND',
-      );
-      await _expectApiError(
-        () => busPositionApi.getBusPosition('5'),
-        statusCode: 404,
-        errorCode: 'STUDENT_NOT_FOUND',
-      );
-    },
-  );
+    await _expectApiError(
+      () => routeApi.getRoute('5'),
+      statusCode: 404,
+      errorCode: 'STUDENT_NOT_FOUND',
+    );
+    await _expectApiError(
+      () => busPositionApi.getBusPosition('5'),
+      statusCode: 404,
+      errorCode: 'STUDENT_NOT_FOUND',
+    );
+  });
 }

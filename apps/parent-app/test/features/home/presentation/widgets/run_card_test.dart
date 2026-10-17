@@ -44,7 +44,7 @@ StudentRun _fixtureRun({
   direction: RunDirection.toAcademy,
   // ⚠ 서버가 주는 값은 **호차 이름 그 자체**다(`ERD bus.bus_no varchar(20)` · 시드 '1호차'·'2호차'
   // · `API_SPEC` "호차"). 맨 숫자 '1' 로 두면 화면이 단위를 덧붙여도 시험이 못 잡는다 —
-  // 실제로 2026-09-20 까지 "1호차번" 이 그렇게 살아남았다.
+  // "1호차번" 같은 중복이 그렇게 살아남은 적이 있다.
   busNo: '1호차',
   departTime: departTime ?? DateTime(2026, 9, 12, 8),
   runStatus: RunStatus.idle,
@@ -105,7 +105,7 @@ void main() {
     );
   }
 
-  // ⚠ 2026-09-21 실측 — 서버가 주는 시각은 **UTC 순간**(`2026-09-21T10:40:19Z`)인데
+  // 서버가 주는 시각은 **UTC 순간**(`2026-09-21T10:40:19Z`)인데
   // 화면이 그 값의 `hour`·`minute` 를 그대로 읽어 **9시간 어긋난 시각**을 보여줬다
   // (19:40 출발을 "10:40 출발" 로). `DateTime.parse` 는 오프셋이 붙은 문자열을
   // 언제나 **UTC DateTime** 으로 돌려주므로, 벽시계로 쓰려면 `toLocal()` 이 필요하다.
@@ -279,7 +279,7 @@ void main() {
     expect(find.text('오늘 탑승'), findsNothing);
   });
 
-  // ---- R32 P4 — 확인 창 · 스위치 줄의 지도 이동 제외 · 확정까지 남은 시간 ----
+  // ---- 확인 창 · 스위치 줄의 지도 이동 제외 · 확정까지 남은 시간 ----
 
   /// 호출을 기록하는 가짜 저장소 — 취소하면 요청이 나가지 않는다는 시험에 쓴다.
   Future<_RecordingRunRepository> pumpRecording(

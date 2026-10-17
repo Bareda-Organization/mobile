@@ -23,7 +23,7 @@ import 'package:parent_app/features/home/presentation/widgets/pending_change_bad
 import 'package:parent_app/features/home/presentation/widgets/run_card.dart';
 
 /// P-03·P-04 홈 화면 — 오늘 회차(§3.5) · 등원 여부 토글(§3.6). 운행 정보만 둔다.
-/// 알림 목록(P-09)은 2026-09-30 부터 아래 탭 막대의 `[알림]` 탭이다(`NotificationsScreen`) —
+/// 알림 목록(P-09)은 아래 탭 막대의 `[알림]` 탭이다(`NotificationsScreen`) —
 /// 홈 맨 아래에 이어 붙이면 끝까지 내려야 보였다.
 ///
 /// 역할 분기는 문자열이 아니라 `roleCapabilitiesProvider.canToggleAttendance`

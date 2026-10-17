@@ -343,7 +343,7 @@ void main() {
     expect(find.text('저장해 둔 목록으로 보고 있어요'), findsNothing);
   });
 
-  // M-3 — Android 13+ 는 알림 권한이 없으면 위치 포그라운드 서비스의 "운행 중" 알림이 안 보인다.
+  // Android 13+ 는 알림 권한이 없으면 위치 포그라운드 서비스의 "운행 중" 알림이 안 보인다.
   // 확인 창에서 [시작하기] 를 누른 뒤, 운행 시작 요청이 나가기 전에 권한을 요청한다.
   testWidgets('[시작하기] 를 누르면 운행 시작 요청 전에 알림 권한을 요청한다', (tester) async {
     final events = <String>[];

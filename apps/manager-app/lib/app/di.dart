@@ -142,7 +142,7 @@ final managerRunRepositoryProvider = Provider<ManagerRunRepository>((ref) {
   );
 });
 
-/// 오늘 회차 목록이 서버가 아니라 기기 저장본이면 그 요약을 받은 시각, 서버에서 새로 받았으면 `null`(R56) —
+/// 오늘 회차 목록이 서버가 아니라 기기 저장본이면 그 요약을 받은 시각, 서버에서 새로 받았으면 `null` —
 /// 통신 두절 중 홈이 그 사실을 알리는 근거다. 로그아웃 · 계정 정리가 비운다.
 final savedRunsAtProvider = StateProvider<DateTime?>((ref) => null);
 
@@ -255,7 +255,7 @@ final offlineQueueDatabaseProvider = Provider<OfflineQueueDatabase>((ref) {
   return database;
 });
 
-/// 로그아웃이 시작된 뒤 대기열 재생을 막는 빗장(R56) — `signOut` 이 잠그고 대기열 정리 · 새 로그인이 푼다.
+/// 로그아웃이 시작된 뒤 대기열 재생을 막는 빗장 — `signOut` 이 잠그고 대기열 정리 · 새 로그인이 푼다.
 final replayGateProvider = Provider<ReplayGate>((ref) => ReplayGate());
 
 final offlineQueueRepositoryProvider = Provider<OfflineQueueRepository>((ref) {

@@ -10,7 +10,7 @@ import 'package:manager_app/features/delay/presentation/delay_screen.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
 
 /// 지연 알림 화면의 문구 미리보기는 여러 줄이 되는 문단이다 — 낱말 한가운데서 줄이 바뀌면 안 된다
-/// (R46-POLISH Ruling 594, R46-SCREEN 에서 `사 / 유와` 로 끊겼다).
+/// (Ruling 594).
 void main() {
   testWidgets('문구 미리보기는 낱말 경계에서만 줄이 바뀐다 (375pt · 글자 1.3배)', (tester) async {
     useNarrowLargeText(tester);

@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// 여러 줄로 바뀔 수 있는 안내·본문 문단은 낱말 한가운데서 줄이 바뀌면 안 된다(R46-POLISH Ruling 594).
+/// 여러 줄로 바뀔 수 있는 안내·본문 문단은 낱말 한가운데서 줄이 바뀌면 안 된다(Ruling 594).
 /// 문단마다 위젯을 375pt 폭에서 글자 1.0·1.3배로 그려, 그 문장을 그린 글자 덩어리의 줄 끝을 본다.
 const _sentence = '승하차지·명단이 변경됐습니다 — 확인 후 계속 진행하세요. 학부모에게 바로 알려 드립니다';
 

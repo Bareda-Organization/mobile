@@ -171,7 +171,7 @@ class _FakeRouteRepository implements RouteRepository {
 
   final RouteDetail? detail;
 
-  /// 지금까지 노선을 요청한 `run_id` — R49: 종료된 회차도 그 회차의 노선을 읽는지 본다.
+  /// 지금까지 노선을 요청한 `run_id` — 종료된 회차도 그 회차의 노선을 읽는지 본다.
   static final List<String?> requestedRunIds = [];
 
   @override
@@ -292,7 +292,7 @@ void main() {
       ],
     );
 
-    // R32 P6 — 노선 자세히 보기(S-04)가 학부모 화면에만 있어 학생은 노선 상세로 갈 길이 없었다.
+    // 노선 자세히 보기(S-04)가 학부모 화면에만 있어 학생은 노선 상세로 갈 길이 없었다.
     testWidgets('학생 지도 화면에도 [노선 자세히 보기] 가 있다', (tester) async {
       await pumpAsStudent(tester, studentId: 's-1');
       await tester.pump();
@@ -497,7 +497,7 @@ void main() {
       expect(find.text('정문 앞'), findsOneWidget);
       expect(find.text('마지막으로 지난 곳'), findsOneWidget);
 
-      // ⚠ 2026-09-21 실측 — 이 줄이 UTC 를 그대로 벽시계로 보여줬다(한국시간
+      // 이 줄이 UTC 를 그대로 벽시계로 보여줬다(한국시간
       // 20:03 에 "11:03 기준"). 서버가 주는 `received_at` 은 UTC 순간이고
       // `DateTime.parse` 는 그것을 UTC `DateTime` 으로 돌려준다.
       // 기대값을 `toLocal()` 로 만드는 이유는 시험기의 표준시를 바꿀 수단이
@@ -537,7 +537,7 @@ void main() {
       expect(find.text('더 새 정류장'), findsOneWidget);
     });
 
-    // R32 P7 — 연결 끊김 띠에 다시 시도가 없어, 화면을 벗어났다 돌아오는 수밖에 없었다.
+    // 연결 끊김 띠에 다시 시도가 없어, 화면을 벗어났다 돌아오는 수밖에 없었다.
     testWidgets('연결 끊김 띠의 [다시 시도] 가 재연결을 건다', (tester) async {
       await pumpConnected(tester);
       client.emit(WsConnectionState.gaveUp);
@@ -646,7 +646,7 @@ void main() {
     });
   });
 
-  // R46-FIXCONN C-5 — 재연결 시도마다 `connecting` 이 와서, 끊김 중 지도(+배너)와
+  // 재연결 시도마다 `connecting` 이 와서, 끊김 중 지도(+배너)와
   // 전체 스피너가 시도 간격마다 번갈아 보였다. 스피너는 첫 진입의 첫 연결
   // 시도에만 쓴다 — 그 뒤의 재시도는 지도와 마지막 위치를 둔 채 재연결 안내로
   // 표시한다.
@@ -710,7 +710,7 @@ void main() {
     });
   });
 
-  // R46-FIXCONN C-9 — 재연결 때 REST 스냅샷을 다시 받아도 화면은 WS 로 한 번이라도
+  // 재연결 때 REST 스냅샷을 다시 받아도 화면은 WS 로 한 번이라도
   // 받은 좌표를 우선해 스냅샷이 반영되지 않았다. 음영 중 버스가 움직였다면 다음
   // position 이 올 때까지 옛 좌표가 남는다 — 재연결 스냅샷이 더 새로우면 그것으로
   // 갈아 끼운다.
@@ -845,7 +845,7 @@ void main() {
       });
     });
 
-    // M-5 (R57) — 백그라운드 60초로 연결을 끊었다가(`disconnected`) 돌아와 다시 붙으면
+    // 백그라운드 60초로 연결을 끊었다가(`disconnected`) 돌아와 다시 붙으면
     // 같은 목적지를 다시 구독하고 REST 스냅샷을 다시 읽어 놓친 위치를 메운다.
     testWidgets('백그라운드로 끊겼다(disconnected) 다시 붙으면 재구독하고 스냅샷을 다시 읽는다', (
       tester,
@@ -1252,7 +1252,7 @@ void main() {
     MapSurface surface(WidgetTester tester) =>
         tester.widget<MapSurface>(find.byType(MapSurface));
 
-    // R46 P3 — 버스가 움직여 화면 밖으로 나가도 지도가 따라간다. F05-09 는 "카메라를 고정하고
+    // 버스가 움직여 화면 밖으로 나가도 지도가 따라간다. F05-09 는 "카메라를 고정하고
     // [버스 위치로] 로만 따라간다" 였고, 그러면 켜 두고 기다리는 동안 버스가 지도에서 사라졌다.
     testWidgets('R46 P3 새 좌표가 오면 지도 카메라가 버스를 따라간다', (tester) async {
       await pumpConnected(tester);
@@ -1288,14 +1288,14 @@ void main() {
       expect(surface(tester).camera.lat, 37.7, reason: '[버스 위치로] 뒤에는 다시 따라간다');
     });
 
-    // R46 P1 — 지도에 버스 점만 있어 내 승하차지가 어디인지 알 수 없었다. 서버가 준 §3.10 좌표만 쓴다.
+    // 지도에 버스 점만 있어 내 승하차지가 어디인지 알 수 없었다. 서버가 준 §3.10 좌표만 쓴다.
     testWidgets('R46 P1 내 승하차지를 지도 핀과 시트 칸으로 보여준다', (tester) async {
       await pumpConnected(tester, route: _routeWithMyStop());
       client.deliver(_envelope(WsEventType.position, pos(37.5)));
       await tester.pump();
       await tester.pump();
 
-      // R49 — 응답의 승하차지 둘 다 번호 핀으로 그리고, 그중 내 승하차지만 강조 · 이름표를 단다.
+      // 응답의 승하차지 둘 다 번호 핀으로 그리고, 그중 내 승하차지만 강조 · 이름표를 단다.
       final stops = surface(tester).markers
           .where((m) => m.kind == MapMarkerKind.stop)
           .toList();
@@ -1368,7 +1368,7 @@ void main() {
     });
   });
 
-  // R48 `Ruling 821` — 전체 지도 화면도 §3.11 의 delay · started_at · finished_at 을
+  // `Ruling 821` — 전체 지도 화면도 §3.11 의 delay · started_at · finished_at 을
   // 그린다.
   // WebSocket 이벤트(`run_started` · `run_ended`)를 놓치고 들어와도 시각이 비지 않고, 지연 띠는 delay
   // 에서 온다.
@@ -1499,7 +1499,7 @@ void main() {
     });
   });
 
-  // R48 시안 `live-map*` — 상태마다 시트 모양이 다르다. 한 모양이 다른 모양의 글자를 섞어 쓰면(예: 종료인데 "이동
+  // 시안 `live-map*` — 상태마다 시트 모양이 다르다. 한 모양이 다른 모양의 글자를 섞어 쓰면(예: 종료인데 "이동
   // 중")
   // 학부모가 버스가 아직 달리는 줄 안다.
   group('R48 시트 — 상태마다 모양이 다르다', () {
@@ -1743,7 +1743,7 @@ void main() {
     });
   });
 
-  // R49 `Ruling 831` · `832` — 지도에 표시 범위 승하차지의 번호 마커와 경로선, 문구에 도착지 이름.
+  // `Ruling 831` · `832` — 지도에 표시 범위 승하차지의 번호 마커와 경로선, 문구에 도착지 이름.
   group('R49 지도 — 노선선 · 번호 · 도착지 이름', () {
     final started = DateTime.utc(2026, 10, 5, 3, 5);
     final finished = DateTime.utc(2026, 10, 5, 3, 52);

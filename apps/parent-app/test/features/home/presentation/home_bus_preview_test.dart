@@ -614,7 +614,7 @@ void main() {
       expect(map.fitToContent, isTrue);
     });
 
-    // 2026-10-07 사용자 지시(Ruling 842) — 출발 전 카드가 빈 면이라 "지도가 안 보인다" 로 읽혔다.
+    // (Ruling 842) 출발 전 카드가 빈 면이라 "지도가 안 보인다" 로 읽혔다.
     testWidgets('운행 전 회차는 버스 없이 노선(경로선 · 번호)을 미리 그리고 지도를 노선에 맞춘다', (
       tester,
     ) async {

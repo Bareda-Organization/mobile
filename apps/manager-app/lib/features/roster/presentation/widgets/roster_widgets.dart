@@ -420,7 +420,7 @@ class RosterStudentTile extends StatelessWidget {
             ),
             if (actions != null) ...[
               const SizedBox(height: 12),
-              // 응답을 기다리는 동안 흐려지기만 하면 눌렸는지 알 수 없다 — 단추 옆에 진행 표시를 돌린다(R46).
+              // 응답을 기다리는 동안 흐려지기만 하면 눌렸는지 알 수 없다 — 단추 옆에 진행 표시를 돌린다.
               if (busy)
                 Row(
                   children: [

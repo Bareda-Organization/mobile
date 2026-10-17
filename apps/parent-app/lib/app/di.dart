@@ -57,7 +57,7 @@ final apiClientProvider = Provider<ApiClient>((ref) {
     tokenStorage: ref.watch(tokenStorageProvider),
     baseUrl: ApiConstants.baseUrl,
   );
-  // 서버에 닿는지를 요청 결과로 감시한다 — 끊김 한 줄 표시(`OfflineBar`)의 근거(R46 B2 #22).
+  // 서버에 닿는지를 요청 결과로 감시한다 — 끊김 한 줄 표시(`OfflineBar`)의 근거.
   final network = ref.read(networkStatusProvider.notifier);
   client.dio.interceptors.add(
     NetworkStatusInterceptor(
@@ -75,7 +75,7 @@ final apiClientProvider = Provider<ApiClient>((ref) {
 /// (`live_map_providers.dart`)이 필요할 때만 걸고 dispose 시 반드시
 /// 해지한다. 연결을 **언제 닫는가** 는 [webSocketHoldProvider](지도가 열려 있는
 /// 동안만 연결을 붙잡는다)와 로그아웃·세션 만료(`account_session.dart`)가 정한다
-/// (R46-FIXCONN C-2).
+/// .
 ///
 /// URL 은 `ApiConstants.baseUrl`(REST) 에서 공용 `wsUrlFromApiBaseUrl` 로
 /// 유도한다 — 배포 서버(`https`)면 `wss` 가 돼야 해서 스킴을 여기서 박지 않는다
@@ -97,7 +97,7 @@ final webSocketClientProvider = Provider<BaraedaWebSocketClient>((ref) {
 /// 지도보다 먼저 만들어지는 겹침에서는 듣는 쪽이 0 이 되지 않아 연결이
 /// 유지되고, 마지막 지도가 닫히면 연결을 끊는다. 지도가 없는 동안(홈·알림·
 /// 설정) 구독 없는 유휴 연결이 서버 세션을 차지하고 15분마다 토큰 만료 →
-/// 재발급 → 재연결을 되풀이하던 것을 없앤다(R46-FIXCONN C-2, K-3 — 매니저
+/// 재발급 → 재연결을 되풀이하던 것을 없앤다(매니저
 /// 앱 `managerRunChannelProvider` 와 같은 방식).
 // `Provider.autoDispose` 의 반환 타입은 `flutter_riverpod` 가 공개하지 않는다 —
 // `live_map_providers.dart` 의 `liveMapStateProvider` 와 같은 사정.

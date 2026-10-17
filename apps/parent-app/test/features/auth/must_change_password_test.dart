@@ -15,16 +15,12 @@ import 'package:parent_app/features/auth/presentation/login_screen.dart';
 import 'package:parent_app/features/home/presentation/home_screen.dart';
 import 'package:parent_app/features/settings/presentation/password_change_screen.dart';
 
-
-/// Ruling 540 · R46-LAST `Ruling 581` — 관리자가 초기화한 임시 비밀번호로 들어온
+/// Ruling 540 · `Ruling 581` — 관리자가 초기화한 임시 비밀번호로 들어온
 /// 학부모·학생 계정은 비밀번호를 바꾸기 전까지 다른 화면을 쓰지 못한다. 서버도
 /// 그동안 다른 API 를 `403 PASSWORD_CHANGE_REQUIRED` 로 막으므로 앱은 변경 화면에
 /// 고정한다(매니저 앱 `must_change_password_test.dart` 와 같은 갈래).
 class _FakeAuthRepository implements AuthRepository {
-  new({
-    required this.mustChangePassword,
-    this.role = AccountRole.parent,
-  });
+  new({required this.mustChangePassword, this.role = AccountRole.parent});
 
   final bool mustChangePassword;
   final AccountRole role;

@@ -90,7 +90,7 @@ NotificationItem _item(String id, {bool unread = true}) => NotificationItem(
   readAt: unread ? null : DateTime.utc(2026, 9, 30),
 );
 
-/// 앱 아래 탭 막대(`BaraedaTabBar`) — R44 · R48. 로그인 뒤 화면에만 있고, 로그인·가입·대기·차단 화면과
+/// 앱 아래 탭 막대(`BaraedaTabBar`) — 로그인 뒤 화면에만 있고, 로그인·가입·대기·차단 화면과
 /// 탭 위에 얹은 하위 화면(지도·비밀번호 변경·요일별 주소 …)에는 없다.
 /// 학부모는 `홈 · 일정 · 알림 · 설정`, 학생은 `내 버스 · 알림 · 설정`(`Ruling 826`).
 void main() {

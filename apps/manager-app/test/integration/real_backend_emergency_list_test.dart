@@ -62,12 +62,11 @@ class _FakeSecureStoragePlatform
   @override
   Future<SecureStorageUpgradeStatus> checkUpgradeStatus({
     required Map<String, String> options,
-  }) async => const SecureStorageUpgradeStatus(
-    state: SecureStorageUpgradeState.ok,
-  );
+  }) async =>
+      const SecureStorageUpgradeStatus(state: SecureStorageUpgradeState.ok);
 }
 
-/// BE-R1 수정 라운드 `FIX-EM` — §4.15 목록 응답의 `emergency_id` 가 서버에서
+/// §4.15 목록 응답의 `emergency_id` 가 서버에서
 /// 원시 숫자로 나가면 `EmergencyItem.fromJson` 의 `json['emergency_id'] as
 /// String` 캐스팅이 그 자리에서 예외를 던진다. "필드가 있다" 를 확인하는
 /// 것으로는 이 사고를 못 잡는다 — 필드는 항상 있고, 타입만 틀렸었다.
@@ -108,45 +107,42 @@ void main() {
     return (auth: auth, dio: client.dio);
   }
 
-  test(
-    '§4.15 — 발신 직후 목록을 조회하면 비어 있지 않은 items 가 예외 없이 '
-    '파싱되고, 그 emergency_id 로 취소(§4.14 DELETE)까지 이어진다',
-    () async {
-      if (!backendReachable) {
-        markTestSkipped('환경 문제: 백엔드 미기동($baseUrl)');
-        return;
-      }
+  test('§4.15 — 발신 직후 목록을 조회하면 비어 있지 않은 items 가 예외 없이 '
+      '파싱되고, 그 emergency_id 로 취소(§4.14 DELETE)까지 이어진다', () async {
+    if (!backendReachable) {
+      markTestSkipped('환경 문제: 백엔드 미기동($baseUrl)');
+      return;
+    }
 
-      final (:auth, :dio) = buildClient();
-      await auth.login(loginId: 'driverA1', password: 'password');
+    final (:auth, :dio) = buildClient();
+    await auth.login(loginId: 'driverA1', password: 'password');
 
-      final api = EmergencyApi(dio: dio);
-      final raised = await api.raise(
-        runId: '7',
-        request: EmergencyRaiseRequest(
-          type: EmergencyType.accident,
-          clientKey: IdempotencyKeys.generate(),
-        ),
-      );
+    final api = EmergencyApi(dio: dio);
+    final raised = await api.raise(
+      runId: '7',
+      request: EmergencyRaiseRequest(
+        type: EmergencyType.accident,
+        clientKey: IdempotencyKeys.generate(),
+      ),
+    );
 
-      // 이 호출이 예외 없이 끝나는 것 자체가 검사다 — emergency_id 가
-      // 숫자로 오면 EmergencyItem.fromJson 의 `as String` 캐스팅이 여기서
-      // 던진다.
-      final list = await api.list(runId: '7');
+    // 이 호출이 예외 없이 끝나는 것 자체가 검사다 — emergency_id 가
+    // 숫자로 오면 EmergencyItem.fromJson 의 `as String` 캐스팅이 여기서
+    // 던진다.
+    final list = await api.list(runId: '7');
 
-      expect(list.items, isNotEmpty);
-      final item = list.items.firstWhere(
-        (i) => i.emergencyId == raised.emergencyId,
-        orElse: () => throw StateError(
-          '방금 발신한 emergency_id(${raised.emergencyId})가 목록에 없다',
-        ),
-      );
-      expect(item.emergencyId, raised.emergencyId);
-      expect(item.canceledAt, isNull);
+    expect(list.items, isNotEmpty);
+    final item = list.items.firstWhere(
+      (i) => i.emergencyId == raised.emergencyId,
+      orElse: () => throw StateError(
+        '방금 발신한 emergency_id(${raised.emergencyId})가 목록에 없다',
+      ),
+    );
+    expect(item.emergencyId, raised.emergencyId);
+    expect(item.canceledAt, isNull);
 
-      // 목록에서 받은 emergency_id 를 그대로 취소 URL 에 넣는다 — 발신 →
-      // 목록 → 취소가 한 값으로 이어지는지가 이 시험의 나머지 절반이다.
-      await api.cancel(runId: '7', emergencyId: item.emergencyId);
-    },
-  );
+    // 목록에서 받은 emergency_id 를 그대로 취소 URL 에 넣는다 — 발신 →
+    // 목록 → 취소가 한 값으로 이어지는지가 이 시험의 나머지 절반이다.
+    await api.cancel(runId: '7', emergencyId: item.emergencyId);
+  });
 }

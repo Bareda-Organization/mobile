@@ -12,6 +12,7 @@ import 'package:manager_app/features/emergency/data/emergency_api.dart';
 import 'package:manager_app/features/emergency/data/models/emergency_raise_request.dart';
 import 'package:manager_app/features/emergency/data/models/emergency_type.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
+
 import '../support/real_backend_target.dart';
 
 // `real_backend_run_flow_test.dart` 와 같은 대역 — 진짜 소켓 스토리지 대신
@@ -63,14 +64,12 @@ class _FakeSecureStoragePlatform
   @override
   Future<SecureStorageUpgradeStatus> checkUpgradeStatus({
     required Map<String, String> options,
-  }) async => const SecureStorageUpgradeStatus(
-    state: SecureStorageUpgradeState.ok,
-  );
+  }) async =>
+      const SecureStorageUpgradeStatus(state: SecureStorageUpgradeState.ok);
 }
 
-/// BE-R1 목표 1 후속 라운드 — "발신 후 취소 버튼이 뜬다" 를 위젯 시험(가짜
-/// 저장소, `emergency_screen_test.dart`)만으로 확인한 것은 목표의 앱 동작
-/// 조건을 채우지 못한다는 지적을 받아 추가한 시험이다.
+/// "발신 후 취소 버튼이 뜬다" 를 위젯 시험(가짜 저장소, `emergency_screen_test.dart`)만으로
+/// 확인하면 앱 동작 조건을 채우지 못하므로 실서버로도 확인하는 시험이다.
 ///
 /// `emergency_screen_test.dart` 는 `EmergencyRaiseResult` 를 코드에서 직접
 /// 만들어 주입하므로 `EmergencyRaiseResult.fromJson` — 실 서버 응답을 그
@@ -128,90 +127,84 @@ void main() {
     return (auth: auth, dio: client.dio);
   }
 
-  test(
-    '§4.14 — 실 서버로 비상 알림을 발신하면 emergency_id·raised_at· '
-    'cancelable_until·notified 4항이 예외 없이 파싱되고, 그 결과가 화면의 '
-    '취소 버튼 노출 조건(now.isBefore(cancelableUntil))을 즉시 만족한다',
-    () async {
-      if (!backendReachable) {
-        markTestSkipped('환경 문제: 백엔드 미기동($baseUrl)');
-        return;
-      }
+  test('§4.14 — 실 서버로 비상 알림을 발신하면 emergency_id·raised_at· '
+      'cancelable_until·notified 4항이 예외 없이 파싱되고, 그 결과가 화면의 '
+      '취소 버튼 노출 조건(now.isBefore(cancelableUntil))을 즉시 만족한다', () async {
+    if (!backendReachable) {
+      markTestSkipped('환경 문제: 백엔드 미기동($baseUrl)');
+      return;
+    }
 
-      final (:auth, :dio) = buildClient();
-      await auth.login(loginId: 'driverA1', password: 'password');
+    final (:auth, :dio) = buildClient();
+    await auth.login(loginId: 'driverA1', password: 'password');
 
-      final api = EmergencyApi(dio: dio);
-      final result = await api.raise(
-        runId: '7',
-        request: EmergencyRaiseRequest(
-          type: EmergencyType.accident,
-          clientKey: IdempotencyKeys.generate(),
-        ),
-      );
+    final api = EmergencyApi(dio: dio);
+    final result = await api.raise(
+      runId: '7',
+      request: EmergencyRaiseRequest(
+        type: EmergencyType.accident,
+        clientKey: IdempotencyKeys.generate(),
+      ),
+    );
 
-      // emergency_id 는 서버가 Long 을 문자열로 내려준다(§1.1) — 파싱이
-      // String 캐스트에서 예외를 던지지 않았다는 것 자체가 이 검사다.
-      expect(result.emergencyId, isNotEmpty);
-      expect(int.tryParse(result.emergencyId), isNotNull);
-      expect(result.notified, greaterThanOrEqualTo(0));
-      expect(
-        result.cancelableUntil.isAfter(result.raisedAt),
-        isTrue,
-        reason: '취소 가능 창은 발신 시각 이후여야 한다',
-      );
+    // emergency_id 는 서버가 Long 을 문자열로 내려준다(§1.1) — 파싱이
+    // String 캐스트에서 예외를 던지지 않았다는 것 자체가 이 검사다.
+    expect(result.emergencyId, isNotEmpty);
+    expect(int.tryParse(result.emergencyId), isNotNull);
+    expect(result.notified, greaterThanOrEqualTo(0));
+    expect(
+      result.cancelableUntil.isAfter(result.raisedAt),
+      isTrue,
+      reason: '취소 가능 창은 발신 시각 이후여야 한다',
+    );
 
-      // emergency_screen.dart 의 취소 버튼 노출 조건과 같은 식이다 — 실
-      // 서버가 준 값을 그대로 넣었을 때 화면이 버튼을 보여줄지를 여기서
-      // 직접 계산한다(위젯 시험은 이 값을 가짜 저장소로 주입해 그 뒤
-      // 렌더링만 검증한다 — 두 시험이 합쳐야 "취소 버튼이 뜬다" 전체가
-      // 실측된다).
-      final now = DateTime.now().toUtc();
-      expect(
-        now.isBefore(result.cancelableUntil),
-        isTrue,
-        reason: '발신 직후에는 취소 버튼이 보여야 한다',
-      );
+    // emergency_screen.dart 의 취소 버튼 노출 조건과 같은 식이다 — 실
+    // 서버가 준 값을 그대로 넣었을 때 화면이 버튼을 보여줄지를 여기서
+    // 직접 계산한다(위젯 시험은 이 값을 가짜 저장소로 주입해 그 뒤
+    // 렌더링만 검증한다 — 두 시험이 합쳐야 "취소 버튼이 뜬다" 전체가
+    // 실측된다).
+    final now = DateTime.now().toUtc();
+    expect(
+      now.isBefore(result.cancelableUntil),
+      isTrue,
+      reason: '발신 직후에는 취소 버튼이 보여야 한다',
+    );
 
-      // 취소도 프로덕션 코드로 끝까지 확인한다(§4.14 취소, 204) — 뒤에 남는
-      // 신고 행이 다음 실행의 시드 상태를 더럽히지 않게 한다.
-      await api.cancel(runId: '7', emergencyId: result.emergencyId);
-    },
-  );
+    // 취소도 프로덕션 코드로 끝까지 확인한다(§4.14 취소, 204) — 뒤에 남는
+    // 신고 행이 다음 실행의 시드 상태를 더럽히지 않게 한다.
+    await api.cancel(runId: '7', emergencyId: result.emergencyId);
+  });
 
   // BR-109 — 확정 전(idle) 회차는 발신을 받지 않는다(§4.14 · Ruling 357).
   // 회차 1 은 시드 기준 그대로 idle 이고 driverA1 이 배치돼 있어, 배치
   // 인가(assertAssignedDriverOrEscort)는 통과하고 상태 검사에서만 막히는지
   // 를 구분해 확인한다. 단 시드 적용 +2.5h 가 지나면 확정 배치가 이 회차를
   // confirmed 로 옮기므로 setUpAll 이 필요할 때 시드를 되돌린다.
-  test(
-    'RUN_NOT_CONFIRMED — 확정 전(idle) 회차로 비상 알림을 발신하면 409 로 '
-    '거부된다(BR-109)',
-    () async {
-      if (!backendReachable) {
-        markTestSkipped('환경 문제: 백엔드 미기동($baseUrl)');
-        return;
-      }
+  test('RUN_NOT_CONFIRMED — 확정 전(idle) 회차로 비상 알림을 발신하면 409 로 '
+      '거부된다(BR-109)', () async {
+    if (!backendReachable) {
+      markTestSkipped('환경 문제: 백엔드 미기동($baseUrl)');
+      return;
+    }
 
-      final (:auth, :dio) = buildClient();
-      await auth.login(loginId: 'driverA1', password: 'password');
+    final (:auth, :dio) = buildClient();
+    await auth.login(loginId: 'driverA1', password: 'password');
 
-      final api = EmergencyApi(dio: dio);
-      try {
-        await api.raise(
-          runId: '1',
-          request: EmergencyRaiseRequest(
-            type: EmergencyType.accident,
-            clientKey: IdempotencyKeys.generate(),
-          ),
-        );
-        fail('idle 회차로 발신했는데 409 가 아니었다');
-      } on DioException catch (e) {
-        expect(e.response?.statusCode, 409);
-        final data = e.response?.data as Map<String, dynamic>?;
-        final error = data?['error'] as Map<String, dynamic>?;
-        expect(error?['code'], 'RUN_NOT_CONFIRMED');
-      }
-    },
-  );
+    final api = EmergencyApi(dio: dio);
+    try {
+      await api.raise(
+        runId: '1',
+        request: EmergencyRaiseRequest(
+          type: EmergencyType.accident,
+          clientKey: IdempotencyKeys.generate(),
+        ),
+      );
+      fail('idle 회차로 발신했는데 409 가 아니었다');
+    } on DioException catch (e) {
+      expect(e.response?.statusCode, 409);
+      final data = e.response?.data as Map<String, dynamic>?;
+      final error = data?['error'] as Map<String, dynamic>?;
+      expect(error?['code'], 'RUN_NOT_CONFIRMED');
+    }
+  });
 }

@@ -91,7 +91,7 @@ class LiveMapNotifier extends StateNotifier<LiveMapState> {
   BaraedaWebSocketClient get _client => _ref.read(webSocketClientProvider);
 
   void _init() {
-    // 이 지도가 살아 있는 동안 연결을 붙잡는다 — 마지막 지도가 닫히면 연결도 끊긴다(R46-FIXCONN C-2).
+    // 이 지도가 살아 있는 동안 연결을 붙잡는다 — 마지막 지도가 닫히면 연결도 끊긴다.
     _ref.listen(webSocketHoldProvider, (_, _) {});
     final client = _client;
     _applyConnectionState(client.state);
@@ -122,7 +122,7 @@ class LiveMapNotifier extends StateNotifier<LiveMapState> {
   /// [adoptIfNewer] 가 참(재연결 뒤 호출)이면 스냅샷 좌표가 WS 로 이미 받은
   /// 좌표보다 새로울 때 그 좌표로 갈아 끼운다 — 화면은 WS 좌표를 우선하므로
   /// 그러지 않으면 음영 중 움직인 버스가 다음 `position` 이 올 때까지 옛
-  /// 자리에 남는다(R46-FIXCONN C-9).
+  /// 자리에 남는다.
   Future<void> _loadRestSnapshot({bool adoptIfNewer = false}) async {
     state = state.copyWith(restPosition: const AsyncValue.loading());
 

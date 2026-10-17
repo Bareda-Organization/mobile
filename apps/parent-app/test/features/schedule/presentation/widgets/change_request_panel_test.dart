@@ -68,7 +68,7 @@ StudentRun _fixtureRun({DateTime? departTime}) => StudentRun(
   changeQuotaLeft: 1,
 );
 
-/// 요청받은 날짜를 기록하고 날짜별로 다른 회차 목록을 돌려주는 가짜 — R33 P1.
+/// 요청받은 날짜를 기록하고 날짜별로 다른 회차 목록을 돌려주는 가짜.
 class _DatedRunRepository implements RunRepository {
   new(this.byDate, {this.today});
 

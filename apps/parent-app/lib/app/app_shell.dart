@@ -106,7 +106,7 @@ class _AppShellState extends ConsumerState<AppShell>
   @override
   Widget build(BuildContext context) {
     // 서버에 못 닿다가 다시 닿았다 — 와이파이·데이터가 돌아온 것이다. 재연결 대기(최대 30초)가 끝나길 기다리지 않고 실시간
-    // 연결을 바로 다시 붙인다. REST 성공이 이 앱에서 망 복귀의 유일한 신호다(R46-FIXCONN C-10).
+    // 연결을 바로 다시 붙인다. REST 성공이 이 앱에서 망 복귀의 유일한 신호다.
     ref.listen(networkStatusProvider.select((status) => status.isOffline), (
       wasOffline,
       isOffline,

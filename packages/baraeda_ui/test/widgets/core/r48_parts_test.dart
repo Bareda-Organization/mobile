@@ -266,7 +266,7 @@ void main() {
     });
 
     testWidgets('Scaffold 아래 막대 자리에서도 화면 전체를 먹지 않고 본문이 남는다', (tester) async {
-      // 2026-10-04 시뮬레이터에서 견본을 띄웠을 때 막대가 화면 전체 높이가 되어 본문이 사라졌다 —
+      // 견본에서 막대가 화면 전체 높이가 되어 본문이 사라지지 않게 한다 —
       // `Scaffold.bottomNavigationBar` 는 세로 제약이 느슨해서 Column 이 최대 높이를 잡는다.
       await tester.pumpWidget(
         MaterialApp(

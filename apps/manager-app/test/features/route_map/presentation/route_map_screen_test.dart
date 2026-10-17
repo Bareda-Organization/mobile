@@ -112,7 +112,7 @@ void main() {
     expect(surface.markers.map((m) => m.id), containsAll(['s1', 's2', 's3']));
   });
 
-  // 2026-09-23 사용자 지시 — 정차지 핀 안에 순번을 넣는다. 순번은 화면이 넘겨야 어댑터가 그린다.
+  // 정차지 핀 안에 순번을 넣는다. 순번은 화면이 넘겨야 어댑터가 그린다.
   // 정차지 id 와 순번을 일부러 어긋나게 둔다 — 순서대로 1·2·3 을 매겨 넣는 구현이 통과하지 않게.
   testWidgets('정차지 마커는 그 정차지의 순번을 싣는다', (tester) async {
     final response = RouteResponse(
