@@ -124,7 +124,7 @@ void main() {
           currentUserRoleProvider.overrideWith((ref) => UserRole.escort),
           todayRunsProvider.overrideWith((ref) async => [managerRunFixture()]),
           rosterRepositoryProvider.overrideWithValue(repository),
-          // 연락 기록은 오프라인 대기열을 거친다(R56) — 기기 DB 대신 메모리 DB.
+          // 연락 기록은 오프라인 대기열을 거친다 — 기기 DB 대신 메모리 DB.
           offlineQueueDatabaseProvider.overrideWithValue(queueDatabase),
         ],
         child: const MaterialApp(home: NoShowScreen(riderId: 'r1')),
@@ -146,7 +146,7 @@ void main() {
     expect(repository.fetchCount, 2);
   });
 
-  // R56 · Ruling 894 ⑧ — 통신 두절이면 연락 기록이 기기 대기열에 쌓인다. 서버에 반영된 것처럼 명단을 다시 받거나 그리지
+  // 통신 두절이면 연락 기록이 기기 대기열에 쌓인다. 서버에 반영된 것처럼 명단을 다시 받거나 그리지
   // 않고, 저장했다고 알린다(§1.9).
   testWidgets('통신 두절이면 연락 기록을 기기에 저장했다고 알리고 명단은 다시 받지 않는다', (tester) async {
     final repository = _ContactFailingRepository(

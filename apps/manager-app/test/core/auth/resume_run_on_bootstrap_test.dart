@@ -43,7 +43,7 @@ class _RunsRepository implements ManagerRunRepository {
   Future<List<ManagerRun>> fetchRuns({DateTime? date}) async => runs;
 }
 
-/// 앱을 완전히 껐다 켜면 메모리 값인 선택 회차가 사라져 운행 중이어도 위치 송신이 멎는다(R34 M1) —
+/// 앱을 완전히 껐다 켜면 메모리 값인 선택 회차가 사라져 운행 중이어도 위치 송신이 멎는다 —
 /// 로그인 복구 직후 오늘 운행 중(`moving`)이고 내가 기사로 배치된 회차를 다시 골라 송신기를 잇는다.
 void main() {
   Future<ProviderContainer> recover({

@@ -114,7 +114,7 @@ void main() {
     driveModeRunProvider.overrideWithValue(run()),
     // 위치 송신기가 회차 목록에서 송신 대상을 고른다(F06-12) — 실제 서버로 나가지 않게 막는다.
     todayRunsProvider.overrideWith((ref) async => [run()]),
-    // R32 M1 — 운행 화면이 노선을 조회한다. 실제 서버로 나가지 않게 빈 노선으로 막는다.
+    // 운행 화면이 노선을 조회한다. 실제 서버로 나가지 않게 빈 노선으로 막는다.
     routeProvider.overrideWith((ref) async => const RouteResponse(stops: [])),
     driveModeRosterProvider.overrideWith((ref) async => _emptyRoster),
     positionSourceProvider.overrideWithValue(const _NoopPositionSource()),

@@ -248,7 +248,7 @@ void main() {
     expect(surface.fitToContent, isTrue);
   });
 
-  // R39 Ruling 400 — 경유 지점은 번호 없는 waypoint 마커이고, 승하차지 번호는 경유 지점을 뺀 연속 번호다.
+  // 경유 지점은 번호 없는 waypoint 마커이고, 승하차지 번호는 경유 지점을 뺀 연속 번호다.
   // 서버 seq 는 경유 지점 자리(2)를 비운 채 1·3·4 로 오지만 명단은 경유 지점을 싣지 않는다(Ruling 398).
   testWidgets('경유 지점은 waypoint 마커로 찍고 승하차지 번호는 경유 지점을 건너뛰어 연속으로 매긴다', (
     tester,

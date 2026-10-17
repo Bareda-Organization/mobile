@@ -90,7 +90,7 @@ class _RunReadyScreenState extends ConsumerState<RunReadyScreen> {
   }
 
   Future<void> _start(String runId) async {
-    // 시작하면 노선이 잠기고 학부모·관계자에게 알림이 나간다 — 되돌릴 수 없어 한 번 묻는다(R32 M6).
+    // 시작하면 노선이 잠기고 학부모·관계자에게 알림이 나간다 — 되돌릴 수 없어 한 번 묻는다.
     // 하원은 시작과 함께 전원이 자동으로 승차 처리된다(C-07) — 그 사실을 알린다. 등원에는 해당 없다.
     final isFromAcademy =
         ref.read(driveModeRunProvider)?.direction == RunDirection.fromAcademy;
@@ -301,7 +301,7 @@ class _RunReadyScreenState extends ConsumerState<RunReadyScreen> {
       onPressed: _retry,
     ),
     const SizedBox(height: 12),
-    // 통신이 끊겨 노선을 못 받아도 저장해 둔 명단은 열린다(R53 A11).
+    // 통신이 끊겨 노선을 못 받아도 저장해 둔 명단은 열린다.
     _rosterViewButton(),
     const SizedBox(height: 12),
     const AcademyCallCard(lead: '출발 시각이 가까우면'),

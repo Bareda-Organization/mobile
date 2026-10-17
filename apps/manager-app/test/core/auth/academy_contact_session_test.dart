@@ -40,7 +40,7 @@ class _Auth implements AuthRepository {
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
 }
 
-/// 통신 두절 때 학원에 전화하려면 앱이 학원 연락처를 알고 있어야 한다 — 로그인 응답과 자동 로그인(`/me`) 두 경로가 채운다(R46).
+/// 통신 두절 때 학원에 전화하려면 앱이 학원 연락처를 알고 있어야 한다 — 로그인 응답과 자동 로그인(`/me`) 두 경로가 채운다.
 void main() {
   testWidgets('로그인에 성공하면 응답의 학원 연락처를 들고 있는다', (tester) async {
     final container = ProviderContainer(

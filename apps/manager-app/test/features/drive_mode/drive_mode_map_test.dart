@@ -21,7 +21,7 @@ import 'package:manager_app/features/roster/data/models/roster_response.dart';
 import 'package:manager_app/features/route_map/data/models/route_response.dart';
 import 'package:manager_app/features/route_map/presentation/route_providers.dart';
 
-/// M1(R32) — 운행 화면 가운데 지도. 실제 네이버 SDK 는 위젯 시험에서 그려지지 않으므로
+/// M1 — 운행 화면 가운데 지도. 실제 네이버 SDK 는 위젯 시험에서 그려지지 않으므로
 /// `route_map_screen_test.dart` 와 같이 [MapSurface] 가 받은 인자(핀·선·버스·카메라)만 본다.
 /// ⚠ 지도가 화면에 실제로 떴는지는 이 시험이 못 본다 — 병합 뒤 시뮬레이터로 확인한다.
 
@@ -161,7 +161,7 @@ void main() {
     );
   });
 
-  // R39 Ruling 400 — 운행 화면 가운데 지도도 노선 지도 화면과 같은 규칙으로 경유 지점을 그린다.
+  // 운행 화면 가운데 지도도 노선 지도 화면과 같은 규칙으로 경유 지점을 그린다.
   testWidgets('경유 지점은 waypoint 마커이고 승하차지 번호를 밀지 않는다', (tester) async {
     final route = RouteResponse(
       stops: [

@@ -236,7 +236,7 @@ void main() {
     expect(find.text('ROSTER_VIEW_MARKER'), findsOneWidget);
   });
 
-  // R53 A11 — 통신이 끊겨 노선을 못 받을 때에도(저장 명단이 있다) [명단 보기] 가 열려야 한다.
+  // 통신이 끊겨 노선을 못 받을 때에도(저장 명단이 있다) [명단 보기] 가 열려야 한다.
   testWidgets('노선을 못 받아도 [명단 보기] 로 조회 전용 명단을 연다', (tester) async {
     await tester.pumpWidget(
       wrap(

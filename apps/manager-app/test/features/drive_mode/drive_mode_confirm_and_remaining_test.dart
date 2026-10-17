@@ -30,7 +30,7 @@ import 'package:manager_app/features/run_end/presentation/run_end_screen.dart';
 
 import '../../support/manager_run_fixture.dart';
 
-/// R32 M5·M6 — 기사 운행 화면. ① 운행 시작 · 마지막 승하차지 도착(= 운행 종료)은 확인 창을 거치고
+/// 기사 운행 화면. ① 운행 시작 · 마지막 승하차지 도착(= 운행 종료)은 확인 창을 거치고
 /// 취소하면 요청이 나가지 않는다 ② 남은 승하차지를 조회 전용으로 보인다(승하차 처리는 동승자만, M-12).
 class _RecordingDriveModeRepository implements DriveModeRepository {
   int startCalls = 0;
@@ -628,7 +628,7 @@ void main() {
       expect(find.text('탑승 예정 2명'), findsOneWidget);
     });
 
-    // R53 A9 — 하원 회차의 학생은 타는 것이 아니라 내리므로 "하차 예정".
+    // 하원 회차의 학생은 타는 것이 아니라 내리므로 "하차 예정".
     testWidgets('하원 회차의 다음 승하차지 부제는 탑승 예정이 아니라 하차 예정이다', (tester) async {
       await pumpDrive(
         tester,

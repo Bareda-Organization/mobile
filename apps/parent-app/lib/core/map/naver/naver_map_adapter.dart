@@ -107,7 +107,7 @@ class _NaverMapAdapterState extends State<NaverMapAdapter>
       unawaited(_sync.request());
       if (!_sameCamera(oldWidget.camera, widget.camera)) {
         // 마커는 새 좌표까지 약 2초에 걸쳐 미끄러진다 — 카메라가 즉시 옮겨 가면 마커가 매번 중앙에서 튕겨 나갔다
-        // 돌아오므로, 같은 속도로 따라가게 천천히 옮긴다(R46 B2 #12).
+        // 돌아오므로, 같은 속도로 따라가게 천천히 옮긴다.
         final update =
             NCameraUpdate.scrollAndZoomTo(
               target: NLatLng(widget.camera.lat, widget.camera.lng),
@@ -174,7 +174,7 @@ class _NaverMapAdapterState extends State<NaverMapAdapter>
         }
 
         // 스크롤 뷰(ListView) 안에서도 끌기·확대가 지도에 먼저 닿게 한다 — 기본값 false 면 스크롤이 제스처를 가져가
-        // 지도가 움직이지 않는다(R41-CHK, test/architecture/map_gesture_test.dart).
+        // 지도가 움직이지 않는다(test/architecture/map_gesture_test.dart).
         return NaverMap(
           forceGesture: true,
           options: NaverMapViewOptions(
@@ -285,7 +285,7 @@ class _NaverMapAdapterState extends State<NaverMapAdapter>
       id: marker.id,
       position: position,
       caption: NOverlayCaption(text: marker.label ?? _captionFor(marker.kind)),
-      // 기본 핀이 전부 같은 초록이라 버스와 내 승하차지가 글자 없이는 안 갈렸다(R46 B2 #10).
+      // 기본 핀이 전부 같은 초록이라 버스와 내 승하차지가 글자 없이는 안 갈렸다.
       // 생성할 때 한 번만 지정한다 — 만든 뒤 바꾸지 않아 네이티브 호출이 늘지 않는다.
       iconTintColor: marker.kind == MapMarkerKind.stop
           ? _stopMarkerTint
@@ -376,7 +376,7 @@ class _NaverMapAdapterState extends State<NaverMapAdapter>
 
   void _onFrameTick() {
     final now = DateTime.now();
-    // 보간 중인(움직이는) 마커만 옮긴다 — 정차지 마커는 네이티브 호출 0(R46 D #11).
+    // 보간 중인(움직이는) 마커만 옮긴다 — 정차지 마커는 네이티브 호출 0.
     for (final id in _motion.idsToMove(now)) {
       final marker = _markersById[id];
       final position = _motion.positionAt(id, now);

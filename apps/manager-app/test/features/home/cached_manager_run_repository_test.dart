@@ -23,7 +23,7 @@ class _Inner implements ManagerRunRepository {
   }
 }
 
-/// R52 H2 — 오늘 목록을 받으면 요약을 남기고, 서버에 닿지 못할 때(연결 두절 · 5xx)만 오늘 저장한 요약으로 돌아선다.
+/// 오늘 목록을 받으면 요약을 남기고, 서버에 닿지 못할 때(연결 두절 · 5xx)만 오늘 저장한 요약으로 돌아선다.
 void main() {
   final now = DateTime(2026, 10, 10, 10);
   final run = managerRunFixture(departTime: DateTime(2026, 10, 10, 11));
@@ -129,7 +129,7 @@ void main() {
     await expectLater(t.repo.fetchRuns(), throwsA(isA<UnknownFailure>()));
   });
 
-  // R56 — 홈이 "저장해 둔 목록으로 보고 있어요" 를 띄우는 근거: 서버에서 새로 받으면 null, 저장본이면 받은 시각.
+  // 홈이 "저장해 둔 목록으로 보고 있어요" 를 띄우는 근거: 서버에서 새로 받으면 null, 저장본이면 받은 시각.
   test('출처를 알린다 — 새로 받으면 null · 저장본이면 그 요약을 받은 시각', () async {
     final sources = <DateTime?>[];
     final savedAt = DateTime(2026, 10, 10, 9, 12);

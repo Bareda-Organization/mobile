@@ -20,7 +20,7 @@ import 'package:parent_app/features/home/presentation/home_screen.dart';
 
 import '../../support/no_bus_position.dart';
 
-/// R46 B2 #22 배선 — ① 모든 REST 요청이 연결 감시를 지난다 ② 끊기면 앱 맨 위에 한 줄이 뜬다
+/// ① 모든 REST 요청이 연결 감시를 지난다 ② 끊기면 앱 맨 위에 한 줄이 뜬다
 /// ③ 끊긴 동안 홈은 카드 위에 "이전 정보예요" 띠를 또 나열하지 않는다(맨 위 한 줄이 그 말을 한다).
 class _Adapter implements HttpClientAdapter {
   @override

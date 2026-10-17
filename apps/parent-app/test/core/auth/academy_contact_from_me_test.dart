@@ -61,7 +61,7 @@ class _MeAdapter implements HttpClientAdapter {
   );
 }
 
-/// R53 t3 A4 — 학원 문의처를 승인 대기 화면에서만 저장해, 대기 화면을 거치지 않은 계정은 차단 화면 전화와
+/// 학원 문의처를 승인 대기 화면에서만 저장해, 대기 화면을 거치지 않은 계정은 차단 화면 전화와
 /// 홈 실패 전화 카드가 없었다. `/me` 가 성공할 때마다 저장한다.
 void main() {
   late _MemoryContactStorage storage;

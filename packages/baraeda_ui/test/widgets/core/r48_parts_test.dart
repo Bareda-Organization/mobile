@@ -1,4 +1,4 @@
-// R48 시안 부품 — 목록 칸 · 필터 알약 · 단추 한 쌍 · 비상 · 지도 단추 · 영수증 · 아래 탭 막대.
+// 목록 칸 · 필터 알약 · 단추 한 쌍 · 비상 · 지도 단추 · 영수증 · 아래 탭 막대.
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -292,7 +292,7 @@ void main() {
       );
       final cell = find.widgetWithText(BaraedaPressable, '명단');
       // 칸(탭 영역)이 아니라 **색이 칠해진 면**의 폭을 잰다 — 칸은 Stack 이 제약대로 채워 줘도
-      // 면은 느슨한 제약에서 내용 폭으로 줄 수 있다(2026-10-04 시뮬레이터에서 좁은 알약으로 보였다).
+      // 면은 느슨한 제약에서 내용 폭으로 줄 수 있다.
       final face = find
           .descendant(of: cell, matching: find.byType(DecoratedBox))
           .first;

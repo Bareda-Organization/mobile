@@ -49,7 +49,7 @@ void main() {
             FakeTokenStorage(seedRefreshToken: 'refresh'),
           ),
           authRepositoryProvider.overrideWithValue(repository),
-          // 저장된 역할이 없는 기기 — 플랫폼 채널 대신 메모리 대역(R52 H2).
+          // 저장된 역할이 없는 기기 — 플랫폼 채널 대신 메모리 대역.
           lastSessionStoreProvider.overrideWithValue(FakeLastSessionStore()),
           // 다시 시도가 성공하면 홈이 열린다 — 홈이 부르는 요청은 가짜로 막는다.
           todayRunsProvider.overrideWith((ref) async => []),

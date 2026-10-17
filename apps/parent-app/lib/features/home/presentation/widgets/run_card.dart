@@ -21,7 +21,7 @@ import 'package:parent_app/features/home/presentation/home_providers.dart';
 /// 필드가 부재하므로 이 위젯도 추가할 수 없다.
 ///
 /// [date] 가 있으면 그날(내일) 회차 카드다 — 문구가 '내일 탑승' 이 되고, 확정까지 남은 시간
-/// (오늘 출발 판정용)과 지도 진입(운행 중에만 의미)은 뺀다(R34 P1).
+/// (오늘 출발 판정용)과 지도 진입(운행 중에만 의미)은 뺀다.
 class RunCard extends ConsumerStatefulWidget {
   const new({
     required this.studentId,
@@ -163,8 +163,8 @@ class _RunCardState extends ConsumerState<RunCard> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // UF-P-07 — "홈 · 실시간 운행 정보 → [지도 진입]". 이 배선이 없어서 지도 화면이
-            // 만들어져 있는데도 도달할 수 없었다(2026-09-21). 지도로 가는 눌림은 카드 윗부분만
-            // 받는다 — 스위치 줄까지 감싸면 전송 중(스위치 비활성)에 누른 손이 지도를 연다(R32 P4).
+            // 만들어져 있는데도 도달할 수 없었다. 지도로 가는 눌림은 카드 윗부분만
+            // 받는다 — 스위치 줄까지 감싸면 전송 중(스위치 비활성)에 누른 손이 지도를 연다.
             InkWell(
               onTap: widget.date == null
                   ? () => context.push(AppRoutes.liveMap)
@@ -213,7 +213,7 @@ class _RunCardState extends ConsumerState<RunCard> {
                         ),
                       ),
                     // UF-P-07 진입 표시 — 카드 전체가 눌리는데 그 표시가 없어
-                    // 지도로 가는 길을 못 찾았다(R46 B2 #11).
+                    // 지도로 가는 길을 못 찾았다.
                     // 지도에 볼 것이 있는 운행 중 오늘 카드에만 붙인다.
                     if (widget.date == null &&
                         run.runStatus == RunStatus.moving)

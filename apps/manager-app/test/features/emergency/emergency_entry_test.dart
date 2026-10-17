@@ -24,7 +24,7 @@ import 'package:manager_app/features/route_map/presentation/route_providers.dart
 
 import '../../support/manager_run_fixture.dart';
 
-/// R32 M2 — 비상 신고는 기사·동승자 모두, 확정 이후면 운행 중이 아니어도, 홈·운행·명단
+/// 비상 신고는 기사·동승자 모두, 확정 이후면 운행 중이 아니어도, 홈·운행·명단
 /// 세 화면 머리말에서 닿아야 한다(M-15 · UF-X-08). 지금까지 `/emergency` 는 라우트만 있고
 /// 앱 어디서도 가는 길이 없었다.
 const _emergencyMarker = 'EMERGENCY_SCREEN_MARKER';
@@ -141,7 +141,7 @@ void main() {
     expect(find.text('확정된 운행이 있을 때 비상 신고를 보낼 수 있어요'), findsOneWidget);
   });
 
-  // R53 A4 — 신고할 수 있는 회차가 없어 막혔을 때도 급하면 학원에 전화할 수단이 있어야 한다.
+  // 신고할 수 있는 회차가 없어 막혔을 때도 급하면 학원에 전화할 수단이 있어야 한다.
   testWidgets('홈 — 신고할 회차가 없어 막혀도 학원 번호가 있으면 스낵바에서 전화를 걸 수 있다', (tester) async {
     final opened = <Uri>[];
     await tester.pumpWidget(

@@ -1,7 +1,7 @@
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// 마지막으로 `/me` 가 확인해 준 **활성 계정의 역할**(`driver` · `escort`) 하나를 이 기기에 남겨 둔다(R52 H2).
+/// 마지막으로 `/me` 가 확인해 준 **활성 계정의 역할**(`driver` · `escort`) 하나를 이 기기에 남겨 둔다.
 ///
 /// 통신이 끊긴 채 앱을 새로 켜면 `/me` 를 못 받아 역할을 알 수 없고, 역할이 없으면 홈 · 저장 명단 · 비상 신고 ·
 /// 학원 전화가 모두 닿지 않는다(NFR-01 · M-06). 이 값이 있고 refresh 토큰이 남아 있으면 `/me` 가 네트워크 실패여도

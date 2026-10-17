@@ -36,7 +36,7 @@ import 'package:manager_app/features/roster/presentation/widgets/roster_widgets.
 /// 펼쳐 있고 그 밖의 곳은 접혀 있어 눌러 펼친다(동승자가 직접 펼칠 수 있다). 지난 곳은 한 줄로 묶는다.
 ///
 /// 처리 단추는 `canDecideBoardingStatus`(동승자 전용, role_policy.dart)로만 노출된다. 변경 확인 띠는
-/// [ChangeAckBanner] 가 맡는다(§4.1 `ack_required` — 운행 화면도 같은 띠를 쓴다, R32 M4).
+/// [ChangeAckBanner] 가 맡는다(§4.1 `ack_required` — 운행 화면도 같은 띠를 쓴다).
 class RosterScreen extends ConsumerStatefulWidget {
   const new({super.key, this.readOnly = false});
 
@@ -48,7 +48,7 @@ class RosterScreen extends ConsumerStatefulWidget {
 }
 
 class _RosterScreenState extends ConsumerState<RosterScreen> {
-  /// 응답을 기다리는 학생들 — 한 명이 아니라 집합이다. 여러 학생을 연달아 눌러도 앞 학생의 잠금이 풀리지 않는다(R46).
+  /// 응답을 기다리는 학생들 — 한 명이 아니라 집합이다. 여러 학생을 연달아 눌러도 앞 학생의 잠금이 풀리지 않는다.
   final Set<String> _pendingRiderIds = {};
   String? _errorMessage;
 
@@ -78,7 +78,7 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
   }
 
   /// [미승차]는 [탑승] 옆에 있어 잘못 눌리기 쉽고, 처리하면 관계자에게 바로(학부모에게는 이
-  /// 승하차지를 출발할 때 — `Ruling 854`) 알림이 나간다 — 한 번 묻는다(R32 M7). 취소하면 요청을 보내지 않는다.
+  /// 승하차지를 출발할 때 — `Ruling 854`) 알림이 나간다 — 한 번 묻는다. 취소하면 요청을 보내지 않는다.
   Future<void> _confirmNoShow({
     required String runId,
     required String riderId,
@@ -134,7 +134,7 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
             ..invalidate(pendingRequestsProvider);
         case Queued():
           // 서버에 아직 반영되지 않았으니 명단을 다시 불러오지 않는다 —
-          // §1.9 낙관적 표시 금지와 같은 이유. 대기 안내·행 표시는 큐 목록에서 그린다(R46).
+          // §1.9 낙관적 표시 금지와 같은 이유. 대기 안내·행 표시는 큐 목록에서 그린다.
           ref.invalidate(pendingRequestsProvider);
       }
     } on Failure catch (failure) {
@@ -273,7 +273,7 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
           child: ManagerChannelBanner(runId: runId, hideReconnecting: true),
         ),
         Expanded(
-          // 갱신이 실패해도 마지막으로 받은 명단을 지우지 않는다 — 오류는 목록 위에 따로 알린다(R46).
+          // 갱신이 실패해도 마지막으로 받은 명단을 지우지 않는다 — 오류는 목록 위에 따로 알린다.
           child: rosterAsync.when(
             skipLoadingOnReload: true,
             skipError: true,
@@ -449,7 +449,7 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
                     variant: BaraedaButtonVariant.secondary,
                     onPressed: () => unawaited(context.push(AppRoutes.delay)),
                   ),
-                // 예외 보고(M-14, R32 M3) — 보호자 부재·도로 통제 등. 기사는 운행 화면의 종료 보고서로,
+                // 예외 보고(M-14) — 보호자 부재·도로 통제 등. 기사는 운행 화면의 종료 보고서로,
                 // 동승자는 여기서 보고한다.
                 BaraedaButton(
                   label: '예외 보고',
@@ -494,7 +494,7 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
             const SizedBox(height: 12),
           ],
           if (queuedRequests.isNotEmpty) ...[
-            // 큐에 쌓인 처리가 있는 동안은 다음 조작이 이 안내를 지우지 않는다 — 큐가 비면 사라진다(R46).
+            // 큐에 쌓인 처리가 있는 동안은 다음 조작이 이 안내를 지우지 않는다 — 큐가 비면 사라진다.
             AlertBanner(
               tone: AlertTone.moving,
               body: '처리되지 않았어요 · 대기 중 ${queuedRequests.length}건',

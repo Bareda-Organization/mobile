@@ -67,7 +67,7 @@ class _MeRepository implements AuthRepository {
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
 }
 
-/// R52 H2 — 통신이 끊긴 채 앱을 새로 켜도 마지막으로 확인한 역할로 들어가 저장 명단 · 대기열 · 비상 · 학원 전화가
+/// 통신이 끊긴 채 앱을 새로 켜도 마지막으로 확인한 역할로 들어가 저장 명단 · 대기열 · 비상 · 학원 전화가
 /// 열려야 한다(NFR-01 · M-06). 인증 거절(401)은 지금처럼 로그인 화면이다.
 void main() {
   const network = Failure.network();

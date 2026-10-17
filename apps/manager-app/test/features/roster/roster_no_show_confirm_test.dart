@@ -22,7 +22,7 @@ import 'package:manager_app/features/roster/presentation/roster_screen.dart';
 
 import '../../support/manager_run_fixture.dart';
 
-/// R32 M7 — [미승차]는 [탑승] 바로 옆이라 잘못 눌리기 쉽고 누르면 관계자에게 바로 알림이 나간다
+/// [미승차]는 [탑승] 바로 옆이라 잘못 눌리기 쉽고 누르면 관계자에게 바로 알림이 나간다
 /// (학부모에게는 이 승하차지를 출발할 때 — `Ruling 854`). 확인 창을 거치고, 취소하면 요청이 나가지
 /// 않는다.
 class _RecordingRosterRepository implements RosterRepository {
@@ -150,7 +150,7 @@ void main() {
     expect(repository.requestedStatuses, [RiderStatus.boarded]);
   });
 
-  // R32 M14 — 노선 지도는 기사 전용 화면인데 명단 화면에 기사 조건 버튼이 있었다. 기사는 명단에
+  // 노선 지도는 기사 전용 화면인데 명단 화면에 기사 조건 버튼이 있었다. 기사는 명단에
   // 오지 않고(운행 화면이 진입점) 동승자에게는 그 버튼이 안 보이므로 아무도 못 쓰는 죽은 버튼이었다.
   testWidgets('명단 화면에는 노선 지도 버튼이 없다(기사가 들어와도)', (tester) async {
     await tester.pumpWidget(

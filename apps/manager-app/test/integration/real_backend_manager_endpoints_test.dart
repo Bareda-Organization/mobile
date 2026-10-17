@@ -680,7 +680,7 @@ void main() {
       },
     );
   });
-  // R46-FUFEAT ③(Ruling 542) — 알림 항목은 `run_id` 키를 항상 싣는다(회차를 가리키지 않는 알림은 null).
+  // 알림 항목은 `run_id` 키를 항상 싣는다(회차를 가리키지 않는 알림은 null).
   // 매니저 앱이 이 키로 알림 행을 눌러 그 회차의 화면으로 간다 — 키가 사라지면 탭 이동이 조용히 죽는다.
   group('§3.12 GET /notifications — run_id (Ruling 542)', () {
     test(

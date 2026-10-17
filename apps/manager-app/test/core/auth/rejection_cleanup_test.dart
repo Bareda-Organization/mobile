@@ -97,7 +97,7 @@ class _GatedUnsentStore extends FakeUnsentEmergencyStore {
   }
 }
 
-/// R52 최종 대조 — 서버가 계정을 **긍정으로 거절**했다는 증거(부트스트랩 `/me` 403 · 대기·거절 게이트)가 있으면
+/// 서버가 계정을 **긍정으로 거절**했다는 증거(부트스트랩 `/me` 403 · 대기·거절 게이트)가 있으면
 /// 로그아웃과 같은 범위(명단 저장본 · 암호 키 · 회차 요약 · 저장 역할 · 대기열)를 지운다(NFR-08).
 void main() {
   late OfflineQueueDatabase database;
@@ -256,7 +256,7 @@ void main() {
     expect(unsent.saved?.count, 1);
   });
 
-  // R56 t4 · R55 ② — 앱 시작 `/me` 403 정리 안내(`보내지 못한 처리 N건이 지워졌어요`)가 메모리뿐이라 앱을 껐다 켜면 사라졌다.
+  // 앱 시작 `/me` 403 정리 안내(`보내지 못한 처리 N건이 지워졌어요`)가 메모리뿐이라 앱을 껐다 켜면 사라졌다.
   // 건수와 마지막 시각만 기기에 남긴다(892 와 같은 방식 — 학생 이름은 남기지 않는다).
   test('/me 403 정리 안내의 건수와 시각이 기기에 남아 앱을 다시 켜도 이름 없이 남는다', () async {
     final container = build(
@@ -372,7 +372,7 @@ void main() {
     expect(unsent.saved?.count, 1);
   });
 
-  // R53 F2 — 앱 시작 `/me` 401 + 재발급 401 이면 세션 만료 구독과 부트스트랩 두 경로가 모두 계정 정리를 부른다.
+  // 앱 시작 `/me` 401 + 재발급 401 이면 세션 만료 구독과 부트스트랩 두 경로가 모두 계정 정리를 부른다.
   // 정리가 한 번만 돌아야 같은 비상 신고 행이 두 번 세어지지 않는다.
   test('/me 401 + 재발급 401 로 두 정리 경로가 겹쳐도 비상 신고는 한 번만 센다', () async {
     final container = build(adapter: _UnauthorizedAdapter())
@@ -388,7 +388,7 @@ void main() {
     expect(unsent.saved?.count, 1);
   });
 
-  // R53 B-6② — 비상 건수 저장이 끝나기 전에 대기열을 비우면 그 사이 프로세스가 죽을 때 행도 안내도 남지 않는다.
+  // 비상 건수 저장이 끝나기 전에 대기열을 비우면 그 사이 프로세스가 죽을 때 행도 안내도 남지 않는다.
   test('비상 신고 건수 기기 저장이 끝난 뒤에야 대기열을 비운다', () async {
     final gate = Completer<void>();
     unsent = _GatedUnsentStore(gate);

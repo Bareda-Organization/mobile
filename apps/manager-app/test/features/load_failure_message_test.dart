@@ -62,7 +62,7 @@ void main() {
     currentUserRoleProvider.overrideWith((ref) => UserRole.driver),
     // 머리줄 부제가 `/me` 를 읽는다 — 실제 서버로 나가지 않게 막는다.
     meProvider.overrideWith((ref) async => throw StateError('내 정보 미사용')),
-    // 머리말 알림 배지가 실제 서버를 부르지 않게 한다(R46).
+    // 머리말 알림 배지가 실제 서버를 부르지 않게 한다.
     notificationRepositoryProvider.overrideWithValue(
       FakeNotificationRepository(const []),
     ),

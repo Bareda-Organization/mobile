@@ -18,7 +18,7 @@ import 'package:manager_app/features/home/presentation/home_screen.dart';
 
 import '../../support/manager_run_fixture.dart';
 
-/// R52 H1 — 앞 회차(A)가 끝난 뒤에도 선택 회차([selectedRunIdProvider])가
+/// 앞 회차(A)가 끝난 뒤에도 선택 회차([selectedRunIdProvider])가
 /// A 에 남아 있으면 홈 큰 카드는 다음 회차(B)로 넘어가는데 운행 준비 · 명단 ·
 /// 운행 화면은 끝난 A 를 그렸다. 홈 단추는 큰 카드가 가리키는 회차로 선택을
 /// 맞춘 뒤 간다.

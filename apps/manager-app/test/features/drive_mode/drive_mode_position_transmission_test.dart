@@ -223,7 +223,7 @@ void main() {
       final run = ref.watch(driveModeRunProvider);
       return run == null ? <ManagerRun>[] : [run];
     }),
-    // R32 M1 — 운행 화면이 노선을 조회한다. 실제 서버로 나가지 않게 빈 노선으로 막는다.
+    // 운행 화면이 노선을 조회한다. 실제 서버로 나가지 않게 빈 노선으로 막는다.
     routeProvider.overrideWith((ref) async => const RouteResponse(stops: [])),
     driveModeRosterProvider.overrideWith((ref) async => _emptyRoster),
     positionSourceProvider.overrideWithValue(positionSource),
@@ -262,7 +262,7 @@ void main() {
             final run = ref.watch(driveModeRunProvider);
             return run == null ? <ManagerRun>[] : [run];
           }),
-          // R32 M1 — 운행 화면이 노선을 조회한다. 실제 서버로 나가지 않게 빈 노선으로 막는다.
+          // 운행 화면이 노선을 조회한다. 실제 서버로 나가지 않게 빈 노선으로 막는다.
           routeProvider.overrideWith(
             (ref) async => const RouteResponse(stops: []),
           ),
@@ -572,7 +572,7 @@ void main() {
     expect(PositionConstants.transmissionInterval, const Duration(seconds: 2));
   });
 
-  // R33 M1 — 위치 송신은 화면이 아니라 앱 전역이다. 옛 시험(`화면이 dispose 되면 위치 송신
+  // 위치 송신은 화면이 아니라 앱 전역이다. 옛 시험(`화면이 dispose 되면 위치 송신
   // 타이머가 멈춘다`, F4 이월 3번)은 "화면을 나가면 송신이 끊기는" 결함을 고정하고 있었다 —
   // 반대로, 화면이 사라져도 송신이 이어지는 것을 지킨다. 화면만 걷고 ProviderScope 는 그대로 둔다
   // (같은 overrides 목록 · 같은 위치의 ProviderScope 라 상태가 유지된다).

@@ -39,7 +39,7 @@ import 'package:manager_app/features/roster/presentation/widgets/change_ack_bann
 /// (M-08·M-10, role_policy.dart `canOperateRun`).
 ///
 /// 다음 처리 대상은 §4.2 명단의 `arrived_at` 로 계산한다(`drive_mode_providers.dart`
-/// 참고). 가운데 지도(R32 M1)는 [DriveMapPanel] — 노선·승하차지·버스 위치를 보인다.
+/// 참고). 가운데 지도는 [DriveMapPanel] — 노선·승하차지·버스 위치를 보인다.
 /// 도착·종료 대형 버튼은 지도 아래가 아니라 화면 아래에 붙여 둔다 — 지도가 커져도 밀려나지 않는다.
 class DriveModeScreen extends ConsumerStatefulWidget {
   const new({super.key});
@@ -53,7 +53,7 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
   String? _errorMessage;
 
   /// 도착 처리에 성공한 직후 버튼을 잠그는 시간 — 신호 대기 중 더블탭이 다음 승하차지까지 처리하는 것을 막는다.
-  /// 되돌리는 API 가 없어 한 번 나간 도착은 취소할 수 없다(R46).
+  /// 되돌리는 API 가 없어 한 번 나간 도착은 취소할 수 없다.
   static const _arriveLockDuration = Duration(seconds: 2);
 
   /// 토스트가 도착 처리 단추 줄 위에 뜨는 높이 — 위 여백 12 + 단추 64 + 아래 여백 12 + 간격 8.
@@ -145,7 +145,7 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
     bool isLast = false,
     bool hasBoardedRiders = false,
   }) async {
-    // 마지막 승하차지의 도착 처리는 등원이면 곧 운행 종료다(C-15) — 되돌릴 수 없어 한 번 묻는다(R32 M6).
+    // 마지막 승하차지의 도착 처리는 등원이면 곧 운행 종료다(C-15) — 되돌릴 수 없어 한 번 묻는다.
     // 하원은 도착만 기록되고 남은 학생이 있으면 종료가 보류된다. 그 앞 승하차지는 운전 중에 자주 누르는 조작이라
     // 묻지 않는다.
     if (isLast) {
@@ -330,7 +330,7 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // 위치가 서버에 닿고 있는지 — 음영 구간에서 기사가 먼저 알게 한다(R46). 송신 중일 때만 그린다.
+                // 위치가 서버에 닿고 있는지 — 음영 구간에서 기사가 먼저 알게 한다. 송신 중일 때만 그린다.
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
@@ -422,7 +422,7 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
               child: rosterAsync.when(
                 // 갱신이 실패해도 마지막으로 받은 명단을 지우지 않는다 — 음영 구간을 지난 직후에
-                // [도착 처리] 가 사라지면 다음 실시간 이벤트가 올 때까지 기사가 조작할 수 없다(R46).
+                // [도착 처리] 가 사라지면 다음 실시간 이벤트가 올 때까지 기사가 조작할 수 없다.
                 skipLoadingOnReload: true,
                 skipError: true,
                 loading: () => const Center(child: CircularProgressIndicator()),

@@ -143,7 +143,7 @@ void main() {
         password: 'password',
       );
       expect(login.status, AccountStatus.pending);
-      // R46-FUFEAT ① — 임시 비밀번호 강제 변경 표식(§2.5)은 항상 값이 있다. 초기화한 적 없는 계정은 false.
+      // 임시 비밀번호 강제 변경 표식(§2.5)은 항상 값이 있다. 초기화한 적 없는 계정은 false.
       expect(login.mustChangePassword, isFalse);
 
       // §2.3·§2.7·§2.10·§2.11 은 pending 허용 목록 — 그 밖의

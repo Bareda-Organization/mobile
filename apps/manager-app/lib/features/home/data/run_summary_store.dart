@@ -4,7 +4,7 @@ import 'package:baraeda_core/baraeda_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:manager_app/features/home/data/models/manager_run.dart';
 
-/// 마지막으로 받은 **오늘 회차 목록의 요약**을 이 기기에 남겨 둔다(R52 H2).
+/// 마지막으로 받은 **오늘 회차 목록의 요약**을 이 기기에 남겨 둔다.
 ///
 /// 통신이 끊긴 채 앱을 새로 켜면 회차 목록을 못 받아 홈의 선택 회차가 비고,
 /// 저장 명단(회차 id 로 찾는다)과 비상 신고(후보 회차)에 닿지 못한다. 이 요약이

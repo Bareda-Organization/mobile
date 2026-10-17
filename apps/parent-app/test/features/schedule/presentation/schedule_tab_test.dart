@@ -258,7 +258,7 @@ void main() {
     expect(find.text('자녀 연결하기'), findsOneWidget);
   });
 
-  // R52 낮음 B9 — 영수증의 [신청 이력 보기] 로 들어오면 일정 탭이 신청 이력 자리까지 내려가 있다.
+  // 영수증의 [신청 이력 보기] 로 들어오면 일정 탭이 신청 이력 자리까지 내려가 있다.
   double scrolled(WidgetTester tester) => tester
       .state<ScrollableState>(find.byType(Scrollable).first)
       .position

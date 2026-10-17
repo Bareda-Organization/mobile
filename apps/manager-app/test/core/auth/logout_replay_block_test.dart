@@ -63,7 +63,7 @@ class _GatedLogoutAuth implements AuthRepository {
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
 }
 
-/// R56 · R55 ③ — 로그아웃이 시작되고 대기열이 비워지기까지 사이에 재생이 시작되면 앞 계정의 처리가 전송된다.
+/// 로그아웃이 시작되고 대기열이 비워지기까지 사이에 재생이 시작되면 앞 계정의 처리가 전송된다.
 /// 로그아웃이 시작되면 새 재생 시작을 막는다(이미 나간 요청 1건은 막을 수 없다).
 void main() {
   late OfflineQueueDatabase database;

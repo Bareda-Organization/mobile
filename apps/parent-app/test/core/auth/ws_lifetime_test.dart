@@ -20,7 +20,7 @@ import 'package:parent_app/features/live_map/presentation/live_map_providers.dar
 import 'package:riverpod/misc.dart' show Override;
 
 
-/// R46-FIXCONN C-2 — 실시간 연결은 앱 전역 하나라 로그아웃·지도 화면 이탈
+/// 실시간 연결은 앱 전역 하나라 로그아웃·지도 화면 이탈
 /// 뒤에도 옛 계정의 토큰으로 살아 있었다. 같은 단말에서 계정을 바꿔 지도를
 /// 열면 `connected` 라 새 연결을 안 열고 **옛 계정 권한으로 구독**해, 자녀가
 /// 다른 학부모에게는 *"조회 권한 없음"* 이 떴다(서버는 연결 시점의 인증

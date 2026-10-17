@@ -87,7 +87,7 @@ class _PendingAdapter implements HttpClientAdapter {
   );
 }
 
-/// R52 H2(수정 라운드 1) — 오프라인으로 들어갈 자격은 **활성 · 지원 역할 · 임시 비밀번호 아님** 뿐이다. 그 밖의 계정은
+/// 오프라인으로 들어갈 자격은 **활성 · 지원 역할 · 임시 비밀번호 아님** 뿐이다. 그 밖의 계정은
 /// 기기에 역할이 남지 않고, 운행 중 게이트(대기 · 거절)에 걸리면 남아 있던 역할 · 회차 요약도 지운다.
 void main() {
   Future<FakeLastSessionStore> bootstrapWith(MeResponse me) async {

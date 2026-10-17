@@ -56,7 +56,7 @@ class _FakeRosterRepository implements RosterRepository {
   final SendOutcome<RiderUpdateResult>? updateOutcome;
   final Failure? updateFailure;
 
-  /// R46 — 이 번째(1부터) 명단 조회부터 실패시킨다. 갱신 실패 뒤 마지막 명단이 남는지 보는 시험용.
+  /// 이 번째(1부터) 명단 조회부터 실패시킨다. 갱신 실패 뒤 마지막 명단이 남는지 보는 시험용.
   final int? failFetchFromCall;
   String? lastAckRunId;
 
@@ -251,7 +251,7 @@ void main() {
     expect(image.cacheManager, same(studentPhotoCacheManager));
   });
 
-  // R39 Ruling 400 — 서버 seq 는 경유 지점 자리(2)를 비운 채 1·3 으로 온다. 명단 머리가 그 값을 그대로 쓰면
+  // 서버 seq 는 경유 지점 자리(2)를 비운 채 1·3 으로 온다. 명단 머리가 그 값을 그대로 쓰면
   // "1. A · 3. B" 로 번호가 건너뛰고 지도 핀(경유 지점을 뺀 연속 번호 1·2)과 어긋난다.
   testWidgets('정류장 머리 번호는 서버 seq 가 아니라 경유 지점을 뺀 연속 번호다', (tester) async {
     const roster = RosterResponse(
@@ -542,7 +542,7 @@ void main() {
         todayRunsProvider.overrideWith(
           (ref) async => [_managerRun(ackRequired: false)],
         ),
-        // 큐에 실제로 쌓인 것으로 답한다 — 안내는 큐 목록에서 그린다(R46).
+        // 큐에 실제로 쌓인 것으로 답한다 — 안내는 큐 목록에서 그린다.
         pendingRequestsProvider.overrideWith(
           (ref) async => [
             PendingRequestSummary(
@@ -558,7 +558,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // 큐에 이미 쌓인 학생 행은 [탑승] 대신 "전송 대기" 다(R46) — 이 시험은 안내 문구만 본다.
+    // 큐에 이미 쌓인 학생 행은 [탑승] 대신 "전송 대기" 다 — 이 시험은 안내 문구만 본다.
     expect(find.text('처리되지 않았어요 · 대기 중 1건'), findsOneWidget);
   });
 
@@ -816,7 +816,7 @@ void main() {
     });
   });
 
-  // R46 A — 갱신이 실패해도 마지막 명단을 지우지 않는다. 오류는 목록 위에 따로 알린다.
+  // 갱신이 실패해도 마지막 명단을 지우지 않는다. 오류는 목록 위에 따로 알린다.
   testWidgets('R46 명단 갱신이 실패해도 마지막 명단이 남고 오류와 [다시 시도] 를 알린다', (tester) async {
     final fakeRepo = _FakeRosterRepository(
       roster: _roster(),
@@ -844,7 +844,7 @@ void main() {
     expect(find.text('다시 시도'), findsOneWidget);
   });
 
-  // R46 A — 글자 버튼 4개가 제목을 밀어내 제목이 사라졌다. 앱바에는 비상만 남긴다.
+  // 글자 버튼 4개가 제목을 밀어내 제목이 사라졌다. 앱바에는 비상만 남긴다.
   testWidgets('R46 머리줄에는 제목과 비상만 있고 나머지 단추는 본문 위 줄에 있다', (tester) async {
     tester.view.physicalSize = const Size(375 * 3, 812 * 3);
     tester.view.devicePixelRatio = 3;

@@ -16,7 +16,7 @@ import 'package:manager_app/features/roster/presentation/roster_providers.dart';
 
 import '../../support/manager_run_fixture.dart';
 
-/// R32 M12 — 미승차 연락 시트의 최종 판단은 대기 시간이 끝난 뒤에만 고를 수 있다. 대기 시간은
+/// 미승차 연락 시트의 최종 판단은 대기 시간이 끝난 뒤에만 고를 수 있다. 대기 시간은
 /// 학원 설정값(A-17, 기본 3분)이라 화면에 "3분" 을 박지 않고, 명단 응답의 `no_show_case.expires_at`
 /// (서버가 학원 설정으로 계산)을 그대로 쓴다.
 class _MutableClock implements Clock {

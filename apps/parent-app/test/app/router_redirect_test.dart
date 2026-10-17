@@ -76,7 +76,7 @@ void main() {
     expect(find.byType(PendingApprovalScreen), findsNothing);
   });
 
-  // R52 `Ruling 874`① — 학생에게는 일정 탭이 없다. 학생용 일정 안내 화면은 지우고, 주소로 들어오면 홈으로 보낸다.
+  // 학생에게는 일정 탭이 없다. 학생용 일정 안내 화면은 지우고, 주소로 들어오면 홈으로 보낸다.
   for (final path in [
     AppRoutes.schedule,
     AppRoutes.weeklyAddress,

@@ -16,7 +16,7 @@ import 'package:parent_app/features/auth/presentation/widgets/academy_picker.dar
 /// 학원 검색·선택 → `POST /auth/signup` → `pending`.
 ///
 /// 가입 응답에는 토큰이 없다(§2.2). 그래도 `pending` 계정은 로그인이 되므로(§2.5) 방금 입력한 아이디·비밀번호로
-/// 바로 로그인해 승인 대기 화면으로 들어간다(R46 B2 #20). 그 로그인이 실패하면 로그인 화면으로 돌려보낸다.
+/// 바로 로그인해 승인 대기 화면으로 들어간다. 그 로그인이 실패하면 로그인 화면으로 돌려보낸다.
 class SignupScreen extends ConsumerStatefulWidget {
   /// 이 앱 라우트(`/signup`)로만 진입한다.
   const new({super.key});

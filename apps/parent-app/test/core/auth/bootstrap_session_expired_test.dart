@@ -33,7 +33,7 @@ class _RejectAllAdapter implements HttpClientAdapter {
   );
 }
 
-/// R52 낮음 A7 — 저장된 로그인이 앱을 켜는 순간 거절되면, 로그인 화면이 "로그인이 만료됐어요" 를 보여야 한다.
+/// 저장된 로그인이 앱을 켜는 순간 거절되면, 로그인 화면이 "로그인이 만료됐어요" 를 보여야 한다.
 /// 만료 신호는 부팅(`authBootstrapProvider`) 중에 나가는데, 그 신호를 받는 구독은 라우터가 만들어질 때야 생겼다.
 void main() {
   testWidgets('앱을 켤 때 저장된 토큰이 거절되면 로그인 화면에 만료 안내가 뜬다', (tester) async {

@@ -119,7 +119,7 @@ void main() {
       final run = ref.watch(driveModeRunProvider);
       return run == null ? <ManagerRun>[] : [run];
     }),
-    // R32 M1 — 운행 화면이 노선을 조회한다. 실제 서버로 나가지 않게 빈 노선으로 막는다.
+    // 운행 화면이 노선을 조회한다. 실제 서버로 나가지 않게 빈 노선으로 막는다.
     routeProvider.overrideWith((ref) async => const RouteResponse(stops: [])),
     driveModeRosterProvider.overrideWith((ref) async => _emptyRoster),
     positionRepositoryProvider.overrideWithValue(_NoopPositionRepository()),
@@ -157,7 +157,7 @@ void main() {
           final run = ref.watch(driveModeRunProvider);
           return run == null ? <ManagerRun>[] : [run];
         }),
-        // R32 M1 — 운행 화면이 노선을 조회한다. 실제 서버로 나가지 않게 빈 노선으로 막는다.
+        // 운행 화면이 노선을 조회한다. 실제 서버로 나가지 않게 빈 노선으로 막는다.
         routeProvider.overrideWith(
           (ref) async => const RouteResponse(stops: []),
         ),
@@ -186,7 +186,7 @@ void main() {
     expect(platform.listenerCount, 0);
   });
 
-  // R33 M1 — 위치 스트림도 화면이 아니라 운행 상태에 묶인다. 옛 시험(`화면이 dispose 되면
+  // 위치 스트림도 화면이 아니라 운행 상태에 묶인다. 옛 시험(`화면이 dispose 되면
   // 위치 스트림 구독이 0이 된다`)은 화면을 나가면 구독이 끊기는 결함을 고정하고 있었다 — 반대로
   // 화면이 사라져도 구독이 1로 남는 것을 지킨다.
   testWidgets('화면이 dispose 되어도 위치 스트림 구독은 1로 남는다', (tester) async {

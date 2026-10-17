@@ -25,7 +25,7 @@ import 'package:parent_app/features/home/presentation/home_screen.dart';
 import 'package:parent_app/features/home/presentation/widgets/home_bus_preview.dart';
 import 'package:parent_app/features/live_map/domain/bus_position_repository.dart';
 
-/// R48 홈 지도 미리보기(`Ruling 821`) — **WebSocket 을 구독하지 않고** §3.11 을 30초마다 다시 읽는다.
+/// **WebSocket 을 구독하지 않고** §3.11 을 30초마다 다시 읽는다.
 /// 구독은 전체 지도 화면에서만 한다(WebSocket 팬아웃은 부하 여유가 가장 얇은 갈래).
 
 /// 어떤 메서드든 부르면 시험이 죽는 WebSocket 대역 — 홈이 이것을 건드리면 그 자리에서 실패한다.
@@ -218,7 +218,7 @@ Finder _inPreview(String text) =>
     find.descendant(of: find.byType(HomeBusPreview), matching: find.text(text));
 
 void main() {
-  // R52 M2 — 칩은 전체 지도(`LiveMapView.resolve`)와 같은 판정을 따른다.
+  // 칩은 전체 지도(`LiveMapView.resolve`)와 같은 판정을 따른다.
   group('R52 M2 칩 — 신호 유실 · 미등원', () {
     final now = DateTime.utc(2026, 10, 3, 3, 30);
 
@@ -304,7 +304,7 @@ void main() {
     });
   });
 
-  // R52 낮음 A11 — 버스 위치를 못 불러온 화면에도 급할 때 걸 학원 전화가 있다(홈 전체 실패 화면과 같은 카드).
+  // 버스 위치를 못 불러온 화면에도 급할 때 걸 학원 전화가 있다(홈 전체 실패 화면과 같은 카드).
   group('A11 버스 위치 실패 화면의 학원 전화', () {
     Future<void> failToLoad(WidgetTester tester, {String? savedContact}) =>
         _pumpHome(
@@ -490,7 +490,7 @@ void main() {
     });
   });
 
-  // R52 870 — 같은 회차 대기 신청이 여럿이면 가장 이른 마감을 카드에 보인다.
+  // 같은 회차 대기 신청이 여럿이면 가장 이른 마감을 카드에 보인다.
   group('승인 대기 마감 — 여러 신청 중 가장 이른 마감(Ruling 870)', () {
     final now = DateTime.utc(2026, 10, 3, 3, 30);
     ChangeRequest pending(String id, DateTime deadline) => ChangeRequest(
@@ -537,7 +537,7 @@ void main() {
     });
   });
 
-  // R49 `Ruling 831` — 홈 지도 미리보기에도 표시 범위 승하차지의 번호 마커와 경로선을 그린다.
+  // 홈 지도 미리보기에도 표시 범위 승하차지의 번호 마커와 경로선을 그린다.
   group('R49 지도 미리보기 — 노선선 · 번호', () {
     MapSurface previewMap(WidgetTester tester) =>
         tester.widget<MapSurface>(find.byType(MapSurface));

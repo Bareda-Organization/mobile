@@ -77,7 +77,7 @@ void main() {
     return ProviderScope(
       overrides: [
         clockProvider.overrideWithValue(FixedClock(now)),
-        // 머리말 알림 배지가 실제 서버를 부르지 않게 한다(R46).
+        // 머리말 알림 배지가 실제 서버를 부르지 않게 한다.
         notificationRepositoryProvider.overrideWithValue(
           FakeNotificationRepository(const []),
         ),
@@ -258,7 +258,7 @@ void main() {
     expect(find.text('12:10~12:30'), findsOneWidget);
   });
 
-  // R53 A9 — 하원 회차는 "탑승 예정" 이 아니라 "하차 예정" 이다(큰 카드 숫자 칸 · 목록 부제).
+  // 하원 회차는 "탑승 예정" 이 아니라 "하차 예정" 이다(큰 카드 숫자 칸 · 목록 부제).
   testWidgets('하원 회차 큰 카드와 목록 부제는 하차 예정이다', (tester) async {
     await tester.pumpWidget(
       wrap([
@@ -290,7 +290,7 @@ void main() {
     expect(find.textContaining('탑승 예정'), findsNothing);
   });
 
-  // R32 M9 — 확정 전 카드는 눌러도 반응이 없는데 이유를 알려 주지 않았다.
+  // 확정 전 카드는 눌러도 반응이 없는데 이유를 알려 주지 않았다.
   testWidgets('확정 전 회차는 언제 열리는지 알려 준다', (tester) async {
     await tester.pumpWidget(
       wrap([

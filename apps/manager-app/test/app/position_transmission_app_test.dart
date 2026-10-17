@@ -35,7 +35,7 @@ import 'package:manager_app/features/route_map/presentation/route_providers.dart
 
 import '../support/manager_run_fixture.dart';
 
-/// R33 M1 — 위치 송신은 화면이 아니라 앱 전역이다. 운행 중(`moving`)인 기사 회차면 어느 화면에서든
+/// 위치 송신은 화면이 아니라 앱 전역이다. 운행 중(`moving`)인 기사 회차면 어느 화면에서든
 /// 2초마다 보내고, 운행 종료(마지막 도착 처리 응답)·로그아웃에 멈추며, 송신기는 하나다.
 /// 앱 전체(`BaraedaManagerApp`)를 띄워 실제 라우터로 화면을 오간다.
 class _FakeSource implements PositionSource {

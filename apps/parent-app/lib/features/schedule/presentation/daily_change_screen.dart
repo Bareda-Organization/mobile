@@ -11,7 +11,7 @@ import 'package:parent_app/features/schedule/presentation/widgets/change_request
 
 /// 일일 변경 신청(P-06 · `UF-P-06`) — 일정 탭에서 들어오는 하위 화면(§3.8).
 ///
-/// 적다가 뒤로 가면 확인을 한 번 묻는다(R32 P14).
+/// 적다가 뒤로 가면 확인을 한 번 묻는다.
 class DailyChangeScreen extends ConsumerWidget {
   const new({super.key});
 
@@ -64,7 +64,7 @@ class DailyChangeScreen extends ConsumerWidget {
                           selectedId: selectedId,
                         ),
                       ),
-                    // R32 P5 — 자녀 ID 를 key 로 건다. 고른 회차·입력한 주소가 자녀를 바꿔도 남으면
+                    // 자녀 ID 를 key 로 건다. 고른 회차·입력한 주소가 자녀를 바꿔도 남으면
                     // 다른 자녀의 회차로 신청하게 된다.
                     Expanded(
                       child: ChangeRequestPanel(

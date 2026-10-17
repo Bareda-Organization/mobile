@@ -37,7 +37,7 @@ class _FlakyRunApi extends ManagerRunApi {
   }
 }
 
-/// R56 · R52 — 통신이 끊겨 기기에 저장한 오늘 목록을 보여 주는 동안 홈이 그 사실을 알린다(NFR-01).
+/// 통신이 끊겨 기기에 저장한 오늘 목록을 보여 주는 동안 홈이 그 사실을 알린다(NFR-01).
 /// 연결되어 새로 받으면 알림이 사라진다.
 void main() {
   final now = DateTime(2026, 10, 3, 12, 14);
