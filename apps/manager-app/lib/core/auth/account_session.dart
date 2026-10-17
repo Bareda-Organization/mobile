@@ -19,6 +19,7 @@ import 'package:manager_app/features/home/data/run_summary_store.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
 import 'package:manager_app/features/offline_queue/presentation/request_notices.dart';
 import 'package:manager_app/features/position/presentation/position_transmitter.dart';
+import 'package:manager_app/features/roster/presentation/roster_photo.dart';
 import 'package:manager_app/features/roster/presentation/roster_providers.dart';
 import 'package:manager_app/features/route_map/presentation/route_providers.dart';
 
@@ -112,6 +113,8 @@ void _clearAccountScopedState(Ref ref, {bool announceDiscarded = false}) {
   ref.read(academyContactProvider.notifier).state = null;
   // 로그아웃 · 세션 만료 뒤에는 이 기기가 기억한 역할로 다시 들어갈 수 없다(R52 H2).
   _forgetDeviceSession(ref);
+  // 디스크에 받아 둔 학생 사진도 이 계정의 개인정보다(M-8).
+  unawaited(_clearStudentPhotos(ref));
   ref.read(transmissionEndedRunIdProvider.notifier).state = null;
   ref.read(lastArriveResultProvider.notifier).state = null;
   unawaited(
@@ -121,6 +124,15 @@ void _clearAccountScopedState(Ref ref, {bool announceDiscarded = false}) {
       contact: contact,
     ),
   );
+}
+
+/// 받아 둔 학생 사진을 지운다 — 못 지워도 로그아웃 정리는 이어진다.
+Future<void> _clearStudentPhotos(Ref ref) async {
+  try {
+    await ref.read(studentPhotoCacheClearerProvider)();
+  } on Object {
+    // 사진 캐시는 하루 뒤 스스로 만료된다 — 지우는 데 실패했다고 다른 정리를 막지 않는다.
+  }
 }
 
 /// 기기에 남긴 이 계정의 것을 지운다. **명단(학생 특이사항 포함)을 먼저** 지운다 — 대기열 쪽이 예외를 던져도

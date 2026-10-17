@@ -17,6 +17,7 @@ import 'package:manager_app/features/offline_queue/data/offline_queue_database.d
 import 'package:manager_app/features/offline_queue/domain/offline_queue_repository.dart';
 import 'package:manager_app/features/offline_queue/domain/send_outcome.dart';
 import 'package:manager_app/features/roster/data/roster_api.dart';
+import 'package:manager_app/features/roster/presentation/roster_photo.dart';
 
 import '../../support/fake_roster_key_store.dart';
 import '../../support/fake_token_storage.dart';
@@ -188,6 +189,44 @@ void main() {
       isNull,
       reason: '명단(특이사항 포함)은 대기열보다 먼저 지운다',
     );
+  });
+
+  // M-8 — 학생 사진을 디스크에 받아 두므로 개인정보다. 로그아웃 · 세션 만료에 같이 비운다.
+  test('로그아웃하면 디스크에 받아 둔 학생 사진 캐시도 비운다', () async {
+    var cleared = 0;
+    buildContainer(
+      extra: [
+        studentPhotoCacheClearerProvider.overrideWithValue(() async {
+          cleared++;
+        }),
+      ],
+    );
+    container.read(routerRefreshNotifierProvider);
+    container.read(currentUserRoleProvider.notifier).state = UserRole.driver;
+    expect(cleared, 0);
+
+    container.read(currentUserRoleProvider.notifier).state = null;
+    await settle();
+
+    expect(cleared, 1);
+  });
+
+  test('사진 캐시를 못 지워도 로그아웃 정리는 이어진다', () async {
+    buildContainer(
+      extra: [
+        studentPhotoCacheClearerProvider.overrideWithValue(
+          () async => throw StateError('테스트 — 캐시 삭제 실패'),
+        ),
+      ],
+    );
+    container.read(routerRefreshNotifierProvider);
+    container.read(currentUserRoleProvider.notifier).state = UserRole.driver;
+    await container.read(rosterCacheProvider).save('run-A', _rosterJson);
+
+    container.read(currentUserRoleProvider.notifier).state = null;
+    await settle();
+
+    expect(await container.read(rosterCacheProvider).read('run-A'), isNull);
   });
 
   // 앱을 켜 세션을 되살리다 refresh 토큰이 거절되면 역할이 처음부터 비어 있어 "역할이 비는 순간" 정리가 돌지 않는다.

@@ -1,4 +1,5 @@
 import 'package:baraeda_ui/baraeda_ui.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:manager_app/core/constants/api_constants.dart';
 import 'package:manager_app/core/time/run_time_labels.dart';
@@ -333,14 +334,23 @@ class RosterStudentTile extends StatelessWidget {
                               color: colors.textBrand,
                             ),
                           )
-                        : Image.network(
-                            photo.url,
-                            headers: photo.headers,
+                        : CachedNetworkImage(
+                            imageUrl: photo.url,
+                            httpHeaders: photo.headers,
+                            cacheManager: studentPhotoCacheManager,
                             width: 52,
                             height: 52,
                             fit: BoxFit.cover,
+                            fadeInDuration: Duration.zero,
+                            fadeOutDuration: Duration.zero,
                             // 로딩 중이거나 실패해도 이니셜 자리를 그대로 둔다 — 깨진 이미지를 보이지 않는다.
-                            errorBuilder: (_, _, _) => Text(
+                            placeholder: (_, _) => Text(
+                              initials,
+                              style: BaraedaTypography.title.copyWith(
+                                color: colors.textBrand,
+                              ),
+                            ),
+                            errorWidget: (_, _, _) => Text(
                               initials,
                               style: BaraedaTypography.title.copyWith(
                                 color: colors.textBrand,

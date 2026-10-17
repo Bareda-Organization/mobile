@@ -1,3 +1,8 @@
+import 'dart:async';
+
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 /// 명단 행 사진 한 장을 요청하는 데 필요한 값 — 주소와(있다면) 인증 헤더.
 typedef RosterPhoto = ({String url, Map<String, String>? headers});
 
@@ -19,4 +24,39 @@ RosterPhoto? resolveRosterPhoto(
   if (authHeaders == null) return null;
   final url = Uri.parse(baseUrl).resolve(raw).toString();
   return (url: url, headers: authHeaders);
+}
+
+/// 학생 사진 전용 디스크 캐시(M-8) — 명단 행마다 사진을 다시 받지 않는다. 사진은 개인정보라
+/// 하루 뒤 만료되고 로그아웃 · 세션 만료에 비운다([studentPhotoCacheClearerProvider]).
+/// 요청은 [RosterPhoto] 의 인증 헤더를 그대로 싣는다.
+final CacheManager studentPhotoCacheManager = CacheManager(
+  Config(
+    'student_photos',
+    stalePeriod: const Duration(days: 1),
+    maxNrOfCacheObjects: 300,
+  ),
+);
+
+/// 받아 둔 학생 사진을 디스크에서 지우는 동작 — 계정별 정리가 부른다. 시험이 가짜로 덮는다.
+final Provider<Future<void> Function()> studentPhotoCacheClearerProvider =
+    Provider<Future<void> Function()>((ref) => _emptyStudentPhotoCache);
+
+/// 캐시 저장소를 처음 만들 때 임시 폴더를 읽는 비동기 작업이 같이 시작된다 — 플랫폼 플러그인이 없는 환경(단위 시험)이나
+/// 폴더를 못 읽는 기기에서는 그 작업이 호출한 쪽 밖으로 오류를 흘리므로 구역 안에서 삼킨다. 못 지워도 사진은 하루 뒤
+/// 스스로 만료된다.
+Future<void> _emptyStudentPhotoCache() {
+  final done = Completer<void>();
+  unawaited(
+    runZonedGuarded(
+      () async {
+        try {
+          await studentPhotoCacheManager.emptyCache();
+        } finally {
+          done.complete();
+        }
+      },
+      (error, stack) {},
+    ),
+  );
+  return done.future;
 }

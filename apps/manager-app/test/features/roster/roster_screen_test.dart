@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
@@ -26,6 +27,7 @@ import 'package:manager_app/features/roster/data/models/revert_result.dart';
 import 'package:manager_app/features/roster/data/models/rider_update_result.dart';
 import 'package:manager_app/features/roster/data/models/roster_response.dart';
 import 'package:manager_app/features/roster/domain/roster_repository.dart';
+import 'package:manager_app/features/roster/presentation/roster_photo.dart';
 import 'package:manager_app/features/roster/presentation/roster_providers.dart';
 import 'package:manager_app/features/roster/presentation/roster_screen.dart';
 
@@ -267,13 +269,16 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final image = tester.widget<Image>(find.byType(Image));
-    final provider = image.image as NetworkImage;
+    // M-8 — 디스크 캐시가 있는 이미지 위젯이고, 인증 헤더와 학생 사진 전용 캐시 저장소를 쓴다.
+    final image = tester.widget<CachedNetworkImage>(
+      find.byType(CachedNetworkImage),
+    );
     expect(
-      provider.url,
+      image.imageUrl,
       '${Uri.parse(ApiConstants.baseUrl).origin}/api/v1/files/photos/a.jpg',
     );
-    expect(provider.headers, {'Authorization': 'Bearer tok-1'});
+    expect(image.httpHeaders, {'Authorization': 'Bearer tok-1'});
+    expect(image.cacheManager, same(studentPhotoCacheManager));
   });
 
   // R39 Ruling 400 — 서버 seq 는 경유 지점 자리(2)를 비운 채 1·3 으로 온다. 명단 머리가 그 값을 그대로 쓰면
