@@ -1,6 +1,4 @@
-import 'dart:async';
-
-import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -34,21 +32,6 @@ class _FakeRouteRepository implements RouteRepository {
   Future<RouteResponse> fetchRoute(String runId) async => response;
 }
 
-/// `roster_screen_test.dart` 의 `_NeverResolvingTokenStorage` 와 같은
-/// 대역 — `ManagerChannelBanner` 가 여는 실제 `ManagerRunChannelController`
-/// 를 `connecting` 상태로 고정해, 시험이 실제 WebSocket 연결을 시도하지
-/// 않게 한다.
-class _NeverResolvingTokenStorage extends TokenStorage {
-  new()
-    : super(
-        accessTokenKey: 'test_access_token',
-        refreshTokenKey: 'test_refresh_token',
-      );
-
-  @override
-  Future<String?> readAccessToken() => Completer<String?>().future;
-}
-
 RouteStop _stop({
   required String stopId,
   required int seq,
@@ -61,7 +44,7 @@ RouteStop _stop({
 Widget _wrap(List<Override> overrides) {
   return ProviderScope(
     overrides: [
-      tokenStorageProvider.overrideWithValue(_NeverResolvingTokenStorage()),
+      tokenStorageProvider.overrideWithValue(NeverResolvingTokenStorage()),
       ...overrides,
     ],
     child: const MaterialApp(home: RouteMapScreen()),

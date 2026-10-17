@@ -1,4 +1,5 @@
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -66,15 +67,6 @@ class _RecordingNotificationPermissionPort
   Future<void> request() async => events.add('requestNotificationPermission');
 }
 
-class _FixedClock implements Clock {
-  const new(this._now);
-
-  final DateTime _now;
-
-  @override
-  DateTime now() => _now;
-}
-
 const _roster = RosterResponse(
   runId: 'run-1',
   busNo: '2호차',
@@ -114,7 +106,7 @@ void main() {
       ],
     );
     final overrides = <Override>[
-      clockProvider.overrideWithValue(_FixedClock(now)),
+      clockProvider.overrideWithValue(FixedClock(now)),
       currentUserRoleProvider.overrideWith((ref) => UserRole.driver),
       selectedRunIdProvider.overrideWith((ref) => 'run-1'),
       driveModeRunProvider.overrideWithValue(

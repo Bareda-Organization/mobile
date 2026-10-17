@@ -1,4 +1,5 @@
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -186,7 +187,7 @@ Future<_CountingPositionRepository> _pumpHome(
         routeRepositoryProvider.overrideWithValue(
           routeRepository ?? _RecordingRouteRepository(route),
         ),
-        if (now != null) clockProvider.overrideWithValue(_FixedClock(now)),
+        if (now != null) clockProvider.overrideWithValue(FixedClock(now)),
         savedAcademyContactProvider.overrideWith((ref) async => savedContact),
         currentUserRoleProvider.overrideWith((ref) => role),
         roleCapabilitiesProvider.overrideWithValue(RoleCapabilities.of(role)),
@@ -215,15 +216,6 @@ Future<_CountingPositionRepository> _pumpHome(
 /// 미리보기 카드 안의 글자만 찾는다 — 아래 회차 카드(`RunCard`)도 같은 칩 글자를 쓴다.
 Finder _inPreview(String text) =>
     find.descendant(of: find.byType(HomeBusPreview), matching: find.text(text));
-
-class _FixedClock implements Clock {
-  const new(this._value);
-
-  final DateTime _value;
-
-  @override
-  DateTime now() => _value;
-}
 
 void main() {
   // R52 M2 — 칩은 전체 지도(`LiveMapView.resolve`)와 같은 판정을 따른다.

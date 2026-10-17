@@ -1,4 +1,5 @@
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -121,14 +122,6 @@ class _RecordingChangeRequestRepository implements ChangeRequestRepository {
       const ChangeRequestPage(items: [], pendingCount: 0);
 }
 
-class _FixedClock implements Clock {
-  const new(this._value);
-  final DateTime _value;
-
-  @override
-  DateTime now() => _value;
-}
-
 Future<void> _pumpAndSubmit(WidgetTester tester, Failure failure) =>
     _pumpAndSubmitWith(tester, _ThrowingChangeRequestRepository(failure));
 
@@ -163,7 +156,7 @@ Future<void> _pumpAndSubmitWith(
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
-        clockProvider.overrideWithValue(_FixedClock(DateTime(2026, 9, 12, 7))),
+        clockProvider.overrideWithValue(FixedClock(DateTime(2026, 9, 12, 7))),
         runRepositoryProvider.overrideWithValue(runs ?? _FixedRunRepository()),
         changeRequestRepositoryProvider.overrideWithValue(repository),
       ],
@@ -171,9 +164,7 @@ Future<void> _pumpAndSubmitWith(
       // 여기서도 스크롤 가능한 조상을 둔다 — 그렇지 않으면 폼 높이가
       // 테스트 뷰포트를 넘겨 무관한 RenderFlex overflow 로 실패한다.
       child: const MaterialApp(
-        home: Scaffold(
-          body: ChangeRequestPanel(studentId: 's-1'),
-        ),
+        home: Scaffold(body: ChangeRequestPanel(studentId: 's-1')),
       ),
     ),
   );
@@ -254,7 +245,7 @@ void main() {
         ProviderScope(
           overrides: [
             clockProvider.overrideWithValue(
-              _FixedClock(DateTime(2026, 9, 12, 7)),
+              FixedClock(DateTime(2026, 9, 12, 7)),
             ),
             runRepositoryProvider.overrideWithValue(_FixedRunRepository()),
             changeRequestRepositoryProvider.overrideWithValue(
@@ -268,9 +259,7 @@ void main() {
             ),
           ],
           child: const MaterialApp(
-            home: Scaffold(
-              body: ChangeRequestPanel(studentId: 's-1'),
-            ),
+            home: Scaffold(body: ChangeRequestPanel(studentId: 's-1')),
           ),
         ),
       );
@@ -305,9 +294,7 @@ void main() {
       expect(submitEnabled(tester), isTrue);
     });
 
-    testWidgets('승하차지 변경은 주소를 넣을 때까지 버튼이 꺼져 있고 주소를 넣으라고 알려 준다', (
-      tester,
-    ) async {
+    testWidgets('승하차지 변경은 주소를 넣을 때까지 버튼이 꺼져 있고 주소를 넣으라고 알려 준다', (tester) async {
       await pumpPanel(tester);
       await chooseRun(tester);
       await tester.tap(find.text('승하차지 변경'));
@@ -352,14 +339,12 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            clockProvider.overrideWithValue(_FixedClock(now)),
+            clockProvider.overrideWithValue(FixedClock(now)),
             runRepositoryProvider.overrideWithValue(runs),
             changeRequestRepositoryProvider.overrideWithValue(changes),
           ],
           child: const MaterialApp(
-            home: Scaffold(
-              body: ChangeRequestPanel(studentId: 's-1'),
-            ),
+            home: Scaffold(body: ChangeRequestPanel(studentId: 's-1')),
           ),
         ),
       );
@@ -533,7 +518,7 @@ void main() {
         ProviderScope(
           overrides: [
             clockProvider.overrideWithValue(
-              _FixedClock(now ?? DateTime(2026, 9, 12, 7)),
+              FixedClock(now ?? DateTime(2026, 9, 12, 7)),
             ),
             runRepositoryProvider.overrideWithValue(
               _DatedRunRepository({}, today: runs),
@@ -639,7 +624,7 @@ void main() {
           ProviderScope(
             overrides: [
               clockProvider.overrideWithValue(
-                _FixedClock(DateTime(2026, 9, 12, 7)),
+                FixedClock(DateTime(2026, 9, 12, 7)),
               ),
               runRepositoryProvider.overrideWithValue(
                 _DatedRunRepository({}, today: [run('a')]),

@@ -1,4 +1,5 @@
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -18,15 +19,6 @@ import 'package:manager_app/features/home/presentation/home_screen.dart';
 import '../../support/fake_notification_repository.dart';
 import '../../support/fake_run_summary_store.dart';
 import '../../support/manager_run_fixture.dart';
-
-class _FixedClock implements Clock {
-  const new(this._now);
-
-  final DateTime _now;
-
-  @override
-  DateTime now() => _now;
-}
 
 /// [offline] 이 참이면 연결이 닿지 않는 서버 — 기본은 오늘 회차 하나를 준다.
 class _FlakyRunApi extends ManagerRunApi {
@@ -58,7 +50,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          clockProvider.overrideWithValue(_FixedClock(now)),
+          clockProvider.overrideWithValue(FixedClock(now)),
           managerRunApiProvider.overrideWithValue(api),
           runSummaryStoreProvider.overrideWithValue(FakeRunSummaryStore()),
           currentUserRoleProvider.overrideWith((ref) => UserRole.driver),

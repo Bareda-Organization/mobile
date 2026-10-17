@@ -1,4 +1,4 @@
-import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -74,14 +74,6 @@ final _run = StudentRun(
   changeQuotaLeft: 1,
 );
 
-class _FixedClock implements Clock {
-  const new(this._value);
-  final DateTime _value;
-
-  @override
-  DateTime now() => _value;
-}
-
 /// F05-02 — 홈에서 ② 구간 탑승을 끄면 접수 안내가 남고 "처리 대기" 배지가 1건으로 바뀌어야 한다.
 void main() {
   testWidgets('② 구간 끄기 접수 뒤에도 승인 대기 안내가 남고 처리 대기 배지가 갱신된다', (tester) async {
@@ -93,7 +85,7 @@ void main() {
         overrides: [
           // 출발 08:00 의 확정 시각(07:30)이 지난 ② 구간.
           clockProvider.overrideWithValue(
-            _FixedClock(DateTime(2026, 9, 12, 7, 45)),
+            FixedClock(DateTime(2026, 9, 12, 7, 45)),
           ),
           noBusPositionOverride,
           roleCapabilitiesProvider.overrideWithValue(

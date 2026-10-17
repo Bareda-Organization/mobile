@@ -1,4 +1,5 @@
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -16,15 +17,6 @@ import 'package:parent_app/features/notifications/presentation/notification_prov
 import 'package:parent_app/features/notifications/presentation/notifications_screen.dart';
 
 import '../../../support/fake_notification_repository.dart';
-
-class _FixedClock implements Clock {
-  const new(this._value);
-
-  final DateTime _value;
-
-  @override
-  DateTime now() => _value;
-}
 
 /// 2026-09-30 10:00 KST (수요일).
 final _now = DateTime.utc(2026, 9, 30, 1);
@@ -111,7 +103,7 @@ _pump(
       key: UniqueKey(),
       overrides: [
         notificationRepositoryProvider.overrideWithValue(repository),
-        clockProvider.overrideWithValue(_FixedClock(_now)),
+        clockProvider.overrideWithValue(FixedClock(_now)),
         pushTokenSourceProvider.overrideWithValue(_FixedTokenSource(pushToken)),
         myStudentsProvider.overrideWith(
           (ref) async => students ?? _linkedStudents,
@@ -518,7 +510,7 @@ void main() {
                 _item('n-1', type: 'arrive', studentId: 's-1'),
               ]),
             ),
-            clockProvider.overrideWithValue(_FixedClock(_now)),
+            clockProvider.overrideWithValue(FixedClock(_now)),
             pushTokenSourceProvider.overrideWithValue(_FixedTokenSource(null)),
             roleCapabilitiesProvider.overrideWithValue(
               RoleCapabilities.of(UserRole.student),
@@ -616,7 +608,7 @@ void main() {
           key: UniqueKey(),
           overrides: [
             notificationRepositoryProvider.overrideWithValue(repository),
-            clockProvider.overrideWithValue(_FixedClock(_now)),
+            clockProvider.overrideWithValue(FixedClock(_now)),
             roleCapabilitiesProvider.overrideWithValue(
               RoleCapabilities.of(parent ? UserRole.parent : UserRole.student),
             ),

@@ -1,4 +1,5 @@
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:manager_app/core/auth/user_role.dart';
 import 'package:manager_app/core/run/run_enums.dart';
@@ -22,15 +23,6 @@ class _Inner implements ManagerRunRepository {
   }
 }
 
-class _FixedClock implements Clock {
-  const new(this._now);
-
-  final DateTime _now;
-
-  @override
-  DateTime now() => _now;
-}
-
 /// R52 H2 — 오늘 목록을 받으면 요약을 남기고, 서버에 닿지 못할 때(연결 두절 · 5xx)만 오늘 저장한 요약으로 돌아선다.
 void main() {
   final now = DateTime(2026, 10, 10, 10);
@@ -51,7 +43,7 @@ void main() {
       repo: CachedManagerRunRepository(
         inner: inner,
         store: summary,
-        clock: _FixedClock(now),
+        clock: FixedClock(now),
         isSignedIn: () => signedIn,
         onSource: onSource,
       ),

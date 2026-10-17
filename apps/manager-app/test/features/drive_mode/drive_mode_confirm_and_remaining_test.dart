@@ -1,6 +1,5 @@
-import 'dart:async';
-
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -80,17 +79,6 @@ class _RecordingDriveModeRepository implements DriveModeRepository {
   }
 }
 
-class _NeverResolvingTokenStorage extends TokenStorage {
-  new()
-    : super(
-        accessTokenKey: 'test_access_token',
-        refreshTokenKey: 'test_refresh_token',
-      );
-
-  @override
-  Future<String?> readAccessToken() => Completer<String?>().future;
-}
-
 class _NoSample implements PositionSource {
   @override
   PositionAvailability get availability => PositionAvailability.available;
@@ -111,15 +99,6 @@ class _NoSample implements PositionSource {
   Future<PositionSample?> sampleOnce({
     Duration timeout = const Duration(seconds: 5),
   }) async => null;
-}
-
-class _FixedClock implements Clock {
-  const new(this._now);
-
-  final DateTime _now;
-
-  @override
-  DateTime now() => _now;
 }
 
 RosterStop _stop(
@@ -182,8 +161,8 @@ void main() {
     rosterLoads = 0;
     final repository = _RecordingDriveModeRepository()..offline = offline;
     final overrides = <Override>[
-      clockProvider.overrideWithValue(_FixedClock(now)),
-      tokenStorageProvider.overrideWithValue(_NeverResolvingTokenStorage()),
+      clockProvider.overrideWithValue(FixedClock(now)),
+      tokenStorageProvider.overrideWithValue(NeverResolvingTokenStorage()),
       positionSourceProvider.overrideWithValue(_NoSample()),
       routeProvider.overrideWith((ref) async => const RouteResponse(stops: [])),
       selectedRunIdProvider.overrideWith((ref) => 'run-1'),

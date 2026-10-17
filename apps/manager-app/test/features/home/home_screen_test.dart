@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -44,15 +45,6 @@ class _CountingDriveRepository implements DriveModeRepository {
   }) => throw UnimplementedError('이 파일의 시험 대상이 아니다');
 }
 
-class _FixedClock implements Clock {
-  const new(this._now);
-
-  final DateTime _now;
-
-  @override
-  DateTime now() => _now;
-}
-
 /// 홈 탭의 세 갈래(로딩 · 성공 · 실패)와 역할별 단추(§4.1, M-02·M-07)를 직접 무는 시험.
 ///
 /// 이동 화면은 표식 문구만 그리는 가짜 라우트로 둔다 — 관심사는 "어느 경로로 넘어가는가" 하나다.
@@ -85,7 +77,7 @@ void main() {
   Widget wrap(List<Override> overrides) {
     return ProviderScope(
       overrides: [
-        clockProvider.overrideWithValue(_FixedClock(now)),
+        clockProvider.overrideWithValue(FixedClock(now)),
         // 머리말 알림 배지가 실제 서버를 부르지 않게 한다(R46).
         notificationRepositoryProvider.overrideWithValue(
           FakeNotificationRepository(const []),

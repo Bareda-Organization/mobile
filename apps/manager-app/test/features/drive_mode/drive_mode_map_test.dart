@@ -1,6 +1,4 @@
-import 'dart:async';
-
-import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
@@ -26,15 +24,6 @@ import 'package:manager_app/features/route_map/presentation/route_providers.dart
 /// M1(R32) — 운행 화면 가운데 지도. 실제 네이버 SDK 는 위젯 시험에서 그려지지 않으므로
 /// `route_map_screen_test.dart` 와 같이 [MapSurface] 가 받은 인자(핀·선·버스·카메라)만 본다.
 /// ⚠ 지도가 화면에 실제로 떴는지는 이 시험이 못 본다 — 병합 뒤 시뮬레이터로 확인한다.
-
-class _FixedClock implements Clock {
-  const new(this._now);
-
-  final DateTime _now;
-
-  @override
-  DateTime now() => _now;
-}
 
 class _FakePositionSource implements PositionSource {
   new(this._sample);
@@ -68,18 +57,6 @@ class _NoopPositionRepository implements PositionRepository {
     required String runId,
     required PositionRequest request,
   }) async {}
-}
-
-/// `ManagerChannelBanner` 가 실제 WebSocket 을 열지 않게 연결 중에 고정한다.
-class _NeverResolvingTokenStorage extends TokenStorage {
-  new()
-    : super(
-        accessTokenKey: 'test_access_token',
-        refreshTokenKey: 'test_refresh_token',
-      );
-
-  @override
-  Future<String?> readAccessToken() => Completer<String?>().future;
 }
 
 RouteStop _routeStop(int seq, {double? lat, double? lng}) => RouteStop(
@@ -124,8 +101,8 @@ void main() {
     PositionSample? sample,
     RunStatus status = RunStatus.moving,
   }) => [
-    clockProvider.overrideWithValue(_FixedClock(now)),
-    tokenStorageProvider.overrideWithValue(_NeverResolvingTokenStorage()),
+    clockProvider.overrideWithValue(FixedClock(now)),
+    tokenStorageProvider.overrideWithValue(NeverResolvingTokenStorage()),
     currentUserRoleProvider.overrideWith((ref) => UserRole.driver),
     selectedRunIdProvider.overrideWith((ref) => 'run-1'),
     driveModeRunProvider.overrideWithValue(_run(now, status)),

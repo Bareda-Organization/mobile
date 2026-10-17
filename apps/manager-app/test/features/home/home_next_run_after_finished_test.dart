@@ -1,4 +1,5 @@
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
@@ -58,7 +59,7 @@ void main() {
 
   Widget wrap(UserRole role, {required RunStatus nextStatus}) {
     final overrides = <Override>[
-      clockProvider.overrideWithValue(_FixedClock(now)),
+      clockProvider.overrideWithValue(FixedClock(now)),
       notificationRepositoryProvider.overrideWithValue(
         FakeNotificationRepository(const []),
       ),
@@ -133,13 +134,4 @@ void main() {
 
     expect(find.text('ROSTER:run-B:2호차'), findsOneWidget);
   });
-}
-
-class _FixedClock implements Clock {
-  const new(this._now);
-
-  final DateTime _now;
-
-  @override
-  DateTime now() => _now;
 }

@@ -1,4 +1,4 @@
-import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -17,16 +17,6 @@ import 'package:manager_app/features/home/presentation/run_ready_screen.dart';
 import 'package:manager_app/features/roster/data/models/roster_response.dart';
 import 'package:manager_app/features/route_map/data/models/route_response.dart';
 import 'package:manager_app/features/route_map/presentation/route_providers.dart';
-
-/// 시각을 고정하는 가짜 시계.
-class _FixedClock implements Clock {
-  const new(this._now);
-
-  final DateTime _now;
-
-  @override
-  DateTime now() => _now;
-}
 
 /// 권한·서비스 상태를 시험이 바꿀 수 있는 가짜 위치 소스. [recheck] 를 불러야만 새 값을 반영한다 —
 /// 실제 구현이 플랫폼에 다시 물어야 [availability] 가 바뀌는 것과 같다. 스트림은 켜지 않는다.
@@ -100,7 +90,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          clockProvider.overrideWithValue(_FixedClock(now)),
+          clockProvider.overrideWithValue(FixedClock(now)),
           currentUserRoleProvider.overrideWith((ref) => UserRole.driver),
           selectedRunIdProvider.overrideWith((ref) => 'run-1'),
           driveModeRunProvider.overrideWithValue(_confirmedRun(now)),

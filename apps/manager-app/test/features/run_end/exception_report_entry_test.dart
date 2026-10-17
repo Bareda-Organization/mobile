@@ -1,6 +1,4 @@
-import 'dart:async';
-
-import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -18,21 +16,8 @@ import 'package:manager_app/features/roster/data/models/roster_response.dart';
 import 'package:manager_app/features/roster/presentation/roster_providers.dart';
 import 'package:manager_app/features/roster/presentation/roster_screen.dart';
 import 'package:manager_app/features/run_end/presentation/report_screen.dart';
+
 import '../../support/manager_run_fixture.dart';
-
-/// R32 M3 — 예외 보고(§4.13 · M-14)는 기사·동승자 공통인데 지금까지 기사 운행 화면에서만
-/// 닿았다. 동승자는 명단 화면에서 보고할 수 있어야 하고, 도착 결과가 없는 그 경로에서는
-/// 대상 학생 목록을 명단에서 만든다(보호자 부재 = 혼자 귀가할 수 없는 탑승 중 학생).
-class _NeverResolvingTokenStorage extends TokenStorage {
-  new()
-    : super(
-        accessTokenKey: 'test_access_token',
-        refreshTokenKey: 'test_refresh_token',
-      );
-
-  @override
-  Future<String?> readAccessToken() => Completer<String?>().future;
-}
 
 RosterStudent _student(
   String id,
@@ -54,9 +39,7 @@ RosterResponse _roster(List<RosterStudent> students) => RosterResponse(
   busNo: '3호차',
   direction: RunDirection.toAcademy,
   counts: const RosterCounts(boarded: 0, waiting: 0, noShow: 0, absentN: 0),
-  stops: [
-    RosterStop(stopId: 'st1', seq: 1, name: 'A정류장', students: students),
-  ],
+  stops: [RosterStop(stopId: 'st1', seq: 1, name: 'A정류장', students: students)],
 );
 
 void main() {
@@ -77,7 +60,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          tokenStorageProvider.overrideWithValue(_NeverResolvingTokenStorage()),
+          tokenStorageProvider.overrideWithValue(NeverResolvingTokenStorage()),
           selectedRunIdProvider.overrideWith((ref) => 'run-1'),
           todayRunsProvider.overrideWith((ref) async => [managerRunFixture()]),
           rosterProvider.overrideWith((ref) async => _roster(const [])),

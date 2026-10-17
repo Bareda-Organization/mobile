@@ -1,4 +1,4 @@
-import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
@@ -35,15 +35,6 @@ class _RecordingWakelockPort implements WakelockPort {
   Future<void> disable() async {
     disableCallCount++;
   }
-}
-
-class _FixedClock implements Clock {
-  const new(this._now);
-
-  final DateTime _now;
-
-  @override
-  DateTime now() => _now;
 }
 
 /// 항상 `null` 을 돌려주는 가짜 위치 소스 — 이 시험은 전송 자체가 아니라
@@ -117,7 +108,7 @@ void main() {
   );
 
   List<Override> overridesFor(_RecordingWakelockPort port) => [
-    clockProvider.overrideWithValue(_FixedClock(now)),
+    clockProvider.overrideWithValue(FixedClock(now)),
     currentUserRoleProvider.overrideWith((ref) => UserRole.driver),
     selectedRunIdProvider.overrideWith((ref) => runId),
     driveModeRunProvider.overrideWithValue(run()),
@@ -134,9 +125,7 @@ void main() {
   testWidgets('운행 화면에 들어오면 화면 꺼짐 방지를 1회 켠다 (F2)', (tester) async {
     final port = _RecordingWakelockPort();
 
-    await tester.pumpWidget(
-      _wrap(const DriveModeScreen(), overridesFor(port)),
-    );
+    await tester.pumpWidget(_wrap(const DriveModeScreen(), overridesFor(port)));
     await tester.pump();
 
     expect(port.enableCallCount, 1);
@@ -146,9 +135,7 @@ void main() {
   testWidgets('운행 화면이 dispose 되면 화면 꺼짐 방지를 1회 끈다 (F2)', (tester) async {
     final port = _RecordingWakelockPort();
 
-    await tester.pumpWidget(
-      _wrap(const DriveModeScreen(), overridesFor(port)),
-    );
+    await tester.pumpWidget(_wrap(const DriveModeScreen(), overridesFor(port)));
     await tester.pump();
     expect(port.enableCallCount, 1);
 

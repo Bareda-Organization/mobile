@@ -1,4 +1,4 @@
-import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,16 +15,6 @@ import 'package:parent_app/core/students/presentation/student_providers.dart';
 import 'package:parent_app/features/schedule/domain/weekly_address_entry.dart';
 import 'package:parent_app/features/schedule/presentation/schedule_providers.dart';
 import 'package:parent_app/features/schedule/presentation/schedule_screen.dart';
-
-/// R48 일정 탭(시안 `schedule` · `--pending` · `--no-child`) — 날짜 알약 · 회차 · 처리 대기 띠
-/// · 이력의 방향 · 날짜.
-class _FixedClock implements Clock {
-  const new(this._value);
-  final DateTime _value;
-
-  @override
-  DateTime now() => _value;
-}
 
 // 세계 표준시 03:14 = 한국 시간 10월 3일(토) 12:14.
 final _now = DateTime.utc(2026, 10, 3, 3, 14);
@@ -63,7 +53,7 @@ Future<void> _pump(
     ProviderScope(
       retry: (_, _) => null,
       overrides: [
-        clockProvider.overrideWithValue(_FixedClock(_now)),
+        clockProvider.overrideWithValue(FixedClock(_now)),
         scheduleShowHistoryProvider.overrideWith((ref) => showHistory),
         currentUserRoleProvider.overrideWith((ref) => UserRole.parent),
         myStudentsProvider.overrideWith(

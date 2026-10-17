@@ -1,6 +1,5 @@
-import 'dart:async';
-
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -23,17 +22,6 @@ import 'package:manager_app/features/route_map/presentation/route_providers.dart
 
 import '../../support/fake_notification_repository.dart';
 import '../../support/manager_run_fixture.dart';
-
-/// 857(NTF-08 · `Ruling 857`) — 알림은 아래 탭으로 열리지만, **기사가 운전하는 동안 보는 화면에는 알림 진입점도
-/// 안 읽은 알림 배지도 없다.** 구조 시험(`test/architecture/no_notification_entry_while_driving_test.dart`)은
-/// 알림 파일을 import 하는지만 보므로, 화면이 실제로 무엇을 그리는지는 이 시험이 고정한다. 안 읽은 알림이
-/// 실제로 쌓여 있는 상태에서 본다 — 없는 채로 보면 배지가 없는 것이 당연해 아무것도 증명하지 못한다.
-class _NeverResolvingTokenStorage extends TokenStorage {
-  new() : super(accessTokenKey: 'a', refreshTokenKey: 'r');
-
-  @override
-  Future<String?> readAccessToken() => Completer<String?>().future;
-}
 
 class _NoSample implements PositionSource {
   @override
@@ -93,7 +81,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          tokenStorageProvider.overrideWithValue(_NeverResolvingTokenStorage()),
+          tokenStorageProvider.overrideWithValue(NeverResolvingTokenStorage()),
           positionSourceProvider.overrideWithValue(_NoSample()),
           notificationRepositoryProvider.overrideWithValue(
             FakeNotificationRepository([

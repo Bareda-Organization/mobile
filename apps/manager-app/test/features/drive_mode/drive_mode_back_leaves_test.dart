@@ -1,6 +1,4 @@
-import 'dart:async';
-
-import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -18,20 +16,6 @@ import 'package:manager_app/features/route_map/data/models/route_response.dart';
 import 'package:manager_app/features/route_map/presentation/route_providers.dart';
 
 import '../../support/manager_run_fixture.dart';
-
-/// R33 M1 — 위치 송신이 화면이 아니라 앱 전역이 되어(`position_transmitter.dart`) 운행 화면을 나가도
-/// 송신이 멈추지 않는다. R32 M15·M16 이 넣은 "나갈까요?" 확인 창은 이유가 사라져 없앴다 — 운행 중이어도
-/// 뒤로가기는 바로 나간다.
-class _NeverResolvingTokenStorage extends TokenStorage {
-  new()
-    : super(
-        accessTokenKey: 'test_access_token',
-        refreshTokenKey: 'test_refresh_token',
-      );
-
-  @override
-  Future<String?> readAccessToken() => Completer<String?>().future;
-}
 
 class _NoSample implements PositionSource {
   @override
@@ -68,7 +52,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          tokenStorageProvider.overrideWithValue(_NeverResolvingTokenStorage()),
+          tokenStorageProvider.overrideWithValue(NeverResolvingTokenStorage()),
           positionSourceProvider.overrideWithValue(_NoSample()),
           routeProvider.overrideWith(
             (ref) async => const RouteResponse(stops: []),

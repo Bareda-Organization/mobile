@@ -1,6 +1,4 @@
-import 'dart:async';
-
-import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -95,14 +93,6 @@ class _DeniedSource implements PositionSource {
   }) async => null;
 }
 
-class _NeverResolvingTokenStorage extends TokenStorage {
-  new()
-    : super(accessTokenKey: 'a', refreshTokenKey: 'r');
-
-  @override
-  Future<String?> readAccessToken() => Completer<String?>().future;
-}
-
 void main() {
   final errors = <FlutterErrorDetails>[];
 
@@ -134,7 +124,7 @@ void main() {
         ProviderScope(
           overrides: [
             tokenStorageProvider.overrideWithValue(
-              _NeverResolvingTokenStorage(),
+              NeverResolvingTokenStorage(),
             ),
             positionSourceProvider.overrideWithValue(_DeniedSource()),
             kakaoNaviAppKeyProvider.overrideWithValue('KEY-1'),
@@ -175,9 +165,8 @@ void main() {
           ],
           child: MaterialApp(
             builder: (context, child) => MediaQuery(
-              data: MediaQuery.of(
-                context,
-              ).copyWith(textScaler: TextScaler.linear(textScale)),
+              data: MediaQuery.of(context)
+                  .copyWith(textScaler: TextScaler.linear(textScale)),
               child: child!,
             ),
             home: const DriveModeScreen(),
@@ -248,10 +237,7 @@ void main() {
         // 어떤 넘침도 없다 — 공용 `RunSummaryCard` 의 큰 글자 가로 넘침
         // (R46-FUMGR `Ruling 573`)을 고친 뒤로 이 시험이 허용하던 예외를
         // 걷었다(R46-LAST `Ruling 582`).
-        expect(
-          errors.map((e) => e.toString()).toList(),
-          isEmpty,
-        );
+        expect(errors.map((e) => e.toString()).toList(), isEmpty);
       });
     }
   }

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -25,17 +26,6 @@ import 'package:manager_app/features/offline_queue/domain/send_outcome.dart';
 import 'package:manager_app/features/offline_queue/presentation/offline_queue_providers.dart';
 
 import '../../support/manager_run_fixture.dart';
-
-/// 시각을 고정해 취소 가능 창 판정을 결정적으로 만드는 가짜 시계
-/// (`drive_mode_screen_test.dart` 와 같은 패턴, 이월 11 · Ruling 266).
-class _FixedClock implements Clock {
-  const new(this._now);
-
-  final DateTime _now;
-
-  @override
-  DateTime now() => _now;
-}
 
 /// 테스트 전용 대역 — §4.14(발신·취소)·§4.15(목록) 호출 여부·인자·횟수만
 /// 기록한다.
@@ -188,7 +178,7 @@ void main() {
       ),
       selectedRunIdProvider.overrideWith((ref) => runId),
       emergencyRepositoryProvider.overrideWithValue(fakeRepo),
-      clockProvider.overrideWithValue(_FixedClock(now ?? raisedAt)),
+      clockProvider.overrideWithValue(FixedClock(now ?? raisedAt)),
       positionSourceProvider.overrideWithValue(
         positionSource ?? _FakePositionSource(null),
       ),

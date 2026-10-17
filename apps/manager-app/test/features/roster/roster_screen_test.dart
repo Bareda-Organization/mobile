@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
@@ -130,37 +131,6 @@ class _FakeRosterRepository implements RosterRepository {
     required String riderId,
     required NoShowContactRequest request,
   }) => throw UnimplementedError('이 파일의 시험 대상이 아니다');
-}
-
-/// 목표 9 검사용 대역 — `managerRunChannelProvider` 는 구체 클래스
-/// `ManagerRunChannelController` 로 타입이 고정돼 있어(`overrideWith` 가
-/// 정확히 그 타입만 받는다) 그 컨트롤러 자체를 가짜로 바꿔치기할 수
-/// 없다(리버팟 3.4.3 `$FunctionalFamilyOverride` — 생성자가 여는 실제
-/// WebSocket 연결도 그대로 남는다). 대신 그 생성자가 유일하게 주입받는
-/// `TokenStorage.readAccessToken()` 을 영원히 끝나지 않는 대기로 만들어,
-/// `_doConnect()` 의 `await` 지점에서 실행이 멈추게 한다 — `StompClient`
-/// 생성·소켓 연결·재연결 타이머가 전부 그 이후 코드라 하나도 실행되지
-/// 않는다. 결과는 `ManagerChannelStatus.connecting`(생성자가 그 값으로
-/// 시작한다)이 고정되고, 실제 컨트롤러 코드를 그대로 쓰면서도 부수효과가
-/// 없는 결정적 시험 상태를 얻는다.
-class _NeverResolvingTokenStorage extends TokenStorage {
-  new()
-    : super(
-        accessTokenKey: 'test_access_token',
-        refreshTokenKey: 'test_refresh_token',
-      );
-
-  @override
-  Future<String?> readAccessToken() => Completer<String?>().future;
-}
-
-class _FixedClock implements Clock {
-  const new(this._now);
-
-  final DateTime _now;
-
-  @override
-  DateTime now() => _now;
 }
 
 Widget _wrap(Widget child, List<Override> overrides) {
@@ -647,7 +617,7 @@ void main() {
         selectedRunIdProvider.overrideWith((ref) => runId),
         rosterRepositoryProvider.overrideWithValue(fakeRepo),
         currentUserRoleProvider.overrideWith((ref) => UserRole.escort),
-        clockProvider.overrideWithValue(_FixedClock(pressedAt)),
+        clockProvider.overrideWithValue(FixedClock(pressedAt)),
         todayRunsProvider.overrideWith(
           (ref) async => [_managerRun(ackRequired: false)],
         ),
@@ -784,7 +754,7 @@ void main() {
     // 분기 바깥에 있다"는 구조를 확인하는 데는 같다.
     List<Override> overridesWithBanner(List<Override> base) => [
       ...base,
-      tokenStorageProvider.overrideWithValue(_NeverResolvingTokenStorage()),
+      tokenStorageProvider.overrideWithValue(NeverResolvingTokenStorage()),
     ];
 
     testWidgets('명단이 로딩 중이어도 배너가 뜬다', (tester) async {

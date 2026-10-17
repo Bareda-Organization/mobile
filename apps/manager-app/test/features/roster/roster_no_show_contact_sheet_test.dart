@@ -1,6 +1,5 @@
-import 'dart:async';
-
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,6 +13,7 @@ import 'package:manager_app/features/home/presentation/home_providers.dart';
 import 'package:manager_app/features/roster/data/models/roster_response.dart';
 import 'package:manager_app/features/roster/presentation/no_show_screen.dart';
 import 'package:manager_app/features/roster/presentation/roster_providers.dart';
+
 import '../../support/manager_run_fixture.dart';
 
 /// R32 M12 — 미승차 연락 시트의 최종 판단은 대기 시간이 끝난 뒤에만 고를 수 있다. 대기 시간은
@@ -26,17 +26,6 @@ class _MutableClock implements Clock {
 
   @override
   DateTime now() => current;
-}
-
-class _NeverResolvingTokenStorage extends TokenStorage {
-  new()
-    : super(
-        accessTokenKey: 'test_access_token',
-        refreshTokenKey: 'test_refresh_token',
-      );
-
-  @override
-  Future<String?> readAccessToken() => Completer<String?>().future;
 }
 
 RosterResponse _roster({DateTime? expiresAt}) => RosterResponse(
@@ -101,7 +90,7 @@ void main() {
       ProviderScope(
         overrides: [
           clockProvider.overrideWithValue(clock),
-          tokenStorageProvider.overrideWithValue(_NeverResolvingTokenStorage()),
+          tokenStorageProvider.overrideWithValue(NeverResolvingTokenStorage()),
           selectedRunIdProvider.overrideWith((ref) => 'run-1'),
           currentUserRoleProvider.overrideWith((ref) => UserRole.escort),
           todayRunsProvider.overrideWith((ref) async => [managerRunFixture()]),

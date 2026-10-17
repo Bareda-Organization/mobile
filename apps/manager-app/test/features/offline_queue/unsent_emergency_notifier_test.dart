@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:manager_app/app/di.dart';
@@ -9,15 +9,6 @@ import 'package:manager_app/features/offline_queue/data/unsent_emergency_store.d
 import 'package:manager_app/features/offline_queue/presentation/request_notices.dart';
 
 import '../../support/fake_academy_contact_store.dart';
-
-class _FixedClock implements Clock {
-  const new(this._now);
-
-  final DateTime _now;
-
-  @override
-  DateTime now() => _now;
-}
 
 /// 첫 쓰기는 예외를 던지고 이후는 저장하는 저장소.
 /// 읽기는 [readGate] 가 풀어 줄 때까지 끝나지 않는다(없으면 곧바로 [saved]).
@@ -68,7 +59,7 @@ void main() {
         academyContactStoreProvider.overrideWithValue(
           FakeAcademyContactStore('032-000-1100'),
         ),
-        clockProvider.overrideWithValue(_FixedClock(lastAt)),
+        clockProvider.overrideWithValue(FixedClock(lastAt)),
       ],
     );
     addTearDown(container.dispose);

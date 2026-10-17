@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart' show StateProvider;
@@ -54,15 +54,6 @@ class _FakeGeolocatorPlatform extends GeolocatorPlatform {
   @override
   Stream<Position> getPositionStream({LocationSettings? locationSettings}) =>
       _controller.stream;
-}
-
-class _FixedClock implements Clock {
-  const new(this._now);
-
-  final DateTime _now;
-
-  @override
-  DateTime now() => _now;
 }
 
 class _NoopPositionRepository implements PositionRepository {
@@ -119,7 +110,7 @@ void main() {
     required UserRole role,
     required ManagerRun currentRun,
   }) => [
-    clockProvider.overrideWithValue(_FixedClock(now)),
+    clockProvider.overrideWithValue(FixedClock(now)),
     currentUserRoleProvider.overrideWith((ref) => role),
     selectedRunIdProvider.overrideWith((ref) => runId),
     driveModeRunProvider.overrideWithValue(currentRun),
@@ -157,7 +148,7 @@ void main() {
     final runState = StateProvider<ManagerRun>((ref) => run(RunStatus.moving));
     final container = ProviderContainer(
       overrides: [
-        clockProvider.overrideWithValue(_FixedClock(now)),
+        clockProvider.overrideWithValue(FixedClock(now)),
         currentUserRoleProvider.overrideWith((ref) => UserRole.driver),
         selectedRunIdProvider.overrideWith((ref) => runId),
         driveModeRunProvider.overrideWith((ref) => ref.watch(runState)),
@@ -171,9 +162,7 @@ void main() {
           (ref) async => const RouteResponse(stops: []),
         ),
         driveModeRosterProvider.overrideWith((ref) async => _emptyRoster),
-        positionRepositoryProvider.overrideWithValue(
-          _NoopPositionRepository(),
-        ),
+        positionRepositoryProvider.overrideWithValue(_NoopPositionRepository()),
       ],
     );
     addTearDown(container.dispose);
@@ -234,10 +223,7 @@ void main() {
     await tester.pumpWidget(
       _wrap(
         const DriveModeScreen(),
-        baseOverrides(
-          role: UserRole.escort,
-          currentRun: run(RunStatus.moving),
-        ),
+        baseOverrides(role: UserRole.escort, currentRun: run(RunStatus.moving)),
       ),
     );
     await tester.pump();

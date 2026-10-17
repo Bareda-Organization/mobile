@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:dio/dio.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -54,15 +55,6 @@ class _OfflineMe implements AuthRepository {
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
 }
 
-class _FixedClock implements Clock {
-  const new(this._now);
-
-  final DateTime _now;
-
-  @override
-  DateTime now() => _now;
-}
-
 const Map<String, dynamic> _rosterJson = {
   'run_id': 'run-1',
   'bus_no': '3호차',
@@ -112,7 +104,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          clockProvider.overrideWithValue(_FixedClock(now)),
+          clockProvider.overrideWithValue(FixedClock(now)),
           tokenStorageProvider.overrideWithValue(
             FakeTokenStorage(seedRefreshToken: 'refresh'),
           ),

@@ -1,4 +1,4 @@
-import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -16,17 +16,8 @@ import 'package:parent_app/core/runs/domain/student_run.dart';
 import 'package:parent_app/core/students/domain/student.dart';
 import 'package:parent_app/features/home/presentation/home_providers.dart';
 import 'package:parent_app/features/home/presentation/home_screen.dart';
+
 import '../../../support/no_bus_position.dart';
-
-/// R34 P1 — 홈의 [오늘 · 내일] 전환. 조회 날짜·토글 요청 대상·학생 조회 전용을 본다.
-class _FixedClock implements Clock {
-  const new(this._value);
-
-  final DateTime _value;
-
-  @override
-  DateTime now() => _value;
-}
 
 /// 조회한 날짜와 토글 요청을 기록하고, 날짜별로 다른 회차를 돌려주는 가짜.
 class _DatedRunRepository implements RunRepository {
@@ -89,7 +80,7 @@ void main() {
       ProviderScope(
         overrides: [
           noBusPositionOverride,
-          clockProvider.overrideWithValue(_FixedClock(now)),
+          clockProvider.overrideWithValue(FixedClock(now)),
           runRepositoryProvider.overrideWithValue(runs),
           roleCapabilitiesProvider.overrideWithValue(RoleCapabilities.of(role)),
           myStudentIdProvider.overrideWith((ref) async => 's-1'),

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -322,7 +323,7 @@ void main() {
           runRepositoryProvider.overrideWithValue(repository),
           // 기본 시각: 확정 전 회차는 확정 시각 전(①), 확정된 회차는 확정 뒤 출발 전(②).
           clockProvider.overrideWithValue(
-            _FixedClock(
+            FixedClock(
               now ??
                   (confirmed
                       ? DateTime(2026, 9, 12, 7, 45)
@@ -515,15 +516,6 @@ void main() {
 
     expect(find.textContaining('확정까지'), findsNothing);
   });
-}
-
-class _FixedClock implements Clock {
-  const new(this._value);
-
-  final DateTime _value;
-
-  @override
-  DateTime now() => _value;
 }
 
 /// 호출된 `riding` 값을 순서대로 기록한다.

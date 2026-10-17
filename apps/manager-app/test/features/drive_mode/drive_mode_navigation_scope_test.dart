@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -76,14 +76,6 @@ class _RecordingLauncher implements KakaoNaviLauncher {
   Uri get installUri => Uri.parse('https://navi.example/install');
 }
 
-class _NeverResolvingTokenStorage extends TokenStorage {
-  new()
-    : super(accessTokenKey: 'a', refreshTokenKey: 'r');
-
-  @override
-  Future<String?> readAccessToken() => Completer<String?>().future;
-}
-
 void main() {
   /// 실제 저장소·API 를 거치게 서버 어댑터만 가짜로 두고 화면을 띄운다 — 화면이 고른 범위가
   /// 서버 질의와 카카오내비 요청까지 그대로 이어지는지 본다.
@@ -95,7 +87,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          tokenStorageProvider.overrideWithValue(_NeverResolvingTokenStorage()),
+          tokenStorageProvider.overrideWithValue(NeverResolvingTokenStorage()),
           kakaoNaviAppKeyProvider.overrideWithValue('KEY-1'),
           navigationApiProvider.overrideWithValue(
             NavigationApi(

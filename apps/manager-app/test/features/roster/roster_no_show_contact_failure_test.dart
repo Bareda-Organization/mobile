@@ -1,6 +1,5 @@
-import 'dart:async';
-
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -77,17 +76,6 @@ class _ContactFailingRepository implements RosterRepository {
   }) => throw UnimplementedError();
 }
 
-class _NeverResolvingTokenStorage extends TokenStorage {
-  new()
-    : super(
-        accessTokenKey: 'test_access_token',
-        refreshTokenKey: 'test_refresh_token',
-      );
-
-  @override
-  Future<String?> readAccessToken() => Completer<String?>().future;
-}
-
 final _roster = RosterResponse(
   runId: 'run-1',
   busNo: '3호차',
@@ -131,7 +119,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          tokenStorageProvider.overrideWithValue(_NeverResolvingTokenStorage()),
+          tokenStorageProvider.overrideWithValue(NeverResolvingTokenStorage()),
           selectedRunIdProvider.overrideWith((ref) => 'run-1'),
           currentUserRoleProvider.overrideWith((ref) => UserRole.escort),
           todayRunsProvider.overrideWith((ref) async => [managerRunFixture()]),
@@ -172,7 +160,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          tokenStorageProvider.overrideWithValue(_NeverResolvingTokenStorage()),
+          tokenStorageProvider.overrideWithValue(NeverResolvingTokenStorage()),
           selectedRunIdProvider.overrideWith((ref) => 'run-1'),
           currentUserRoleProvider.overrideWith((ref) => UserRole.escort),
           todayRunsProvider.overrideWith((ref) async => [managerRunFixture()]),

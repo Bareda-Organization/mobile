@@ -1,6 +1,4 @@
-import 'dart:async';
-
-import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
@@ -30,17 +28,6 @@ import '../../support/manager_run_fixture.dart';
 /// 세 화면 머리말에서 닿아야 한다(M-15 · UF-X-08). 지금까지 `/emergency` 는 라우트만 있고
 /// 앱 어디서도 가는 길이 없었다.
 const _emergencyMarker = 'EMERGENCY_SCREEN_MARKER';
-
-class _NeverResolvingTokenStorage extends TokenStorage {
-  new()
-    : super(
-        accessTokenKey: 'test_access_token',
-        refreshTokenKey: 'test_refresh_token',
-      );
-
-  @override
-  Future<String?> readAccessToken() => Completer<String?>().future;
-}
 
 class _NoSample implements PositionSource {
   @override
@@ -97,7 +84,7 @@ void main() {
     );
     return ProviderScope(
       overrides: [
-        tokenStorageProvider.overrideWithValue(_NeverResolvingTokenStorage()),
+        tokenStorageProvider.overrideWithValue(NeverResolvingTokenStorage()),
         positionSourceProvider.overrideWithValue(_NoSample()),
         routeProvider.overrideWith(
           (ref) async => const RouteResponse(stops: []),

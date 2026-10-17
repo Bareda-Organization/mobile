@@ -1,6 +1,4 @@
-import 'dart:async';
-
-import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -16,17 +14,6 @@ import 'package:manager_app/features/roster/presentation/roster_providers.dart';
 import 'package:manager_app/features/roster/presentation/roster_screen.dart';
 
 import '../../support/manager_run_fixture.dart';
-
-/// M-M4(C-07 · BRD-01·02) — 등하원 비대칭. [탑승]은 등원 승하차지의 일이고 [하차]는 하원 승하차지의 일이다.
-/// 서버가 막는 전이(등원 `boarded→alighted` · 하원 `waiting→boarded`)의 단추만 앱이 그리지 않는다.
-/// [미승차](`waiting→no_show`)는 하원에서도 종료 보류 회차를 정리하는 경로라 남긴다.
-/// 오조작을 바로잡는 [되돌리기]는 방향과 무관하다.
-class _NeverResolvingTokenStorage extends TokenStorage {
-  new() : super(accessTokenKey: 'a', refreshTokenKey: 'r');
-
-  @override
-  Future<String?> readAccessToken() => Completer<String?>().future;
-}
 
 RosterStudent _student(
   String id,
@@ -66,7 +53,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          tokenStorageProvider.overrideWithValue(_NeverResolvingTokenStorage()),
+          tokenStorageProvider.overrideWithValue(NeverResolvingTokenStorage()),
           selectedRunIdProvider.overrideWith((ref) => 'run-1'),
           currentUserRoleProvider.overrideWith((ref) => UserRole.escort),
           todayRunsProvider.overrideWith(

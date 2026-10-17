@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart'
@@ -27,16 +28,6 @@ import 'package:manager_app/features/roster/data/models/roster_response.dart';
 import 'package:manager_app/features/route_map/data/models/route_response.dart';
 import 'package:manager_app/features/route_map/presentation/route_providers.dart';
 import 'package:stomp_dart_client/stomp_dart_client.dart';
-
-/// 시각을 고정하는 가짜 시계 — `drive_mode_screen_test.dart` 와 같은 패턴.
-class _FixedClock implements Clock {
-  const new(this._now);
-
-  final DateTime _now;
-
-  @override
-  DateTime now() => _now;
-}
 
 /// 같은 좌표 스냅샷을 돌려주는 가짜 위치 소스. `recordedAt` 을
 /// 시험이 고정하는 "지금"과 **다른 값**으로 둬서, 화면이 전송 시각을
@@ -220,7 +211,7 @@ void main() {
     required _RecordingPositionRepository positionRepository,
     void Function()? onRunsLoad,
   }) => [
-    clockProvider.overrideWithValue(_FixedClock(now)),
+    clockProvider.overrideWithValue(FixedClock(now)),
     currentUserRoleProvider.overrideWith((ref) => role),
     selectedRunIdProvider.overrideWith((ref) => runId),
     driveModeRunProvider.overrideWithValue(
@@ -262,7 +253,7 @@ void main() {
       );
       final container = ProviderContainer(
         overrides: [
-          clockProvider.overrideWithValue(_FixedClock(now)),
+          clockProvider.overrideWithValue(FixedClock(now)),
           currentUserRoleProvider.overrideWith((ref) => UserRole.driver),
           selectedRunIdProvider.overrideWith((ref) => runId),
           driveModeRunProvider.overrideWith((ref) => ref.watch(runState)),

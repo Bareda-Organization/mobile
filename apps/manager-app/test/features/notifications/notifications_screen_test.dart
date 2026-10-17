@@ -1,4 +1,5 @@
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
@@ -14,15 +15,6 @@ import 'package:manager_app/features/notifications/presentation/notifications_sc
 import 'package:manager_app/features/notifications/presentation/widgets/manager_notification_row.dart';
 
 import '../../support/fake_notification_repository.dart';
-
-class _FixedClock implements Clock {
-  const new(this._value);
-
-  final DateTime _value;
-
-  @override
-  DateTime now() => _value;
-}
 
 /// 2026-09-30 10:00 KST (수요일).
 final _now = DateTime.utc(2026, 9, 30, 1);
@@ -81,7 +73,7 @@ Future<FakeNotificationRepository> _pump(
       retry: (_, _) => null,
       overrides: [
         notificationRepositoryProvider.overrideWithValue(fake),
-        clockProvider.overrideWithValue(_FixedClock(_now)),
+        clockProvider.overrideWithValue(FixedClock(_now)),
         ...extraOverrides,
       ],
       child: MaterialApp.router(routerConfig: router),
