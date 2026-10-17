@@ -103,12 +103,12 @@ void dispatchManagerChannelEvent(
 /// 값 자체에는 뜻이 없다 — 바뀌었다는 사실이 신호다.
 final StateProvider<int> appResumedProvider = StateProvider<int>((ref) => 0);
 
-/// 서버에 다시 닿았다는 신호(R46-FIXCONN C-10) — 위치 전송(REST)이 성공할
-/// 때마다 하나씩 오른다. 음영에서 나와 망이 돌아와도 실시간 연결은 재연결
+/// 서버에 다시 닿았다는 신호(R46-FIXCONN C-10) — 위치 전송(REST)이 실패하다 다시 성공한
+/// 순간에만 하나 오른다. 음영에서 나와 망이 돌아와도 실시간 연결은 재연결
 /// 대기(최대 30초)가 끝나야 붙으므로, [ManagerRunChannelController] 가 이
-/// 신호를 보고 바로 다시 붙는다. 이미 연결돼 있거나 연결 중이면
-/// 클라이언트가 건드리지 않아([BaraedaWebSocketClient.reconnectNow]) 2초마다
-/// 올라도 무해하다.
+/// 신호를 보고 바로 다시 붙는다. 성공마다 올리지 않는 이유 — [BaraedaWebSocketClient.reconnectNow]
+/// 가 재연결 대기를 취소하고 시도 횟수를 0으로 되돌려, WebSocket 서버만 죽은 동안 2초마다
+/// 연결을 시도하게 된다.
 final StateProvider<int> serverReachedProvider = StateProvider<int>((ref) => 0);
 
 /// 이벤트가 몰려도 명단·노선을 이 간격 안에서는 한 번만 다시 받는다(R46-FIXRT L4). 한 정류장에서 승차가
