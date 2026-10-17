@@ -7,12 +7,12 @@ import 'package:baraeda_core/error/failure.dart';
 import 'package:baraeda_core/network/api_client.dart';
 import 'package:baraeda_core/network/dio_error_mapper.dart';
 import 'package:baraeda_core/storage/token_storage.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage_platform_interface/flutter_secure_storage_platform_interface.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import '../support/driver_blocked_seed_reset.dart';
-import '../support/real_backend_target.dart';
 
 // 실제 시크릿 스토리지 없이 값만 메모리에 담아 두는 가짜 구현
 // (`api_client_auth_test.dart`·`token_storage_test.dart` 와 같은 구조).
