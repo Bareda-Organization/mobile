@@ -81,13 +81,18 @@ class _FakeStomp extends StompClient {
 }
 
 class _Harness {
-  new({Random? random, this.refreshResults = const []}) {
+  new({
+    Random? random,
+    this.refreshResults = const [],
+    this.refreshThrows = false,
+  }) {
     client = BaraedaWebSocketClient(
       url: 'ws://test/ws/location',
       tokenStorage: _FakeTokenStorage(),
       random: random ?? _FixedRandom(0.999),
       refreshAccessToken: () async {
         refreshCalls += 1;
+        if (refreshThrows) throw StateError('network');
         return refreshResults.isEmpty
             ? null
             : refreshResults[min(refreshCalls, refreshResults.length) - 1];
@@ -104,6 +109,7 @@ class _Harness {
   late final BaraedaWebSocketClient client;
   final List<_FakeStomp> stomps = [];
   final List<String?> refreshResults;
+  final bool refreshThrows;
   int refreshCalls = 0;
   int sessionExpiredCount = 0;
 }
@@ -206,6 +212,54 @@ void main() {
         expect(h.sessionExpiredCount, 1);
         async.elapse(const Duration(seconds: 120));
         expect(h.stomps, hasLength(2));
+        h.client.dispose();
+      });
+    });
+
+    // Ruling 905 — 재발급이 일시 장애(네트워크 · 5xx · 시간 초과)로 던지면 자격이 거절된 것이 아니다.
+    // 세션을 만료시키지 않고 일반 백오프로 계속 다시 붙는다.
+    test('재발급이 일시 장애로 던지면 세션을 만료시키지 않고 백오프로 다시 붙는다 (Ruling 905)', () {
+      fakeAsync((async) {
+        final h = _Harness(refreshThrows: true)..client.connect();
+        async.flushMicrotasks();
+        h.stomps.single
+          ..serverError('UNAUTHORIZED')
+          ..serverClosed(1008);
+        async.flushMicrotasks();
+
+        expect(h.refreshCalls, 1);
+        expect(h.sessionExpiredCount, 0);
+        expect(h.client.state, WsConnectionState.reconnecting);
+
+        async.elapse(const Duration(seconds: 1));
+        expect(h.stomps, hasLength(2), reason: '백오프 첫 단계(≤ 1초) 안에 다시 붙는다');
+        h.client.dispose();
+      });
+    });
+
+    // 재발급 1회 표식은 CONNECTED 를 못 받은 채 수동으로 끊고 다시 연결해도 새로 시작한다.
+    test('CONNECTED 전 disconnect → connect 해도 재발급 1회를 다시 얻는다', () {
+      fakeAsync((async) {
+        final h = _Harness(refreshResults: ['t1', 't2'])..client.connect();
+        async.flushMicrotasks();
+        h.stomps.single
+          ..serverError('UNAUTHORIZED')
+          ..serverClosed(1008);
+        async.flushMicrotasks();
+        expect(h.refreshCalls, 1);
+
+        h.client
+          ..disconnect()
+          ..connect();
+        async.flushMicrotasks();
+        h.stomps.last
+          ..serverError('UNAUTHORIZED')
+          ..serverClosed(1008);
+        async.flushMicrotasks();
+
+        expect(h.refreshCalls, 2);
+        expect(h.sessionExpiredCount, 0);
+        expect(h.stomps.last.authorization, 'Bearer t2');
         h.client.dispose();
       });
     });

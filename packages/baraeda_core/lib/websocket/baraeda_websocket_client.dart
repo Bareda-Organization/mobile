@@ -293,6 +293,7 @@ class BaraedaWebSocketClient {
     }
     _epoch += 1;
     _reconnectAttempt = 0;
+    _unauthorizedRefreshed = false;
     _reconnectTimer?.cancel();
     unawaited(_doConnect());
   }
@@ -555,13 +556,16 @@ class BaraedaWebSocketClient {
     final epoch = _epoch;
     _setState(WsConnectionState.reconnecting);
     final refresh = _refreshAccessToken;
+    // Ruling 905 — "재발급 실패" 는 재발급이 **거절**됐다는 뜻이다(토큰을 못 받음 ·
+    // 401). 네트워크 · 5xx · 시간 초과로 던진 재발급은 자격이 거절된 것이 아니므로
+    // 세션을 만료시키지 않고 일반 백오프로 계속 다시 붙는다.
     final String? newToken;
     try {
       newToken = refreshOnce && _unauthorizedRefreshed || refresh == null
           ? null
           : await refresh();
     } on Object catch (error) {
-      // 재발급 요청이 일시 장애로 실패했다(연결 실패·타임아웃·5xx) — 세션은 살아 있을 수
+      // 재발급 요청이 일시 장애로 실패했다(연결 실패·타임아웃·5xx; Ruling 905) — 세션은 살아 있을 수
       // 있으므로 sessionExpired 로 넘기지 않고 일반 끊김처럼 백오프로 다시 시도한다.
       _onDebugMessage('[BaraedaWebSocketClient] 토큰 재발급 실패(일시): $error');
       if (epoch == _epoch) _scheduleReconnect();
@@ -585,6 +589,7 @@ class BaraedaWebSocketClient {
   void disconnect() {
     _manuallyDisconnected = true;
     _epoch += 1;
+    _unauthorizedRefreshed = false;
     _reconnectTimer?.cancel();
     _connectWatchdog?.cancel();
     _cancelRenewal();
