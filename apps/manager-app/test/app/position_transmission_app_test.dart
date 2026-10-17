@@ -47,9 +47,15 @@ class _FakeSource implements PositionSource {
   @override
   PositionAvailability get availability => availabilityValue;
 
+  /// 호출마다 측정 시각이 1초씩 새로 나온 것처럼 돌려준다 — 같은 시각은 다시 보내지 않는다(M-2).
+  int _measured = 0;
+
   @override
-  PositionSample? sample() =>
-      PositionSample(lat: 37.5, lng: 127, recordedAt: DateTime(2020));
+  PositionSample? sample() => PositionSample(
+    lat: 37.5,
+    lng: 127,
+    recordedAt: DateTime(2020).add(Duration(seconds: _measured++)),
+  );
 
   @override
   Future<void> recheck() async {}
