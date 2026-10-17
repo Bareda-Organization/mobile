@@ -194,6 +194,9 @@ class ManagerRunChannelController extends StateNotifier<ManagerChannelStatus> {
 
   void _onConnectionState(WsConnectionState wsState) {
     if (_forbidden) return;
+    // 만료 전 갱신으로 다시 붙는 1~2초는 끊김이 아니다 — "실시간 연결 중" 안내를 띄우지 않는다.
+    // 다시 `connected` 가 오면 아래에서 구독과 화면 값을 새로 받는다.
+    if (wsState == WsConnectionState.connecting && _client.isRenewing) return;
     final mapped = mapConnectionState(wsState);
     if (mapped == ManagerChannelStatus.reconnecting) {
       _offlineSince ??= _ref.read(clockProvider).now();

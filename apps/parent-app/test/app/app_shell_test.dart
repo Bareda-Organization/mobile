@@ -27,10 +27,12 @@ import 'package:parent_app/features/settings/domain/notification_settings.dart';
 import 'package:parent_app/features/settings/presentation/settings_providers.dart';
 import 'package:parent_app/features/settings/presentation/settings_screen.dart';
 
-
 /// 소켓 없이 "앱 복귀 때 재연결을 요청하는가" 만 보려는 가짜 클라이언트 — 세션 시작이 읽는 `sessionExpired` 와
 /// 복귀 때 부르는 `reconnectNow` 만 구현한다.
 class _FakeWsClient implements BaraedaWebSocketClient {
+  @override
+  bool get isRenewing => false;
+
   int reconnectNowCalls = 0;
   int connectCalls = 0;
   int disconnectCalls = 0;

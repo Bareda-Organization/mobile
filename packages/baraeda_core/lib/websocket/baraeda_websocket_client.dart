@@ -151,6 +151,8 @@ class BaraedaWebSocketClient {
   int _currentAttempt = 0;
   Timer? _renewTimer;
 
+  bool _renewing = false;
+
   /// 재연결 대기 간격 정책 — 시험이 주입해 실제 시간을 기다리지 않고
   /// 검증할 수 있게 `final` 이 아니라 생성자 파라미터로 남겨 둔다.
   final WsBackoffPolicy backoffPolicy;
@@ -223,6 +225,11 @@ class BaraedaWebSocketClient {
   /// 거부 즉시 세션 전체를 4403 으로 닫아(`ForbiddenSubscriptionCloseFactory`)
   /// 나머지 구독도 함께 무효가 되므로, 누락보다 과다 신고가 안전하다.
   final List<String> _pendingSubscriptions = [];
+
+  /// 만료 전 갱신으로 다시 붙는 중인가 — 끊겨서 다시 붙는 것이 아니라 예정된 1~2초 공백이다.
+  /// `connecting` 을 받은 화면이 이 값을 읽어, 갱신이면 "연결 중 / 재연결" 안내를 띄우지 않고
+  /// 구독 · REST 재조회만 한다. 갱신 접속이 `connected` 가 되거나 실패하면 꺼진다.
+  bool get isRenewing => _renewing;
 
   /// 현재 연결 상태. 화면이 배지·재연결 안내를 그리는 데 쓴다.
   Stream<WsConnectionState> get connectionState => _stateController.stream;
@@ -362,6 +369,7 @@ class BaraedaWebSocketClient {
       onConnect: (frame) {
         if (attempt != _currentAttempt) return;
         _connectWatchdog?.cancel();
+        _renewing = false;
         _lastServerActivity = _clock.now();
         _reconnectAttempt = 0;
         _unauthorizedRefreshed = false;
@@ -451,6 +459,7 @@ class BaraedaWebSocketClient {
     _connectWatchdog?.cancel();
     if (_reconnectHandled) return;
     _reconnectHandled = true;
+    _renewing = false;
     _renewTimer?.cancel();
     _renewTimer = null;
 
@@ -532,6 +541,7 @@ class BaraedaWebSocketClient {
   /// 재연결을 멈추고 연결을 닫는다. 화면 종료·로그아웃 시 호출한다.
   void disconnect() {
     _manuallyDisconnected = true;
+    _renewing = false;
     _epoch += 1;
     _unauthorizedRefreshed = false;
     _reconnectTimer?.cancel();
@@ -584,7 +594,11 @@ class BaraedaWebSocketClient {
     // 해제 시점에 [_pendingSubscriptions] 에서도 함께 뺀다.
     return ({Map<String, String>? unsubscribeHeaders}) {
       _pendingSubscriptions.remove(destination);
-      unsubscribe(unsubscribeHeaders: unsubscribeHeaders);
+      try {
+        unsubscribe(unsubscribeHeaders: unsubscribeHeaders);
+      } on StompBadStateException {
+        // 연결이 이미 닫혔다(다시 붙으며 닫은 옛 연결) — 그 연결의 구독은 서버에서도 사라졌으니 풀 것이 없다.
+      }
     };
   }
 
@@ -646,6 +660,7 @@ class BaraedaWebSocketClient {
         _state != WsConnectionState.connected) {
       return;
     }
+    _renewing = true;
     _restartConnection(overrideToken: newToken);
   }
 

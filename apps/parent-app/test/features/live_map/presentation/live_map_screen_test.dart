@@ -55,6 +55,12 @@ class _FakeWsClient extends BaraedaWebSocketClient {
   final _stateController = StreamController<WsConnectionState>.broadcast();
   final _forbiddenController = StreamController<String>.broadcast();
   WsConnectionState _fakeState = WsConnectionState.disconnected;
+
+  /// 만료 전 갱신으로 다시 붙는 중인 것처럼 — 화면이 `connecting` 을 받을 때 읽는다.
+  bool renewing = false;
+
+  @override
+  bool get isRenewing => renewing;
   final List<void Function(WebSocketEnvelope)> _listeners = [];
   final List<String> subscribedDestinations = [];
 
@@ -309,17 +315,16 @@ void main() {
       expect(find.text('학생 계정 정보가 없어요'), findsOneWidget);
     });
 
-    testWidgets(
-      '연결 직후(connecting)에는 로딩만 뜨고 "연결 끊김"·"데이터 없음" 문구는 뜨지 않는다',
-      (tester) async {
-        await pumpAsStudent(tester, studentId: 's-1');
-        await tester.pump();
+    testWidgets('연결 직후(connecting)에는 로딩만 뜨고 "연결 끊김"·"데이터 없음" 문구는 뜨지 않는다', (
+      tester,
+    ) async {
+      await pumpAsStudent(tester, studentId: 's-1');
+      await tester.pump();
 
-        expect(find.byType(MapSheetSkeleton), findsOneWidget);
-        expect(find.text(_gaveUpTitle), findsNothing);
-        expect(find.text('아직 위치 정보가 없어요'), findsNothing);
-      },
-    );
+      expect(find.byType(MapSheetSkeleton), findsOneWidget);
+      expect(find.text(_gaveUpTitle), findsNothing);
+      expect(find.text('아직 위치 정보가 없어요'), findsNothing);
+    });
   });
 
   group('학부모 갈래', () {
@@ -393,54 +398,48 @@ void main() {
     final studentA = Student(studentId: 's-A', name: 'A', linkedAt: _linkedAt);
     final studentB = Student(studentId: 's-B', name: 'B', linkedAt: _linkedAt);
 
-    testWidgets(
-      '자녀를 아직 고르지 않아도(selectedStudentIdProvider == null) 첫 자녀 '
-      '목적지로만 구독하고 null 목적지는 만들지 않는다(팀 리드 우려 2)',
-      (tester) async {
-        await pumpConnectedParent(tester, students: [studentA, studentB]);
+    testWidgets('자녀를 아직 고르지 않아도(selectedStudentIdProvider == null) 첫 자녀 '
+        '목적지로만 구독하고 null 목적지는 만들지 않는다(팀 리드 우려 2)', (tester) async {
+      await pumpConnectedParent(tester, students: [studentA, studentB]);
 
-        expect(client.subscribedDestinations, [WsChannel.studentRun('s-A')]);
-        expect(
-          client.subscribedDestinations.any((d) => d.contains('null')),
-          isFalse,
-        );
-      },
-    );
+      expect(client.subscribedDestinations, [WsChannel.studentRun('s-A')]);
+      expect(
+        client.subscribedDestinations.any((d) => d.contains('null')),
+        isFalse,
+      );
+    });
 
-    testWidgets(
-      '자녀를 전환하면 새 목적지 구독이 먼저 걸리고 이전 목적지 해지가 '
-      '뒤따른다 — 팀 리드 우려 3 실측: `autoDispose` 는 위젯 재빌드가 새 '
-      '목적지를 구독한 *뒤에* 더는 안 읽히는 이전 인스턴스를 해지하므로 '
-      '한 프레임 동안 두 목적지가 겹친다. 이 겹침은 둘 다 같은 학부모 '
-      '본인 자녀 목적지라 서버 인가상 안전하다(거부 대상이 아니다) — '
-      '문제는 남의 자녀 목적지가 섞일 때인데 그 경로는 이 provider 가 '
-      '애초에 만들지 않는다.',
-      (tester) async {
-        await pumpConnectedParent(tester, students: [studentA, studentB]);
-        client.callLog.clear();
+    testWidgets('자녀를 전환하면 새 목적지 구독이 먼저 걸리고 이전 목적지 해지가 '
+        '뒤따른다 — 팀 리드 우려 3 실측: `autoDispose` 는 위젯 재빌드가 새 '
+        '목적지를 구독한 *뒤에* 더는 안 읽히는 이전 인스턴스를 해지하므로 '
+        '한 프레임 동안 두 목적지가 겹친다. 이 겹침은 둘 다 같은 학부모 '
+        '본인 자녀 목적지라 서버 인가상 안전하다(거부 대상이 아니다) — '
+        '문제는 남의 자녀 목적지가 섞일 때인데 그 경로는 이 provider 가 '
+        '애초에 만들지 않는다.', (tester) async {
+      await pumpConnectedParent(tester, students: [studentA, studentB]);
+      client.callLog.clear();
 
-        // BaraedaSelect.onChanged 가 실제로 부르는 지점과 같은 provider
-        // 갱신을 직접 호출한다 — 화면 트리거를 거치든 이 경로를 거치든
-        // `_ParentLiveMap.build` 가 읽는 값은 같다.
-        ProviderScope.containerOf(
-          tester.element(find.byType(LiveMapScreen)),
-          listen: false,
-        ).read(selectedStudentIdProvider.notifier).state = 's-B';
-        await tester.pump();
+      // BaraedaSelect.onChanged 가 실제로 부르는 지점과 같은 provider
+      // 갱신을 직접 호출한다 — 화면 트리거를 거치든 이 경로를 거치든
+      // `_ParentLiveMap.build` 가 읽는 값은 같다.
+      ProviderScope.containerOf(
+        tester.element(find.byType(LiveMapScreen)),
+        listen: false,
+      ).read(selectedStudentIdProvider.notifier).state = 's-B';
+      await tester.pump();
 
-        final unsubA = client.callLog.indexOf(
-          'unsubscribe:${WsChannel.studentRun('s-A')}',
-        );
-        final subB = client.callLog.indexOf(
-          'subscribe:${WsChannel.studentRun('s-B')}',
-        );
+      final unsubA = client.callLog.indexOf(
+        'unsubscribe:${WsChannel.studentRun('s-A')}',
+      );
+      final subB = client.callLog.indexOf(
+        'subscribe:${WsChannel.studentRun('s-B')}',
+      );
 
-        expect(unsubA, greaterThanOrEqualTo(0));
-        expect(subB, greaterThanOrEqualTo(0));
-        expect(subB, lessThan(unsubA));
-        expect(client.subscribedDestinations, [WsChannel.studentRun('s-B')]);
-      },
-    );
+      expect(unsubA, greaterThanOrEqualTo(0));
+      expect(subB, greaterThanOrEqualTo(0));
+      expect(subB, lessThan(unsubA));
+      expect(client.subscribedDestinations, [WsChannel.studentRun('s-B')]);
+    });
   });
 
   group('연결·이벤트 반영 — 완료 조건 9(데이터 없음 vs 연결 끊김 구분)', () {
@@ -481,9 +480,7 @@ void main() {
       );
     });
 
-    testWidgets('position 이벤트를 받으면 위치 타일이 뜨고 "데이터 없음"은 사라진다', (
-      tester,
-    ) async {
+    testWidgets('position 이벤트를 받으면 위치 타일이 뜨고 "데이터 없음"은 사라진다', (tester) async {
       await pumpConnected(tester);
 
       client.deliver(
@@ -518,15 +515,13 @@ void main() {
       tester,
     ) async {
       await pumpConnected(tester);
-      WebSocketEnvelope position(String receivedAt, String stop) => _envelope(
-        WsEventType.position,
-        {
-          'lat': 37.5,
-          'lng': 127.0,
-          'received_at': receivedAt,
-          'current_stop_name': stop,
-        },
-      );
+      WebSocketEnvelope position(String receivedAt, String stop) =>
+          _envelope(WsEventType.position, {
+            'lat': 37.5,
+            'lng': 127.0,
+            'received_at': receivedAt,
+            'current_stop_name': stop,
+          });
 
       client.deliver(position('2026-09-13T08:00:10Z', '새 정류장'));
       await tester.pump();
@@ -564,57 +559,48 @@ void main() {
       expect(find.text('다시 시도'), findsNothing);
     });
 
-    testWidgets(
-      'gaveUp(포기) 상태면 "연결 끊김"이 뜨고 "데이터 없음"과 동시에 뜨지 않는다',
-      (tester) async {
-        await pumpConnected(tester);
-        client.emit(WsConnectionState.gaveUp);
-        await tester.pump();
+    testWidgets('gaveUp(포기) 상태면 "연결 끊김"이 뜨고 "데이터 없음"과 동시에 뜨지 않는다', (
+      tester,
+    ) async {
+      await pumpConnected(tester);
+      client.emit(WsConnectionState.gaveUp);
+      await tester.pump();
 
-        expect(find.text(_gaveUpTitle), findsOneWidget);
-        expect(find.text('아직 위치 정보가 없어요'), findsNothing);
-      },
-    );
+      expect(find.text(_gaveUpTitle), findsOneWidget);
+      expect(find.text('아직 위치 정보가 없어요'), findsNothing);
+    });
 
-    testWidgets(
-      '이 화면이 구독한 목적지가 거부되면 "조회 권한 없음"이 뜨고 '
-      '"데이터 없음"과 동시에 뜨지 않는다',
-      (tester) async {
-        await pumpConnected(tester);
-        client.forbid(WsChannel.studentRun('s-1'));
-        await tester.pump();
+    testWidgets('이 화면이 구독한 목적지가 거부되면 "조회 권한 없음"이 뜨고 '
+        '"데이터 없음"과 동시에 뜨지 않는다', (tester) async {
+      await pumpConnected(tester);
+      client.forbid(WsChannel.studentRun('s-1'));
+      await tester.pump();
 
-        expect(find.text(WsConnectionNotice.forbiddenTitle), findsOneWidget);
-        expect(find.text('아직 위치 정보가 없어요'), findsNothing);
-      },
-    );
+      expect(find.text(WsConnectionNotice.forbiddenTitle), findsOneWidget);
+      expect(find.text('아직 위치 정보가 없어요'), findsNothing);
+    });
 
-    testWidgets(
-      '거부(forbidden) 후 연결이 되살아나도 같은 목적지를 다시 구독하지 '
-      '않고 "조회 권한 없음"을 유지한다(팀 리드 우려 4 — 재구독 반복 방지)',
-      (tester) async {
-        await pumpConnected(tester);
-        client.forbid(WsChannel.studentRun('s-1'));
-        await tester.pump();
-        client.callLog.clear();
+    testWidgets('거부(forbidden) 후 연결이 되살아나도 같은 목적지를 다시 구독하지 '
+        '않고 "조회 권한 없음"을 유지한다(팀 리드 우려 4 — 재구독 반복 방지)', (tester) async {
+      await pumpConnected(tester);
+      client.forbid(WsChannel.studentRun('s-1'));
+      await tester.pump();
+      client.callLog.clear();
 
-        // baraeda_core 는 4403 세션 종료 뒤에도 자동 재연결을 시도한다
-        // (공용 연결이 앱 전역 싱글턴이라 다른 화면을 위해 계속됨) — 그
-        // 재연결 성공을 흉내낸다.
-        client.emit(WsConnectionState.reconnecting);
-        await tester.pump();
-        client.emit(WsConnectionState.connected);
-        await tester.pump();
+      // baraeda_core 는 4403 세션 종료 뒤에도 자동 재연결을 시도한다
+      // (공용 연결이 앱 전역 싱글턴이라 다른 화면을 위해 계속됨) — 그
+      // 재연결 성공을 흉내낸다.
+      client.emit(WsConnectionState.reconnecting);
+      await tester.pump();
+      client.emit(WsConnectionState.connected);
+      await tester.pump();
 
-        expect(find.text(WsConnectionNotice.forbiddenTitle), findsOneWidget);
-        expect(
-          client.callLog.contains(
-            'subscribe:${WsChannel.studentRun('s-1')}',
-          ),
-          isFalse,
-        );
-      },
-    );
+      expect(find.text(WsConnectionNotice.forbiddenTitle), findsOneWidget);
+      expect(
+        client.callLog.contains('subscribe:${WsChannel.studentRun('s-1')}'),
+        isFalse,
+      );
+    });
 
     // Ruling 335 — 학생 채널은 인원수를 싣지 않고 앱도 표시하지 않는다(C-08 "탑승 인원 미표시").
     testWidgets('운행 시작·종료 이벤트를 받아도 탑승·하차 인원은 표시하지 않는다', (tester) async {
@@ -641,9 +627,7 @@ void main() {
       expect(find.textContaining('명'), findsNothing);
     });
 
-    testWidgets('reconnecting 상태면 데이터가 있어도 재연결 안내 배너가 함께 뜬다', (
-      tester,
-    ) async {
+    testWidgets('reconnecting 상태면 데이터가 있어도 재연결 안내 배너가 함께 뜬다', (tester) async {
       await pumpConnected(tester);
       client.deliver(
         _envelope(WsEventType.runStarted, {
@@ -733,11 +717,13 @@ void main() {
   group('재연결 뒤 위치 스냅샷 반영(C-9)', () {
     Future<void> pumpWithSnapshots(
       WidgetTester tester,
-      List<BusPosition> snapshots,
-    ) async {
+      List<BusPosition> snapshots, {
+      _ScriptedBusPositionRepository? repository,
+    }) async {
       await pumpScreen(
         tester,
-        busPositionRepository: _ScriptedBusPositionRepository(snapshots),
+        busPositionRepository:
+            repository ?? _ScriptedBusPositionRepository(snapshots),
         extraOverrides: [
           roleCapabilitiesProvider.overrideWithValue(
             RoleCapabilities.of(UserRole.student),
@@ -795,6 +781,68 @@ void main() {
       // 유실 재표시 타이머를 남기지 않게 화면을 내린다.
       await tester.pumpWidget(const SizedBox());
       await tester.pump();
+    });
+
+    // Ruling 901 — 만료 전 갱신은 15분마다 1~2초의 예정된 공백이다. 재연결 안내가 번쩍이면 안 되고,
+    // 다시 붙으면 구독과 REST 스냅샷을 한 번만 다시 받아 그 공백에 놓친 위치를 메운다.
+    group('만료 전 갱신 (Ruling 901)', () {
+      testWidgets('갱신으로 다시 붙는 동안 재연결 안내를 띄우지 않는다', (tester) async {
+        await pumpWithSnapshots(tester, [
+          snapshot(stop: '첫 승하차지', at: DateTime.utc(2026, 9, 13, 8)),
+        ]);
+
+        client
+          ..renewing = true
+          ..emit(WsConnectionState.connecting);
+        await tester.pump();
+
+        expect(
+          find.text(WsConnectionNotice.reconnectingTitle),
+          findsNothing,
+          reason: '갱신 중의 connecting 이 재연결 배너로 번쩍였다',
+        );
+
+        // 유실 재표시 타이머를 남기지 않게 화면을 내린다.
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump();
+      });
+
+      testWidgets('다시 붙으면 구독을 다시 걸고 REST 스냅샷을 한 번만 다시 받는다', (tester) async {
+        final repository = _ScriptedBusPositionRepository([
+          snapshot(stop: '첫 승하차지', at: DateTime.utc(2026, 9, 13, 8)),
+        ]);
+        await pumpWithSnapshots(tester, const [], repository: repository);
+        await tester.pump();
+        final snapshotsBefore = repository.calls;
+        final subscribesBefore = client.callLog
+            .where((e) => e.startsWith('subscribe:'))
+            .length;
+        expect(subscribesBefore, 1);
+
+        client
+          ..renewing = true
+          ..emit(WsConnectionState.connecting);
+        await tester.pump();
+        client
+          ..renewing = false
+          ..emit(WsConnectionState.connected);
+        await tester.pump();
+        await tester.pump();
+
+        expect(
+          client.callLog.where((e) => e.startsWith('subscribe:')).length,
+          subscribesBefore + 1,
+          reason: '구독을 다시 걸지 않았다',
+        );
+        expect(
+          repository.calls,
+          snapshotsBefore + 1,
+          reason: 'REST 스냅샷을 한 번만 다시 받는다',
+        );
+
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump();
+      });
     });
 
     // M-5 (R57) — 백그라운드 60초로 연결을 끊었다가(`disconnected`) 돌아와 다시 붙으면
@@ -921,21 +969,18 @@ void main() {
       expect(find.textContaining('마지막 확인 위치'), findsNothing);
     });
 
-    testWidgets(
-      '마지막 수신 후 2분이 지나면 "마지막 확인 위치 · N분 전" 으로 전환된다 — '
-      '지금 코드는 연결이 끊기지 않는 한 "HH:mm 기준" 표지 로 그대로 남는다',
-      (tester) async {
-        final clock = _MutableClock(t0);
-        await pumpConnectedWithPosition(tester, clock: clock);
+    testWidgets('마지막 수신 후 2분이 지나면 "마지막 확인 위치 · N분 전" 으로 전환된다 — '
+        '지금 코드는 연결이 끊기지 않는 한 "HH:mm 기준" 표지 로 그대로 남는다', (tester) async {
+      final clock = _MutableClock(t0);
+      await pumpConnectedWithPosition(tester, clock: clock);
 
-        clock.value = t0.add(const Duration(minutes: 2));
-        client.emit(WsConnectionState.reconnecting);
-        await tester.pump();
+      clock.value = t0.add(const Duration(minutes: 2));
+      client.emit(WsConnectionState.reconnecting);
+      await tester.pump();
 
-        expect(find.textContaining('마지막 확인 위치 · 2분 전'), findsOneWidget);
-        expect(find.textContaining(' 기준'), findsNothing);
-      },
-    );
+      expect(find.textContaining('마지막 확인 위치 · 2분 전'), findsOneWidget);
+      expect(find.textContaining(' 기준'), findsNothing);
+    });
   });
 
   group('F1(2026-09-26) — 다른 이벤트 없이 시간만 흐르는 경우의 자동 재표시', () {
@@ -973,30 +1018,25 @@ void main() {
       await tester.pump();
     }
 
-    testWidgets(
-      '다른 이벤트 없이 시간만 2분 지나면 자동으로 "마지막 확인 위치 · 2분 전" 으로 '
-      '전환된다 — 1분 59초에는 "HH:mm 기준" 표지 를 유지한다',
-      (tester) async {
-        final clock = _MutableClock(t0);
-        await pumpConnectedWithPosition(tester, clock: clock);
-        expect(find.textContaining(' 기준'), findsOneWidget);
+    testWidgets('다른 이벤트 없이 시간만 2분 지나면 자동으로 "마지막 확인 위치 · 2분 전" 으로 '
+        '전환된다 — 1분 59초에는 "HH:mm 기준" 표지 를 유지한다', (tester) async {
+      final clock = _MutableClock(t0);
+      await pumpConnectedWithPosition(tester, clock: clock);
+      expect(find.textContaining(' 기준'), findsOneWidget);
 
-        clock.value = t0.add(const Duration(minutes: 1, seconds: 59));
-        await tester.pump(const Duration(minutes: 1, seconds: 59));
-        expect(find.textContaining(' 기준'), findsOneWidget);
-        expect(find.textContaining('마지막 확인 위치'), findsNothing);
+      clock.value = t0.add(const Duration(minutes: 1, seconds: 59));
+      await tester.pump(const Duration(minutes: 1, seconds: 59));
+      expect(find.textContaining(' 기준'), findsOneWidget);
+      expect(find.textContaining('마지막 확인 위치'), findsNothing);
 
-        clock.value = t0.add(const Duration(minutes: 2));
-        await tester.pump(const Duration(seconds: 1));
+      clock.value = t0.add(const Duration(minutes: 2));
+      await tester.pump(const Duration(seconds: 1));
 
-        expect(find.textContaining('마지막 확인 위치 · 2분 전'), findsOneWidget);
-        expect(find.textContaining(' 기준'), findsNothing);
-      },
-    );
+      expect(find.textContaining('마지막 확인 위치 · 2분 전'), findsOneWidget);
+      expect(find.textContaining(' 기준'), findsNothing);
+    });
 
-    testWidgets('화면을 떠나면(dispose) 예약된 재표시 타이머가 남지 않는다', (
-      tester,
-    ) async {
+    testWidgets('화면을 떠나면(dispose) 예약된 재표시 타이머가 남지 않는다', (tester) async {
       final clock = _MutableClock(t0);
       await pumpConnectedWithPosition(tester, clock: clock);
       expect(find.textContaining(' 기준'), findsOneWidget);
@@ -1045,61 +1085,57 @@ void main() {
       );
     }
 
-    testWidgets(
-      '좌표 A 수신 1분30초 뒤 좌표 B 가 오면 예약이 B 기준으로 다시 걸린다 — '
-      'A 기준 2분(=B 기준 30초)에는 아직 "HH:mm 기준" 표지, B 기준 2분에야 유실 문구로 전환된다',
-      (tester) async {
-        final clock = _MutableClock(t0);
-        await pumpConnected(tester, clock: clock);
-        deliverPosition(t0);
-        await tester.pump();
-        expect(find.textContaining(' 기준'), findsOneWidget);
+    testWidgets('좌표 A 수신 1분30초 뒤 좌표 B 가 오면 예약이 B 기준으로 다시 걸린다 — '
+        'A 기준 2분(=B 기준 30초)에는 아직 "HH:mm 기준" 표지, B 기준 2분에야 유실 문구로 전환된다', (
+      tester,
+    ) async {
+      final clock = _MutableClock(t0);
+      await pumpConnected(tester, clock: clock);
+      deliverPosition(t0);
+      await tester.pump();
+      expect(find.textContaining(' 기준'), findsOneWidget);
 
-        final tB = t0.add(const Duration(minutes: 1, seconds: 30));
-        clock.value = tB;
-        await tester.pump(const Duration(minutes: 1, seconds: 30));
-        deliverPosition(tB);
-        await tester.pump();
-        expect(find.textContaining(' 기준'), findsOneWidget);
+      final tB = t0.add(const Duration(minutes: 1, seconds: 30));
+      clock.value = tB;
+      await tester.pump(const Duration(minutes: 1, seconds: 30));
+      deliverPosition(tB);
+      await tester.pump();
+      expect(find.textContaining(' 기준'), findsOneWidget);
 
-        // A 기준 2분(=B 기준 30초) — 재예약이 B 를 향해 걸렸다면 A 의
-        // 예약은 이미 취소된 상태라 이 시점에는 아무것도 전환되지 않는다.
-        clock.value = t0.add(const Duration(minutes: 2));
-        await tester.pump(const Duration(seconds: 30));
-        expect(find.textContaining(' 기준'), findsOneWidget);
-        expect(find.textContaining('마지막 확인 위치'), findsNothing);
+      // A 기준 2분(=B 기준 30초) — 재예약이 B 를 향해 걸렸다면 A 의
+      // 예약은 이미 취소된 상태라 이 시점에는 아무것도 전환되지 않는다.
+      clock.value = t0.add(const Duration(minutes: 2));
+      await tester.pump(const Duration(seconds: 30));
+      expect(find.textContaining(' 기준'), findsOneWidget);
+      expect(find.textContaining('마지막 확인 위치'), findsNothing);
 
-        // B 기준 2분 — 재예약이 실제로 B 를 향해 걸렸어야 이 시점에
-        // 전환된다. A 의 예약만 살아 있는 결함이면 여기서 전환이
-        // 일어나지 않는다(A 의 타이머는 이미 위에서 소진됐다).
-        clock.value = tB.add(const Duration(minutes: 2));
-        await tester.pump(const Duration(minutes: 1, seconds: 30));
-        expect(find.textContaining('마지막 확인 위치 · 2분 전'), findsOneWidget);
-        expect(find.textContaining(' 기준'), findsNothing);
-      },
-    );
+      // B 기준 2분 — 재예약이 실제로 B 를 향해 걸렸어야 이 시점에
+      // 전환된다. A 의 예약만 살아 있는 결함이면 여기서 전환이
+      // 일어나지 않는다(A 의 타이머는 이미 위에서 소진됐다).
+      clock.value = tB.add(const Duration(minutes: 2));
+      await tester.pump(const Duration(minutes: 1, seconds: 30));
+      expect(find.textContaining('마지막 확인 위치 · 2분 전'), findsOneWidget);
+      expect(find.textContaining(' 기준'), findsNothing);
+    });
 
-    testWidgets(
-      '같은 received_at 좌표가 재연결로 다시 와도 예약이 중복되지 않는다 — '
-      '대기 중 타이머는 늘 1개다',
-      (tester) async {
-        final clock = _MutableClock(t0);
-        await pumpConnected(tester, clock: clock);
-        deliverPosition(t0);
-        await tester.pump();
+    testWidgets('같은 received_at 좌표가 재연결로 다시 와도 예약이 중복되지 않는다 — '
+        '대기 중 타이머는 늘 1개다', (tester) async {
+      final clock = _MutableClock(t0);
+      await pumpConnected(tester, clock: clock);
+      deliverPosition(t0);
+      await tester.pump();
 
-        // 재연결 재전송 — 같은 receivedAt 이 다시 온다.
-        deliverPosition(t0);
-        await tester.pump();
+      // 재연결 재전송 — 같은 receivedAt 이 다시 온다.
+      deliverPosition(t0);
+      await tester.pump();
 
-        // 타이머가 발화하기 전에 화면을 곧바로 떠난다. 재전송이 이전
-        // 타이머를 취소하지 않고 새 타이머를 하나 더 만들었다면(중복
-        // 예약) dispose 는 마지막 참조만 취소해 먼저 만든 것이 취소되지
-        // 않은 채 남는다 — flutter_test 가 "A Timer is still pending"
-        // 으로 이 시험을 실패시킨다.
-        await tester.pumpWidget(const SizedBox.shrink());
-      },
-    );
+      // 타이머가 발화하기 전에 화면을 곧바로 떠난다. 재전송이 이전
+      // 타이머를 취소하지 않고 새 타이머를 하나 더 만들었다면(중복
+      // 예약) dispose 는 마지막 참조만 취소해 먼저 만든 것이 취소되지
+      // 않은 채 남는다 — flutter_test 가 "A Timer is still pending"
+      // 으로 이 시험을 실패시킨다.
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
   });
 
   group('F05-04·05 재연결 재구독 · 다음 회차 이벤트 초기화', () {
@@ -1241,11 +1277,7 @@ void main() {
       surface(tester).onUserGesture!();
       client.deliver(_envelope(WsEventType.position, pos(37.6)));
       await tester.pump();
-      expect(
-        surface(tester).camera.lat,
-        37.5,
-        reason: '사용자가 옮긴 자리를 덮어쓰지 않는다',
-      );
+      expect(surface(tester).camera.lat, 37.5, reason: '사용자가 옮긴 자리를 덮어쓰지 않는다');
 
       await tester.tap(find.text('버스 위치로'));
       await tester.pump();
@@ -1264,9 +1296,9 @@ void main() {
       await tester.pump();
 
       // R49 — 응답의 승하차지 둘 다 번호 핀으로 그리고, 그중 내 승하차지만 강조 · 이름표를 단다.
-      final stops = surface(
-        tester,
-      ).markers.where((m) => m.kind == MapMarkerKind.stop).toList();
+      final stops = surface(tester).markers
+          .where((m) => m.kind == MapMarkerKind.stop)
+          .toList();
       expect(stops, hasLength(2));
       final mine = stops.singleWhere((m) => m.mine);
       expect((mine.lat, mine.lng), (37.51, 127.02));
@@ -1867,11 +1899,7 @@ void main() {
     testWidgets('달리는 중 — road_path 선 1개와 표시 승하차지 수만큼 번호 마커(번호는 seq)를 그린다', (
       tester,
     ) async {
-      await pumpMap(
-        tester,
-        position: snapshot(),
-        routeDetail: route(),
-      );
+      await pumpMap(tester, position: snapshot(), routeDetail: route());
 
       final map = surface(tester);
       expect(map.polylines, hasLength(1));
@@ -1922,9 +1950,7 @@ void main() {
       expect(map.markers.map((m) => m.kind), [MapMarkerKind.bus]);
     });
 
-    testWidgets('종료 — 좌표가 없어도 지나온 구간(선)과 번호 마커를 그리고 노선에 맞춘다', (
-      tester,
-    ) async {
+    testWidgets('종료 — 좌표가 없어도 지나온 구간(선)과 번호 마커를 그리고 노선에 맞춘다', (tester) async {
       await pumpMap(
         tester,
         position: snapshot(status: RunStatus.finished, withPosition: false),
@@ -1941,9 +1967,7 @@ void main() {
       expect(map.fitToContent, isTrue);
     });
 
-    testWidgets('종료 — 달리다 끝났어도(마지막 좌표가 남음) 버스는 그리지 않고 노선만 그린다', (
-      tester,
-    ) async {
+    testWidgets('종료 — 달리다 끝났어도(마지막 좌표가 남음) 버스는 그리지 않고 노선만 그린다', (tester) async {
       await pumpMap(
         tester,
         position: snapshot(),
@@ -2066,5 +2090,4 @@ void main() {
       expect(find.textContaining('가는 길'), findsNothing);
     });
   });
-
 }

@@ -176,7 +176,11 @@ class LiveMapNotifier extends StateNotifier<LiveMapState> {
     // 거부 목적지로 재구독을 걸어 거부→세션 종료→재연결 반복이 생긴다.
     if (_forbidden) return;
 
-    _applyConnectionState(wsState);
+    // 만료 전 갱신으로 다시 붙는 1~2초는 끊김이 아니다 — 재연결 안내를 띄우지 않는다. 구독 해지 표시와
+    // 다시 `connected` 가 왔을 때의 재구독 · 스냅샷 재조회는 아래 그대로 한다.
+    final renewing =
+        wsState == WsConnectionState.connecting && _client.isRenewing;
+    if (!renewing) _applyConnectionState(wsState);
     if (wsState != WsConnectionState.connected) {
       // F05-04 — 소켓이 내려가면 그 위의 구독도 사라진다(새 소켓은 이어받지 않는다).
       // 해지 콜백을 비워 두어야 `connected` 로 돌아왔을 때 다시 구독한다.

@@ -31,6 +31,9 @@ import 'package:parent_app/features/live_map/domain/bus_position_repository.dart
 /// 어떤 메서드든 부르면 시험이 죽는 WebSocket 대역 — 홈이 이것을 건드리면 그 자리에서 실패한다.
 class _ForbiddenWsClient implements BaraedaWebSocketClient {
   @override
+  bool get isRenewing => false;
+
+  @override
   dynamic noSuchMethod(Invocation invocation) =>
       throw StateError('홈 지도 미리보기가 WebSocket 을 건드렸다: ${invocation.memberName}');
 }

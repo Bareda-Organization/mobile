@@ -21,6 +21,11 @@ class _FakeClient implements BaraedaWebSocketClient {
   final _expired = StreamController<void>.broadcast();
   void Function(WebSocketEnvelope)? onEnvelope;
   int reconnectNowCalls = 0;
+  int subscribeCalls = 0;
+
+  /// 만료 전 갱신으로 다시 붙는 중인 것처럼 — 화면이 `connecting` 을 받을 때 읽는다.
+  @override
+  bool isRenewing = false;
 
   @override
   Stream<WsConnectionState> get connectionState => _state.stream;
@@ -49,6 +54,7 @@ class _FakeClient implements BaraedaWebSocketClient {
     void Function(WebSocketEnvelope envelope) onEnvelope,
   ) {
     this.onEnvelope = onEnvelope;
+    subscribeCalls++;
     return ({Map<String, String>? unsubscribeHeaders}) {};
   }
 
@@ -58,6 +64,9 @@ class _FakeClient implements BaraedaWebSocketClient {
 
   /// 서버가 `connected` 를 알린 것처럼 — 컨트롤러가 이때 구독을 건다.
   void emitConnected() => _state.add(WsConnectionState.connected);
+
+  /// 다시 붙는 중인 것처럼.
+  void emitConnecting() => _state.add(WsConnectionState.connecting);
 
   /// 같은 회차의 이벤트가 방송으로 온 것처럼.
   void emitEvent(WsEventType event) => onEnvelope!(
@@ -87,13 +96,15 @@ const _emptyRoster = RosterResponse(
   stops: [],
 );
 
+late StateNotifierProvider<ManagerRunChannelController, ManagerChannelStatus>
+_statusProvider;
+
 Future<_FakeClient> _pumpController(WidgetTester tester, _Loads loads) async {
   final client = _FakeClient();
-  final provider =
-      StateNotifierProvider.autoDispose<
-        ManagerRunChannelController,
-        ManagerChannelStatus
-      >((ref) => ManagerRunChannelController(ref, 'run-1', client: client));
+  final provider = _statusProvider =
+      StateNotifierProvider<ManagerRunChannelController, ManagerChannelStatus>(
+        (ref) => ManagerRunChannelController(ref, 'run-1', client: client),
+      );
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
@@ -223,6 +234,71 @@ void main() {
 
       expect(loads.todayRuns, before + 1);
       await tester.pump(const Duration(seconds: 2));
+    });
+  });
+
+  // Ruling 901 — 만료 전 갱신은 15분마다 1~2초의 예정된 공백이다. "실시간 연결 중" 안내가 번쩍이면 안 되고,
+  // 다시 붙으면 구독과 화면 값(명단 · 노선 · 회차 목록)을 한 번 다시 받아 그 공백에 놓친 방송을 메운다.
+  group('만료 전 갱신 (Ruling 901)', () {
+    ProviderContainer containerOf(WidgetTester tester) =>
+        ProviderScope.containerOf(tester.element(find.byType(Consumer)));
+
+    testWidgets('갱신으로 다시 붙는 동안 연결 안내를 띄우지 않는다', (tester) async {
+      final loads = _Loads();
+      final client = await _pumpController(tester, loads);
+      final container = containerOf(tester);
+      expect(container.read(_statusProvider), ManagerChannelStatus.connected);
+
+      client
+        ..isRenewing = true
+        ..emitConnecting();
+      await tester.pump();
+
+      expect(
+        container.read(_statusProvider),
+        ManagerChannelStatus.connected,
+        reason: '갱신 중의 connecting 이 "실시간 연결 중" 배너로 번쩍였다',
+      );
+    });
+
+    testWidgets('끊겨서 다시 붙는 connecting 은 그대로 안내한다', (tester) async {
+      final loads = _Loads();
+      final client = await _pumpController(tester, loads);
+
+      client.emitConnecting(); // isRenewing 은 거짓
+      await tester.pump();
+
+      expect(
+        containerOf(tester).read(_statusProvider),
+        ManagerChannelStatus.connecting,
+      );
+    });
+
+    testWidgets('다시 붙으면 구독을 다시 걸고 화면 값을 한 번만 다시 받는다', (tester) async {
+      final loads = _Loads();
+      final client = await _pumpController(tester, loads);
+      final before = (
+        loads.roster,
+        loads.driveRoster,
+        loads.route,
+        loads.todayRuns,
+        client.subscribeCalls,
+      );
+
+      client
+        ..isRenewing = true
+        ..emitConnecting();
+      await tester.pump();
+      client
+        ..isRenewing = false
+        ..emitConnected();
+      await tester.pump(const Duration(seconds: 3));
+
+      expect(client.subscribeCalls, before.$5 + 1, reason: '구독을 다시 걸지 않았다');
+      expect(loads.todayRuns, before.$4 + 1, reason: '회차 목록을 한 번만 다시 받는다');
+      expect(loads.roster, before.$1 + 1, reason: '명단을 한 번만 다시 받는다');
+      expect(loads.driveRoster, before.$2 + 1);
+      expect(loads.route, before.$3 + 1);
     });
   });
 }

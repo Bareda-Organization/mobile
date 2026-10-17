@@ -300,6 +300,44 @@ void main() {
       expect(received, ['2']);
     });
 
+    test('갱신으로 다시 붙는 동안만 isRenewing 이 참이다 — 끊겨서 다시 붙는 것은 아니다', () async {
+      final started = await start(
+        refresh: (_) async => _jwtExpiringIn(const Duration(minutes: 10)),
+      );
+      final client = started.client;
+      // `connecting` 이벤트를 받는 쪽(화면)이 그 시점에 읽는 값을 그대로 모은다.
+      final renewingAtConnecting = <bool>[];
+      final sub = client.connectionState
+          .where((s) => s == WsConnectionState.connecting)
+          .listen((_) => renewingAtConnecting.add(client.isRenewing));
+      addTearDown(sub.cancel);
+      client.connect();
+      await _until(() => server.conns.length == 2, what: '갱신 접속');
+      await _until(() => client.state == WsConnectionState.connected);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      // 첫 접속의 connecting 은 갱신이 아니고, 갱신으로 다시 붙을 때의 connecting 은 갱신이다.
+      expect(renewingAtConnecting.take(2), [false, true]);
+      expect(client.isRenewing, isFalse, reason: '붙고 나면 갱신 표식은 꺼진다');
+    });
+
+    test('갱신으로 붙으려다 실패하면 isRenewing 이 꺼져 일반 재연결(안내 표시)로 돌아간다', () async {
+      final started = await start(
+        refresh: (_) async => _jwtExpiringIn(const Duration(minutes: 10)),
+      );
+      final client = started.client..connect();
+      await _connected(client);
+      // 갱신 접속이 시작되자마자 서버를 닫는다.
+      await _until(() => server.conns.length == 2, what: '갱신 접속');
+      await server.stop();
+      await _until(
+        () => client.state == WsConnectionState.reconnecting,
+        what: '재연결 대기',
+      );
+
+      expect(client.isRenewing, isFalse);
+    });
+
     test('만료 lead 전에 시작한다 — 일찍도 늦게도 아니다', () async {
       // 만료까지 약 5~6초, lead 3초 → 다시 붙기는 2~3초째.
       final started = await start(

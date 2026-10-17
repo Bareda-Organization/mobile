@@ -10,6 +10,9 @@ import 'package:manager_app/core/run/manager_run_channel.dart';
 
 /// 소켓 없이 연결 상태만 밀어 넣는 가짜 클라이언트 — 컨트롤러가 쓰는 입구만 구현한다.
 class _FakeClient implements BaraedaWebSocketClient {
+  @override
+  bool get isRenewing => false;
+
   final _state = StreamController<WsConnectionState>.broadcast();
   final _forbidden = StreamController<String>.broadcast();
   final _expired = StreamController<void>.broadcast();
