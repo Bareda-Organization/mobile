@@ -20,6 +20,7 @@ import 'package:manager_app/core/ui/academy_call_card.dart';
 import 'package:manager_app/core/ui/confirm_dialog.dart';
 import 'package:manager_app/core/ui/manager_header.dart';
 import 'package:manager_app/core/ui/map_legend.dart';
+import 'package:manager_app/core/ui/saved_runs_notice.dart';
 import 'package:manager_app/features/drive_mode/presentation/drive_mode_providers.dart';
 import 'package:manager_app/features/home/data/models/manager_run.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
@@ -194,6 +195,8 @@ class _RunReadyScreenState extends ConsumerState<RunReadyScreen> {
 
     return Column(
       children: [
+        // 오늘 회차 목록이 저장본이면 홈과 같은 안내를 맨 위에 띄운다(M-9).
+        const SavedRunsBanner(),
         Expanded(
           child: ListView(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),

@@ -14,6 +14,7 @@ import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/core/time/run_time_labels.dart';
 import 'package:manager_app/core/ui/academy_call_card.dart';
 import 'package:manager_app/core/ui/manager_header.dart';
+import 'package:manager_app/core/ui/saved_runs_notice.dart';
 import 'package:manager_app/features/home/data/models/manager_run.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
 import 'package:manager_app/features/home/presentation/widgets/focus_run_card.dart';
@@ -89,7 +90,7 @@ class _HomeBody extends ConsumerWidget {
     final savedAt = ref.watch(savedRunsAtProvider);
     final savedNotice = savedAt == null
         ? null
-        : _SavedRunsNotice(savedAt: savedAt);
+        : SavedRunsNotice(savedAt: savedAt);
 
     if (runs.isEmpty) {
       if (savedNotice == null) return const _HomeEmpty();
@@ -245,23 +246,6 @@ class _HomeBody extends ConsumerWidget {
   /// 운행 준비 · 명단 · 운행 화면이 끝난 회차를 그렸다.
   void _selectFocusRun(WidgetRef ref, ManagerRun focus) {
     ref.read(selectedRunIdProvider.notifier).state = focus.runId;
-  }
-}
-
-/// 통신이 끊겨 기기 저장본으로 목록을 보는 동안 홈 맨 위에 띄우는 안내(R56 · NFR-01).
-class _SavedRunsNotice extends StatelessWidget {
-  const new({required this.savedAt});
-
-  /// 저장본을 서버에서 받은 시각.
-  final DateTime savedAt;
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertBanner(
-      tone: AlertTone.missed,
-      title: '저장해 둔 목록으로 보고 있어요',
-      body: '서버에 연결하지 못해 ${hhmm(savedAt)}에 받은 목록을 보여 줘요 · 연결되면 자동으로 다시 불러와요',
-    );
   }
 }
 

@@ -16,6 +16,7 @@ import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/core/time/run_time_labels.dart';
 import 'package:manager_app/core/ui/confirm_dialog.dart';
 import 'package:manager_app/core/ui/manager_header.dart';
+import 'package:manager_app/core/ui/saved_runs_notice.dart';
 import 'package:manager_app/features/home/data/models/manager_run.dart';
 import 'package:manager_app/features/offline_queue/domain/send_outcome.dart';
 import 'package:manager_app/features/offline_queue/presentation/offline_queue_providers.dart';
@@ -263,6 +264,8 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
     // "연결 끊김"(비정상)이 화면에서 구별돼야 한다(목표 9, ManagerChannelBanner 문서 참고).
     return Column(
       children: [
+        // 오늘 회차 목록이 저장본이면 홈과 같은 안내를 맨 위에 띄운다(M-9).
+        const SavedRunsBanner(),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
           // 재연결 중은 맨 위 연결 끊김 띠가 알린다 — 같은 사건을 두 번 알리지 않는다.

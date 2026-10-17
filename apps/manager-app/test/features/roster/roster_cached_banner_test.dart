@@ -55,6 +55,7 @@ void main() {
   Future<({int Function() loads})> pump(
     WidgetTester tester, {
     DateTime? cachedAt,
+    DateTime? savedRunsAt,
   }) async {
     var loads = 0;
     await tester.pumpWidget(
@@ -62,6 +63,7 @@ void main() {
         overrides: [
           tokenStorageProvider.overrideWithValue(_NeverResolvingTokenStorage()),
           selectedRunIdProvider.overrideWith((ref) => 'run-1'),
+          savedRunsAtProvider.overrideWith((ref) => savedRunsAt),
           currentUserRoleProvider.overrideWith((ref) => UserRole.escort),
           todayRunsProvider.overrideWith((ref) async => [managerRunFixture()]),
           rosterProvider.overrideWith((ref) async {
@@ -82,6 +84,20 @@ void main() {
     expect(find.text('저장된 명단을 보고 있어요'), findsOneWidget);
     expect(find.textContaining('07:41'), findsOneWidget);
     expect(find.text('김바래'), findsOneWidget);
+  });
+
+  // M-9 — 명단 자체가 서버에서 온 것이어도 오늘 회차 목록이 저장본이면 화면 맨 위에서 밝힌다(홈과 같은 안내).
+  testWidgets('저장해 둔 회차 목록으로 보는 중이면 명단 화면에도 안내가 뜬다', (tester) async {
+    await pump(tester, savedRunsAt: DateTime(2026, 10, 10, 7, 41));
+
+    expect(find.text('저장해 둔 목록으로 보고 있어요'), findsOneWidget);
+    expect(find.textContaining('07:41'), findsOneWidget);
+  });
+
+  testWidgets('서버에서 받은 회차 목록이면 명단 화면에 회차 저장본 안내가 없다', (tester) async {
+    await pump(tester);
+
+    expect(find.text('저장해 둔 목록으로 보고 있어요'), findsNothing);
   });
 
   testWidgets('서버에서 방금 받은 명단에는 저장본 안내가 없다', (tester) async {

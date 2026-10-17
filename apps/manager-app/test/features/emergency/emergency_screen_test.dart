@@ -205,6 +205,35 @@ void main() {
     expect(find.text('선택된 운행이 없어요 — 홈에서 운행을 선택하세요'), findsOneWidget);
   });
 
+  // M-9 — 오늘 회차 목록이 기기 저장본이면 비상 화면도 그렇다고 밝힌다(홈과 같은 안내).
+  testWidgets('저장해 둔 회차 목록으로 보는 중이면 비상 화면에도 안내가 뜬다', (tester) async {
+    final fakeRepo = _FakeEmergencyRepository(
+      list: const EmergencyListResponse(items: []),
+    );
+    await tester.pumpWidget(
+      _wrap(const EmergencyScreen(), [
+        ...overridesFor(fakeRepo: fakeRepo),
+        savedRunsAtProvider.overrideWith((ref) => DateTime(2026, 9, 12, 7, 41)),
+      ]),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('저장해 둔 목록으로 보고 있어요'), findsOneWidget);
+    expect(find.textContaining('07:41'), findsOneWidget);
+  });
+
+  testWidgets('서버에서 받은 회차 목록이면 비상 화면에 저장본 안내가 없다', (tester) async {
+    final fakeRepo = _FakeEmergencyRepository(
+      list: const EmergencyListResponse(items: []),
+    );
+    await tester.pumpWidget(
+      _wrap(const EmergencyScreen(), overridesFor(fakeRepo: fakeRepo)),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('저장해 둔 목록으로 보고 있어요'), findsNothing);
+  });
+
   // R53 A4 — 선택된 회차가 없는 막다른 화면에도 학원 전화가 있다.
   testWidgets('선택된 운행이 없어도 학원 번호가 있으면 전화 단추가 학원 번호를 tel: 로 연다', (tester) async {
     final opened = <Uri>[];

@@ -94,6 +94,7 @@ void main() {
     ManagerRun? run,
     RosterResponse roster = _roster,
     List<String>? events,
+    DateTime? savedRunsAt,
   }) {
     final router = GoRouter(
       initialLocation: AppRoutes.runReady,
@@ -120,6 +121,7 @@ void main() {
         run ?? managerRunFixture(busNo: '2호차', departTime: _depart),
       ),
       driveModeRepositoryProvider.overrideWithValue(repo),
+      savedRunsAtProvider.overrideWith((ref) => savedRunsAt),
       notificationPermissionPortProvider.overrideWithValue(
         _RecordingNotificationPermissionPort(events ?? []),
       ),
@@ -323,6 +325,30 @@ void main() {
     await tester.pumpAndSettle();
     expect(repo.startCalls, 1);
     expect(find.text('DRIVE_MARKER'), findsOneWidget);
+  });
+
+  // M-9 — 오늘 회차 목록이 기기 저장본이면 운행 준비 화면도 그렇다고 밝힌다(홈과 같은 안내).
+  testWidgets('저장해 둔 회차 목록으로 보는 중이면 운행 준비 화면에도 안내가 뜬다', (tester) async {
+    await tester.pumpWidget(
+      wrap(
+        DateTime(2026, 10, 3, 12, 14),
+        _CountingDriveRepository(),
+        savedRunsAt: DateTime(2026, 10, 3, 7, 41),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('저장해 둔 목록으로 보고 있어요'), findsOneWidget);
+    expect(find.textContaining('07:41'), findsOneWidget);
+  });
+
+  testWidgets('서버에서 받은 회차 목록이면 운행 준비 화면에 저장본 안내가 없다', (tester) async {
+    await tester.pumpWidget(
+      wrap(DateTime(2026, 10, 3, 12, 14), _CountingDriveRepository()),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('저장해 둔 목록으로 보고 있어요'), findsNothing);
   });
 
   // M-3 — Android 13+ 는 알림 권한이 없으면 위치 포그라운드 서비스의 "운행 중" 알림이 안 보인다.

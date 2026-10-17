@@ -17,6 +17,7 @@ import 'package:manager_app/core/ui/choice_tile_grid.dart';
 import 'package:manager_app/core/ui/info_rows_card.dart';
 import 'package:manager_app/core/ui/limited_text_controller.dart';
 import 'package:manager_app/core/ui/manager_header.dart';
+import 'package:manager_app/core/ui/saved_runs_notice.dart';
 import 'package:manager_app/features/emergency/data/models/emergency_item.dart';
 import 'package:manager_app/features/emergency/data/models/emergency_raise_request.dart';
 import 'package:manager_app/features/emergency/data/models/emergency_raise_result.dart';
@@ -250,9 +251,17 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
               )
             : null,
       ),
-      body: runId == null
-          ? const _NoRunNotice()
-          : _buildBody(runId, unsent: unsent, failed: failed),
+      body: Column(
+        children: [
+          // 오늘 회차 목록이 저장본이면 홈과 같은 안내를 맨 위에 띄운다(M-9).
+          const SavedRunsBanner(),
+          Expanded(
+            child: runId == null
+                ? const _NoRunNotice()
+                : _buildBody(runId, unsent: unsent, failed: failed),
+          ),
+        ],
+      ),
     );
   }
 
