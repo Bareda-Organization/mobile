@@ -7,7 +7,7 @@ import 'package:parent_app/core/map/naver/naver_map_adapter.dart';
 // (dispose) 마커 보간 프레임 타이머(`_frameTicker`)가 실제로 멈추는지
 // 확인한다.
 //
-// 판단 근거 — 왜 `debugStartFrameTickerForTest` 훅을 쓰는가: 프로덕션에서
+// 판단 근거 — 왜 `debugStartTickerForTest` 훅을 쓰는가: 프로덕션에서
 // `_frameTicker` 가 시작되는 유일한 경로는 실제 네이버 지도 SDK 의
 // `onMapReady` 콜백(→ `_syncMarkers` → `_syncFrameTicker`)이다. 위젯 시험
 // 환경에는 플랫폼 채널이 없어 `NaverMapInit.ensureInitialized` 가 끝내
@@ -23,9 +23,7 @@ import 'package:parent_app/core/map/naver/naver_map_adapter.dart';
 // 결함 심기로 직접 확인했다(원복 후 `git status --porcelain` 확인 완료,
 // 판정 근거는 `report-P.md` 1항).
 void main() {
-  testWidgets('화면이 dispose 되면 마커 보간 프레임 타이머가 멈춘다', (
-    tester,
-  ) async {
+  testWidgets('화면이 dispose 되면 마커 보간 프레임 타이머가 멈춘다', (tester) async {
     final key = GlobalKey<State<NaverMapAdapter>>();
 
     await tester.pumpWidget(
@@ -39,9 +37,7 @@ void main() {
     await tester.pump();
 
     var tickCount = 0;
-    (key.currentState! as dynamic).debugStartFrameTickerForTest(
-      () => tickCount++,
-    );
+    (key.currentState! as dynamic).debugStartTickerForTest(() => tickCount++);
 
     const interval = Duration(milliseconds: 16);
 
@@ -66,5 +62,41 @@ void main() {
           'dispose() 가 프레임 타이머를 멈추지 않으면 화면이 사라진 '
           '뒤에도 setPosition 호출이 계속 늘어난다',
     );
+  });
+  // M-4 (Ruling 899) — 보간 애니메이션은 화면 프레임(Ticker)을 따라가므로, 앱이 백그라운드(paused)인 동안은
+  // 프레임이 없어 마커 이동(네이티브 `setPosition`) 호출도 0이다. 16ms 타이머였을 때는 백그라운드에서도 돌았다.
+  testWidgets('앱이 paused 인 동안은 마커 보간 틱이 불리지 않고 복귀하면 이어진다', (tester) async {
+    final key = GlobalKey<State<NaverMapAdapter>>();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: NaverMapAdapter(
+          key: key,
+          camera: const MapCamera(lat: 37.5, lng: 127),
+        ),
+      ),
+    );
+    await tester.pump();
+    var tickCount = 0;
+    (key.currentState! as dynamic).debugStartTickerForTest(() => tickCount++);
+    const interval = Duration(milliseconds: 16);
+    await tester.pump(interval);
+    await tester.pump(interval);
+    expect(tickCount, greaterThan(0));
+
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+    // 이미 예약된 프레임 하나는 지나갈 수 있다 — 그 뒤로는 늘지 않아야 한다.
+    await tester.pump(interval);
+    final tickCountAtPause = tickCount;
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(interval);
+    }
+    expect(tickCount, tickCountAtPause, reason: 'paused 동안 틱 0');
+
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pump(interval);
+    await tester.pump(interval);
+    expect(tickCount, greaterThan(tickCountAtPause), reason: '복귀하면 이어서 돈다');
+
+    await tester.pumpWidget(const SizedBox.shrink());
   });
 }

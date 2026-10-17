@@ -2,9 +2,9 @@ import 'dart:async';
 
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:parent_app/core/map/frame_move_selector.dart';
-import 'package:parent_app/core/map/frame_ticker.dart';
 import 'package:parent_app/core/map/map_surface.dart';
 import 'package:parent_app/core/map/marker_motion_controller.dart';
 import 'package:parent_app/core/map/naver/naver_map_init.dart';
@@ -43,7 +43,8 @@ class NaverMapAdapter extends StatefulWidget {
   State<NaverMapAdapter> createState() => _NaverMapAdapterState();
 }
 
-class _NaverMapAdapterState extends State<NaverMapAdapter> {
+class _NaverMapAdapterState extends State<NaverMapAdapter>
+    with SingleTickerProviderStateMixin {
   /// 카메라가 새 좌표로 옮겨 가는 시간 — 마커 보간 간격(위치 송신 주기 약 2초)보다 살짝 짧게 둬 다음 좌표 전에 끝낸다.
   static const _cameraFollowDuration = Duration(milliseconds: 1800);
 
@@ -79,9 +80,14 @@ class _NaverMapAdapterState extends State<NaverMapAdapter> {
   /// 맡기고, 이 클래스는 "언제 부를지"만 담당한다.
   final Map<String, MarkerMotionController> _motionById = {};
 
-  /// 보간 중인 마커가 하나라도 있을 때만 돈다 — 프레임마다 `setPosition`
-  /// 을 부르는 비용은 실제로 움직이는 마커가 있을 때만 낸다.
-  final FrameTicker _frameTicker = FrameTicker();
+  /// 화면 프레임마다 도는 틱 — 보간 중인 마커가 하나라도 있을 때만 켠다(프레임마다 `setPosition` 을 부르는
+  /// 비용은 실제로 움직이는 마커가 있을 때만 낸다). 앱이 백그라운드(paused)면 프레임이 없어 네이티브 호출도 0이다.
+  late final Ticker _ticker = createTicker(
+    (_) => (_debugTick ?? _onFrameTick)(),
+  );
+
+  /// 시험이 틱 콜백을 바꿔 끼우는 자리 — [debugStartTickerForTest] 만 쓴다.
+  VoidCallback? _debugTick;
 
   /// 프레임마다 `setPosition` 을 부를 마커를 고른다.
   final FrameMoveSelector _moveSelector = FrameMoveSelector();
@@ -124,10 +130,9 @@ class _NaverMapAdapterState extends State<NaverMapAdapter> {
 
   @override
   void dispose() {
-    // ⚠ 반드시 멈춘다 — 안 멈추면 화면을 벗어난 뒤에도 프레임마다
-    // `setPosition` 을 계속 부르는 누수가 된다(`test/core/map/
-    // frame_ticker_test.dart` 가 이 규칙을 고정한다).
-    _frameTicker.stop();
+    // ⚠ 반드시 해제한다 — 안 하면 화면을 벗어난 뒤에도 프레임마다 `setPosition` 을 계속 부르는 누수가 된다
+    // (`naver_map_adapter_dispose_test.dart` 가 이 규칙을 고정한다).
+    _ticker.dispose();
     unawaited(_authFailedSub?.cancel());
     super.dispose();
   }
@@ -143,15 +148,16 @@ class _NaverMapAdapterState extends State<NaverMapAdapter> {
   }
 
   /// 위젯 시험 전용 훅 — 실제 SDK 의 `onMapReady` 는 위젯 시험 환경(플랫폼
-  /// 채널 부재)에서 오지 않아 `_frameTicker` 가 정상 경로(`_syncMarkers` →
-  /// `_syncFrameTicker`)로 시작될 수 없다. `dispose()` 가 이 타이머를
+  /// 채널 부재)에서 오지 않아 `_ticker` 가 정상 경로(`_syncMarkers` →
+  /// `_syncTicker`)로 시작될 수 없다. `dispose()` 가 이 타이머를
   /// 멈추는 배선을 검사하려면 먼저 돌고 있는 상태를 만들어야 하는데,
   /// 시작 경로 자체는 이 검사의 대상이 아니므로(대상은 `dispose()`)
-  /// 같은 `_frameTicker` 인스턴스를 직접 돌리는 것으로 대신한다.
+  /// 같은 `_ticker` 인스턴스를 직접 돌리는 것으로 대신한다.
   /// (`test/core/map/naver/naver_map_adapter_dispose_test.dart` 전용)
   @visibleForTesting
-  void debugStartFrameTickerForTest(VoidCallback onTick) {
-    _frameTicker.start(onTick);
+  void debugStartTickerForTest(VoidCallback onTick) {
+    _debugTick = onTick;
+    if (!_ticker.isActive) _ticker.start();
   }
 
   @override
@@ -254,7 +260,7 @@ class _NaverMapAdapterState extends State<NaverMapAdapter> {
     }
     await _fitCameraIfNeeded(controller);
 
-    _syncFrameTicker(now);
+    _syncTicker(now);
   }
 
   /// 마커 한 개를 SDK 마커로 만든다. 번호가 있으면(`seq`) 번호 핀 이미지를, 없으면 기본 핀을 쓴다.
@@ -366,14 +372,12 @@ class _NaverMapAdapterState extends State<NaverMapAdapter> {
   }
 
   /// 보간 중인 마커가 하나라도 있으면 타이머를 돌리고, 없으면 멈춘다.
-  void _syncFrameTicker(DateTime now) {
+  void _syncTicker(DateTime now) {
     final anyAnimating = _motionById.values.any((m) => m.isAnimating(now));
     if (anyAnimating) {
-      if (!_frameTicker.isRunning) {
-        _frameTicker.start(_onFrameTick);
-      }
-    } else {
-      _frameTicker.stop();
+      if (!_ticker.isActive) _ticker.start();
+    } else if (_ticker.isActive) {
+      _ticker.stop();
     }
   }
 
@@ -387,7 +391,7 @@ class _NaverMapAdapterState extends State<NaverMapAdapter> {
         marker.setPosition(NLatLng(position.lat, position.lng));
       }
     }
-    _syncFrameTicker(now);
+    _syncTicker(now);
   }
 
   String _captionFor(MapMarkerKind kind) => switch (kind) {
