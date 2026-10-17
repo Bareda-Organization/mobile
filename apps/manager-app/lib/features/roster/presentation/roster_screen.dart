@@ -26,6 +26,7 @@ import 'package:manager_app/features/roster/presentation/roster_actions.dart';
 import 'package:manager_app/features/roster/presentation/roster_providers.dart';
 import 'package:manager_app/features/roster/presentation/widgets/change_ack_banner.dart';
 import 'package:manager_app/features/roster/presentation/widgets/revert_confirm_sheet.dart';
+import 'package:manager_app/features/roster/presentation/widgets/roster_screen_parts.dart';
 import 'package:manager_app/features/roster/presentation/widgets/roster_widgets.dart';
 
 /// 명단(§4.2 M-03 · §4.6 M-12 · §4.7 M-13 · §4.8 M-14 · §4.11 M-04 변경 확인).
@@ -276,7 +277,7 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
           child: rosterAsync.when(
             skipLoadingOnReload: true,
             skipError: true,
-            loading: () => const _RosterSkeleton(),
+            loading: () => const RosterSkeleton(),
             error: (error, _) => ListView(
               padding: const EdgeInsets.all(16),
               children: [
@@ -475,7 +476,7 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
             ),
           const SizedBox(height: 12),
           if (!widget.readOnly && noShowStudents.isNotEmpty) ...[
-            _NoShowWaitBanner(
+            NoShowWaitBanner(
               student: noShowStudents.first,
               onContact: () => _openNoShow(noShowStudents.first.riderId),
             ),
@@ -520,7 +521,7 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
               ),
             ),
           if (arrivedIndexes.isNotEmpty) ...[
-            _PastStopsCard(
+            PastStopsCard(
               stops: [for (final i in arrivedIndexes) stops[i]],
               expanded: _pastExpanded,
               onToggle: () => setState(() => _pastExpanded = !_pastExpanded),
@@ -720,156 +721,4 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
     RiderStatus.noShow => RideStatus.missed,
     RiderStatus.absent => RideStatus.absent,
   };
-}
-
-/// 미승차 연락 대기 띠 — `오시우 미승차 · 연락 대기 1:12` + `연락`. 1초마다 남은 시간을 다시 그린다.
-class _NoShowWaitBanner extends ConsumerStatefulWidget {
-  const new({required this.student, required this.onContact});
-
-  final RosterStudent student;
-  final VoidCallback onContact;
-
-  @override
-  ConsumerState<_NoShowWaitBanner> createState() => _NoShowWaitBannerState();
-}
-
-class _NoShowWaitBannerState extends ConsumerState<_NoShowWaitBanner> {
-  Timer? _ticker;
-
-  @override
-  void initState() {
-    super.initState();
-    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (mounted) setState(() {});
-    });
-  }
-
-  @override
-  void dispose() {
-    _ticker?.cancel();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final case_ = widget.student.noShowCase!;
-    final left = case_.expiresAt.difference(ref.watch(clockProvider).now());
-    final remaining = left.isNegative ? Duration.zero : left;
-    final text = remaining == Duration.zero
-        ? '${widget.student.name} 미승차 · 연락 대기가 끝났어요'
-        : '${widget.student.name} 미승차 · 연락 대기 '
-              '${remaining.inMinutes}:'
-              '${(remaining.inSeconds % 60).toString().padLeft(2, '0')}';
-    return AlertBanner(
-      tone: AlertTone.moving,
-      icon: 'clock',
-      title: text,
-      inlineAction: true,
-      action: BaraedaButton(
-        label: '연락',
-        size: BaraedaButtonSize.sm,
-        variant: BaraedaButtonVariant.secondary,
-        onPressed: widget.onContact,
-      ),
-    );
-  }
-}
-
-/// `지난 승하차지 2곳 / 푸른아파트 앞 · 중앙공원 앞 [미승차 1] ›` — 지나온 곳을 한 줄로 접어 둔다.
-class _PastStopsCard extends StatelessWidget {
-  const new({
-    required this.stops,
-    required this.expanded,
-    required this.onToggle,
-  });
-
-  final List<RosterStop> stops;
-  final bool expanded;
-  final VoidCallback onToggle;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    final noShow = stops
-        .expand((s) => s.students)
-        .where((s) => s.status == RiderStatus.noShow)
-        .length;
-    return BaraedaCard(
-      padding: EdgeInsets.zero,
-      child: InkWell(
-        onTap: onToggle,
-        borderRadius: BorderRadius.circular(BaraedaRadius.card),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: colors.accentPrimary,
-                ),
-                child: BaraedaIcon(
-                  'check',
-                  size: 18,
-                  color: colors.textInverse,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '지난 승하차지 ${stops.length}곳',
-                      style: BaraedaTypography.body.copyWith(
-                        fontWeight: BaraedaFontWeight.bold,
-                        color: colors.textPrimary,
-                      ),
-                    ),
-                    Text(
-                      stops.map((s) => s.name).join(' · '),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: BaraedaTypography.caption.copyWith(
-                        color: colors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (noShow > 0) ...[
-                const SizedBox(width: 8),
-                BaraedaStatusPill(
-                  status: BaraedaStatus.missed,
-                  label: '미승차 $noShow',
-                ),
-              ],
-              const SizedBox(width: 4),
-              BaraedaIcon(
-                expanded ? 'chevron-down' : 'chevron-right',
-                color: colors.textSecondary,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _RosterSkeleton extends StatelessWidget {
-  const new();
-
-  @override
-  Widget build(BuildContext context) => ListView(
-    physics: const NeverScrollableScrollPhysics(),
-    padding: const EdgeInsets.all(16),
-    children: const [
-      BaraedaSkeleton(height: 72, radius: 16),
-      SizedBox(height: 12),
-      BaraedaSkeletonList(count: 4),
-    ],
-  );
 }
