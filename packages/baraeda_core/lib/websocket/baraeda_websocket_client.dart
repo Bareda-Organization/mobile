@@ -70,11 +70,14 @@ final RegExp _serverCloseMessage = RegExp(
 /// 네트워크 실패가 아니라 예정된 갱신이라 [WsBackoffPolicy] 의 재시도
 /// 횟수를 소모하지 않는다.
 ///
-/// **ERROR `UNAUTHORIZED`·종료 코드(`API_SPEC §7.2`)** — `UNAUTHORIZED` 도 같은 재발급 경로를 타되 **한 번만**
-/// 한다: 재발급이 실패하거나 새 토큰도 `UNAUTHORIZED` 면 [sessionExpired] 로 넘기고 재시도하지 않는다.
-/// 종료 코드 `4500`(권한 변경으로 서버가 세션을 닫음)은 앞선 실패 횟수와 무관하게 첫 단계(1초)로 다시 붙고,
-/// `1008`(CONNECT 마감 초과)과 그 밖의 코드는 일반 백오프다. `4403` 은 ERROR `FORBIDDEN` 경로 그대로다.
-/// 재접속 대기는 기준값(1·2·4·8·16·30초)의 [0, 기준값] 무작위다([WsBackoffPolicy.jitteredDelayFor]).
+/// **ERROR `UNAUTHORIZED`·종료 코드(`API_SPEC §7.2`)** — `UNAUTHORIZED` 도 같은
+/// 재발급 경로를 타되 **한 번만** 한다: 재발급이 실패하거나 새 토큰도
+/// `UNAUTHORIZED` 면 [sessionExpired] 로 넘기고 재시도하지 않는다. 종료 코드
+/// `4500`(권한 변경으로 서버가 세션을 닫음)은 앞선 실패 횟수와 무관하게 첫
+/// 단계(1초)로 다시 붙고, `1008`(CONNECT 마감 초과)과 그 밖의 코드는 일반
+/// 백오프다. `4403` 은 ERROR `FORBIDDEN` 경로 그대로다. 재접속 대기는
+/// 기준값(1·2·4·8·16·30초)의 [0, 기준값] 무작위다
+/// ([WsBackoffPolicy.jitteredDelayFor]).
 ///
 /// **만료 전 갈아타기(R46-LATERRT C-14)** — 연결에 쓴 토큰의 만료
 /// [TokenRenewalTiming.lead] 전에 재발급해 새 토큰으로 두 번째 연결을 열고, 걸려
