@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:baraeda_app/baraeda_app.dart';
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
@@ -17,7 +18,6 @@ import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/core/run/run_termination_provider.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/core/time/run_time_labels.dart';
-import 'package:manager_app/core/ui/confirm_dialog.dart';
 import 'package:manager_app/core/ui/manager_header.dart';
 import 'package:manager_app/core/wakelock/wakelock_port.dart';
 import 'package:manager_app/features/drive_mode/presentation/drive_mode_providers.dart';
@@ -150,7 +150,7 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
     // 묻지 않는다.
     if (isLast) {
       final toAcademy = direction == RunDirection.toAcademy;
-      final confirmed = await confirmAction(
+      final confirmed = await showConfirmDialog(
         context,
         title: '마지막 승하차지예요',
         body: toAcademy

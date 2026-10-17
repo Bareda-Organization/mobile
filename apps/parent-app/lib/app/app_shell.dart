@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:baraeda_app/baraeda_app.dart';
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
@@ -9,7 +10,6 @@ import 'package:parent_app/app/app_routes.dart';
 import 'package:parent_app/app/di.dart';
 import 'package:parent_app/core/auth/auth_providers.dart';
 import 'package:parent_app/core/network/network_status.dart';
-import 'package:parent_app/core/refresh/visible_poller.dart';
 import 'package:parent_app/features/notifications/presentation/notification_providers.dart';
 
 /// 로그인 뒤 화면 아래의 탭 막대 — 학부모 `[홈]` `[일정]` `[알림]` `[설정]` · 학생 `[내 버스]` `[알림]`

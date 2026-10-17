@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:baraeda_app/baraeda_app.dart';
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
@@ -8,10 +9,8 @@ import 'package:intl/intl.dart';
 import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/auth/account_session.dart';
 import 'package:manager_app/core/launcher/device_launchers.dart';
-import 'package:manager_app/core/refresh/visible_poller.dart';
 import 'package:manager_app/core/ui/academy_call_card.dart';
 import 'package:manager_app/core/ui/bottom_action_bar.dart';
-import 'package:manager_app/core/ui/confirm_dialog.dart';
 import 'package:manager_app/core/ui/info_rows_card.dart';
 import 'package:manager_app/core/ui/manager_header.dart';
 import 'package:manager_app/features/auth/presentation/widgets/academy_picker.dart';
@@ -113,7 +112,7 @@ class _PendingApprovalScreenState extends ConsumerState<PendingApprovalScreen> {
   Future<void> _confirmReapply() async {
     final academy = _newAcademy;
     if (academy == null || _submittingReapply) return;
-    final confirmed = await confirmAction(
+    final confirmed = await showConfirmDialog(
       context,
       title: '가입을 다시 신청할까요?',
       body: '신청 학원 · ${academy.name}\n신청한 뒤에는 되돌릴 수 없어요.',

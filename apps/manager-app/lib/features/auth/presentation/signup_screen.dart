@@ -1,3 +1,4 @@
+import 'package:baraeda_app/baraeda_app.dart';
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
@@ -6,7 +7,6 @@ import 'package:go_router/go_router.dart';
 import 'package:manager_app/app/app_routes.dart';
 import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/auth/account_session.dart';
-import 'package:manager_app/core/auth/credential_limits.dart';
 import 'package:manager_app/core/ui/bottom_action_bar.dart';
 import 'package:manager_app/core/ui/manager_header.dart';
 import 'package:manager_app/features/auth/domain/auth_repository.dart';

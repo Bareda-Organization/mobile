@@ -8,8 +8,8 @@ import 'package:flutter/widgets.dart';
 Future<bool> showConfirmDialog(
   BuildContext context, {
   required String title,
-  required String body,
   required String confirmLabel,
+  String? body,
   String cancelLabel = '취소',
   bool danger = false,
 }) => showBaraedaConfirmDialog(

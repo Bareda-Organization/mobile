@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:baraeda_app/baraeda_app.dart';
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
@@ -14,7 +15,6 @@ import 'package:manager_app/core/run/manager_connection.dart';
 import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/core/time/run_time_labels.dart';
-import 'package:manager_app/core/ui/confirm_dialog.dart';
 import 'package:manager_app/core/ui/manager_header.dart';
 import 'package:manager_app/core/ui/saved_runs_notice.dart';
 import 'package:manager_app/features/home/data/models/manager_run.dart';
@@ -84,7 +84,7 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
     required String riderId,
     required String name,
   }) async {
-    final confirmed = await confirmAction(
+    final confirmed = await showConfirmDialog(
       context,
       title: '$name 학생을 미승차로 처리할까요?',
       body:

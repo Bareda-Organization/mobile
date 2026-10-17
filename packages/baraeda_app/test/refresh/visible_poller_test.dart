@@ -1,9 +1,9 @@
 import 'dart:async';
 
+import 'package:baraeda_app/baraeda_app.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:parent_app/core/refresh/visible_poller.dart';
 
 /// R46 C(D #7) — 주기 갱신은 앱이 보이는 동안만 돈다. 백그라운드 · 다른 화면이 위에 있을 때는 멈추고,
 /// 앱이 앞으로 돌아오면 즉시 한 번 받는다.

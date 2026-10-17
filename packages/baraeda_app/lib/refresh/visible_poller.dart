@@ -3,13 +3,13 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 
-/// 앱 안 주기 갱신 간격 — 홈(회차·일정 변경)과 탭 막대(알림 배지)가 함께 쓴다. 30초였던 것을 90초로 늘렸다(R46 D #7).
+/// 앱 안 주기 갱신 간격 — 홈(회차·일정 변경)과 탭 막대(알림 배지)가 함께 쓴다.
 const Duration pollInterval = Duration(seconds: 90);
 
 /// 주기 갱신 — 앱이 보이는 동안만 [interval] 마다 [onTick] 을 부른다.
 ///
 /// 푸시 SDK 가 없어 앱 안 갱신이 유일한 통지 수단이지만(F05-06), 열려 있는 모든 앱이 짧은 간격으로
-/// 서버를 치면 그 자체가 부하다(R46 D #7). 그래서 ①앱이 백그라운드(`paused`·`hidden`)이면 멈추고 ②다른 화면이
+/// 서버를 치면 그 자체가 부하다. 그래서 ①앱이 백그라운드(`paused`·`hidden`)이면 멈추고 ②다른 화면이
 /// 위에 있으면([isCovered]) 그 틱을 건너뛰며 ③백그라운드에서 돌아오면 간격을 기다리지 않고 즉시 한 번 받는다.
 /// 위치 실시간(WebSocket)은 이 갱신과 무관하다.
 class VisiblePoller with WidgetsBindingObserver {
