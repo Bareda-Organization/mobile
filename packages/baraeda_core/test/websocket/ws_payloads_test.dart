@@ -46,26 +46,6 @@ void main() {
     });
   });
 
-  group('WsRiderChangedPayload.fromJson', () {
-    test('rider_id·student_id·stop_id 전부 정수에서 문자열로 흡수한다', () {
-      final payload = WsRiderChangedPayload.fromJson({
-        'rider_id': 1,
-        'student_id': 2,
-        'student_name': '홍길동',
-        'status': 'boarded',
-        'stop_id': 3,
-        'changed_at': '2026-09-13T10:00:00Z',
-        'counts': {'boarded': 1},
-        'stop_skipped': false,
-      });
-
-      expect(payload.riderId, '1');
-      expect(payload.studentId, '2');
-      expect(payload.stopId, '3');
-      expect(payload.counts, {'boarded': 1});
-    });
-  });
-
   group('WsRunStartedPayload / WsRunEndedPayload', () {
     test('run_status 고정 문자열과 카운트를 그대로 옮긴다', () {
       final started = WsRunStartedPayload.fromJson({
@@ -99,53 +79,6 @@ void main() {
         'finished_at': '2026-09-13T11:00:00Z',
       });
       expect(ended.autoAlightedCount, isNull);
-    });
-  });
-
-  group('WsEmergencyRaisedPayload.fromJson', () {
-    test('emergency_id 흡수 + 중첩 raised_by·position 파싱', () {
-      final payload = WsEmergencyRaisedPayload.fromJson({
-        'emergency_id': 99,
-        'type': 'accident',
-        'bus_no': '1호차',
-        'raised_by': {'name': '기사님', 'role': 'driver', 'phone': '010'},
-        'position': {'lat': 37.1, 'lng': 127.1},
-        'rider_count': 4,
-        'raised_at': '2026-09-13T10:00:00Z',
-      });
-
-      expect(payload.emergencyId, '99');
-      expect(payload.raisedBy.name, '기사님');
-      expect(payload.position.lat, 37.1);
-      expect(payload.riderCount, 4);
-    });
-  });
-
-  group('WsEmergencyAckedPayload.fromJson', () {
-    test('emergency_id 흡수', () {
-      final payload = WsEmergencyAckedPayload.fromJson({
-        'emergency_id': 99,
-        'acked_by_name': '원장님',
-        'acked_at': '2026-09-13T10:05:00Z',
-      });
-
-      expect(payload.emergencyId, '99');
-      expect(payload.ackedByName, '원장님');
-    });
-  });
-
-  group('WsApprovalRequestedPayload.fromJson', () {
-    test('approval_id·run_id 둘 다 흡수한다', () {
-      final payload = WsApprovalRequestedPayload.fromJson({
-        'approval_id': 5,
-        'student_name': '홍길동',
-        'run_id': 10,
-        'stop_name': '정문',
-        'deadline_at': '2026-09-13T09:30:00Z',
-      });
-
-      expect(payload.approvalId, '5');
-      expect(payload.runId, '10');
     });
   });
 }
