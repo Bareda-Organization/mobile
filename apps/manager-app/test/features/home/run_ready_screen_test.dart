@@ -11,6 +11,7 @@ import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/core/auth/me_provider.dart';
 import 'package:manager_app/core/auth/user_role.dart';
 import 'package:manager_app/core/location/position_source.dart';
+import 'package:manager_app/core/notification/notification_permission_port.dart';
 import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/features/drive_mode/data/models/arrive_stop_result.dart';
@@ -28,14 +29,16 @@ import '../../support/manager_run_fixture.dart';
 
 /// 운행 시작 요청을 세는 가짜 — 이 시험들의 관심사는 "언제 요청이 나가는가" 하나다.
 class _CountingDriveRepository implements DriveModeRepository {
-  new({this.failure});
+  new({this.failure, this.events});
 
   final Failure? failure;
+  final List<String>? events;
   int startCalls = 0;
 
   @override
   Future<StartRunResult> startRun(String runId) async {
     startCalls++;
+    events?.add('startRun');
     // Failure 는 Exception/Error 를 상속하지 않는다.
     // ignore: only_throw_errors
     if (failure != null) throw failure!;
@@ -50,6 +53,17 @@ class _CountingDriveRepository implements DriveModeRepository {
     required String runId,
     required String stopId,
   }) => throw UnimplementedError('이 파일의 시험 대상이 아니다');
+}
+
+/// 알림 권한 요청을 기록하는 가짜 — 실제 권한 창을 띄우지 않는다.
+class _RecordingNotificationPermissionPort
+    implements NotificationPermissionPort {
+  new(this.events);
+
+  final List<String> events;
+
+  @override
+  Future<void> request() async => events.add('requestNotificationPermission');
 }
 
 class _FixedClock implements Clock {
@@ -79,6 +93,7 @@ void main() {
     bool routeFails = false,
     ManagerRun? run,
     RosterResponse roster = _roster,
+    List<String>? events,
   }) {
     final router = GoRouter(
       initialLocation: AppRoutes.runReady,
@@ -105,6 +120,9 @@ void main() {
         run ?? managerRunFixture(busNo: '2호차', departTime: _depart),
       ),
       driveModeRepositoryProvider.overrideWithValue(repo),
+      notificationPermissionPortProvider.overrideWithValue(
+        _RecordingNotificationPermissionPort(events ?? []),
+      ),
       positionSourceProvider.overrideWithValue(
         const UnavailablePositionSource(),
       ),
@@ -305,6 +323,26 @@ void main() {
     await tester.pumpAndSettle();
     expect(repo.startCalls, 1);
     expect(find.text('DRIVE_MARKER'), findsOneWidget);
+  });
+
+  // M-3 — Android 13+ 는 알림 권한이 없으면 위치 포그라운드 서비스의 "운행 중" 알림이 안 보인다.
+  // 확인 창에서 [시작하기] 를 누른 뒤, 운행 시작 요청이 나가기 전에 권한을 요청한다.
+  testWidgets('[시작하기] 를 누르면 운행 시작 요청 전에 알림 권한을 요청한다', (tester) async {
+    final events = <String>[];
+    final repo = _CountingDriveRepository(events: events);
+    await tester.pumpWidget(
+      wrap(DateTime(2026, 10, 3, 12, 14), repo, events: events),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.widgetWithText(BaraedaButton, '운행 시작'));
+    await tester.pumpAndSettle();
+    expect(events, isEmpty, reason: '확인 창이 떠 있는 동안에는 요청하지 않는다');
+
+    await tester.tap(find.text('시작하기'));
+    await tester.pumpAndSettle();
+
+    expect(events, ['requestNotificationPermission', 'startRun']);
   });
 
   // A3 — 하원 시작은 전원 자동 승차 + 승차 알림(C-07 · Ruling 854)이라 확인 창에서 미리 알린다.

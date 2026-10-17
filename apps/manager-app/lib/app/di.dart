@@ -7,6 +7,7 @@ import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/core/constants/api_constants.dart';
 import 'package:manager_app/core/constants/navigation_constants.dart';
 import 'package:manager_app/core/location/position_source.dart';
+import 'package:manager_app/core/notification/notification_permission_port.dart';
 import 'package:manager_app/core/wakelock/wakelock_port.dart';
 import 'package:manager_app/features/auth/data/auth_repository_impl.dart';
 import 'package:manager_app/features/auth/domain/auth_repository.dart';
@@ -278,6 +279,11 @@ final positionSourceProvider = Provider<PositionSource>((ref) {
   ref.onDispose(source.dispose);
   return source;
 });
+
+/// 운행을 시작할 때 알림 권한을 요청하는 포트(M-3). 시험은 이 provider 를 가짜로 덮는다.
+final notificationPermissionPortProvider = Provider<NotificationPermissionPort>(
+  (ref) => PermissionHandlerNotificationPort(),
+);
 
 /// F2 — 운행 화면이 켜져 있는 동안 화면 꺼짐을 막는다(백그라운드 GPS
 /// 송신이 범위 밖이라 화면이 켜진 상태가 지금 송신을 지키는 유일한
