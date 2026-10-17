@@ -126,7 +126,7 @@ class BaraedaWebSocketClient {
   /// CONNECT 의 `heart-beat` 로 서버에 알리는 받는 주기.
   final Duration heartbeatIncoming;
 
-  /// 만료 전 갈아타기의 시간 값 — [TokenRenewalTiming] 참고.
+  /// 만료 전 갱신의 시간 값 — [TokenRenewalTiming] 참고.
   final TokenRenewalTiming renewalTiming;
 
   final StompClient Function(StompConfig config) _stompClientFactory;
