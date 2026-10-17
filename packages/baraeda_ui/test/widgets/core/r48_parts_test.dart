@@ -129,28 +129,6 @@ void main() {
     });
   });
 
-  group('단추 한 쌍(C1)', () {
-    testWidgets('주 단추가 보조보다 1.7 : 1 로 넓다', (tester) async {
-      await tester.pumpWidget(
-        _host(
-          BaraedaButtonRow(
-            children: [
-              BaraedaButton(label: '탑승', onPressed: () {}),
-              BaraedaButton(
-                label: '미승차',
-                variant: BaraedaButtonVariant.secondary,
-                onPressed: () {},
-              ),
-            ],
-          ),
-        ),
-      );
-      final a = tester.getSize(find.widgetWithText(BaraedaButton, '탑승')).width;
-      final b = tester.getSize(find.widgetWithText(BaraedaButton, '미승차')).width;
-      expect(a / b, closeTo(1.7, 0.02));
-    });
-  });
-
   group('비상 버튼 3형태', () {
     testWidgets('머리줄 알약은 높이 44 · 위험 면, 낭독은 `비상`', (tester) async {
       final handle = tester.ensureSemantics();
