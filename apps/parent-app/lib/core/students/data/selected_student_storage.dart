@@ -1,4 +1,4 @@
-import 'package:flutter/services.dart';
+import 'package:baraeda_core/baraeda_core.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 /// 학부모가 마지막으로 고른 자녀 — 앱을 다시 켜도 이어 간다(R46 B2 #13).
@@ -7,29 +7,15 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 /// 읽고 쓰기가 실패해도 화면은 첫 자녀로 그려지면 되므로 예외는 삼킨다.
 class SelectedStudentStorage {
   new({FlutterSecureStorage? storage})
-    : _storage = storage ?? const FlutterSecureStorage();
+    : _slot = SecureSlot(
+        'selected_student_id',
+        storage: storage ?? const FlutterSecureStorage(),
+      );
 
-  static const _key = 'selected_student_id';
+  final SecureSlot _slot;
 
-  final FlutterSecureStorage _storage;
+  Future<String?> read() => _slot.read();
 
-  Future<String?> read() async {
-    try {
-      return await _storage.read(key: _key);
-    } on PlatformException {
-      return null;
-    } on MissingPluginException {
-      return null;
-    }
-  }
-
-  Future<void> save(String studentId) async {
-    try {
-      await _storage.write(key: _key, value: studentId);
-    } on PlatformException {
-      // 기억하지 못해도 이번 실행의 선택은 메모리에 남는다.
-    } on MissingPluginException {
-      // 위젯 시험처럼 저장소 플러그인이 없는 환경.
-    }
-  }
+  // 기억하지 못해도 이번 실행의 선택은 메모리에 남는다.
+  Future<void> save(String studentId) => _slot.write(studentId);
 }

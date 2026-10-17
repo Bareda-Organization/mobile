@@ -1,6 +1,5 @@
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 /// 마지막으로 `/me` 가 확인해 준 **활성 계정의 역할**(`driver` · `escort`) 하나를 이 기기에 남겨 둔다(R52 H2).
 ///
@@ -20,37 +19,21 @@ abstract interface class LastSessionStore {
 class SecureLastSessionStore implements LastSessionStore {
   const new();
 
-  static const _key = 'baraeda_manager_last_role';
-  static const _storage = FlutterSecureStorage();
+  static const _slot = SecureSlot('baraeda_manager_last_role');
 
+  // 읽지 못하면 "저장된 역할 없음" — 앱은 지금처럼 다시 시도 안내를 보인다.
   @override
   Future<AccountRole?> readRole() async {
-    try {
-      final value = await _storage.read(key: _key);
-      return value == null ? null : AccountRole.fromWireValueOrNull(value);
-    } on Object {
-      // 읽지 못하면 "저장된 역할 없음" — 앱은 지금처럼 다시 시도 안내를 보인다.
-      return null;
-    }
+    final value = await _slot.read();
+    return value == null ? null : AccountRole.fromWireValueOrNull(value);
   }
 
   @override
-  Future<void> saveRole(AccountRole role) async {
-    try {
-      await _storage.write(key: _key, value: role.wireValue);
-    } on Object {
-      // 저장 실패는 로그인을 막지 않는다 — 부가 기능이다.
-    }
-  }
+  Future<void> saveRole(AccountRole role) => _slot.write(role.wireValue);
 
+  // 지우지 못해도 로그아웃은 계속된다 — 토큰이 없으면 이 값은 쓰이지 않는다.
   @override
-  Future<void> clear() async {
-    try {
-      await _storage.delete(key: _key);
-    } on Object {
-      // 지우지 못해도 로그아웃은 계속된다 — 토큰이 없으면 이 값은 쓰이지 않는다.
-    }
-  }
+  Future<void> clear() => _slot.delete();
 }
 
 /// 시험은 이 provider 를 메모리 대역으로 바꾼다(플랫폼 채널이 없다).

@@ -1,5 +1,5 @@
+import 'package:baraeda_core/baraeda_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 /// 마지막으로 로그인에 성공한 학원의 대표 연락처를 이 기기에 남겨 둔다(`Ruling 825`).
 ///
@@ -18,28 +18,18 @@ abstract interface class AcademyContactStore {
 class SecureAcademyContactStore implements AcademyContactStore {
   const new();
 
-  static const _key = 'baraeda_manager_academy_contact';
-  static const _storage = FlutterSecureStorage();
+  static const _slot = SecureSlot('baraeda_manager_academy_contact');
 
+  // 읽지 못하면 "저장된 번호 없음" — 차단 화면이 안내 문장으로 대신한다.
   @override
-  Future<String?> read() async {
-    try {
-      return await _storage.read(key: _key);
-    } on Object {
-      // 읽지 못하면 "저장된 번호 없음" 으로 본다 — 차단 화면이 안내 문장으로 대신한다.
-      return null;
-    }
-  }
+  Future<String?> read() => _slot.read();
 
+  // 저장 실패는 로그인을 막지 않는다 — 부가 기능이다.
   @override
   Future<void> save(String? contact) async {
     final value = contact?.trim();
     if (value == null || value.isEmpty) return;
-    try {
-      await _storage.write(key: _key, value: value);
-    } on Object {
-      // 저장 실패는 로그인을 막지 않는다 — 부가 기능이다.
-    }
+    await _slot.write(value);
   }
 }
 

@@ -1,7 +1,7 @@
 import 'dart:convert';
 
+import 'package:baraeda_core/baraeda_core.dart';
 import 'package:cryptography/cryptography.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 /// 명단 저장본 암호화 키의 보관소(`Ruling 872`) — 키는 기기 보안 저장소
 /// (Keychain · EncryptedSharedPreferences)에만 두고 DB 에는 두지 않는다.
@@ -18,32 +18,28 @@ abstract interface class RosterKeyStore {
 class SecureRosterKeyStore implements RosterKeyStore {
   const new();
 
-  static const _key = 'baraeda_manager_roster_key';
-  static const _storage = FlutterSecureStorage();
+  static const _slot = SecureSlot('baraeda_manager_roster_key');
 
+  // 읽지 못하면 "키 없음" — 저장본은 복호화할 수 없어 없는 것으로 취급된다.
   @override
   Future<List<int>?> read() async {
+    final value = await _slot.read();
+    if (value == null) return null;
     try {
-      final value = await _storage.read(key: _key);
-      return value == null ? null : base64Decode(value);
-    } on Object {
-      // 읽지 못하면 "키 없음" — 저장본은 복호화할 수 없어 없는 것으로 취급된다.
+      return base64Decode(value);
+    } on FormatException {
       return null;
     }
   }
 
+  // 키를 쓰지 못하면 호출한 쪽이 알아야 한다(암호화 없이 저장하지 않으려고).
   @override
   Future<void> write(List<int> key) =>
-      _storage.write(key: _key, value: base64Encode(key));
+      _slot.write(base64Encode(key), strict: true);
 
+  // 지우지 못해도 로그아웃은 계속된다 — 명단 행은 이미 지워졌다.
   @override
-  Future<void> delete() async {
-    try {
-      await _storage.delete(key: _key);
-    } on Object {
-      // 지우지 못해도 로그아웃은 계속된다 — 명단 행은 이미 지워졌다.
-    }
-  }
+  Future<void> delete() => _slot.delete();
 }
 
 /// 명단 저장본을 AES-GCM 256 으로 암호화한다(`Ruling 872` · NFR-08).

@@ -1,7 +1,7 @@
 import 'dart:convert';
 
+import 'package:baraeda_core/baraeda_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:manager_app/features/home/data/models/manager_run.dart';
 
 /// 마지막으로 받은 **오늘 회차 목록의 요약**을 이 기기에 남겨 둔다(R52 H2).
@@ -24,14 +24,14 @@ abstract interface class RunSummaryStore {
 class SecureRunSummaryStore implements RunSummaryStore {
   const new();
 
-  static const _key = 'baraeda_manager_run_summary';
-  static const _storage = FlutterSecureStorage();
+  static const _slot = SecureSlot('baraeda_manager_run_summary');
 
+  // 읽지 못하거나 손상됐으면 "요약 없음" — 목록 조회 실패가 그대로 보인다.
   @override
   Future<({DateTime savedAt, List<ManagerRun> runs})?> read() async {
+    final value = await _slot.read();
+    if (value == null) return null;
     try {
-      final value = await _storage.read(key: _key);
-      if (value == null) return null;
       final json = jsonDecode(value) as Map<String, dynamic>;
       final items = (json['items'] as List<dynamic>)
           .cast<Map<String, dynamic>>()
@@ -39,34 +39,22 @@ class SecureRunSummaryStore implements RunSummaryStore {
           .toList();
       return (savedAt: DateTime.parse(json['saved_at'] as String), runs: items);
     } on Object {
-      // 읽지 못하거나 손상됐으면 "요약 없음" — 목록 조회 실패가 그대로 보인다.
       return null;
     }
   }
 
+  // 저장 실패는 목록 조회를 막지 않는다 — 부가 기능이다.
   @override
-  Future<void> save(DateTime savedAt, List<ManagerRun> runs) async {
-    try {
-      await _storage.write(
-        key: _key,
-        value: jsonEncode({
-          'saved_at': savedAt.toIso8601String(),
-          'items': [for (final run in runs) run.toJson()],
-        }),
-      );
-    } on Object {
-      // 저장 실패는 목록 조회를 막지 않는다 — 부가 기능이다.
-    }
-  }
+  Future<void> save(DateTime savedAt, List<ManagerRun> runs) => _slot.write(
+    jsonEncode({
+      'saved_at': savedAt.toIso8601String(),
+      'items': [for (final run in runs) run.toJson()],
+    }),
+  );
 
+  // 지우지 못해도 로그아웃은 계속된다 — 토큰이 없으면 이 값은 쓰이지 않는다.
   @override
-  Future<void> clear() async {
-    try {
-      await _storage.delete(key: _key);
-    } on Object {
-      // 지우지 못해도 로그아웃은 계속된다 — 토큰이 없으면 이 값은 쓰이지 않는다.
-    }
-  }
+  Future<void> clear() => _slot.delete();
 }
 
 /// 시험은 이 provider 를 메모리 대역으로 바꾼다(플랫폼 채널이 없다).
