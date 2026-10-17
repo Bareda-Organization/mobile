@@ -77,9 +77,17 @@ class PositionTransmitter extends Notifier<PositionTransmission> {
   /// 목록이 바뀌어 송신기가 내려갈 때까지 이 회차에는 보내지 않는다.
   String? _haltedRunId;
 
+  /// 마지막으로 서버가 받은 좌표의 측정 시각 — GPS 가 새로 재지 못한 틱에 같은 좌표를 다시 보내지 않는다.
+  DateTime? _lastSentRecordedAt;
+
+  /// 서버에 닿아 있는지 — 닿지 못하다 닿는 전이에서만 [serverReachedProvider] 를 올린다.
+  bool _reached = false;
+
   @override
   PositionTransmission build() {
     _haltedRunId = null;
+    _lastSentRecordedAt = null;
+    _reached = false;
     final runId = ref.watch(transmittingRunIdProvider);
     if (runId == null) return const PositionTransmission();
     final source = ref.read(positionSourceProvider)..start();
@@ -114,7 +122,7 @@ class PositionTransmitter extends Notifier<PositionTransmission> {
           ? state.busPosition
           : (lat: sample.lat, lng: sample.lng),
     );
-    if (sample == null) return;
+    if (sample == null || sample.recordedAt == _lastSentRecordedAt) return;
     _sending = true;
     try {
       await ref
@@ -131,11 +139,15 @@ class PositionTransmitter extends Notifier<PositionTransmission> {
           );
       // 서버가 받았다 — 운행 화면의 전송 상태 칩이 이 시각부터 센다. 그사이 송신 대상 회차가 바뀌었으면 옛 회차의 성공이다.
       if (ref.read(transmittingRunIdProvider) == runId) {
+        _lastSentRecordedAt = sample.recordedAt;
         ref.read(positionLinkProvider.notifier).markSent();
-        // 서버에 닿았다 — 끊겨 재연결 대기 중인 실시간 연결이 있으면 바로 다시 붙게 알린다(R46-FIXCONN C-10).
-        ref.read(serverReachedProvider.notifier).state++;
+        // 서버에 닿지 못하다 닿았다 — 끊겨 재연결 대기 중인 실시간 연결이 있으면 바로 다시 붙게 알린다. 성공마다 올리면
+        // 2초마다 재연결 대기가 취소돼 WebSocket 서버만 죽은 동안 연결 시도가 대기 계산값을 넘는다.
+        if (!_reached) ref.read(serverReachedProvider.notifier).state++;
+        _reached = true;
       }
     } on Failure catch (failure) {
+      _reached = false;
       // 서버가 `409 RUN_NOT_MOVING` 이라고 답하면 같은 회차는 다시 보내도 같은 답이다 — 그 회차 송신을 멈추고
       // 오늘 회차 목록을 새로 받아 서버의 운행 상태와 맞춘다. 송신기가 내려가는 시점은 목록이 정한다.
       if (failure is ApiFailure && failure.code == 'RUN_NOT_MOVING') {

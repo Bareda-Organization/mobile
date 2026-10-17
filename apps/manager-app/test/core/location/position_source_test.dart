@@ -104,6 +104,14 @@ void main() {
       expect(android.foregroundNotificationConfig!.enableWakeLock, isTrue);
     });
 
+    // M-2 — 간격을 안 주면 Android 는 기기 기본 간격으로 갱신해 같은 좌표를 다시 보낸다.
+    test('Android 위치 갱신 간격은 송신 주기와 같다', () {
+      final android =
+          buildLocationSettings(TargetPlatform.android) as AndroidSettings;
+
+      expect(android.intervalDuration, PositionConstants.transmissionInterval);
+    });
+
     test('iOS 는 사용 중 권한으로 시작한 백그라운드 갱신을 켠다', () {
       final settings = buildLocationSettings(TargetPlatform.iOS);
 

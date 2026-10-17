@@ -67,6 +67,8 @@ LocationSettings buildLocationSettings(TargetPlatform platform) {
   return switch (platform) {
     TargetPlatform.android => AndroidSettings(
       accuracy: accuracy,
+      // 송신 주기(2초)와 맞춘다 — 안 주면 기기 기본 간격으로 갱신돼 같은 측정 시각을 반복 송신한다.
+      intervalDuration: PositionConstants.transmissionInterval,
       foregroundNotificationConfig: const ForegroundNotificationConfig(
         notificationTitle: '운행 중',
         notificationText: '학부모에게 버스 위치를 보내고 있어요',

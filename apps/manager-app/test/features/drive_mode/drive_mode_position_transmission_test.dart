@@ -32,16 +32,19 @@ class _FixedClock implements Clock {
   DateTime now() => _now;
 }
 
-/// 항상 같은 좌표 스냅샷을 돌려주는 가짜 위치 소스. `recordedAt` 을
+/// 같은 좌표 스냅샷을 돌려주는 가짜 위치 소스. `recordedAt` 을
 /// 시험이 고정하는 "지금"과 **다른 값**으로 둬서, 화면이 전송 시각을
 /// 새로 채우는 것이 아니라 이 값을 그대로 옮기는지 구별한다(§4.12).
+/// [advanceRecordedAt] 이면 호출마다 측정 시각이 1초씩 새로 나온 것처럼 돌려준다(GPS 가 새로 잰 경우).
 class _FakePositionSource implements PositionSource {
   new(
     this._sample, {
     this.availability = PositionAvailability.available,
+    this.advanceRecordedAt = false,
   });
 
   final PositionSample? _sample;
+  final bool advanceRecordedAt;
   int callCount = 0;
 
   @override
@@ -50,7 +53,13 @@ class _FakePositionSource implements PositionSource {
   @override
   PositionSample? sample() {
     callCount++;
-    return _sample;
+    final sample = _sample;
+    if (sample == null || !advanceRecordedAt) return sample;
+    return PositionSample(
+      lat: sample.lat,
+      lng: sample.lng,
+      recordedAt: sample.recordedAt.add(Duration(seconds: callCount - 1)),
+    );
   }
 
   @override
@@ -101,6 +110,22 @@ class _NotMovingPositionRepository extends _RecordingPositionRepository {
   }
 }
 
+/// [failing] 이 켜져 있으면 전송을 네트워크 실패로 거절하는 가짜 — 음영 진입·복구를 흉내 낸다. 호출은 그대로 기록한다.
+class _ScriptedPositionRepository extends _RecordingPositionRepository {
+  bool failing = false;
+
+  @override
+  Future<void> sendPosition({
+    required String runId,
+    required PositionRequest request,
+  }) async {
+    await super.sendPosition(runId: runId, request: request);
+    if (failing) {
+      await Future<void>.error(const Failure.network(message: '연결할 수 없습니다'));
+    }
+  }
+}
+
 Widget _wrap(Widget child, List<Override> overrides) {
   return ProviderScope(
     overrides: overrides,
@@ -116,10 +141,7 @@ const _emptyRoster = RosterResponse(
   stops: [],
 );
 
-ManagerRun _managerRun({
-  required RunStatus runStatus,
-  required DateTime now,
-}) {
+ManagerRun _managerRun({required RunStatus runStatus, required DateTime now}) {
   return ManagerRun(
     runId: 'run-1',
     busNo: '3호차',
@@ -175,11 +197,10 @@ void main() {
 
   testWidgets(
     '기사·이동 중 상태면 PositionConstants.transmissionInterval 주기로 위치를 전송한다',
-    (
-      tester,
-    ) async {
+    (tester) async {
       final source = _FakePositionSource(
         PositionSample(lat: 37.5, lng: 127, recordedAt: recordedAt),
+        advanceRecordedAt: true,
       );
       final repository = _RecordingPositionRepository();
       const interval = PositionConstants.transmissionInterval;
@@ -254,13 +275,14 @@ void main() {
     },
   );
 
-  // R46-FIXCONN C-10 — 위치 POST 성공은 이 앱에서 서버에 다시 닿았다는
-  // 신호다 — 끊긴 실시간 연결을 바로 다시 붙이게 알린다.
-  testWidgets('위치 전송이 성공할 때마다 서버 도달 신호를 올린다', (tester) async {
+  // M-1 — 서버에 다시 닿았다는 신호는 "닿지 못하다 닿은" 전이에서만 올린다. 성공 때마다 올리면
+  // WebSocket 서버만 죽은 동안 2초마다 재연결 대기가 취소돼 연결 시도가 대기 계산값을 넘는다.
+  testWidgets('서버 도달 신호는 끊겼다 닿은 전이에서만 올린다', (tester) async {
     final source = _FakePositionSource(
       PositionSample(lat: 37.5, lng: 127, recordedAt: recordedAt),
+      advanceRecordedAt: true,
     );
-    final repository = _RecordingPositionRepository();
+    final repository = _ScriptedPositionRepository();
     const interval = PositionConstants.transmissionInterval;
     await tester.pumpWidget(
       ProviderScope(
@@ -279,14 +301,88 @@ void main() {
     );
     expect(container.read(serverReachedProvider), 0);
 
+    // 첫 성공 — 아직 닿은 적이 없으니 한 번 올린다.
     await tester.pump(interval);
     await tester.pump();
     expect(container.read(serverReachedProvider), 1);
 
+    // 계속 성공 — 이미 닿아 있으니 올리지 않는다.
+    await tester.pump(interval);
+    await tester.pump();
+    await tester.pump(interval);
+    await tester.pump();
+    expect(container.read(serverReachedProvider), 1);
+
+    // 실패 구간 — 올리지 않는다.
+    repository.failing = true;
+    await tester.pump(interval);
+    await tester.pump();
+    expect(container.read(serverReachedProvider), 1);
+
+    // 실패 뒤 첫 성공 — 닿은 전이라 한 번 올린다.
+    repository.failing = false;
     await tester.pump(interval);
     await tester.pump();
     expect(container.read(serverReachedProvider), 2);
 
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  // M-2 — GPS 가 새로 재지 못한 틱(음영·정지)에 같은 측정 시각을 다시 보내지 않는다.
+  testWidgets('직전 전송과 같은 기록 시각의 좌표는 다시 보내지 않는다', (tester) async {
+    final source = _FakePositionSource(
+      PositionSample(lat: 37.5, lng: 127, recordedAt: recordedAt),
+    );
+    final repository = _RecordingPositionRepository();
+    const interval = PositionConstants.transmissionInterval;
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: baseOverrides(
+          role: UserRole.driver,
+          runStatus: RunStatus.moving,
+          positionSource: source,
+          positionRepository: repository,
+        ),
+        child: const MaterialApp(home: DriveModeScreen()),
+      ),
+    );
+    await tester.pump();
+
+    await tester.pump(interval);
+    await tester.pump(interval);
+    await tester.pump(interval);
+    await tester.pump();
+
+    expect(source.callCount, greaterThanOrEqualTo(3));
+    expect(repository.calls, hasLength(1));
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  // M-2 — 전송이 실패한 측정 시각은 서버에 안 갔으므로 다음 틱에 다시 보낸다.
+  testWidgets('전송이 실패한 기록 시각은 다음 틱에 다시 보낸다', (tester) async {
+    final source = _FakePositionSource(
+      PositionSample(lat: 37.5, lng: 127, recordedAt: recordedAt),
+    );
+    final repository = _ScriptedPositionRepository()..failing = true;
+    const interval = PositionConstants.transmissionInterval;
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: baseOverrides(
+          role: UserRole.driver,
+          runStatus: RunStatus.moving,
+          positionSource: source,
+          positionRepository: repository,
+        ),
+        child: const MaterialApp(home: DriveModeScreen()),
+      ),
+    );
+    await tester.pump();
+
+    await tester.pump(interval);
+    await tester.pump(interval);
+    await tester.pump();
+
+    expect(repository.calls, hasLength(2));
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
@@ -368,10 +464,7 @@ void main() {
     // 읽어 쓰면 상수가 조용히 바뀌어도 아무 시험도 잡지 못한다. 방송량이
     // 이 값에 산술적으로 비례하므로(COMMON-B2 §2), 바뀌면 이 시험이
     // 먼저 깨져 리뷰를 강제해야 한다.
-    expect(
-      PositionConstants.transmissionInterval,
-      const Duration(seconds: 2),
-    );
+    expect(PositionConstants.transmissionInterval, const Duration(seconds: 2));
   });
 
   // R33 M1 — 위치 송신은 화면이 아니라 앱 전역이다. 옛 시험(`화면이 dispose 되면 위치 송신
@@ -381,6 +474,7 @@ void main() {
   testWidgets('화면이 dispose 되어도 위치 송신은 계속된다', (tester) async {
     final source = _FakePositionSource(
       PositionSample(lat: 37.5, lng: 127, recordedAt: recordedAt),
+      advanceRecordedAt: true,
     );
     final repository = _RecordingPositionRepository();
     const interval = PositionConstants.transmissionInterval;
@@ -483,10 +577,7 @@ void main() {
     await tester.pump();
     await tester.pump(PositionConstants.transmissionInterval);
 
-    expect(
-      find.textContaining('위치 권한이 꺼져 있어요'),
-      findsOneWidget,
-    );
+    expect(find.textContaining('위치 권한이 꺼져 있어요'), findsOneWidget);
     expect(repository.calls, isEmpty);
   });
 
@@ -511,10 +602,7 @@ void main() {
     await tester.pump();
     await tester.pump(PositionConstants.transmissionInterval);
 
-    expect(
-      find.textContaining('기기 위치 서비스가 꺼져 있어요'),
-      findsOneWidget,
-    );
+    expect(find.textContaining('기기 위치 서비스가 꺼져 있어요'), findsOneWidget);
     expect(repository.calls, isEmpty);
   });
 }
