@@ -797,6 +797,54 @@ void main() {
       await tester.pump();
     });
 
+    // M-5 (R57) — 백그라운드 60초로 연결을 끊었다가(`disconnected`) 돌아와 다시 붙으면
+    // 같은 목적지를 다시 구독하고 REST 스냅샷을 다시 읽어 놓친 위치를 메운다.
+    testWidgets('백그라운드로 끊겼다(disconnected) 다시 붙으면 재구독하고 스냅샷을 다시 읽는다', (
+      tester,
+    ) async {
+      final repository = _ScriptedBusPositionRepository([
+        snapshot(stop: '첫 승하차지', at: DateTime.utc(2026, 9, 13, 8)),
+        snapshot(stop: '백그라운드 중 지난 승하차지', at: DateTime.utc(2026, 9, 13, 8, 5)),
+      ]);
+      await pumpScreen(
+        tester,
+        busPositionRepository: repository,
+        extraOverrides: [
+          roleCapabilitiesProvider.overrideWithValue(
+            RoleCapabilities.of(UserRole.student),
+          ),
+          myStudentIdProvider.overrideWith((ref) async => 's-1'),
+          runsForStudentProvider.overrideWith((ref, id) async => const []),
+          clockProvider.overrideWithValue(
+            _MutableClock(DateTime.utc(2026, 9, 13, 8, 1)),
+          ),
+        ],
+      );
+      await tester.pump();
+      await tester.pump();
+      client.emit(WsConnectionState.connected);
+      await tester.pump();
+      final callsBefore = repository.calls;
+
+      client.emit(WsConnectionState.disconnected);
+      await tester.pump();
+      client
+        ..emit(WsConnectionState.connecting)
+        ..emit(WsConnectionState.connected);
+      await tester.pump();
+      await tester.pump();
+
+      expect(repository.calls, greaterThan(callsBefore));
+      expect(
+        client.callLog.where((e) => e.startsWith('subscribe:')),
+        hasLength(2),
+        reason: '끊긴 뒤 다시 붙으면 같은 목적지를 다시 구독한다',
+      );
+
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+    });
+
     testWidgets('재연결 스냅샷이 더 오래됐으면 WS 좌표를 그대로 둔다', (tester) async {
       await pumpWithSnapshots(tester, [
         snapshot(stop: '옛 스냅샷', at: DateTime.utc(2026, 9, 13, 7, 59)),

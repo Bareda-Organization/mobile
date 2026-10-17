@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:baraeda_core/baraeda_core.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -54,17 +55,48 @@ class _AppShellState extends ConsumerState<AppShell>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _backgroundTimer?.cancel();
     _poller.dispose();
     super.dispose();
   }
 
-  /// 앱이 백그라운드에서 돌아왔다 — 끊겨 재연결 대기 중인 실시간 연결(위치 지도)을 다음 타이머(최대 30초)를
-  /// 기다리지 않고 바로 다시 붙인다. 연결한 적 없거나 일부러 끊은 연결은 클라이언트가 건드리지 않는다(R46-FIXRT S-5).
-  /// 알림 목록의 즉시 갱신은 [VisiblePoller] 가 맡는다.
+  /// 백그라운드에 이만큼 머물면 실시간 연결을 끊는다 — 안 보는 동안 서버 세션과 배터리를 차지하지 않는다(M-5).
+  static const _backgroundDisconnectAfter = Duration(seconds: 60);
+
+  Timer? _backgroundTimer;
+
+  /// 백그라운드 때문에 우리가 연결을 끊었는지 — 복귀하면 이 연결을 다시 붙인다.
+  bool _disconnectedInBackground = false;
+
+  /// 앱이 백그라운드로 갔다(`hidden`·`paused`) — [_backgroundDisconnectAfter]
+  /// 뒤에 연결을 끊는다. 앱이 돌아왔다 — 끊어 둔 연결이면 다시 붙이고(지도가 같은
+  /// 목적지를 구독하고 REST 스냅샷을 다시 읽는다), 끊겨 재연결 대기 중인 연결이면
+  /// 다음 타이머(최대 30초)를 기다리지 않고 바로 붙인다. 연결한 적 없거나 일부러
+  /// 끊은 연결은 클라이언트가 건드리지 않는다(R46-FIXRT S-5). 알림 목록의 즉시 갱신은
+  /// [VisiblePoller] 가 맡는다.
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
-      ref.read(webSocketClientProvider).reconnectNow();
+    final client = ref.read(webSocketClientProvider);
+    switch (state) {
+      case AppLifecycleState.hidden || AppLifecycleState.paused:
+        _backgroundTimer ??= Timer(_backgroundDisconnectAfter, () {
+          _backgroundTimer = null;
+          // 연결을 쓰는 화면(지도)이 없으면 연결이 없다 — 복귀 때 새로 열지 않도록 표시하지 않는다.
+          if (client.state == WsConnectionState.disconnected) return;
+          client.disconnect();
+          _disconnectedInBackground = true;
+        });
+      case AppLifecycleState.resumed:
+        _backgroundTimer?.cancel();
+        _backgroundTimer = null;
+        if (_disconnectedInBackground) {
+          _disconnectedInBackground = false;
+          client.connect();
+        } else {
+          client.reconnectNow();
+        }
+      case AppLifecycleState.inactive || AppLifecycleState.detached:
+        break;
     }
   }
 

@@ -33,9 +33,26 @@ import '../support/fake_token_storage.dart';
 /// 복귀 때 부르는 `reconnectNow` 만 구현한다.
 class _FakeWsClient implements BaraedaWebSocketClient {
   int reconnectNowCalls = 0;
+  int connectCalls = 0;
+  int disconnectCalls = 0;
+
+  @override
+  WsConnectionState state = WsConnectionState.connected;
 
   @override
   Stream<void> get sessionExpired => const Stream<void>.empty();
+
+  @override
+  void connect() {
+    connectCalls++;
+    state = WsConnectionState.connected;
+  }
+
+  @override
+  void disconnect() {
+    disconnectCalls++;
+    state = WsConnectionState.disconnected;
+  }
 
   @override
   void reconnectNow() => reconnectNowCalls++;
@@ -309,6 +326,66 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(client.reconnectNowCalls, 1);
+  });
+
+  // M-5 (R57) — 백그라운드에서 60초가 지나면 실시간 연결을 끊어 서버 세션과 배터리를 아끼고, 복귀하면 다시 붙인다.
+  // 다시 붙으면 지도(`LiveMapNotifier`)가 같은 목적지를 구독하고 REST 스냅샷을
+  // 다시 읽는다(live_map_screen_test).
+  group('백그라운드 60초 — 실시간 연결 끊기(M-5)', () {
+    const limit = Duration(seconds: 60);
+
+    testWidgets('60초가 지나면 연결을 끊고 복귀하면 다시 붙인다', (tester) async {
+      final client = _FakeWsClient();
+      await pumpApp(
+        tester,
+        extraOverrides: [webSocketClientProvider.overrideWithValue(client)],
+      );
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      await tester.pump(limit - const Duration(seconds: 1));
+      expect(client.disconnectCalls, 0, reason: '60초 전에는 유지한다');
+
+      await tester.pump(const Duration(seconds: 1));
+      expect(client.disconnectCalls, 1);
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pump();
+      expect(client.connectCalls, 1);
+      expect(client.reconnectNowCalls, 0);
+    });
+
+    testWidgets('60초 안에 돌아오면 끊지 않고 일반 복귀 처리만 한다', (tester) async {
+      final client = _FakeWsClient();
+      await pumpApp(
+        tester,
+        extraOverrides: [webSocketClientProvider.overrideWithValue(client)],
+      );
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      await tester.pump(const Duration(seconds: 30));
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pump(limit * 2);
+
+      expect(client.disconnectCalls, 0);
+      expect(client.connectCalls, 0);
+      expect(client.reconnectNowCalls, 1);
+    });
+
+    testWidgets('연결이 없던 앱(지도 밖)은 복귀해도 연결을 새로 열지 않는다', (tester) async {
+      final client = _FakeWsClient()..state = WsConnectionState.disconnected;
+      await pumpApp(
+        tester,
+        extraOverrides: [webSocketClientProvider.overrideWithValue(client)],
+      );
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      await tester.pump(limit);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pump();
+
+      expect(client.disconnectCalls, 0);
+      expect(client.connectCalls, 0);
+    });
   });
 
   // R46-FIXCONN C-10 — 와이파이가 돌아와도 재연결 대기(최대 30초)가
