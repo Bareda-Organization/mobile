@@ -36,13 +36,22 @@ void main() {
       }
     }
     // 앱이 쓰는 위젯의 부품으로 들어가는 위젯도 쓰이는 것이다 — 더 늘지 않을 때까지 되풀이.
-    // 같은 파일 안에서는 선언 한 번 말고 이름이 더 나와야 부품으로 친다.
+    // 부품으로 치는 언급은 그 위젯 자신의 클래스 본문 밖의 것이다 — 자기 선언 · 생성자 줄은 센다고 쓰이는 게 아니다.
     bool isPartOf(String user, String name) {
-      final sameFile = widgets[user]!.path == widgets[name]!.path;
-      final hits = RegExp('\\b$name\\b')
-          .allMatches(fileCode[widgets[user]!.path]!)
-          .length;
-      return hits > (sameFile ? 1 : 0);
+      final code = fileCode[widgets[user]!.path]!;
+      final declaration = RegExp('class\\s+$name\\b').firstMatch(code);
+      var outside = code;
+      if (declaration != null) {
+        final open = code.indexOf('{', declaration.start);
+        var depth = 0;
+        var end = open;
+        for (; end < code.length; end++) {
+          if (code[end] == '{') depth++;
+          if (code[end] == '}' && --depth == 0) break;
+        }
+        outside = code.substring(0, declaration.start) + code.substring(end);
+      }
+      return mentions(outside, name);
     }
 
     var grew = true;
