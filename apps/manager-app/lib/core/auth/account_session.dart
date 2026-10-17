@@ -130,8 +130,9 @@ void _clearAccountScopedState(Ref ref, {bool announceDiscarded = false}) {
 Future<void> _clearStudentPhotos(Ref ref) async {
   try {
     await ref.read(studentPhotoCacheClearerProvider)();
-  } on Object {
+  } on Object catch (error) {
     // 사진 캐시는 하루 뒤 스스로 만료된다 — 지우는 데 실패했다고 다른 정리를 막지 않는다.
+    debugPrint('학생 사진 캐시 정리 실패: $error');
   }
 }
 

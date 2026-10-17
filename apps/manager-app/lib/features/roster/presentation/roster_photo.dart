@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -39,23 +40,34 @@ final CacheManager studentPhotoCacheManager = CacheManager(
 
 /// 받아 둔 학생 사진을 디스크에서 지우는 동작 — 계정별 정리가 부른다. 시험이 가짜로 덮는다.
 final Provider<Future<void> Function()> studentPhotoCacheClearerProvider =
-    Provider<Future<void> Function()>((ref) => _emptyStudentPhotoCache);
+    Provider<Future<void> Function()>(
+      (ref) =>
+          () => wipeStudentPhotosGuarded(
+            // 저장소는 구역 안에서 처음 만들어져야 임시 폴더 읽기 오류도 구역이
+            // 받는다 — 함수 참조로 바꾸면 구역 밖에서 만들어진다.
+            // ignore: unnecessary_lambdas
+            () => studentPhotoCacheManager.emptyCache(),
+          ),
+    );
 
-/// 캐시 저장소를 처음 만들 때 임시 폴더를 읽는 비동기 작업이 같이 시작된다 — 플랫폼 플러그인이 없는 환경(단위 시험)이나
-/// 폴더를 못 읽는 기기에서는 그 작업이 호출한 쪽 밖으로 오류를 흘리므로 구역 안에서 삼킨다. 못 지워도 사진은 하루 뒤
-/// 스스로 만료된다.
-Future<void> _emptyStudentPhotoCache() {
+/// [wipe] 를 구역 안에서 돌려 오류가 호출한 쪽 밖으로 새지 않게 하고, 오류는 로그로 남긴다.
+///
+/// 캐시 저장소를 처음 만들 때 임시 폴더를 읽는 비동기 작업이 같이 시작된다 — 플랫폼 플러그인이 없는
+/// 환경(단위 시험)이나 폴더를 못 읽는 기기에서는 그 작업이 호출한 쪽 밖으로 오류를 흘린다. 못 지워도
+/// 사진은 하루 뒤 스스로 만료되므로 정리는 이어가되, 조용히 삼키지 않는다.
+@visibleForTesting
+Future<void> wipeStudentPhotosGuarded(Future<void> Function() wipe) {
   final done = Completer<void>();
   unawaited(
     runZonedGuarded(
       () async {
         try {
-          await studentPhotoCacheManager.emptyCache();
+          await wipe();
         } finally {
           done.complete();
         }
       },
-      (error, stack) {},
+      (error, stack) => debugPrint('학생 사진 캐시를 지우지 못했어요: $error'),
     ),
   );
   return done.future;

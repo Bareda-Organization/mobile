@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:manager_app/app/di.dart';
@@ -75,6 +76,33 @@ void main() {
     final headers = await container.read(rosterPhotoHeadersProvider.future);
 
     expect(headers, {'Authorization': 'Bearer tok-9'});
+  });
+
+  group('wipeStudentPhotosGuarded', () {
+    test('지우다 던진 오류는 호출한 쪽으로 새지 않고 로그로 남는다', () async {
+      final logged = <String?>[];
+      final original = debugPrint;
+      debugPrint = (message, {wrapWidth}) => logged.add(message);
+      addTearDown(() => debugPrint = original);
+
+      await wipeStudentPhotosGuarded(() async => throw StateError('디스크 오류'));
+
+      expect(logged.single, contains('학생 사진 캐시를 지우지 못했어요'));
+      expect(logged.single, contains('디스크 오류'));
+    });
+
+    test('오류가 없으면 아무것도 남기지 않는다', () async {
+      final logged = <String?>[];
+      final original = debugPrint;
+      debugPrint = (message, {wrapWidth}) => logged.add(message);
+      addTearDown(() => debugPrint = original);
+      var wiped = 0;
+
+      await wipeStudentPhotosGuarded(() async => wiped++);
+
+      expect(wiped, 1);
+      expect(logged, isEmpty);
+    });
   });
 }
 
