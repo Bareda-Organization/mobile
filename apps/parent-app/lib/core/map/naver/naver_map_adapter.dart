@@ -4,7 +4,6 @@ import 'package:baraeda_core/baraeda_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
-import 'package:parent_app/core/map/frame_move_selector.dart';
 import 'package:parent_app/core/map/map_surface.dart';
 import 'package:parent_app/core/map/marker_motion_controller.dart';
 import 'package:parent_app/core/map/naver/naver_map_init.dart';
@@ -78,7 +77,7 @@ class _NaverMapAdapterState extends State<NaverMapAdapter>
 
   /// 마커 id 별 보간 상태 — 계산 자체는 `MarkerMotionController`(순수)에
   /// 맡기고, 이 클래스는 "언제 부를지"만 담당한다.
-  final Map<String, MarkerMotionController> _motionById = {};
+  final MarkerMotionController _motion = MarkerMotionController();
 
   /// 화면 프레임마다 도는 틱 — 보간 중인 마커가 하나라도 있을 때만 켠다(프레임마다 `setPosition` 을 부르는
   /// 비용은 실제로 움직이는 마커가 있을 때만 낸다). 앱이 백그라운드(paused)면 프레임이 없어 네이티브 호출도 0이다.
@@ -88,9 +87,6 @@ class _NaverMapAdapterState extends State<NaverMapAdapter>
 
   /// 시험이 틱 콜백을 바꿔 끼우는 자리 — [debugStartTickerForTest] 만 쓴다.
   VoidCallback? _debugTick;
-
-  /// 프레임마다 `setPosition` 을 부를 마커를 고른다.
-  final FrameMoveSelector _moveSelector = FrameMoveSelector();
 
   @override
   void initState() {
@@ -227,7 +223,7 @@ class _NaverMapAdapterState extends State<NaverMapAdapter>
     for (final id in toRemove) {
       final marker = _markersById.remove(id);
       _looksById.remove(id);
-      _motionById.remove(id);
+      _motion.remove(id);
       if (marker != null) {
         await controller.deleteOverlay(marker.info);
       }
@@ -238,9 +234,7 @@ class _NaverMapAdapterState extends State<NaverMapAdapter>
     for (final entry in incoming.entries) {
       final existing = _markersById[entry.key];
       final target = (lat: entry.value.lat, lng: entry.value.lng);
-      _motionById
-          .putIfAbsent(entry.key, MarkerMotionController.new)
-          .onCoordinateReceived(target, now);
+      _motion.onCoordinateReceived(entry.key, target, now);
 
       if (existing == null) {
         // 아이콘을 굳히는 사이 화면이 닫힐 수 있다 — 닫힌 뒤의 context 는 쓰지 않는다.
@@ -373,8 +367,7 @@ class _NaverMapAdapterState extends State<NaverMapAdapter>
 
   /// 보간 중인 마커가 하나라도 있으면 타이머를 돌리고, 없으면 멈춘다.
   void _syncTicker(DateTime now) {
-    final anyAnimating = _motionById.values.any((m) => m.isAnimating(now));
-    if (anyAnimating) {
+    if (_motion.isAnimating(now)) {
       if (!_ticker.isActive) _ticker.start();
     } else if (_ticker.isActive) {
       _ticker.stop();
@@ -384,9 +377,9 @@ class _NaverMapAdapterState extends State<NaverMapAdapter>
   void _onFrameTick() {
     final now = DateTime.now();
     // 보간 중인(움직이는) 마커만 옮긴다 — 정차지 마커는 네이티브 호출 0(R46 D #11).
-    for (final id in _moveSelector.select(_motionById, now)) {
+    for (final id in _motion.idsToMove(now)) {
       final marker = _markersById[id];
-      final position = _motionById[id]?.currentPositionAt(now);
+      final position = _motion.positionAt(id, now);
       if (marker != null && position != null) {
         marker.setPosition(NLatLng(position.lat, position.lng));
       }
