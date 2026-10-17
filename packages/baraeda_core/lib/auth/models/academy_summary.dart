@@ -1,9 +1,6 @@
 /// `GET /academies/search` 결과 한 건 (API_SPEC §2.1).
 ///
-/// 코드 생성 없이 손으로 `fromJson` 을 쓴다 — 이 패키지는 freezed 만 이미
-/// 쓰고 있고(§ `error/failure.dart`), 평평한 DTO 하나 때문에
-/// `json_serializable` 빌드 러너를 추가로 얹지 않는다(§ 판단 근거는
-/// 보고서에 남긴다).
+/// 코드 생성 없이 손으로 `fromJson` 을 쓴다 — 평평한 DTO 하나 때문에 빌드 러너를 얹지 않는다.
 class AcademySummary {
   /// 필드 4개 전부 서버가 항상 채워 보낸다(§2.1 응답 표에 선택값 없음).
   const new({
