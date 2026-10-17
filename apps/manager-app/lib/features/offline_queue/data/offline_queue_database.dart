@@ -20,10 +20,7 @@ class PendingRequests extends Table {
   TextColumn get endpoint => text()();
 
   /// HTTP 메서드 — §1.7 대상 두 종류가 `PATCH`(승하차 처리)·`POST`(비상
-  /// 발신)로 서로 달라 재생 시 필요하다(스키마 v2 에서 추가, 기존
-  /// 컬럼과 달리 처음부터 있었어야 했던 값). 기본값은 `ALTER TABLE ADD
-  /// COLUMN` 이 기존 행에 값을 채우는 데 쓰인다 — 새 행은 호출부가 항상
-  /// 명시한다.
+  /// 발신)로 서로 달라 재생 시 필요하다. 새 행은 호출부가 항상 명시한다.
   TextColumn get method => text().withDefault(const Constant('PATCH'))();
 
   /// 요청 본문 (JSON 직렬화된 문자열).
@@ -31,14 +28,13 @@ class PendingRequests extends Table {
 
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 
-  /// 서버가 5xx 로 응답해 재생에 실패한 횟수(스키마 v4) — 통신 두절은 세지
+  /// 서버가 5xx 로 응답해 재생에 실패한 횟수 — 통신 두절은 세지
   /// 않는다(행이 아니라 망의 문제). 상한(`OfflineQueueRepositoryImpl.maxAttempts`)에
-  /// 닿은 행이 **영구 실패 행**이다 — 재생에서 빠지고 큐 화면에는 남는다. 기본값은
-  /// `ALTER TABLE ADD COLUMN` 이 기존 행에 0 을 채우는 데 쓰인다.
+  /// 닿은 행이 **영구 실패 행**이다 — 재생에서 빠지고 큐 화면에는 남는다.
   IntColumn get attempts => integer().withDefault(const Constant(0))();
 }
 
-/// 마지막으로 받은 명단(스키마 v5, M-M3 · UF-E-07) — 앱을 다시 켠 뒤 오프라인이어도 명단을 본다.
+/// 마지막으로 받은 명단(M-M3 · UF-E-07) — 앱을 다시 켠 뒤 오프라인이어도 명단을 본다.
 /// 회차마다 한 행이고 서버 응답 본문(§4.2)을 그대로 담는다. 계정 소유의 정보라 로그아웃·세션 만료에 비운다.
 class CachedRosters extends Table {
   TextColumn get runId => text()();
@@ -62,35 +58,9 @@ class OfflineQueueDatabase extends _$OfflineQueueDatabase {
   @visibleForTesting
   new forTesting(super.e);
 
+  // 출시 전 개발 데이터는 버려도 되므로 스키마는 1판 하나다 — 표를 바꾸면 이 번호를 올리지 않고 앱을 지우고 다시 깐다.
   @override
-  int get schemaVersion => 5;
-
-  @override
-  MigrationStrategy get migration => MigrationStrategy(
-    onCreate: (m) => m.createAll(),
-    onUpgrade: (m, from, to) async {
-      if (from < 2) {
-        // v1 에는 `method` 가 없었다 — 컬럼 기본값(`PATCH`, 그 시점 유일한
-        // 대상인 §4.6 승하차 처리)이 기존 행을 그대로 채운다.
-        await m.addColumn(pendingRequests, pendingRequests.method);
-      }
-      if (from < 3) {
-        // v2 의 `client_key` 컬럼은 쓰기만 되고 어디서도 읽히지 않았다 —
-        // 실제 멱등성은 `payload` 안에 직렬화된 `client_key` 값으로
-        // 지켜진다(FE-R2 목표 11). 남겨 둔 채로는 "멱등이 여기서
-        // 지켜진다" 는 잘못된 신호를 주므로 컬럼째 제거한다.
-        await m.dropColumn(pendingRequests, 'client_key');
-      }
-      if (from < 4) {
-        // 행별 시도 횟수 — 큐 머리의 한 행이 5xx 를 되풀이해도 뒤를 영구히 막지 않게 한다(R46-FIXRT S-9).
-        await m.addColumn(pendingRequests, pendingRequests.attempts);
-      }
-      if (from < 5) {
-        // 명단 로컬 저장 표 — 기존 대기 요청은 건드리지 않는다.
-        await m.createTable(cachedRosters);
-      }
-    },
-  );
+  int get schemaVersion => 1;
 }
 
 LazyDatabase _openConnection() {
