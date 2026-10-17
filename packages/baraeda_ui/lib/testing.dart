@@ -1,3 +1,7 @@
+/// 시험 전용 도우미 — 낱말 한가운데서 줄이 바뀌는지 재는 도구. 앱 · 패키지 시험이 가져다 쓴다.
+/// 제품 코드는 가져오지 않는다(`baraeda_ui.dart` 배럴에 넣지 않는다).
+library;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';

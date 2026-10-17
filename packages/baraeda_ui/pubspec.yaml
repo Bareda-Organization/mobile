@@ -10,10 +10,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_test:
+    sdk: flutter # lib/testing.dart(시험 전용 도우미)가 쓴다
 
 dev_dependencies:
-  flutter_test:
-    sdk: flutter
   very_good_analysis: ^11.0.0
 
 # For information on the generic Dart part of this file, see the

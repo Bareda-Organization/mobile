@@ -1,11 +1,10 @@
+import 'package:baraeda_ui/testing.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:parent_app/core/auth/auth_providers.dart';
 import 'package:parent_app/core/auth/user_role.dart';
 import 'package:parent_app/features/child_link/presentation/child_link_screen.dart';
-
-import '../../../support/line_breaks.dart';
 
 /// 학생의 연결 코드 설명은 여러 줄 문단이다 — 낱말 한가운데서 줄이 바뀌면 안 된다
 /// (R46-POLISH Ruling 594, R46-SCREEN 에서 `없습니 / 다.` 로 끊겼다).
@@ -19,9 +18,8 @@ void main() {
         ],
         child: MaterialApp(
           builder: (context, child) => MediaQuery(
-            data: MediaQuery.of(
-              context,
-            ).copyWith(textScaler: const TextScaler.linear(1.3)),
+            data: MediaQuery.of(context)
+                .copyWith(textScaler: const TextScaler.linear(1.3)),
             child: child!,
           ),
           home: const ChildLinkScreen(),

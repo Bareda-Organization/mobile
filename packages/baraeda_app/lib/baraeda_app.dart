@@ -2,5 +2,7 @@
 library;
 
 export 'auth/credential_limits.dart';
+export 'network/api_constants.dart';
+export 'notifications/notification_feed_notifier.dart';
 export 'refresh/visible_poller.dart';
 export 'ui/confirm_dialog.dart';
