@@ -239,9 +239,13 @@ class LiveMapNotifier extends StateNotifier<LiveMapState> {
     _runId = envelope.runId;
     switch (envelope.event) {
       case WsEventType.position:
-        state = state.copyWith(
-          position: WsPositionPayload.fromJson(envelope.payload),
-        );
+        final position = WsPositionPayload.fromJson(envelope.payload);
+        // 순서가 뒤바뀌어 늦게 온 옛 위치가 화면 값을 되돌리지 않는다(`Ruling 899` C).
+        final shown = state.position;
+        if (shown != null && position.receivedAt.isBefore(shown.receivedAt)) {
+          return;
+        }
+        state = state.copyWith(position: position);
       case WsEventType.stopArrived:
         state = state.copyWith(
           lastStopArrived: WsStopArrivedPayload.fromJson(envelope.payload),

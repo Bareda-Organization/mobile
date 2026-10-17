@@ -513,6 +513,35 @@ void main() {
       );
     });
 
+    // M-7 (Ruling 899 C) — 순서가 뒤바뀌어 늦게 온 옛 위치가 화면 값을 되돌리지 않는다.
+    testWidgets('화면 값보다 오래된 received_at 의 position 은 무시하고 더 새 것은 반영한다', (
+      tester,
+    ) async {
+      await pumpConnected(tester);
+      WebSocketEnvelope position(String receivedAt, String stop) => _envelope(
+        WsEventType.position,
+        {
+          'lat': 37.5,
+          'lng': 127.0,
+          'received_at': receivedAt,
+          'current_stop_name': stop,
+        },
+      );
+
+      client.deliver(position('2026-09-13T08:00:10Z', '새 정류장'));
+      await tester.pump();
+      client.deliver(position('2026-09-13T08:00:00Z', '옛 정류장'));
+      await tester.pump();
+
+      expect(find.text('새 정류장'), findsOneWidget);
+      expect(find.text('옛 정류장'), findsNothing);
+
+      client.deliver(position('2026-09-13T08:00:20Z', '더 새 정류장'));
+      await tester.pump();
+
+      expect(find.text('더 새 정류장'), findsOneWidget);
+    });
+
     // R32 P7 — 연결 끊김 띠에 다시 시도가 없어, 화면을 벗어났다 돌아오는 수밖에 없었다.
     testWidgets('연결 끊김 띠의 [다시 시도] 가 재연결을 건다', (tester) async {
       await pumpConnected(tester);
