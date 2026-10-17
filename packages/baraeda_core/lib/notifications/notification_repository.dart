@@ -1,7 +1,6 @@
 import 'package:baraeda_core/network/dio_error_mapper.dart';
 import 'package:baraeda_core/notifications/notification_api.dart';
 import 'package:baraeda_core/notifications/notification_item.dart';
-import 'package:dio/dio.dart';
 
 /// 화면이 보는 알림 계약 — §3.12·§3.13. §1.8 페이징을 그대로 노출한다.
 abstract interface class NotificationRepository {
@@ -30,7 +29,7 @@ class NotificationRepositoryImpl implements NotificationRepository {
     int page = 0,
     int size = 20,
     bool unreadOnly = false,
-  }) => _guard(
+  }) => guardDio(
     () => _notificationApi.getNotifications(
       page: page,
       size: size,
@@ -40,17 +39,5 @@ class NotificationRepositoryImpl implements NotificationRepository {
 
   @override
   Future<void> markRead(String notificationId) =>
-      _guard(() => _notificationApi.markRead(notificationId));
-
-  Future<T> _guard<T>(Future<T> Function() body) async {
-    try {
-      return await body();
-    } on DioException catch (exception) {
-      // Failure 는 의도적으로 Exception/Error 를 상속하지 않는다
-      // (auth_repository_impl.dart 와 같은 설계 — dart:core 예외 체계를
-      // 흉내 내지 않는다). 이 지점의 `only_throw_errors` 는 예외로 둔다.
-      // ignore: only_throw_errors
-      throw mapDioExceptionToFailure(exception);
-    }
-  }
+      guardDio(() => _notificationApi.markRead(notificationId));
 }

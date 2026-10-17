@@ -1,4 +1,4 @@
-import 'package:manager_app/core/network/guard.dart';
+import 'package:baraeda_core/baraeda_core.dart';
 import 'package:manager_app/features/navigation/data/models/navigation_route.dart';
 import 'package:manager_app/features/navigation/data/models/navigation_scope.dart';
 import 'package:manager_app/features/navigation/data/navigation_api.dart';

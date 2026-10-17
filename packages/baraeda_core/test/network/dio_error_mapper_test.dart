@@ -109,4 +109,60 @@ void main() {
       expect((failure as UnknownFailure).statusCode, isNull);
     });
   });
+
+  group('guardDio — DioException 을 Failure 로 바꿔 던지는 한 곳', () {
+    test('성공하면 값을 그대로 돌려준다', () async {
+      expect(await guardDio(() async => 7), 7);
+    });
+
+    test('401 TOKEN_EXPIRED 는 unauthenticated, 다른 401 은 ApiFailure', () async {
+      await expectLater(
+        guardDio<void>(
+          () async => throw _badResponse(
+            statusCode: 401,
+            body: {
+              'error': {'code': 'TOKEN_EXPIRED', 'message': 'm'},
+            },
+          ),
+        ),
+        throwsA(isA<UnauthenticatedFailure>()),
+      );
+      await expectLater(
+        guardDio<void>(
+          () async => throw _badResponse(
+            statusCode: 401,
+            body: {
+              'error': {'code': 'INVALID_CREDENTIALS', 'message': 'm'},
+            },
+          ),
+        ),
+        throwsA(
+          isA<ApiFailure>().having(
+            (f) => f.code,
+            'code',
+            'INVALID_CREDENTIALS',
+          ),
+        ),
+      );
+    });
+
+    test('연결 실패는 NetworkFailure 로 던진다', () async {
+      await expectLater(
+        guardDio<void>(
+          () async => throw DioException.connectionError(
+            requestOptions: RequestOptions(path: '/x'),
+            reason: 'down',
+          ),
+        ),
+        throwsA(isA<NetworkFailure>()),
+      );
+    });
+
+    test('DioException 이 아닌 예외는 그대로 통과한다', () async {
+      await expectLater(
+        guardDio<void>(() async => throw StateError('bug')),
+        throwsStateError,
+      );
+    });
+  });
 }

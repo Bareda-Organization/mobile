@@ -1,5 +1,4 @@
 import 'package:baraeda_core/baraeda_core.dart';
-import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:parent_app/core/auth/academy_contact.dart';
 import 'package:parent_app/core/auth/domain/auth_repository.dart';
@@ -25,33 +24,34 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<List<AcademySummary>> searchAcademies(String query) =>
-      _guard(() => _authApi.searchAcademies(query));
+      guardDio(() => _authApi.searchAcademies(query));
 
   @override
   Future<SignupResponse> signup(SignupRequest request) =>
-      _guard(() => _authApi.signup(request));
+      guardDio(() => _authApi.signup(request));
 
   @override
-  Future<SignupStatusResponse> signupStatus() => _guard(_authApi.signupStatus);
+  Future<SignupStatusResponse> signupStatus() =>
+      guardDio(_authApi.signupStatus);
 
   @override
   Future<ReapplyResponse> reapply({required String academyId}) =>
-      _guard(() => _authApi.reapply(academyId: academyId));
+      guardDio(() => _authApi.reapply(academyId: academyId));
 
   @override
   Future<LoginResponse> login({
     required String loginId,
     required String password,
-  }) => _guard(() => _authApi.login(loginId: loginId, password: password));
+  }) => guardDio(() => _authApi.login(loginId: loginId, password: password));
 
   @override
-  Future<void> logout() => _guard(_authApi.logout);
+  Future<void> logout() => guardDio(_authApi.logout);
 
   @override
   Future<void> changePassword({
     required String currentPassword,
     required String newPassword,
-  }) => _guard(
+  }) => guardDio(
     () => _authApi.changePassword(
       currentPassword: currentPassword,
       newPassword: newPassword,
@@ -63,7 +63,7 @@ class AuthRepositoryImpl implements AuthRepository {
     required String type,
     required String phone,
     String? verificationCode,
-  }) => _guard(
+  }) => guardDio(
     () => _authApi.recover(
       type: type,
       phone: phone,
@@ -72,7 +72,7 @@ class AuthRepositoryImpl implements AuthRepository {
   );
 
   @override
-  Future<MeResponse> me() => _guard(() async {
+  Future<MeResponse> me() => guardDio(() async {
     final me = await _authApi.me();
     // 승인 대기 화면을 거치지 않은 계정도 문의처를 알게 한다 — 비었으면 이미 남긴 값을 지우지 않는다.
     // 저장 실패가 `/me` 를 실패시키지 않게 한다(`AuthApi._registerDevice` 와 같은 방식).
@@ -90,24 +90,9 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<DeviceRegistrationResponse> registerDevice(
     DeviceRegistrationRequest request,
-  ) => _guard(() => _authApi.registerDevice(request));
+  ) => guardDio(() => _authApi.registerDevice(request));
 
   @override
   Future<void> unregisterDevice(String token) =>
-      _guard(() => _authApi.unregisterDevice(token));
-
-  /// `DioException` → [Failure] 변환 지점 하나 — 메서드마다 반복하지 않는다.
-  /// `Failure` 는 의도적으로 `Exception`/`Error` 를 상속하지 않는
-  /// freezed sealed union 이다(화면은 `on Failure catch` 로 잡아 switch 로
-  /// 분기한다) — dart:core 예외 체계를 흉내 내지 않는 설계이므로 이 지점의
-  /// `only_throw_errors` 는 예외로 둔다.
-  Future<T> _guard<T>(Future<T> Function() body) async {
-    try {
-      return await body();
-    } on DioException catch (exception) {
-      // Failure 는 의도적으로 Exception/Error 를 상속하지 않는다(위 참고).
-      // ignore: only_throw_errors
-      throw mapDioExceptionToFailure(exception);
-    }
-  }
+      guardDio(() => _authApi.unregisterDevice(token));
 }

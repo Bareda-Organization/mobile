@@ -1,5 +1,4 @@
 import 'package:baraeda_core/baraeda_core.dart';
-import 'package:manager_app/core/network/guard.dart';
 import 'package:manager_app/features/offline_queue/domain/offline_queue_repository.dart';
 import 'package:manager_app/features/offline_queue/domain/send_outcome.dart';
 import 'package:manager_app/features/roster/data/models/ack_changes_result.dart';
@@ -108,11 +107,8 @@ class RosterRepositoryImpl implements RosterRepository {
     required String riderId,
     String? reason,
   }) => guardDio(
-    () => _api.revertRiderStatus(
-      runId: runId,
-      riderId: riderId,
-      reason: reason,
-    ),
+    () =>
+        _api.revertRiderStatus(runId: runId, riderId: riderId, reason: reason),
   );
 
   @override
