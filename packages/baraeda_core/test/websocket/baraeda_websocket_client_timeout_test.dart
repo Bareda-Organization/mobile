@@ -54,9 +54,8 @@ class _FakeSecureStoragePlatform
   @override
   Future<SecureStorageUpgradeStatus> checkUpgradeStatus({
     required Map<String, String> options,
-  }) async => const SecureStorageUpgradeStatus(
-    state: SecureStorageUpgradeState.ok,
-  );
+  }) async =>
+      const SecureStorageUpgradeStatus(state: SecureStorageUpgradeState.ok);
 }
 
 TokenStorage _buildTokenStorage() {
@@ -112,7 +111,6 @@ void main() {
           backoffPolicy: const WsBackoffPolicy(
             initialDelay: Duration(milliseconds: 20),
             maxDelay: Duration(milliseconds: 40),
-            jitterRatio: 0,
           ),
         );
         addTearDown(client.dispose);
@@ -200,7 +198,6 @@ void main() {
         backoffPolicy: const WsBackoffPolicy(
           initialDelay: Duration(milliseconds: 20),
           maxDelay: Duration(milliseconds: 40),
-          jitterRatio: 0,
         ),
       );
       addTearDown(client.dispose);

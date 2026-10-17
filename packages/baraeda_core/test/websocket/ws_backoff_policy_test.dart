@@ -52,14 +52,18 @@ void main() {
       expect(limited.shouldGiveUp(7), isTrue);
     });
 
-    test('포기 없이 오래 이어져도 대기는 30초 상한 안에서 지터만 붙는다', () {
+    test('포기 없이 오래 이어져도 대기는 30초 상한 안에서 [0, 30초] 무작위다', () {
       for (final attempt in [7, 50, 1000]) {
         expect(
-          policy.jitteredDelayFor(attempt, _FixedRandom(1)),
-          const Duration(milliseconds: 21000),
+          policy.jitteredDelayFor(attempt, _FixedRandom(0)),
+          Duration.zero,
         );
         expect(
-          policy.jitteredDelayFor(attempt, _FixedRandom(0)),
+          policy.jitteredDelayFor(attempt, _FixedRandom(0.5)),
+          const Duration(seconds: 15),
+        );
+        expect(
+          policy.jitteredDelayFor(attempt, _FixedRandom(1)),
           const Duration(seconds: 30),
         );
       }
@@ -82,21 +86,18 @@ void main() {
       expect(custom.shouldGiveUp(3), isTrue);
     });
 
-    test('지터는 대기를 줄이는 방향으로만 더해져 상한을 넘지 않는다 — 한꺼번에 끊긴 앱들이 같은 초에 붙지 않게', () {
-      // F07-13(c) — 서버 재배포로 모든 앱이 동시에 끊기면 고정 간격은 같은 순간에 몰린다.
-      // 난수 0 → 원래 간격, 난수 1 미만 끝 → 간격의 (1 - jitterRatio) 배.
-      final full = policy.jitteredDelayFor(3, _FixedRandom(0));
-      final least = policy.jitteredDelayFor(3, _FixedRandom(1));
-
-      expect(full, policy.delayFor(3));
+    test('무작위 폭은 [0, 기준값] — 한꺼번에 끊긴 앱들이 같은 초에 붙지 않게 0 부터 흩는다', () {
+      // Ruling 899 G — 난수 0 → 대기 없음, 난수 1 → 기준값 그대로.
+      final base = policy.delayFor(3);
+      expect(policy.jitteredDelayFor(3, _FixedRandom(0)), Duration.zero);
+      expect(policy.jitteredDelayFor(3, _FixedRandom(1)), base);
       expect(
-        least.inMilliseconds,
-        (policy.delayFor(3).inMilliseconds * (1 - policy.jitterRatio)).round(),
+        policy.jitteredDelayFor(3, _FixedRandom(0.25)),
+        Duration(milliseconds: base.inMilliseconds ~/ 4),
       );
-      expect(least, lessThan(full));
       // 상한에 닿은 회차도 상한을 넘지 않는다.
       expect(
-        policy.jitteredDelayFor(6, _FixedRandom(0)),
+        policy.jitteredDelayFor(6, _FixedRandom(1)),
         lessThanOrEqualTo(policy.maxDelay),
       );
     });

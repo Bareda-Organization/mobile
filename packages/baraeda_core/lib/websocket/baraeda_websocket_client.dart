@@ -36,6 +36,14 @@ class _Standby {
   Timer? timer;
 }
 
+/// 서버가 계정의 채널 권한 변경으로 세션을 닫을 때의 종료 코드(`API_SPEC §7.2`) — 곧바로 첫 단계(1초)로 다시 붙는다.
+const int _sessionRevokedCloseCode = 4500;
+
+/// `stomp_dart_client` 는 종료 코드를 이 디버그 메시지로만 알린다.
+final RegExp _serverCloseMessage = RegExp(
+  r'^Server closed the connection with code: (\d+)',
+);
+
 /// `/ws/location` 하나에 STOMP 로 붙는 공용 클라이언트 — `API_SPEC §7`.
 ///
 /// 완료 조건 4가지를 이 클래스 하나가 책임진다.
@@ -62,6 +70,12 @@ class _Standby {
 /// 네트워크 실패가 아니라 예정된 갱신이라 [WsBackoffPolicy] 의 재시도
 /// 횟수를 소모하지 않는다.
 ///
+/// **ERROR `UNAUTHORIZED`·종료 코드(`API_SPEC §7.2`)** — `UNAUTHORIZED` 도 같은 재발급 경로를 타되 **한 번만**
+/// 한다: 재발급이 실패하거나 새 토큰도 `UNAUTHORIZED` 면 [sessionExpired] 로 넘기고 재시도하지 않는다.
+/// 종료 코드 `4500`(권한 변경으로 서버가 세션을 닫음)은 앞선 실패 횟수와 무관하게 첫 단계(1초)로 다시 붙고,
+/// `1008`(CONNECT 마감 초과)과 그 밖의 코드는 일반 백오프다. `4403` 은 ERROR `FORBIDDEN` 경로 그대로다.
+/// 재접속 대기는 기준값(1·2·4·8·16·30초)의 [0, 기준값] 무작위다([WsBackoffPolicy.jitteredDelayFor]).
+///
 /// **만료 전 갈아타기(R46-LATERRT C-14)** — 연결에 쓴 토큰의 만료
 /// [TokenRenewalTiming.lead] 전에 재발급해 새 토큰으로 두 번째 연결을 열고, 걸려
 /// 있는 구독을 모두 그 연결에 옮겨 건 뒤 거부 신호 없이 확인 대기가 지나면 옛
@@ -84,9 +98,12 @@ class BaraedaWebSocketClient {
     void Function(String message)? onDebugMessage,
     this.connectTimeout = const Duration(seconds: 10),
     this.pingInterval = const Duration(seconds: 10),
+    this.heartbeatOutgoing = defaultHeartbeat,
+    this.heartbeatIncoming = defaultHeartbeat,
     this.renewalTiming = const TokenRenewalTiming(),
     StompClient Function(StompConfig config)? stompClientFactory,
     Clock clock = const SystemClock(),
+    Random? random,
   }) : // 필드는 비공개, 파라미터는 공개 이름(`refreshAccessToken:`)을
        // 유지한다(`token_refresher.dart` 와 같은 이유).
        // ignore: prefer_initializing_formals
@@ -95,7 +112,8 @@ class BaraedaWebSocketClient {
        _stompClientFactory = stompClientFactory ?? _defaultStompClient,
        // 필드를 private 으로 유지하려고 initializing formal 대신 명시 대입을 쓴다.
        // ignore: prefer_initializing_formals
-       _clock = clock;
+       _clock = clock,
+       _random = random ?? Random();
 
   static StompClient _defaultStompClient(StompConfig config) =>
       StompClient(config: config);
@@ -121,6 +139,16 @@ class BaraedaWebSocketClient {
   /// 소켓을 닫는다. STOMP 하트비트(무송신 20~30초)와 별개로 반쯤 죽은 TCP 를
   /// 잡는다(R46-FIXCONN K-2).
   final Duration pingInterval;
+
+  /// STOMP 하트비트 기본 주기 — 서버와 같은 10초(`API_SPEC §7.2`). 라이브러리 기본값(5초)에 맡기지 않고 양쪽에
+  /// 명시한다.
+  static const defaultHeartbeat = Duration(seconds: 10);
+
+  /// CONNECT 의 `heart-beat` 로 서버에 알리는 보내는 주기.
+  final Duration heartbeatOutgoing;
+
+  /// CONNECT 의 `heart-beat` 로 서버에 알리는 받는 주기.
+  final Duration heartbeatIncoming;
 
   /// 만료 전 갈아타기의 시간 값 — [TokenRenewalTiming] 참고.
   final TokenRenewalTiming renewalTiming;
@@ -163,7 +191,7 @@ class BaraedaWebSocketClient {
   /// 검증할 수 있게 `final` 이 아니라 생성자 파라미터로 남겨 둔다.
   final WsBackoffPolicy backoffPolicy;
 
-  final _random = Random();
+  final Random _random;
   StompClient? _stompClient;
   Timer? _reconnectTimer;
 
@@ -196,6 +224,18 @@ class BaraedaWebSocketClient {
   /// 플래그를 보고 일반 백오프 대신 재발급 경로(`_handleTokenExpired`)를
   /// 탄다.
   bool _tokenExpired = false;
+
+  /// 이번 연결이 끊긴 원인이 ERROR `UNAUTHORIZED` 였는지 — [_tokenExpired] 와 같은 방식으로 뒤이은
+  /// `onWebSocketDone` 이 읽는다.
+  bool _unauthorized = false;
+
+  /// `UNAUTHORIZED` 로 재발급해 다시 붙은 뒤 아직 `CONNECTED` 를 못 받았는지 — 이때 또
+  /// `UNAUTHORIZED` 면 새 토큰도
+  /// 거부된 것이라 재발급을 되풀이하지 않고 세션 만료로 넘긴다(30초 반복 금지).
+  bool _unauthorizedRefreshed = false;
+
+  /// 이번 연결에서 서버가 알린 종료 코드 — 디버그 메시지에서 읽는다([_serverCloseMessage]).
+  int? _closeCode;
 
   final _stateController = StreamController<WsConnectionState>.broadcast();
   WsConnectionState _state = WsConnectionState.disconnected;
@@ -313,6 +353,7 @@ class BaraedaWebSocketClient {
     _currentAttempt = attempt;
     _cancelRenewal();
     _reconnectHandled = false;
+    _closeCode = null;
     // 새 소켓은 이전 세션의 구독을 이어받지 않는다 — 화면이 `connected`
     // 를 다시 받으면 알아서 재구독하므로, 옛 목적지가 여기 남아 있으면
     // 다음 FORBIDDEN 이 엉뚱한(이미 끊긴) 목적지를 다시 흘려보낸다.
@@ -346,6 +387,8 @@ class BaraedaWebSocketClient {
       // (`connectionTimeout` 은 `Future.timeout` 타이머를 남겨 연결이 끝내 안
       // 되는 시험·종료 상황에서 타이머가 남는다).
       pingInterval: pingInterval,
+      heartbeatOutgoing: heartbeatOutgoing,
+      heartbeatIncoming: heartbeatIncoming,
       // `stompConnectHeaders` 가 STOMP CONNECT 프레임의 네이티브 헤더로
       // 나간다 — 여기 실어야 `StompAuthChannelInterceptor` 의
       // `getFirstNativeHeader` 가 읽는다. `webSocketConnectHeaders` 는
@@ -362,6 +405,7 @@ class BaraedaWebSocketClient {
         _connectWatchdog?.cancel();
         _lastServerActivity = _clock.now();
         _reconnectAttempt = 0;
+        _unauthorizedRefreshed = false;
         _setState(WsConnectionState.connected);
         if (token != null) _scheduleRenewal(token);
       },
@@ -379,6 +423,10 @@ class BaraedaWebSocketClient {
         // 소켓을 닫는 시점과 순서를 맞추기 위해서다.
         if (message == 'TOKEN_EXPIRED') {
           _tokenExpired = true;
+        }
+        // 토큰이 아예 인증되지 않았다(`UNAUTHORIZED`) — 재발급은 한 번만 한다.
+        if (message == 'UNAUTHORIZED') {
+          _unauthorized = true;
         }
         // `StompAuthChannelInterceptor` 의 SUBSCRIBE 거부 경로는 전부
         // `BusinessException(ErrorCode.FORBIDDEN)` 을 던진다 — 이 저장소
@@ -417,8 +465,10 @@ class BaraedaWebSocketClient {
         _handleDisconnected();
       },
       onDebugMessage: (message) {
-        if (attempt == _currentAttempt && message.startsWith('<<<')) {
-          _lastServerActivity = _clock.now();
+        if (attempt == _currentAttempt) {
+          if (message.startsWith('<<<')) _lastServerActivity = _clock.now();
+          final code = _serverCloseMessage.firstMatch(message)?.group(1);
+          if (code != null) _closeCode = int.parse(code);
         }
         _onDebugMessage(message);
       },
@@ -466,7 +516,15 @@ class BaraedaWebSocketClient {
       unawaited(_handleTokenExpired());
       return;
     }
+    if (_unauthorized) {
+      _unauthorized = false;
+      unawaited(_handleTokenExpired(refreshOnce: true));
+      return;
+    }
 
+    // 권한이 바뀌어 서버가 세션을 닫았다 — 앞선 실패 횟수와 무관하게 첫 단계(1초)로 다시 붙는다.
+    // 1008(CONNECT 마감 초과)과 그 밖의 코드는 일반 백오프다.
+    if (_closeCode == _sessionRevokedCloseCode) _reconnectAttempt = 0;
     _scheduleReconnect();
   }
 
@@ -484,18 +542,21 @@ class BaraedaWebSocketClient {
     _reconnectTimer = Timer(delay, () => unawaited(_doConnect()));
   }
 
-  /// `TOKEN_EXPIRED` 로 끊긴 뒤의 처리 — 클래스 문서 "토큰 만료 처리" 참고.
+  /// `TOKEN_EXPIRED`·`UNAUTHORIZED` 로 끊긴 뒤의 처리 — 클래스 문서 "토큰 만료 처리" 참고.
   /// 재발급에 성공하면 곧바로 재연결하고(백오프 횟수를 소모하지 않는다 —
   /// 예정된 갱신이지 네트워크 실패가 아니다), 실패하면(콜백이 없거나
   /// `null` 을 돌려주면) [sessionExpired] 로 넘기고 더 이상 재시도하지
-  /// 않는다.
-  Future<void> _handleTokenExpired() async {
+  /// 않는다. [refreshOnce] 면(`UNAUTHORIZED`) 재발급해 붙은 연결이 또 거부될 때 재발급을 되풀이하지 않고
+  /// 곧바로 [sessionExpired] 로 넘긴다.
+  Future<void> _handleTokenExpired({bool refreshOnce = false}) async {
     final epoch = _epoch;
     _setState(WsConnectionState.reconnecting);
     final refresh = _refreshAccessToken;
     final String? newToken;
     try {
-      newToken = refresh == null ? null : await refresh();
+      newToken = refreshOnce && _unauthorizedRefreshed || refresh == null
+          ? null
+          : await refresh();
     } on Object catch (error) {
       // 재발급 요청이 일시 장애로 실패했다(연결 실패·타임아웃·5xx) — 세션은 살아 있을 수
       // 있으므로 sessionExpired 로 넘기지 않고 일반 끊김처럼 백오프로 다시 시도한다.
@@ -512,6 +573,7 @@ class BaraedaWebSocketClient {
       _setState(WsConnectionState.disconnected);
       return;
     }
+    if (refreshOnce) _unauthorizedRefreshed = true;
     _reconnectAttempt = 0;
     unawaited(_doConnect(overrideToken: newToken));
   }

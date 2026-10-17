@@ -18,13 +18,12 @@ import 'dart:math';
 /// 바로 검사할 수 있다.
 class WsBackoffPolicy {
   /// 기본값은 1·2·4·8·16·30초, 이후 30초(상한) 간격으로 **포기 없이** 계속 시도한다
-  /// (R46-FIXRT S-5). 지터는 매번 붙는다.
+  /// (R46-FIXRT S-5). 실제 대기는 [jitteredDelayFor] 가 [0, 기준값] 에서 고른다.
   const new({
     this.initialDelay = const Duration(seconds: 1),
     this.maxDelay = const Duration(seconds: 30),
     this.multiplier = 2,
     this.maxAttempts,
-    this.jitterRatio = 0.3,
   });
 
   /// 1회차 재연결 대기.
@@ -43,9 +42,6 @@ class WsBackoffPolicy {
   /// 지도를 만들었다. 망이 죽은 동안의 비용은 30초마다 소켓 시도 1회뿐이다.
   final int? maxAttempts;
 
-  /// [jitteredDelayFor] 가 대기를 최대 이 비율만큼 **줄이는** 폭. 0 이면 지터 없음.
-  final double jitterRatio;
-
   /// `attempt` 는 1부터 시작(첫 재연결 시도). `initialDelay * multiplier^(attempt-1)`
   /// 을 계산하고 [maxDelay] 로 자른다.
   Duration delayFor(int attempt) {
@@ -58,14 +54,13 @@ class WsBackoffPolicy {
     return Duration(milliseconds: cappedMs.round());
   }
 
-  /// [delayFor] 에서 무작위로 최대 [jitterRatio] 만큼 줄인 대기. 서버 재배포로 모든 앱이 동시에
-  /// 끊기면 고정 간격은 같은 순간에 재접속이 몰린다(서버는 1대) — 간격을 흩어 그 몰림을
-  /// 푼다. 줄이는 방향으로만 더해 [maxDelay] 를 넘지 않는다.
+  /// [delayFor] 를 기준값으로 [0, 기준값] 에서 고르게 뽑은 대기(`Ruling 899` G). 서버 재배포로
+  /// 모든 앱이 동시에
+  /// 끊기면 고정 간격은 같은 순간에 재접속이 몰린다(서버는 1대) — 0 부터 기준값까지 흩어 그 몰림을 푼다.
+  /// 기준값이 [maxDelay] 로 잘려 있어 상한을 넘지 않는다.
   Duration jitteredDelayFor(int attempt, Random random) {
     final ms = delayFor(attempt).inMilliseconds;
-    return Duration(
-      milliseconds: (ms * (1 - random.nextDouble() * jitterRatio)).round(),
-    );
+    return Duration(milliseconds: (ms * random.nextDouble()).round());
   }
 
   /// `attempt` 번째 시도를 하기 전에 이미 포기 조건에 도달했는가 — [maxAttempts] 가
