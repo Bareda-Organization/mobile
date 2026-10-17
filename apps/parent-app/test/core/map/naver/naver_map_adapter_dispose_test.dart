@@ -9,7 +9,7 @@ import 'package:parent_app/core/map/naver/naver_map_adapter.dart';
 //
 // 판단 근거 — 왜 `debugStartTickerForTest` 훅을 쓰는가: 프로덕션에서
 // `_frameTicker` 가 시작되는 유일한 경로는 실제 네이버 지도 SDK 의
-// `onMapReady` 콜백(→ `_syncMarkers` → `_syncFrameTicker`)이다. 위젯 시험
+// `onMapReady` 콜백(→ `_syncMarkers` → `_syncTicker`)이다. 위젯 시험
 // 환경에는 플랫폼 채널이 없어 `NaverMapInit.ensureInitialized` 가 끝내
 // 실패하고(`MissingPluginException`), `FutureBuilder` 가 로딩 자리
 // (`ColoredBox`)에 머무른 채 실제 `NaverMap` 위젯도, `onMapReady` 도 결코
