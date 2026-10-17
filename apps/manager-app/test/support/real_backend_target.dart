@@ -1,26 +1,4 @@
 import 'package:dio/dio.dart';
-import 'package:manager_app/core/constants/api_constants.dart';
-
-/// 실서버 계약 시험이 붙을 주소. **주소를 받지 못하면 던진다.**
-///
-/// ⚠ 기본값으로 조용히 `localhost:8080` 에 붙는 경로를 없애는 것이 이 함수의 전부다.
-/// 그 기본값은 조율자의 시드 서버라, `--dart-define=API_BASE_URL` 을 빠뜨린 실행이
-/// 시드 DB 에 실제 레코드를 만든다(2026-09-13 에 3회 발생 · 비상 신고 8건 생성).
-/// 발주문의 경고 문구로는 세 번 다 막지 못했다 — 좌석이 "실서버 시험을 제외했다" 고
-/// 믿는 상태에서는 인자를 붙일 이유가 없기 때문이다. 그래서 문구가 아니라 구조로 막는다.
-///
-/// 백엔드 없이 나머지 시험만 돌리려면 `flutter test --exclude-tags real_backend`.
-String requireRealBackendBaseUrl() {
-  if (!const bool.hasEnvironment('API_BASE_URL')) {
-    throw StateError(
-      '실서버 계약 시험에는 대상 주소가 필요하다. '
-      'flutter test --dart-define=API_BASE_URL=http://localhost:<전용포트>/api/v1 로 실행하라. '
-      '주소를 생략하면 기본값 8080(조율자 시드 서버)으로 실제 요청이 나간다. '
-      '백엔드 없이 돌리려면 --exclude-tags real_backend 를 쓴다.',
-    );
-  }
-  return ApiConstants.baseUrl;
-}
 
 /// F5 M3 목표 — `run2`(§4.4 출발 창 검사·§4.2 confirmed 존재 확인)와
 /// `run3`(§4.5 도착 처리)는 실제 시계·영구 소모 상태에 의존한다. 같은 DB 로
@@ -31,7 +9,7 @@ String requireRealBackendBaseUrl() {
 /// `moving` 으로 영구히 옮겨 §4.2(confirmed 회차 존재 확인)까지 함께
 /// 무너뜨린다(F5 M3 보고서 1항 실측 — 두 실패가 같은 원인의 다른 증상).
 ///
-/// R51 로 두 조건이 더 붙었다.
+/// 두 조건이 더 있다.
 /// ③ 비상 알림 시험(BR-109)이 쓰는 `run1` 은 시드 적용 +2.5h 에 서버의 확정
 /// 배치가 `idle`→`confirmed` 로 옮긴다(confirm_at = 출발 − 30분). 서버를 오래
 /// 켜 둔 뒤에는 영영 `idle` 이 아니다.
@@ -58,7 +36,7 @@ String requireRealBackendBaseUrl() {
 /// 두 곳 다 이 확인을 반복한다. 먼저 실행된 쪽이 이미 리셋했다면 나중에
 /// 도는 쪽의 호출은 조건이 이미 안전해 아무 것도 하지 않는다(멱등).
 ///
-/// ⚠ 2026-09-14 실측 결함 수정 — run3 의 정류장 소모 여부를 확인하려면
+/// ⚠ run3 의 정류장 소모 여부를 확인하려면
 /// `GET /runs/3/roster` 를 호출해야 하는데, run3 에 배치된 기사는
 /// `driverA2` 이고 `driverA1` 은 배치돼 있지 않다. 첫 구현이 driverA1
 /// 토큰으로 그 호출을 했다가 403 을 받았고, 그 예외가 아래 `on DioException`

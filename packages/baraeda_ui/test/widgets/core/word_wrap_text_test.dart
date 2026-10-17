@@ -1,9 +1,8 @@
 import 'package:baraeda_ui/baraeda_ui.dart';
+import 'package:baraeda_ui/testing.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-import '../../support/line_breaks.dart';
 
 const _sentence = '승하차지·명단이 변경됐습니다 — 확인 후 계속 진행하세요 학부모에게 바로 알려 드립니다';
 

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,7 +11,6 @@ import 'package:parent_app/app/di.dart';
 import 'package:parent_app/core/auth/academy_contact.dart';
 import 'package:parent_app/features/auth/presentation/blocked_screen.dart';
 
-import '../../support/fake_token_storage.dart';
 
 class _MemoryContactStorage extends AcademyContactStorage {
   String? value;
@@ -61,7 +61,7 @@ class _MeAdapter implements HttpClientAdapter {
   );
 }
 
-/// R53 t3 A4 — 학원 문의처를 승인 대기 화면에서만 저장해, 대기 화면을 거치지 않은 계정은 차단 화면 전화와
+/// 학원 문의처를 승인 대기 화면에서만 저장해, 대기 화면을 거치지 않은 계정은 차단 화면 전화와
 /// 홈 실패 전화 카드가 없었다. `/me` 가 성공할 때마다 저장한다.
 void main() {
   late _MemoryContactStorage storage;

@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:dio/dio.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -90,7 +91,7 @@ Future<ResponseBody> _status(int status) async => ResponseBody.fromString(
 void main() {
   late OfflineQueueDatabase database;
   late DriftRosterCache cache;
-  const clock = _FixedClock();
+  final clock = FixedClock(DateTime(2026, 10, 10, 8, 5));
 
   setUp(() {
     database = OfflineQueueDatabase.forTesting(NativeDatabase.memory());
@@ -178,11 +179,4 @@ void main() {
 class _NoQueue implements OfflineQueueRepository {
   @override
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
-}
-
-class _FixedClock implements Clock {
-  const new();
-
-  @override
-  DateTime now() => DateTime(2026, 10, 10, 8, 5);
 }

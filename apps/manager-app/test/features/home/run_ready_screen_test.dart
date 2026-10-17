@@ -1,4 +1,5 @@
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -66,15 +67,6 @@ class _RecordingNotificationPermissionPort
   Future<void> request() async => events.add('requestNotificationPermission');
 }
 
-class _FixedClock implements Clock {
-  const new(this._now);
-
-  final DateTime _now;
-
-  @override
-  DateTime now() => _now;
-}
-
 const _roster = RosterResponse(
   runId: 'run-1',
   busNo: '2호차',
@@ -114,7 +106,7 @@ void main() {
       ],
     );
     final overrides = <Override>[
-      clockProvider.overrideWithValue(_FixedClock(now)),
+      clockProvider.overrideWithValue(FixedClock(now)),
       currentUserRoleProvider.overrideWith((ref) => UserRole.driver),
       selectedRunIdProvider.overrideWith((ref) => 'run-1'),
       driveModeRunProvider.overrideWithValue(
@@ -244,7 +236,7 @@ void main() {
     expect(find.text('ROSTER_VIEW_MARKER'), findsOneWidget);
   });
 
-  // R53 A11 — 통신이 끊겨 노선을 못 받을 때에도(저장 명단이 있다) [명단 보기] 가 열려야 한다.
+  // 통신이 끊겨 노선을 못 받을 때에도(저장 명단이 있다) [명단 보기] 가 열려야 한다.
   testWidgets('노선을 못 받아도 [명단 보기] 로 조회 전용 명단을 연다', (tester) async {
     await tester.pumpWidget(
       wrap(
@@ -351,7 +343,7 @@ void main() {
     expect(find.text('저장해 둔 목록으로 보고 있어요'), findsNothing);
   });
 
-  // M-3 — Android 13+ 는 알림 권한이 없으면 위치 포그라운드 서비스의 "운행 중" 알림이 안 보인다.
+  // Android 13+ 는 알림 권한이 없으면 위치 포그라운드 서비스의 "운행 중" 알림이 안 보인다.
   // 확인 창에서 [시작하기] 를 누른 뒤, 운행 시작 요청이 나가기 전에 권한을 요청한다.
   testWidgets('[시작하기] 를 누르면 운행 시작 요청 전에 알림 권한을 요청한다', (tester) async {
     final events = <String>[];

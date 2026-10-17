@@ -1,6 +1,5 @@
-import 'dart:async';
-
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
@@ -21,21 +20,8 @@ import 'package:manager_app/features/roster/presentation/roster_providers.dart';
 import 'package:manager_app/features/roster/presentation/roster_screen.dart';
 import 'package:manager_app/features/route_map/presentation/route_map_screen.dart';
 import 'package:manager_app/features/route_map/presentation/route_providers.dart';
-import '../support/fake_notification_repository.dart';
+
 import '../support/manager_run_fixture.dart';
-
-/// R32 M8 — 불러오기에 실패했을 때 예외 원문(`Exception: …` · `Instance of …`)을 화면에 그대로
-/// 보이지 않고, 다른 화면과 같은 쉬운 문구(`describeFailure`)로 보인다. 5개 화면 각 1건.
-class _NeverResolvingTokenStorage extends TokenStorage {
-  new()
-    : super(
-        accessTokenKey: 'test_access_token',
-        refreshTokenKey: 'test_refresh_token',
-      );
-
-  @override
-  Future<String?> readAccessToken() => Completer<String?>().future;
-}
 
 class _NoSample implements PositionSource {
   @override
@@ -70,13 +56,13 @@ Never _fail(Object error) {
 
 void main() {
   final common = <Override>[
-    tokenStorageProvider.overrideWithValue(_NeverResolvingTokenStorage()),
+    tokenStorageProvider.overrideWithValue(NeverResolvingTokenStorage()),
     positionSourceProvider.overrideWithValue(_NoSample()),
     selectedRunIdProvider.overrideWith((ref) => 'run-1'),
     currentUserRoleProvider.overrideWith((ref) => UserRole.driver),
     // 머리줄 부제가 `/me` 를 읽는다 — 실제 서버로 나가지 않게 막는다.
     meProvider.overrideWith((ref) async => throw StateError('내 정보 미사용')),
-    // 머리말 알림 배지가 실제 서버를 부르지 않게 한다(R46).
+    // 머리말 알림 배지가 실제 서버를 부르지 않게 한다.
     notificationRepositoryProvider.overrideWithValue(
       FakeNotificationRepository(const []),
     ),

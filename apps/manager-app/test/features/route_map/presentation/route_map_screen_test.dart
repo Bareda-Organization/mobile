@@ -1,6 +1,4 @@
-import 'dart:async';
-
-import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -34,21 +32,6 @@ class _FakeRouteRepository implements RouteRepository {
   Future<RouteResponse> fetchRoute(String runId) async => response;
 }
 
-/// `roster_screen_test.dart` 의 `_NeverResolvingTokenStorage` 와 같은
-/// 대역 — `ManagerChannelBanner` 가 여는 실제 `ManagerRunChannelController`
-/// 를 `connecting` 상태로 고정해, 시험이 실제 WebSocket 연결을 시도하지
-/// 않게 한다.
-class _NeverResolvingTokenStorage extends TokenStorage {
-  new()
-    : super(
-        accessTokenKey: 'test_access_token',
-        refreshTokenKey: 'test_refresh_token',
-      );
-
-  @override
-  Future<String?> readAccessToken() => Completer<String?>().future;
-}
-
 RouteStop _stop({
   required String stopId,
   required int seq,
@@ -61,7 +44,7 @@ RouteStop _stop({
 Widget _wrap(List<Override> overrides) {
   return ProviderScope(
     overrides: [
-      tokenStorageProvider.overrideWithValue(_NeverResolvingTokenStorage()),
+      tokenStorageProvider.overrideWithValue(NeverResolvingTokenStorage()),
       ...overrides,
     ],
     child: const MaterialApp(home: RouteMapScreen()),
@@ -129,7 +112,7 @@ void main() {
     expect(surface.markers.map((m) => m.id), containsAll(['s1', 's2', 's3']));
   });
 
-  // 2026-09-23 사용자 지시 — 정차지 핀 안에 순번을 넣는다. 순번은 화면이 넘겨야 어댑터가 그린다.
+  // 정차지 핀 안에 순번을 넣는다. 순번은 화면이 넘겨야 어댑터가 그린다.
   // 정차지 id 와 순번을 일부러 어긋나게 둔다 — 순서대로 1·2·3 을 매겨 넣는 구현이 통과하지 않게.
   testWidgets('정차지 마커는 그 정차지의 순번을 싣는다', (tester) async {
     final response = RouteResponse(
@@ -265,7 +248,7 @@ void main() {
     expect(surface.fitToContent, isTrue);
   });
 
-  // R39 Ruling 400 — 경유 지점은 번호 없는 waypoint 마커이고, 승하차지 번호는 경유 지점을 뺀 연속 번호다.
+  // 경유 지점은 번호 없는 waypoint 마커이고, 승하차지 번호는 경유 지점을 뺀 연속 번호다.
   // 서버 seq 는 경유 지점 자리(2)를 비운 채 1·3·4 로 오지만 명단은 경유 지점을 싣지 않는다(Ruling 398).
   testWidgets('경유 지점은 waypoint 마커로 찍고 승하차지 번호는 경유 지점을 건너뛰어 연속으로 매긴다', (
     tester,

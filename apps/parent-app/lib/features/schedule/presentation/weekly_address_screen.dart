@@ -1,3 +1,4 @@
+import 'package:baraeda_app/baraeda_app.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,13 +6,12 @@ import 'package:go_router/go_router.dart';
 import 'package:parent_app/core/students/presentation/selected_student.dart';
 import 'package:parent_app/core/students/presentation/student_providers.dart';
 import 'package:parent_app/core/students/presentation/student_switcher.dart';
-import 'package:parent_app/core/ui/confirm_dialog.dart';
 import 'package:parent_app/features/schedule/presentation/schedule_providers.dart';
 import 'package:parent_app/features/schedule/presentation/widgets/weekly_address_editor.dart';
 
 /// 요일별 등하원 주소(P-05 · `UF-P-03`) — 일정 탭에서 들어오는 하위 화면(§3.7).
 ///
-/// 적다가 뒤로 가면 확인을 한 번 묻는다(R32 P14, 시안 `weekly-address--leave`).
+/// 적다가 뒤로 가면 확인을 한 번 묻는다(시안 `weekly-address--leave`).
 class WeeklyAddressScreen extends ConsumerWidget {
   const new({super.key});
 
@@ -89,7 +89,7 @@ class _Body extends ConsumerWidget {
       error: (error, stack) => const Center(
         child: AlertBanner(tone: AlertTone.missed, body: '주소를 불러오지 못했어요'),
       ),
-      // R32 P5 — 자녀 ID 를 key 로 건다. 없으면 이미 불러 둔 다른 자녀로 바꿀 때 입력칸이 이전
+      // 자녀 ID 를 key 로 건다. 없으면 이미 불러 둔 다른 자녀로 바꿀 때 입력칸이 이전
       // 자녀의 글자를 그대로 들고 있어, 저장하면 다른 아이 이름으로 덮어쓴다.
       data: (entries) => WeeklyAddressEditor(
         key: ValueKey('weekly-address-$studentId'),

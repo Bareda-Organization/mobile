@@ -1,4 +1,5 @@
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -22,17 +23,7 @@ import '../../support/fake_academy_contact_store.dart';
 import '../../support/fake_last_session_store.dart';
 import '../../support/fake_roster_key_store.dart';
 import '../../support/fake_run_summary_store.dart';
-import '../../support/fake_token_storage.dart';
 import '../../support/fake_unsent_emergency_store.dart';
-
-class _FixedClock implements Clock {
-  const new(this._now);
-
-  final DateTime _now;
-
-  @override
-  DateTime now() => _now;
-}
 
 class _StubAuthRepository implements AuthRepository {
   @override
@@ -99,7 +90,7 @@ void main() {
           unsentEmergencyStoreProvider.overrideWithValue(store),
           droppedTallyStoreProvider.overrideWithValue(droppedStore),
           clockProvider.overrideWithValue(
-            _FixedClock(DateTime(2026, 10, 11, 9, 30)),
+            FixedClock(DateTime(2026, 10, 11, 9, 30)),
           ),
           offlineQueueDatabaseProvider.overrideWithValue(database),
           if (queue != null)

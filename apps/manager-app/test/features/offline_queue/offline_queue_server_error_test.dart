@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:dio/dio.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
@@ -44,16 +45,6 @@ class _PathAdapter implements HttpClientAdapter {
   }
 }
 
-/// 시험이 시각을 고정하는 가짜 시계 — 큐 행의 나이 상한 판정에 쓴다.
-class _FixedClock implements Clock {
-  new(this.current);
-
-  DateTime current;
-
-  @override
-  DateTime now() => current;
-}
-
 const _poisonPath = '/runs/1/riders/7';
 const _healthyPath = '/runs/1/riders/8';
 
@@ -61,12 +52,12 @@ const _healthyPath = '/runs/1/riders/8';
   OfflineQueueDatabase database,
   OfflineQueueRepositoryImpl repository,
   _PathAdapter adapter,
-  _FixedClock clock,
+  FixedClock clock,
 })
 _setup(int? Function(String path) statusOf) {
   final database = OfflineQueueDatabase.forTesting(NativeDatabase.memory());
   final adapter = _PathAdapter(statusOf);
-  final clock = _FixedClock(DateTime.now());
+  final clock = FixedClock(DateTime.now());
   final repository = OfflineQueueRepositoryImpl(
     database: database,
     dio: Dio(BaseOptions(baseUrl: 'https://example.invalid'))
@@ -164,7 +155,7 @@ void main() {
         OfflineQueueDatabase database,
         OfflineQueueRepositoryImpl repository,
         _PathAdapter adapter,
-        _FixedClock clock,
+        FixedClock clock,
       })
     >
     twoRows() async {

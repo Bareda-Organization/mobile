@@ -1,11 +1,11 @@
 import 'dart:async';
 
+import 'package:baraeda_app/baraeda_app.dart';
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/auth/account_session.dart';
-import 'package:manager_app/core/constants/api_constants.dart';
 import 'package:manager_app/features/drive_mode/presentation/drive_mode_providers.dart';
 import 'package:manager_app/features/emergency/presentation/emergency_providers.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
@@ -35,13 +35,13 @@ enum ManagerChannelStatus {
   /// 끊겨서 백오프 대기 중 — 자동으로 [connecting] 으로 돌아간다.
   reconnecting,
 
-  /// 재시도 상한 도달 — 더 이상 자동 재연결하지 않는다. 기본 정책은 상한이 없어(R46-FIXRT S-5) 운영에서는
+  /// 재시도 상한 도달 — 더 이상 자동 재연결하지 않는다. 기본 정책은 상한이 없어 운영에서는
   /// 이 상태에 들지 않는다.
   gaveUp,
 
   /// 이 회차에 배정되지 않은 매니저가 구독을 시도해 서버가 4403 으로
   /// 세션을 닫았다(`ForbiddenSubscriptionCloseFactory`). [gaveUp] 과 달리
-  /// 재시도 자체가 무의미하다 — 배정이 바뀌기 전까지 같은 결과가 나온다.
+  /// 재시도 자체가 무의미하다 — 배정이 바뀔 때까지 같은 결과가 나온다.
   forbidden,
 }
 
@@ -98,12 +98,12 @@ void dispatchManagerChannelEvent(
   }
 }
 
-/// 앱이 백그라운드에서 돌아올 때마다 하나씩 오르는 신호(R46-FIXRT S-5) — 홈 화면의 복귀 훅이 올리고,
+/// 앱이 백그라운드에서 돌아올 때마다 하나씩 오르는 신호 — 홈 화면의 복귀 훅이 올리고,
 /// [ManagerRunChannelController] 가 보고 다음 재연결 타이머(최대 30초)를 기다리지 않고 바로 다시 붙는다.
 /// 값 자체에는 뜻이 없다 — 바뀌었다는 사실이 신호다.
 final StateProvider<int> appResumedProvider = StateProvider<int>((ref) => 0);
 
-/// 서버에 다시 닿았다는 신호(R46-FIXCONN C-10) — 위치 전송(REST)이 실패하다 다시 성공한
+/// 서버에 다시 닿았다는 신호 — 위치 전송(REST)이 실패하다 다시 성공한
 /// 순간에만 하나 오른다. 음영에서 나와 망이 돌아와도 실시간 연결은 재연결
 /// 대기(최대 30초)가 끝나야 붙으므로, [ManagerRunChannelController] 가 이
 /// 신호를 보고 바로 다시 붙는다. 성공마다 올리지 않는 이유 — [BaraedaWebSocketClient.reconnectNow]
@@ -111,7 +111,7 @@ final StateProvider<int> appResumedProvider = StateProvider<int>((ref) => 0);
 /// 연결을 시도하게 된다.
 final StateProvider<int> serverReachedProvider = StateProvider<int>((ref) => 0);
 
-/// 이벤트가 몰려도 명단·노선을 이 간격 안에서는 한 번만 다시 받는다(R46-FIXRT L4). 한 정류장에서 승차가
+/// 이벤트가 몰려도 명단·노선을 이 간격 안에서는 한 번만 다시 받는다. 한 정류장에서 승차가
 /// 몰리면 방송 한 건마다 같은 조회가 탭마다 연달아 나가므로, 첫 이벤트 뒤 이 시간을 기다렸다 한 번에 읽는다.
 const Duration runViewRefetchWindow = Duration(seconds: 1);
 
@@ -159,7 +159,7 @@ class ManagerRunChannelController extends StateNotifier<ManagerChannelStatus> {
     _ref
       ..listen<int>(appResumedProvider, (_, _) => _client.reconnectNow())
       // 망 복귀 — 위치 전송이 서버에 닿으면 재연결 대기를 기다리지 않는다
-      // (R46-FIXCONN C-10).
+      // .
       ..listen<int>(serverReachedProvider, (_, _) => _client.reconnectNow());
   }
 
@@ -194,6 +194,9 @@ class ManagerRunChannelController extends StateNotifier<ManagerChannelStatus> {
 
   void _onConnectionState(WsConnectionState wsState) {
     if (_forbidden) return;
+    // 만료 전 갱신으로 다시 붙는 1~2초는 끊김이 아니다 — "실시간 연결 중" 안내를 띄우지 않는다.
+    // 다시 `connected` 가 오면 아래에서 구독과 화면 값을 새로 받는다.
+    if (wsState == WsConnectionState.connecting && _client.isRenewing) return;
     final mapped = mapConnectionState(wsState);
     if (mapped == ManagerChannelStatus.reconnecting) {
       _offlineSince ??= _ref.read(clockProvider).now();

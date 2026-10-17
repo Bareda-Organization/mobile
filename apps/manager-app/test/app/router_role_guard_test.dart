@@ -1,4 +1,5 @@
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:manager_app/app/app.dart';
@@ -9,7 +10,6 @@ import 'package:manager_app/core/auth/account_session.dart';
 import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/core/auth/user_role.dart';
 
-import '../support/fake_token_storage.dart';
 
 /// L5 — 역할 전용 화면에 다른 역할이 닿으면(알림 이동 · 저장된 경로 · 코드 실수) 서버 403 에만 기대지 않고 그
 /// 역할의 첫 화면으로 돌려보낸다. 기사 전용(운행 준비 · 운행 중 · 운행 종료 · 조회 전용 명단)과 동승자 전용(지연

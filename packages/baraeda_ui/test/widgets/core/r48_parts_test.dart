@@ -1,4 +1,4 @@
-// R48 시안 부품 — 목록 칸 · 필터 알약 · 단추 한 쌍 · 비상 · 지도 단추 · 영수증 · 아래 탭 막대.
+// 목록 칸 · 필터 알약 · 단추 한 쌍 · 비상 · 지도 단추 · 영수증 · 아래 탭 막대.
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -126,28 +126,6 @@ void main() {
         tester.widget<Text>(find.text(name)).overflow,
         TextOverflow.ellipsis,
       );
-    });
-  });
-
-  group('단추 한 쌍(C1)', () {
-    testWidgets('주 단추가 보조보다 1.7 : 1 로 넓다', (tester) async {
-      await tester.pumpWidget(
-        _host(
-          BaraedaButtonRow(
-            children: [
-              BaraedaButton(label: '탑승', onPressed: () {}),
-              BaraedaButton(
-                label: '미승차',
-                variant: BaraedaButtonVariant.secondary,
-                onPressed: () {},
-              ),
-            ],
-          ),
-        ),
-      );
-      final a = tester.getSize(find.widgetWithText(BaraedaButton, '탑승')).width;
-      final b = tester.getSize(find.widgetWithText(BaraedaButton, '미승차')).width;
-      expect(a / b, closeTo(1.7, 0.02));
     });
   });
 
@@ -288,7 +266,7 @@ void main() {
     });
 
     testWidgets('Scaffold 아래 막대 자리에서도 화면 전체를 먹지 않고 본문이 남는다', (tester) async {
-      // 2026-10-04 시뮬레이터에서 견본을 띄웠을 때 막대가 화면 전체 높이가 되어 본문이 사라졌다 —
+      // 견본에서 막대가 화면 전체 높이가 되어 본문이 사라지지 않게 한다 —
       // `Scaffold.bottomNavigationBar` 는 세로 제약이 느슨해서 Column 이 최대 높이를 잡는다.
       await tester.pumpWidget(
         MaterialApp(
@@ -314,7 +292,7 @@ void main() {
       );
       final cell = find.widgetWithText(BaraedaPressable, '명단');
       // 칸(탭 영역)이 아니라 **색이 칠해진 면**의 폭을 잰다 — 칸은 Stack 이 제약대로 채워 줘도
-      // 면은 느슨한 제약에서 내용 폭으로 줄 수 있다(2026-10-04 시뮬레이터에서 좁은 알약으로 보였다).
+      // 면은 느슨한 제약에서 내용 폭으로 줄 수 있다.
       final face = find
           .descendant(of: cell, matching: find.byType(DecoratedBox))
           .first;

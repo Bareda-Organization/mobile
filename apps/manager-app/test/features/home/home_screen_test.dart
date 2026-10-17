@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -21,7 +22,6 @@ import 'package:manager_app/features/home/presentation/home_providers.dart';
 import 'package:manager_app/features/home/presentation/home_screen.dart';
 import 'package:manager_app/features/offline_queue/domain/send_outcome.dart';
 
-import '../../support/fake_notification_repository.dart';
 import '../../support/manager_run_fixture.dart';
 
 /// 운행 시작 요청이 나가는지만 세는 가짜 — 홈은 시작을 요청하지 않는다(`Ruling 799`).
@@ -42,15 +42,6 @@ class _CountingDriveRepository implements DriveModeRepository {
     required String runId,
     required String stopId,
   }) => throw UnimplementedError('이 파일의 시험 대상이 아니다');
-}
-
-class _FixedClock implements Clock {
-  const new(this._now);
-
-  final DateTime _now;
-
-  @override
-  DateTime now() => _now;
 }
 
 /// 홈 탭의 세 갈래(로딩 · 성공 · 실패)와 역할별 단추(§4.1, M-02·M-07)를 직접 무는 시험.
@@ -85,8 +76,8 @@ void main() {
   Widget wrap(List<Override> overrides) {
     return ProviderScope(
       overrides: [
-        clockProvider.overrideWithValue(_FixedClock(now)),
-        // 머리말 알림 배지가 실제 서버를 부르지 않게 한다(R46).
+        clockProvider.overrideWithValue(FixedClock(now)),
+        // 머리말 알림 배지가 실제 서버를 부르지 않게 한다.
         notificationRepositoryProvider.overrideWithValue(
           FakeNotificationRepository(const []),
         ),
@@ -106,7 +97,7 @@ void main() {
     );
   }
 
-  // ⚠ 2026-09-21 실측(학부모 앱에서 먼저 드러났다) — 서버 시각은 **UTC 순간**인데 화면이 그대로 벽시계로 읽어
+  // 서버 시각은 **UTC 순간**인데 화면이 그대로 벽시계로 읽어
   // KST 에서 **9시간 이른 시각**이 나왔다. 기대값을 `toLocal()` 로 계산하는 이유는 시험기의 표준시를 바꿀
   // 수단이 부재하기 때문이다 — UTC 기계에서는 무해하게 통과하고 KST 에서 문다.
   testWidgets('출발 시각을 기기 표준시로 보여준다', (tester) async {
@@ -267,7 +258,7 @@ void main() {
     expect(find.text('12:10~12:30'), findsOneWidget);
   });
 
-  // R53 A9 — 하원 회차는 "탑승 예정" 이 아니라 "하차 예정" 이다(큰 카드 숫자 칸 · 목록 부제).
+  // 하원 회차는 "탑승 예정" 이 아니라 "하차 예정" 이다(큰 카드 숫자 칸 · 목록 부제).
   testWidgets('하원 회차 큰 카드와 목록 부제는 하차 예정이다', (tester) async {
     await tester.pumpWidget(
       wrap([
@@ -299,7 +290,7 @@ void main() {
     expect(find.textContaining('탑승 예정'), findsNothing);
   });
 
-  // R32 M9 — 확정 전 카드는 눌러도 반응이 없는데 이유를 알려 주지 않았다.
+  // 확정 전 카드는 눌러도 반응이 없는데 이유를 알려 주지 않았다.
   testWidgets('확정 전 회차는 언제 열리는지 알려 준다', (tester) async {
     await tester.pumpWidget(
       wrap([

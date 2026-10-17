@@ -1,6 +1,5 @@
-import 'dart:async';
-
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -25,19 +24,6 @@ import 'package:manager_app/features/route_map/data/models/route_response.dart';
 import 'package:manager_app/features/route_map/presentation/route_providers.dart';
 
 import '../../support/manager_run_fixture.dart';
-
-/// R32 M4 — 노선 변경 확인 띠(M-04)는 기사·동승자 공통인데 명단 화면에만 있어, 명단에 가지
-/// 않는 기사는 확인할 길이 없었다. 운행 화면에도 같은 띠가 떠야 한다.
-class _NeverResolvingTokenStorage extends TokenStorage {
-  new()
-    : super(
-        accessTokenKey: 'test_access_token',
-        refreshTokenKey: 'test_refresh_token',
-      );
-
-  @override
-  Future<String?> readAccessToken() => Completer<String?>().future;
-}
 
 class _NoSample implements PositionSource {
   @override
@@ -120,7 +106,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          tokenStorageProvider.overrideWithValue(_NeverResolvingTokenStorage()),
+          tokenStorageProvider.overrideWithValue(NeverResolvingTokenStorage()),
           positionSourceProvider.overrideWithValue(_NoSample()),
           routeProvider.overrideWith(
             (ref) async => const RouteResponse(stops: []),
@@ -150,9 +136,7 @@ void main() {
     expect(find.text('변경 확인'), findsNothing);
   });
 
-  testWidgets('확인이 필요한 변경이 있으면 운행 화면에도 띠가 뜨고, 누르면 확인 요청을 보낸다', (
-    tester,
-  ) async {
+  testWidgets('확인이 필요한 변경이 있으면 운행 화면에도 띠가 뜨고, 누르면 확인 요청을 보낸다', (tester) async {
     final repository = _AckRecordingRosterRepository();
     await pumpDrive(tester, ackRequired: true, repository: repository);
 

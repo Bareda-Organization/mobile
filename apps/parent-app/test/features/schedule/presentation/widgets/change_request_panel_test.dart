@@ -1,4 +1,5 @@
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -67,7 +68,7 @@ StudentRun _fixtureRun({DateTime? departTime}) => StudentRun(
   changeQuotaLeft: 1,
 );
 
-/// 요청받은 날짜를 기록하고 날짜별로 다른 회차 목록을 돌려주는 가짜 — R33 P1.
+/// 요청받은 날짜를 기록하고 날짜별로 다른 회차 목록을 돌려주는 가짜.
 class _DatedRunRepository implements RunRepository {
   new(this.byDate, {this.today});
 
@@ -121,14 +122,6 @@ class _RecordingChangeRequestRepository implements ChangeRequestRepository {
       const ChangeRequestPage(items: [], pendingCount: 0);
 }
 
-class _FixedClock implements Clock {
-  const new(this._value);
-  final DateTime _value;
-
-  @override
-  DateTime now() => _value;
-}
-
 Future<void> _pumpAndSubmit(WidgetTester tester, Failure failure) =>
     _pumpAndSubmitWith(tester, _ThrowingChangeRequestRepository(failure));
 
@@ -163,7 +156,7 @@ Future<void> _pumpAndSubmitWith(
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
-        clockProvider.overrideWithValue(_FixedClock(DateTime(2026, 9, 12, 7))),
+        clockProvider.overrideWithValue(FixedClock(DateTime(2026, 9, 12, 7))),
         runRepositoryProvider.overrideWithValue(runs ?? _FixedRunRepository()),
         changeRequestRepositoryProvider.overrideWithValue(repository),
       ],
@@ -171,9 +164,7 @@ Future<void> _pumpAndSubmitWith(
       // 여기서도 스크롤 가능한 조상을 둔다 — 그렇지 않으면 폼 높이가
       // 테스트 뷰포트를 넘겨 무관한 RenderFlex overflow 로 실패한다.
       child: const MaterialApp(
-        home: Scaffold(
-          body: ChangeRequestPanel(studentId: 's-1'),
-        ),
+        home: Scaffold(body: ChangeRequestPanel(studentId: 's-1')),
       ),
     ),
   );
@@ -224,7 +215,7 @@ void main() {
     expect(runOptionLabel(_fixtureRun()), '등원 · 1호차');
   });
 
-  // R32 P8 — 승인 마감이 `2026-09-12 07:30:00.000` 그대로 나왔다.
+  // 승인 마감이 `2026-09-12 07:30:00.000` 그대로 나왔다.
   testWidgets('P8 승인 대기 접수 안내의 마감 시각을 한국어 날짜로 보여준다', (tester) async {
     await _pumpAndSubmitWith(
       tester,
@@ -243,7 +234,7 @@ void main() {
     expect(find.textContaining('마감 9월 12일 07:30'), findsOneWidget);
   });
 
-  // R32 P12 — 날짜 선택은 넣지 않았다: 서버가 회차를 그날 하루치만 만들어(DailyRunGenerator)
+  // 날짜 선택은 넣지 않았다: 서버가 회차를 그날 하루치만 만들어(DailyRunGenerator)
   // 다른 날짜에는 고를 회차가 없다. 대신 버튼이 왜 눌리지 않는지 말해 준다.
   group('P12 제출할 수 없는 이유 안내', () {
     Future<void> pumpPanel(WidgetTester tester) async {
@@ -254,7 +245,7 @@ void main() {
         ProviderScope(
           overrides: [
             clockProvider.overrideWithValue(
-              _FixedClock(DateTime(2026, 9, 12, 7)),
+              FixedClock(DateTime(2026, 9, 12, 7)),
             ),
             runRepositoryProvider.overrideWithValue(_FixedRunRepository()),
             changeRequestRepositoryProvider.overrideWithValue(
@@ -268,9 +259,7 @@ void main() {
             ),
           ],
           child: const MaterialApp(
-            home: Scaffold(
-              body: ChangeRequestPanel(studentId: 's-1'),
-            ),
+            home: Scaffold(body: ChangeRequestPanel(studentId: 's-1')),
           ),
         ),
       );
@@ -305,9 +294,7 @@ void main() {
       expect(submitEnabled(tester), isTrue);
     });
 
-    testWidgets('승하차지 변경은 주소를 넣을 때까지 버튼이 꺼져 있고 주소를 넣으라고 알려 준다', (
-      tester,
-    ) async {
+    testWidgets('승하차지 변경은 주소를 넣을 때까지 버튼이 꺼져 있고 주소를 넣으라고 알려 준다', (tester) async {
       await pumpPanel(tester);
       await chooseRun(tester);
       await tester.tap(find.text('승하차지 변경'));
@@ -324,7 +311,7 @@ void main() {
     });
   });
 
-  // R33 P1 — 변경 신청 날짜는 오늘·내일 중에서 고른다(한국 시간 기준).
+  // 변경 신청 날짜는 오늘·내일 중에서 고른다(한국 시간 기준).
   group('P1 날짜 선택 — 오늘 · 내일', () {
     // 세계 표준시 9월 30일 16:00 = 한국 시간 10월 1일 01:00 — 기기가 어느 시간대여도 한국 날짜로 센다.
     final now = DateTime.utc(2026, 9, 30, 16);
@@ -352,14 +339,12 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            clockProvider.overrideWithValue(_FixedClock(now)),
+            clockProvider.overrideWithValue(FixedClock(now)),
             runRepositoryProvider.overrideWithValue(runs),
             changeRequestRepositoryProvider.overrideWithValue(changes),
           ],
           child: const MaterialApp(
-            home: Scaffold(
-              body: ChangeRequestPanel(studentId: 's-1'),
-            ),
+            home: Scaffold(body: ChangeRequestPanel(studentId: 's-1')),
           ),
         ),
       );
@@ -499,7 +484,7 @@ void main() {
     expect(find.text('주소를 확인할 수 없어요. 다시 입력해 주세요'), findsOneWidget);
   });
 
-  // R48 — 회차 라디오 칸 · 구간 안내 · 영수증(시안 `daily-change` · `--approval` · `--done`).
+  // 회차 라디오 칸 · 구간 안내 · 영수증(시안 `daily-change` · `--approval` · `--done`).
   group('R48 일일 변경 화면', () {
     StudentRun run(
       String id, {
@@ -533,7 +518,7 @@ void main() {
         ProviderScope(
           overrides: [
             clockProvider.overrideWithValue(
-              _FixedClock(now ?? DateTime(2026, 9, 12, 7)),
+              FixedClock(now ?? DateTime(2026, 9, 12, 7)),
             ),
             runRepositoryProvider.overrideWithValue(
               _DatedRunRepository({}, today: runs),
@@ -579,7 +564,7 @@ void main() {
       expect(find.text('변경 신청하기'), findsOneWidget);
     });
 
-    // R52 최종 대조 — 서버는 출발 + 10분 뒤를 ③ 으로 닫는다. 운행이 안 시작돼도 신청은 403 이다.
+    // 서버는 출발 + 10분 뒤를 ③ 으로 닫는다. 운행이 안 시작돼도 신청은 403 이다.
     testWidgets('출발 + 10분이 지난 운행 전 회차는 마감 이유와 함께 꺼지고 골라지지 않는다', (tester) async {
       final changes = await pump(tester, [
         run('late', status: RunStatus.confirmed, confirmed: true),
@@ -616,7 +601,7 @@ void main() {
       expect(find.text('변경 신청하기'), findsNothing);
     });
 
-    // R52 낮음 B9 — 영수증의 두 단추가 같은 곳(일정 탭 맨 위)으로 가서 [신청 이력 보기] 의 뜻이 없었다.
+    // 영수증의 두 단추가 같은 곳(일정 탭 맨 위)으로 가서 [신청 이력 보기] 의 뜻이 없었다.
     group('B9 영수증 두 단추', () {
       Future<ProviderContainer> submitUnderRouter(WidgetTester tester) async {
         tester.view.physicalSize = const Size(800, 2400);
@@ -639,7 +624,7 @@ void main() {
           ProviderScope(
             overrides: [
               clockProvider.overrideWithValue(
-                _FixedClock(DateTime(2026, 9, 12, 7)),
+                FixedClock(DateTime(2026, 9, 12, 7)),
               ),
               runRepositoryProvider.overrideWithValue(
                 _DatedRunRepository({}, today: [run('a')]),

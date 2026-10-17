@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:baraeda_app/baraeda_app.dart';
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,7 +8,6 @@ import 'package:flutter_riverpod/legacy.dart';
 import 'package:parent_app/app/di.dart';
 import 'package:parent_app/core/auth/auth_providers.dart';
 import 'package:parent_app/core/auth/user_role.dart';
-import 'package:parent_app/core/ui/confirm_dialog.dart';
 
 /// 계정 **상태**(`pending`·`active`·`rejected`) 를 담는다.
 ///
@@ -32,7 +32,7 @@ final StateProvider<bool> unsupportedRoleProvider = StateProvider<bool>(
 );
 
 /// 임시 비밀번호 강제 변경 표식(API_SPEC §1.4 · §2.5 · §2.10, Ruling 540 ·
-/// R46-LAST `Ruling 581`) — 로그인·`/me` 응답이 켜고, 역할이 비는 모든 경로
+/// 로그인·`/me` 응답이 켜고, 역할이 비는 모든 경로
 /// (로그아웃·세션 만료·변경 성공 뒤 로그아웃)가 [RouterRefreshNotifier] 에서
 /// 함께 끈다. 켜져 있는 동안 라우터는 비밀번호 변경 화면 밖으로 보내지 않는다 —
 /// 서버가 그 밖의 API 를 `403 PASSWORD_CHANGE_REQUIRED` 로 막기 때문이다
@@ -42,16 +42,16 @@ final StateProvider<bool> mustChangePasswordProvider = StateProvider<bool>(
 );
 
 /// 세션이 만료돼(재발급 거절) 로그인 화면으로 돌아왔을 때 그 화면이 보여 줄 안내 — 처음 열었거나 직접 로그아웃했으면
-/// `null` 이다. 로그인에 성공하면 로그인 화면이 비운다(R46).
+/// `null` 이다. 로그인에 성공하면 로그인 화면이 비운다.
 final StateProvider<String?> sessionExpiredNoticeProvider =
     StateProvider<String?>((ref) => null);
 
 const String _sessionExpiredNotice = '로그인이 만료됐어요. 다시 로그인해 주세요.';
 
-/// 재발급이 거절돼 로그인이 풀렸다 — REST·WS 두 경로가 같은 처리를 한다. 안내를 남기고 역할을 비운다(R46).
+/// 재발급이 거절돼 로그인이 풀렸다 — REST·WS 두 경로가 같은 처리를 한다. 안내를 남기고 역할을 비운다.
 void endSessionAsExpired(Ref ref) {
   // 옛 계정의 토큰으로 붙은 실시간 연결을 닫는다 — 안 닫으면 다음 로그인
-  // 계정의 지도가 그 연결에 구독을 얹는다(R46-FIXCONN C-2).
+  // 계정의 지도가 그 연결에 구독을 얹는다.
   ref.read(webSocketClientProvider).disconnect();
   ref.read(sessionExpiredNoticeProvider.notifier).state = _sessionExpiredNotice;
   applyRoleAndStatus(
@@ -99,7 +99,7 @@ final authBootstrapProvider = FutureProvider<void>(retry: (_, _) => null, (
       rethrow;
     }
     // 저장된 로그인이 거절됐다 — 안내 없이 로그인 화면만 나오면 오류인 줄 안다. 만료 신호(`sessionExpired`)를 받는
-    // `RouterRefreshNotifier` 는 이 부팅이 끝난 뒤 라우터가 만들어질 때야 생겨 이 신호를 놓친다(R52 A7).
+    // `RouterRefreshNotifier` 는 이 부팅이 끝난 뒤 라우터가 만들어질 때야 생겨 이 신호를 놓친다.
     if (failure is UnauthenticatedFailure) {
       ref.read(sessionExpiredNoticeProvider.notifier).state =
           _sessionExpiredNotice;
@@ -110,11 +110,11 @@ final authBootstrapProvider = FutureProvider<void>(retry: (_, _) => null, (
   }
 });
 
-/// 로그아웃(2026-09-23 사용자 지시) — 서버에 알리고, **실패해도** 이 기기의 역할·상태를 비운다. 역할이
+/// 로그아웃 — 서버에 알리고, **실패해도** 이 기기의 역할·상태를 비운다. 역할이
 /// 비면 라우터가 로그인 화면으로 보낸다(판정은 라우터 한 곳). 토큰은 `AuthApi.logout` 이 성패와 무관하게
 /// 지운다 — 여기서 역할까지 비우지 않으면 토큰 없이 로그인된 화면에 갇혀 요청마다 401 이 난다.
 ///
-/// 실시간 연결(`webSocketClientProvider`)도 닫는다(R46-FIXCONN C-2).
+/// 실시간 연결(`webSocketClientProvider`)도 닫는다.
 ///
 /// provider 를 await 전에 모두 읽어 둔다 — 로그아웃하면서 화면이 사라지면 그 뒤의 `ref` 는 쓸 수 없다.
 Future<void> signOut(WidgetRef ref) async {
@@ -137,7 +137,7 @@ Future<void> signOut(WidgetRef ref) async {
 /// 자체가 역할·상태를 비운다(그 함수 문서 참고) — 여기서 에러를 따로
 /// 처리하지 않는다.
 ///
-/// **F2(2026-09-26) — `settings_screen.dart`·`pending_approval_screen.dart`
+/// **F2 — `settings_screen.dart`·`pending_approval_screen.dart`
 /// 가 이 함수 하나를 공유한다.** 화면마다 확인 대화를 새로 만들면 문구·
 /// 동작이 갈릴 위험이 있어(실제로 두 화면이 이 함수가 생기기 전까지
 /// 갈려 있었다), `features/` 어느 쪽도 소유하지 않는 `core/auth` 에 둔다

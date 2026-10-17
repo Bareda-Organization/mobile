@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,21 +20,7 @@ import 'package:manager_app/features/home/presentation/home_providers.dart';
 import 'package:manager_app/features/roster/data/models/roster_response.dart';
 import 'package:manager_app/features/roster/presentation/roster_providers.dart';
 
-import '../support/fake_notification_repository.dart';
-import '../support/fake_token_storage.dart';
 import '../support/manager_run_fixture.dart';
-
-/// R52 H1(수정 라운드 1) — 고른 회차가 끝났고 큰 카드(focus)가 다른 회차를 가리키면 쉘이 선택을 갈아탄다.
-/// 동승자의 명단 탭 · 거기서 여는 지연 알림 · 예외 보고는 모두 선택 회차([selectedRunIdProvider])를 읽으므로
-/// 쉘의 선택이 다음 회차를 가리키면 셋 다 따라간다. 쉘이 맨 위 화면이 아닐 때(운행 종료 · 보고 화면이 위에 있을 때)는
-/// 바꾸지 않는다.
-/// 운행 채널(WebSocket)이 연결을 시작하지 못하게 토큰 읽기를 멈춰 둔다.
-class _NeverResolvingTokenStorage extends FakeTokenStorage {
-  new();
-
-  @override
-  Future<String?> readAccessToken() => Completer<String?>().future;
-}
 
 final _runs = StateProvider<List<ManagerRun>>((ref) => const []);
 
@@ -71,7 +58,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          tokenStorageProvider.overrideWithValue(_NeverResolvingTokenStorage()),
+          tokenStorageProvider.overrideWithValue(NeverResolvingTokenStorage()),
           currentUserRoleProvider.overrideWith((ref) => role),
           currentAccountStatusProvider.overrideWith(
             (ref) => AccountStatus.active,
@@ -228,7 +215,7 @@ void main() {
     });
   }
 
-  // R56 M-a — 옆 화면(페이지)이 쉘을 덮으면 쉘의 구독이 멈춘다. 그 사이 선택이 B 로 바뀌고 B 가 끝나도 쉘은 B 가
+  // 옆 화면(페이지)이 쉘을 덮으면 쉘의 구독이 멈춘다. 그 사이 선택이 B 로 바뀌고 B 가 끝나도 쉘은 B 가
   // 살아 있던 것을 본 적이 없어, 화면을 닫아도 끝난 B 에 머물렀다.
   testWidgets('쉘이 덮인 동안 선택이 B 로 바뀌고 B 가 끝나도, 덮은 화면을 닫으면 다음 회차로 갈아탄다', (
     tester,

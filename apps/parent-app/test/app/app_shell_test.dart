@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -26,12 +27,12 @@ import 'package:parent_app/features/settings/domain/notification_settings.dart';
 import 'package:parent_app/features/settings/presentation/settings_providers.dart';
 import 'package:parent_app/features/settings/presentation/settings_screen.dart';
 
-import '../support/fake_notification_repository.dart';
-import '../support/fake_token_storage.dart';
-
 /// 소켓 없이 "앱 복귀 때 재연결을 요청하는가" 만 보려는 가짜 클라이언트 — 세션 시작이 읽는 `sessionExpired` 와
 /// 복귀 때 부르는 `reconnectNow` 만 구현한다.
 class _FakeWsClient implements BaraedaWebSocketClient {
+  @override
+  bool get isRenewing => false;
+
   int reconnectNowCalls = 0;
   int connectCalls = 0;
   int disconnectCalls = 0;
@@ -89,9 +90,9 @@ NotificationItem _item(String id, {bool unread = true}) => NotificationItem(
   readAt: unread ? null : DateTime.utc(2026, 9, 30),
 );
 
-/// 앱 아래 탭 막대(`BaraedaTabBar`) — R44 · R48. 로그인 뒤 화면에만 있고, 로그인·가입·대기·차단 화면과
+/// 앱 아래 탭 막대(`BaraedaTabBar`) — 로그인 뒤 화면에만 있고, 로그인·가입·대기·차단 화면과
 /// 탭 위에 얹은 하위 화면(지도·비밀번호 변경·요일별 주소 …)에는 없다.
-/// 학부모는 `홈 · 일정 · 알림 · 설정`, 학생은 `내 버스 · 알림 · 설정`(R48, `Ruling 826`).
+/// 학부모는 `홈 · 일정 · 알림 · 설정`, 학생은 `내 버스 · 알림 · 설정`(`Ruling 826`).
 void main() {
   Future<FakeNotificationRepository> pumpApp(
     WidgetTester tester, {
@@ -312,7 +313,7 @@ void main() {
   });
 
   // F05-06 — 푸시 SDK 가 없어 앱 안 갱신이 유일한 통지 수단이다. 알림 탭을 열지 않아도 배지는 최신이어야 한다.
-  // R46-FIXRT S-5 — 앱이 백그라운드에서 돌아오면 끊겨 대기 중인 실시간 연결을 다음 재연결 타이머(최대 30초)를
+  // 앱이 백그라운드에서 돌아오면 끊겨 대기 중인 실시간 연결을 다음 재연결 타이머(최대 30초)를
   // 기다리지 않고 바로 다시 붙인다. 지금까지는 알림 목록(REST)만 다시 받았다.
   testWidgets('앱이 백그라운드에서 돌아오면 실시간 연결을 바로 다시 붙이게 요청한다', (tester) async {
     final client = _FakeWsClient();
@@ -328,7 +329,7 @@ void main() {
     expect(client.reconnectNowCalls, 1);
   });
 
-  // M-5 (R57) — 백그라운드에서 60초가 지나면 실시간 연결을 끊어 서버 세션과 배터리를 아끼고, 복귀하면 다시 붙인다.
+  // M-5 — 백그라운드에서 60초가 지나면 실시간 연결을 끊어 서버 세션과 배터리를 아끼고, 복귀하면 다시 붙인다.
   // 다시 붙으면 지도(`LiveMapNotifier`)가 같은 목적지를 구독하고 REST 스냅샷을
   // 다시 읽는다(live_map_screen_test).
   group('백그라운드 60초 — 실시간 연결 끊기(M-5)', () {
@@ -388,7 +389,7 @@ void main() {
     });
   });
 
-  // R46-FIXCONN C-10 — 와이파이가 돌아와도 재연결 대기(최대 30초)가
+  // 와이파이가 돌아와도 재연결 대기(최대 30초)가
   // 끝나야 실시간 연결이 붙었다. 이 앱은 REST 성공이 사실상의 망 복귀
   // 신호이므로(`NetworkStatusNotifier`), 끊김(오프라인)에서 서버에 다시 닿는
   // 순간 연결을 바로 다시 붙이게 요청한다.

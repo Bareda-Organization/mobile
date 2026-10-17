@@ -86,7 +86,7 @@ void main() {
       expect(mapDioExceptionToFailure(exception), isA<UnknownFailure>());
     });
 
-    // R46-FIXRT S-9 — nginx 가 HTML 로 돌려주는 502·504 는 본문이 §1.10 형식이
+    // nginx 가 HTML 로 돌려주는 502·504 는 본문이 §1.10 형식이
     // 아니라 `UnknownFailure` 가 된다. 오프라인 큐가 "서버가 응답하고도 못 받은
     // 5xx" 를 가르려면 상태 코드가 값으로 남아야 한다(문구 파싱 금지).
     test('§1.10 형식이 아닌 본문의 UnknownFailure 는 HTTP 상태를 값으로 싣는다', () {
@@ -107,6 +107,62 @@ void main() {
       final failure = mapDioExceptionToFailure(exception);
 
       expect((failure as UnknownFailure).statusCode, isNull);
+    });
+  });
+
+  group('guardDio — DioException 을 Failure 로 바꿔 던지는 한 곳', () {
+    test('성공하면 값을 그대로 돌려준다', () async {
+      expect(await guardDio(() async => 7), 7);
+    });
+
+    test('401 TOKEN_EXPIRED 는 unauthenticated, 다른 401 은 ApiFailure', () async {
+      await expectLater(
+        guardDio<void>(
+          () async => throw _badResponse(
+            statusCode: 401,
+            body: {
+              'error': {'code': 'TOKEN_EXPIRED', 'message': 'm'},
+            },
+          ),
+        ),
+        throwsA(isA<UnauthenticatedFailure>()),
+      );
+      await expectLater(
+        guardDio<void>(
+          () async => throw _badResponse(
+            statusCode: 401,
+            body: {
+              'error': {'code': 'INVALID_CREDENTIALS', 'message': 'm'},
+            },
+          ),
+        ),
+        throwsA(
+          isA<ApiFailure>().having(
+            (f) => f.code,
+            'code',
+            'INVALID_CREDENTIALS',
+          ),
+        ),
+      );
+    });
+
+    test('연결 실패는 NetworkFailure 로 던진다', () async {
+      await expectLater(
+        guardDio<void>(
+          () async => throw DioException.connectionError(
+            requestOptions: RequestOptions(path: '/x'),
+            reason: 'down',
+          ),
+        ),
+        throwsA(isA<NetworkFailure>()),
+      );
+    });
+
+    test('DioException 이 아닌 예외는 그대로 통과한다', () async {
+      await expectLater(
+        guardDio<void>(() async => throw StateError('bug')),
+        throwsStateError,
+      );
     });
   });
 }

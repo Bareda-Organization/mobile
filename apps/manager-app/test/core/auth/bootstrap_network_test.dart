@@ -1,4 +1,5 @@
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -10,7 +11,6 @@ import 'package:manager_app/features/auth/presentation/login_screen.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
 
 import '../../support/fake_last_session_store.dart';
-import '../../support/fake_token_storage.dart';
 
 /// `/me` 만 쓰는 가짜 — 첫 호출은 [failure] 로 실패하고 그 뒤로는 동승자 계정을 돌려준다.
 class _MeRepository implements AuthRepository {
@@ -49,7 +49,7 @@ void main() {
             FakeTokenStorage(seedRefreshToken: 'refresh'),
           ),
           authRepositoryProvider.overrideWithValue(repository),
-          // 저장된 역할이 없는 기기 — 플랫폼 채널 대신 메모리 대역(R52 H2).
+          // 저장된 역할이 없는 기기 — 플랫폼 채널 대신 메모리 대역.
           lastSessionStoreProvider.overrideWithValue(FakeLastSessionStore()),
           // 다시 시도가 성공하면 홈이 열린다 — 홈이 부르는 요청은 가짜로 막는다.
           todayRunsProvider.overrideWith((ref) async => []),

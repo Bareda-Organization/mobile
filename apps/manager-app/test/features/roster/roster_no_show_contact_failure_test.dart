@@ -1,6 +1,5 @@
-import 'dart:async';
-
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -77,17 +76,6 @@ class _ContactFailingRepository implements RosterRepository {
   }) => throw UnimplementedError();
 }
 
-class _NeverResolvingTokenStorage extends TokenStorage {
-  new()
-    : super(
-        accessTokenKey: 'test_access_token',
-        refreshTokenKey: 'test_refresh_token',
-      );
-
-  @override
-  Future<String?> readAccessToken() => Completer<String?>().future;
-}
-
 final _roster = RosterResponse(
   runId: 'run-1',
   busNo: '3호차',
@@ -131,12 +119,12 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          tokenStorageProvider.overrideWithValue(_NeverResolvingTokenStorage()),
+          tokenStorageProvider.overrideWithValue(NeverResolvingTokenStorage()),
           selectedRunIdProvider.overrideWith((ref) => 'run-1'),
           currentUserRoleProvider.overrideWith((ref) => UserRole.escort),
           todayRunsProvider.overrideWith((ref) async => [managerRunFixture()]),
           rosterRepositoryProvider.overrideWithValue(repository),
-          // 연락 기록은 오프라인 대기열을 거친다(R56) — 기기 DB 대신 메모리 DB.
+          // 연락 기록은 오프라인 대기열을 거친다 — 기기 DB 대신 메모리 DB.
           offlineQueueDatabaseProvider.overrideWithValue(queueDatabase),
         ],
         child: const MaterialApp(home: NoShowScreen(riderId: 'r1')),
@@ -158,7 +146,7 @@ void main() {
     expect(repository.fetchCount, 2);
   });
 
-  // R56 · Ruling 894 ⑧ — 통신 두절이면 연락 기록이 기기 대기열에 쌓인다. 서버에 반영된 것처럼 명단을 다시 받거나 그리지
+  // 통신 두절이면 연락 기록이 기기 대기열에 쌓인다. 서버에 반영된 것처럼 명단을 다시 받거나 그리지
   // 않고, 저장했다고 알린다(§1.9).
   testWidgets('통신 두절이면 연락 기록을 기기에 저장했다고 알리고 명단은 다시 받지 않는다', (tester) async {
     final repository = _ContactFailingRepository(
@@ -172,7 +160,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          tokenStorageProvider.overrideWithValue(_NeverResolvingTokenStorage()),
+          tokenStorageProvider.overrideWithValue(NeverResolvingTokenStorage()),
           selectedRunIdProvider.overrideWith((ref) => 'run-1'),
           currentUserRoleProvider.overrideWith((ref) => UserRole.escort),
           todayRunsProvider.overrideWith((ref) async => [managerRunFixture()]),

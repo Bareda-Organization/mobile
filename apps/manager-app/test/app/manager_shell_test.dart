@@ -1,4 +1,5 @@
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
@@ -15,8 +16,6 @@ import 'package:manager_app/features/home/presentation/home_providers.dart';
 import 'package:manager_app/features/roster/data/models/roster_response.dart';
 import 'package:manager_app/features/roster/presentation/roster_providers.dart';
 
-import '../support/fake_notification_repository.dart';
-import '../support/fake_token_storage.dart';
 import '../support/manager_run_fixture.dart';
 
 /// 아래 탭 틀(`ManagerShell`) — 기사는 3칸(운행 · 알림 · 내 정보), 동승자는 4칸(명단 · 회차 · 알림 · 내

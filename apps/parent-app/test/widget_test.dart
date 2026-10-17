@@ -1,10 +1,10 @@
+import 'package:baraeda_core/testing.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:parent_app/app/app.dart';
 import 'package:parent_app/app/di.dart';
 
-import 'support/fake_token_storage.dart';
 
 /// 앱이 로그인 화면으로 뜨는지만 확인하는 자리표시 스모크 시험 —
 /// 실제 화면 검증은 이번 범위가 아니다.

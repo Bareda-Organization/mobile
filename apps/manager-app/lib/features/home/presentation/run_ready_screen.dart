@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:baraeda_app/baraeda_app.dart';
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
@@ -17,7 +18,6 @@ import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/core/time/run_time_labels.dart';
 import 'package:manager_app/core/ui/academy_call_card.dart';
-import 'package:manager_app/core/ui/confirm_dialog.dart';
 import 'package:manager_app/core/ui/manager_header.dart';
 import 'package:manager_app/core/ui/map_legend.dart';
 import 'package:manager_app/core/ui/saved_runs_notice.dart';
@@ -90,11 +90,11 @@ class _RunReadyScreenState extends ConsumerState<RunReadyScreen> {
   }
 
   Future<void> _start(String runId) async {
-    // 시작하면 노선이 잠기고 학부모·관계자에게 알림이 나간다 — 되돌릴 수 없어 한 번 묻는다(R32 M6).
+    // 시작하면 노선이 잠기고 학부모·관계자에게 알림이 나간다 — 되돌릴 수 없어 한 번 묻는다.
     // 하원은 시작과 함께 전원이 자동으로 승차 처리된다(C-07) — 그 사실을 알린다. 등원에는 해당 없다.
     final isFromAcademy =
         ref.read(driveModeRunProvider)?.direction == RunDirection.fromAcademy;
-    final confirmed = await confirmAction(
+    final confirmed = await showConfirmDialog(
       context,
       title: '운행을 시작할까요?',
       body: [
@@ -301,7 +301,7 @@ class _RunReadyScreenState extends ConsumerState<RunReadyScreen> {
       onPressed: _retry,
     ),
     const SizedBox(height: 12),
-    // 통신이 끊겨 노선을 못 받아도 저장해 둔 명단은 열린다(R53 A11).
+    // 통신이 끊겨 노선을 못 받아도 저장해 둔 명단은 열린다.
     _rosterViewButton(),
     const SizedBox(height: 12),
     const AcademyCallCard(lead: '출발 시각이 가까우면'),

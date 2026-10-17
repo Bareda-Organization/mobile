@@ -30,6 +30,7 @@ export 'push/device_registrar.dart';
 export 'push/device_registration_storage.dart';
 export 'push/placeholder_push_token_source.dart';
 export 'push/push_token_source.dart';
+export 'storage/secure_slot.dart';
 export 'storage/token_storage.dart';
 export 'time/clock.dart';
 export 'websocket/baraeda_websocket_client.dart';

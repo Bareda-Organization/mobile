@@ -1,16 +1,9 @@
-import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:manager_app/app/di.dart';
 import 'package:manager_app/features/position/presentation/position_link.dart';
-
-class _FixedClock implements Clock {
-  const new(this._now);
-  final DateTime _now;
-  @override
-  DateTime now() => _now;
-}
 
 /// 주어진 상태로 고정된 링크 — 칩이 받은 상태를 어떻게 그리는지만 본다.
 class _FixedLink extends PositionLinkNotifier {
@@ -51,10 +44,7 @@ void main() {
     });
 
     test('송신 중이 아니면(startedAt 없음) 판정하지 않는다', () {
-      expect(
-        judgePositionLink(now: now, link: const PositionLink()),
-        isNull,
-      );
+      expect(judgePositionLink(now: now, link: const PositionLink()), isNull);
     });
   });
 
@@ -65,12 +55,10 @@ void main() {
             // 상태마다 새 컨테이너 — 같은 트리에서 override 만 바꿔 다시 그리면 앞 notifier 가 남는다.
             key: UniqueKey(),
             overrides: [
-              clockProvider.overrideWithValue(_FixedClock(now)),
+              clockProvider.overrideWithValue(FixedClock(now)),
               positionLinkProvider.overrideWith(() => _FixedLink(link)),
             ],
-            child: const MaterialApp(
-              home: Scaffold(body: PositionLinkChip()),
-            ),
+            child: const MaterialApp(home: Scaffold(body: PositionLinkChip())),
           ),
         );
 

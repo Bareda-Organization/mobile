@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart' show StateProvider;
@@ -54,15 +54,6 @@ class _FakeGeolocatorPlatform extends GeolocatorPlatform {
   @override
   Stream<Position> getPositionStream({LocationSettings? locationSettings}) =>
       _controller.stream;
-}
-
-class _FixedClock implements Clock {
-  const new(this._now);
-
-  final DateTime _now;
-
-  @override
-  DateTime now() => _now;
 }
 
 class _NoopPositionRepository implements PositionRepository {
@@ -119,7 +110,7 @@ void main() {
     required UserRole role,
     required ManagerRun currentRun,
   }) => [
-    clockProvider.overrideWithValue(_FixedClock(now)),
+    clockProvider.overrideWithValue(FixedClock(now)),
     currentUserRoleProvider.overrideWith((ref) => role),
     selectedRunIdProvider.overrideWith((ref) => runId),
     driveModeRunProvider.overrideWithValue(currentRun),
@@ -128,7 +119,7 @@ void main() {
       final run = ref.watch(driveModeRunProvider);
       return run == null ? <ManagerRun>[] : [run];
     }),
-    // R32 M1 — 운행 화면이 노선을 조회한다. 실제 서버로 나가지 않게 빈 노선으로 막는다.
+    // 운행 화면이 노선을 조회한다. 실제 서버로 나가지 않게 빈 노선으로 막는다.
     routeProvider.overrideWith((ref) async => const RouteResponse(stops: [])),
     driveModeRosterProvider.overrideWith((ref) async => _emptyRoster),
     positionRepositoryProvider.overrideWithValue(_NoopPositionRepository()),
@@ -157,7 +148,7 @@ void main() {
     final runState = StateProvider<ManagerRun>((ref) => run(RunStatus.moving));
     final container = ProviderContainer(
       overrides: [
-        clockProvider.overrideWithValue(_FixedClock(now)),
+        clockProvider.overrideWithValue(FixedClock(now)),
         currentUserRoleProvider.overrideWith((ref) => UserRole.driver),
         selectedRunIdProvider.overrideWith((ref) => runId),
         driveModeRunProvider.overrideWith((ref) => ref.watch(runState)),
@@ -166,14 +157,12 @@ void main() {
           final run = ref.watch(driveModeRunProvider);
           return run == null ? <ManagerRun>[] : [run];
         }),
-        // R32 M1 — 운행 화면이 노선을 조회한다. 실제 서버로 나가지 않게 빈 노선으로 막는다.
+        // 운행 화면이 노선을 조회한다. 실제 서버로 나가지 않게 빈 노선으로 막는다.
         routeProvider.overrideWith(
           (ref) async => const RouteResponse(stops: []),
         ),
         driveModeRosterProvider.overrideWith((ref) async => _emptyRoster),
-        positionRepositoryProvider.overrideWithValue(
-          _NoopPositionRepository(),
-        ),
+        positionRepositoryProvider.overrideWithValue(_NoopPositionRepository()),
       ],
     );
     addTearDown(container.dispose);
@@ -197,7 +186,7 @@ void main() {
     expect(platform.listenerCount, 0);
   });
 
-  // R33 M1 — 위치 스트림도 화면이 아니라 운행 상태에 묶인다. 옛 시험(`화면이 dispose 되면
+  // 위치 스트림도 화면이 아니라 운행 상태에 묶인다. 옛 시험(`화면이 dispose 되면
   // 위치 스트림 구독이 0이 된다`)은 화면을 나가면 구독이 끊기는 결함을 고정하고 있었다 — 반대로
   // 화면이 사라져도 구독이 1로 남는 것을 지킨다.
   testWidgets('화면이 dispose 되어도 위치 스트림 구독은 1로 남는다', (tester) async {
@@ -234,10 +223,7 @@ void main() {
     await tester.pumpWidget(
       _wrap(
         const DriveModeScreen(),
-        baseOverrides(
-          role: UserRole.escort,
-          currentRun: run(RunStatus.moving),
-        ),
+        baseOverrides(role: UserRole.escort, currentRun: run(RunStatus.moving)),
       ),
     );
     await tester.pump();

@@ -2,12 +2,12 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:manager_app/app/di.dart';
 
-import '../../support/fake_token_storage.dart';
 
 /// NTF-12 · Ruling 510 — 매니저 앱의 `di.dart` 가 단말 등록기를 `AuthApi` 에
 /// 실제로 물렸는지 본다(공유 패키지 시험은 `AuthApi` 단독이라 이 배선은 못 잡는다).

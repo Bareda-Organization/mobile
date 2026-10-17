@@ -1,5 +1,5 @@
 #!/bin/bash
-# 병합·push 전 한 명령 검증 — CI(.github/workflows/ci.yml)와 같은 검사를 4개 패키지에 돈다.
+# 병합·push 전 한 명령 검증 — CI(.github/workflows/ci.yml)와 같은 검사를 5개 패키지에 돈다.
 #
 # 실서버 계약 시험(@Tags(['real_backend']) — 백엔드가 떠 있어야 한다)은 뺀다. 각 패키지 dart_test.yaml 에
 # 태그 선언이 있어야 걸러진다.
@@ -7,7 +7,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-FLUTTER_DIRS=(packages/baraeda_core packages/baraeda_ui apps/manager-app apps/parent-app)
+FLUTTER_DIRS=(packages/baraeda_core packages/baraeda_ui packages/baraeda_app apps/manager-app apps/parent-app)
 
 for dir in "${FLUTTER_DIRS[@]}"; do
   echo "== $dir"

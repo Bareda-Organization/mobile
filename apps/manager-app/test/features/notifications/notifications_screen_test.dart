@@ -1,4 +1,5 @@
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
@@ -13,16 +14,6 @@ import 'package:manager_app/features/notifications/presentation/notification_pro
 import 'package:manager_app/features/notifications/presentation/notifications_screen.dart';
 import 'package:manager_app/features/notifications/presentation/widgets/manager_notification_row.dart';
 
-import '../../support/fake_notification_repository.dart';
-
-class _FixedClock implements Clock {
-  const new(this._value);
-
-  final DateTime _value;
-
-  @override
-  DateTime now() => _value;
-}
 
 /// 2026-09-30 10:00 KST (수요일).
 final _now = DateTime.utc(2026, 9, 30, 1);
@@ -81,7 +72,7 @@ Future<FakeNotificationRepository> _pump(
       retry: (_, _) => null,
       overrides: [
         notificationRepositoryProvider.overrideWithValue(fake),
-        clockProvider.overrideWithValue(_FixedClock(_now)),
+        clockProvider.overrideWithValue(FixedClock(_now)),
         ...extraOverrides,
       ],
       child: MaterialApp.router(routerConfig: router),
@@ -91,7 +82,7 @@ Future<FakeNotificationRepository> _pump(
   return fake;
 }
 
-/// R46 B — 매니저(기사·동승자) 알림 목록. 학부모·학생 앱과 같은 공용 목록 위젯을 쓴다.
+/// 매니저(기사·동승자) 알림 목록. 학부모·학생 앱과 같은 공용 목록 위젯을 쓴다.
 void main() {
   testWidgets('종류별 행이 날짜 머리 아래에 보이고 중요 통지(노선 변경)에만 중요 표시가 있다', (tester) async {
     await _pump(tester, [
@@ -198,7 +189,7 @@ void main() {
     expect(find.text('알림 1'), findsOneWidget);
   });
 
-  // R46-FUFEAT ③(Ruling 542) — 알림에 회차 식별자(run_id)가 실려 와서, 눌러서 관련 화면으로 간다.
+  // 알림에 회차 식별자(run_id)가 실려 와서, 눌러서 관련 화면으로 간다.
   group('알림 눌러 이동', () {
     final marker = <String, GoRoute>{
       for (final path in [AppRoutes.runReady, AppRoutes.roster, AppRoutes.home])
@@ -253,7 +244,7 @@ void main() {
       expect(find.text('MARKER ${AppRoutes.roster}'), findsOneWidget);
     });
 
-    // R56 · Ruling 894 ⑤(K3) — 확정된 회차가 취소되면 배치된 기사 · 동승자에게 `run_canceled` 가 온다.
+    // 확정된 회차가 취소되면 배치된 기사 · 동승자에게 `run_canceled` 가 온다.
     // 취소된 회차는 목록에서 빠지므로 그 회차를 고르지 않고 홈으로 보낸다.
     for (final role in [UserRole.driver, UserRole.escort]) {
       testWidgets('회차 취소 알림은 중요 표시와 함께 보이고 누르면 ${role.name} 을 홈으로 보낸다', (

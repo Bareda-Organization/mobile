@@ -4,11 +4,11 @@ library;
 import 'dart:io';
 
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage_platform_interface/flutter_secure_storage_platform_interface.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
-import '../support/real_backend_target.dart';
 
 // `real_backend_run_flow_test.dart`(F4-A, manager-app) 와 같은 구조 — 진짜
 // 소켓 스토리지 대신 메모리에만 담는다.

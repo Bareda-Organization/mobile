@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:manager_app/app/di.dart';
@@ -9,15 +9,6 @@ import 'package:manager_app/features/offline_queue/data/unsent_emergency_store.d
 import 'package:manager_app/features/offline_queue/presentation/request_notices.dart';
 
 import '../../support/fake_academy_contact_store.dart';
-
-class _FixedClock implements Clock {
-  const new(this._now);
-
-  final DateTime _now;
-
-  @override
-  DateTime now() => _now;
-}
 
 /// 첫 쓰기는 예외를 던지고 이후는 저장하는 저장소.
 /// 읽기는 [readGate] 가 풀어 줄 때까지 끝나지 않는다(없으면 곧바로 [saved]).
@@ -68,7 +59,7 @@ void main() {
         academyContactStoreProvider.overrideWithValue(
           FakeAcademyContactStore('032-000-1100'),
         ),
-        clockProvider.overrideWithValue(_FixedClock(lastAt)),
+        clockProvider.overrideWithValue(FixedClock(lastAt)),
       ],
     );
     addTearDown(container.dispose);
@@ -196,7 +187,7 @@ void main() {
       expect(store.saved?.count, 3);
     });
 
-    // R56 ⑦ — 시작 때 읽기가 실패한 채 [확인] 하면 다음 저장 재시도가 기기 저장분을 다시 띄운다는 우려.
+    // 시작 때 읽기가 실패한 채 [확인] 하면 다음 저장 재시도가 기기 저장분을 다시 띄운다는 우려.
     // 확인한 건이 되살아나는지(결함)와 한 번도 보이지 않은 기기 저장분이 보이는지(옳은 동작)를 가른다.
     test('⑦: 시작 때 읽기가 실패한 채 확인해도 확인한 건은 돌아오지 않고 기기에 있던 앞 건수만 알린다', () async {
       final store = _FlakyStore(

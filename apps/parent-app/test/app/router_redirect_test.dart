@@ -1,4 +1,5 @@
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:parent_app/app/app.dart';
@@ -15,7 +16,6 @@ import 'package:parent_app/features/schedule/presentation/daily_change_screen.da
 import 'package:parent_app/features/schedule/presentation/schedule_screen.dart';
 import 'package:parent_app/features/schedule/presentation/weekly_address_screen.dart';
 
-import '../support/fake_token_storage.dart';
 
 /// `router.dart` 의 계정 상태 게이트(docs/archive/rounds/fe-phases-f2-f5.md §5.0 목표 7항 · `API_SPEC §1.4`)를
 /// 직접 무는 시험 — 게이트 리뷰(`.claude/f3/gate-f2-flutter.md`)가 이
@@ -76,7 +76,7 @@ void main() {
     expect(find.byType(PendingApprovalScreen), findsNothing);
   });
 
-  // R52 `Ruling 874`① — 학생에게는 일정 탭이 없다. 학생용 일정 안내 화면은 지우고, 주소로 들어오면 홈으로 보낸다.
+  // 학생에게는 일정 탭이 없다. 학생용 일정 안내 화면은 지우고, 주소로 들어오면 홈으로 보낸다.
   for (final path in [
     AppRoutes.schedule,
     AppRoutes.weeklyAddress,

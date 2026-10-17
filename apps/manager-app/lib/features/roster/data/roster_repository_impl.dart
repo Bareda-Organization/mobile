@@ -1,5 +1,4 @@
 import 'package:baraeda_core/baraeda_core.dart';
-import 'package:manager_app/core/network/guard.dart';
 import 'package:manager_app/features/offline_queue/domain/offline_queue_repository.dart';
 import 'package:manager_app/features/offline_queue/domain/send_outcome.dart';
 import 'package:manager_app/features/roster/data/models/ack_changes_result.dart';
@@ -14,7 +13,7 @@ import 'package:manager_app/features/roster/domain/roster_repository.dart';
 
 /// [RosterRepository] 구현 — `guardDio` 로 `DioException` 을 `Failure` 로
 /// 옮긴다. 승하차 갱신만 `_offlineQueue` 를 거친다(§1.7 M-06, UF-E-07) —
-/// 나머지 쓰기(되돌리기·연락 기록·변경 확인)는 이번 라운드의 큐 대상이
+/// 나머지 쓰기(되돌리기·연락 기록·변경 확인)는 큐 대상이
 /// 아니다(문서상 그 예시로 명시된 것은 승하차 처리뿐이다). 명단 조회는 받은 본문을
 /// `_cache` 에 저장하고, 서버가 응답하지 못하면 그 저장본으로 돌아선다(M-M3).
 class RosterRepositoryImpl implements RosterRepository {
@@ -108,11 +107,8 @@ class RosterRepositoryImpl implements RosterRepository {
     required String riderId,
     String? reason,
   }) => guardDio(
-    () => _api.revertRiderStatus(
-      runId: runId,
-      riderId: riderId,
-      reason: reason,
-    ),
+    () =>
+        _api.revertRiderStatus(runId: runId, riderId: riderId, reason: reason),
   );
 
   @override

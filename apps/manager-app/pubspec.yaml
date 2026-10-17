@@ -29,6 +29,8 @@ environment:
 # versions available, run `flutter pub outdated`.
 # 린트는 very_good_analysis 로 고정 (CONVENTIONS_FLUTTER.md §1) — flutter_lints 는 쓰지 않는다.
 dependencies:
+  baraeda_app:
+    path: ../../packages/baraeda_app
   baraeda_core:
     path: ../../packages/baraeda_core
   baraeda_ui:
@@ -42,19 +44,15 @@ dependencies:
   flutter_cache_manager: ^3.4.5
   flutter_naver_map: ^1.4.4  # F4-B 1단계 — 노선 지도 화면 (docs/frontend/IMPLEMENTATION_PLAN.md §3.2 RouteMapScreen)
   flutter_riverpod: ^3.4.3
-  flutter_secure_storage: ^11.0.0
-  freezed_annotation: ^3.1.0
   geolocator: ^14.0.3
   go_router: ^18.0.1
   intl: ^0.20.2
-  json_annotation: ^4.12.0
   kakao_flutter_sdk_navi: ^2.0.1
   meta: ^1.16.0
   path: ^1.9.1
   path_provider: ^2.1.6
   permission_handler: ^13.0.2
   url_launcher: ^6.3.1  # R46 — 학원 전화(`tel:`)·외부 내비 열기. 학부모 앱과 같은 버전
-  uuid: ^4.6.0
   wakelock_plus: ^1.8.0
 
 dev_dependencies:
@@ -63,11 +61,7 @@ dev_dependencies:
   flutter_secure_storage_platform_interface: '>=2.1.0 <3.0.0'  # 시험용 가짜 구현체가 2.1.0 의 checkUpgradeStatus 를 구현한다 — 하한을 낮추면 그 타입이 없어 컴파일이 깨진다
   flutter_test:
     sdk: flutter
-  freezed: ^4.0.0-dev.3
-  geolocator_platform_interface: ^4.3.0
-  json_serializable: ^6.14.1
   plugin_platform_interface: ^2.1.8
-  riverpod_generator: ^4.0.9
   stomp_dart_client: ^3.0.1 # 시험 전용 — 죽은 WebSocket 서버 가짜(drive_mode_position_transmission_test)
   very_good_analysis: ^11.0.0
 

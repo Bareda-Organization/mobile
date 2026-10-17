@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart'
@@ -27,16 +28,6 @@ import 'package:manager_app/features/roster/data/models/roster_response.dart';
 import 'package:manager_app/features/route_map/data/models/route_response.dart';
 import 'package:manager_app/features/route_map/presentation/route_providers.dart';
 import 'package:stomp_dart_client/stomp_dart_client.dart';
-
-/// 시각을 고정하는 가짜 시계 — `drive_mode_screen_test.dart` 와 같은 패턴.
-class _FixedClock implements Clock {
-  const new(this._now);
-
-  final DateTime _now;
-
-  @override
-  DateTime now() => _now;
-}
 
 /// 같은 좌표 스냅샷을 돌려주는 가짜 위치 소스. `recordedAt` 을
 /// 시험이 고정하는 "지금"과 **다른 값**으로 둬서, 화면이 전송 시각을
@@ -220,7 +211,7 @@ void main() {
     required _RecordingPositionRepository positionRepository,
     void Function()? onRunsLoad,
   }) => [
-    clockProvider.overrideWithValue(_FixedClock(now)),
+    clockProvider.overrideWithValue(FixedClock(now)),
     currentUserRoleProvider.overrideWith((ref) => role),
     selectedRunIdProvider.overrideWith((ref) => runId),
     driveModeRunProvider.overrideWithValue(
@@ -232,7 +223,7 @@ void main() {
       final run = ref.watch(driveModeRunProvider);
       return run == null ? <ManagerRun>[] : [run];
     }),
-    // R32 M1 — 운행 화면이 노선을 조회한다. 실제 서버로 나가지 않게 빈 노선으로 막는다.
+    // 운행 화면이 노선을 조회한다. 실제 서버로 나가지 않게 빈 노선으로 막는다.
     routeProvider.overrideWith((ref) async => const RouteResponse(stops: [])),
     driveModeRosterProvider.overrideWith((ref) async => _emptyRoster),
     positionSourceProvider.overrideWithValue(positionSource),
@@ -262,7 +253,7 @@ void main() {
       );
       final container = ProviderContainer(
         overrides: [
-          clockProvider.overrideWithValue(_FixedClock(now)),
+          clockProvider.overrideWithValue(FixedClock(now)),
           currentUserRoleProvider.overrideWith((ref) => UserRole.driver),
           selectedRunIdProvider.overrideWith((ref) => runId),
           driveModeRunProvider.overrideWith((ref) => ref.watch(runState)),
@@ -271,7 +262,7 @@ void main() {
             final run = ref.watch(driveModeRunProvider);
             return run == null ? <ManagerRun>[] : [run];
           }),
-          // R32 M1 — 운행 화면이 노선을 조회한다. 실제 서버로 나가지 않게 빈 노선으로 막는다.
+          // 운행 화면이 노선을 조회한다. 실제 서버로 나가지 않게 빈 노선으로 막는다.
           routeProvider.overrideWith(
             (ref) async => const RouteResponse(stops: []),
           ),
@@ -581,7 +572,7 @@ void main() {
     expect(PositionConstants.transmissionInterval, const Duration(seconds: 2));
   });
 
-  // R33 M1 — 위치 송신은 화면이 아니라 앱 전역이다. 옛 시험(`화면이 dispose 되면 위치 송신
+  // 위치 송신은 화면이 아니라 앱 전역이다. 옛 시험(`화면이 dispose 되면 위치 송신
   // 타이머가 멈춘다`, F4 이월 3번)은 "화면을 나가면 송신이 끊기는" 결함을 고정하고 있었다 —
   // 반대로, 화면이 사라져도 송신이 이어지는 것을 지킨다. 화면만 걷고 ProviderScope 는 그대로 둔다
   // (같은 overrides 목록 · 같은 위치의 ProviderScope 라 상태가 유지된다).

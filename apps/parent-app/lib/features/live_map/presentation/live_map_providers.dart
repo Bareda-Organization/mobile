@@ -91,7 +91,7 @@ class LiveMapNotifier extends StateNotifier<LiveMapState> {
   BaraedaWebSocketClient get _client => _ref.read(webSocketClientProvider);
 
   void _init() {
-    // 이 지도가 살아 있는 동안 연결을 붙잡는다 — 마지막 지도가 닫히면 연결도 끊긴다(R46-FIXCONN C-2).
+    // 이 지도가 살아 있는 동안 연결을 붙잡는다 — 마지막 지도가 닫히면 연결도 끊긴다.
     _ref.listen(webSocketHoldProvider, (_, _) {});
     final client = _client;
     _applyConnectionState(client.state);
@@ -122,7 +122,7 @@ class LiveMapNotifier extends StateNotifier<LiveMapState> {
   /// [adoptIfNewer] 가 참(재연결 뒤 호출)이면 스냅샷 좌표가 WS 로 이미 받은
   /// 좌표보다 새로울 때 그 좌표로 갈아 끼운다 — 화면은 WS 좌표를 우선하므로
   /// 그러지 않으면 음영 중 움직인 버스가 다음 `position` 이 올 때까지 옛
-  /// 자리에 남는다(R46-FIXCONN C-9).
+  /// 자리에 남는다.
   Future<void> _loadRestSnapshot({bool adoptIfNewer = false}) async {
     state = state.copyWith(restPosition: const AsyncValue.loading());
 
@@ -176,7 +176,11 @@ class LiveMapNotifier extends StateNotifier<LiveMapState> {
     // 거부 목적지로 재구독을 걸어 거부→세션 종료→재연결 반복이 생긴다.
     if (_forbidden) return;
 
-    _applyConnectionState(wsState);
+    // 만료 전 갱신으로 다시 붙는 1~2초는 끊김이 아니다 — 재연결 안내를 띄우지 않는다. 구독 해지 표시와
+    // 다시 `connected` 가 왔을 때의 재구독 · 스냅샷 재조회는 아래 그대로 한다.
+    final renewing =
+        wsState == WsConnectionState.connecting && _client.isRenewing;
+    if (!renewing) _applyConnectionState(wsState);
     if (wsState != WsConnectionState.connected) {
       // F05-04 — 소켓이 내려가면 그 위의 구독도 사라진다(새 소켓은 이어받지 않는다).
       // 해지 콜백을 비워 두어야 `connected` 로 돌아왔을 때 다시 구독한다.

@@ -4,6 +4,7 @@ library;
 import 'package:baraeda_core/auth/auth_api.dart';
 import 'package:baraeda_core/network/api_client.dart';
 import 'package:baraeda_core/storage/token_storage.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:baraeda_core/websocket/baraeda_websocket_client.dart';
 import 'package:baraeda_core/websocket/ws_backoff_policy.dart';
 import 'package:baraeda_core/websocket/ws_channel.dart';
@@ -12,7 +13,6 @@ import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage_platform_interface/flutter_secure_storage_platform_interface.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
-import '../support/real_backend_target.dart';
 
 // `test/integration/real_backend_auth_test.dart` 와 같은 구조의 가짜 —
 // 이 시험도 실 시크릿 스토리지 플러그인 없이 도는 실 백엔드 계약 시험이다.

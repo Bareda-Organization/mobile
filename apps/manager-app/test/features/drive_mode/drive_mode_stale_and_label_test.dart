@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -20,19 +21,6 @@ import 'package:manager_app/features/route_map/data/models/route_response.dart';
 import 'package:manager_app/features/route_map/presentation/route_providers.dart';
 
 import '../../support/manager_run_fixture.dart';
-
-/// R46 A — 기사 운행 화면. ① 명단 갱신이 실패해도 마지막 성공 명단과 [도착 처리] 가 남는다
-/// ② 긴 승하차지 이름에도 버튼 동사(`도착 처리`)가 잘리지 않는다.
-class _NeverResolvingTokenStorage extends TokenStorage {
-  new()
-    : super(
-        accessTokenKey: 'test_access_token',
-        refreshTokenKey: 'test_refresh_token',
-      );
-
-  @override
-  Future<String?> readAccessToken() => Completer<String?>().future;
-}
 
 class _NoSample implements PositionSource {
   @override
@@ -64,18 +52,8 @@ RosterResponse _roster(String stopName) => RosterResponse(
   direction: RunDirection.toAcademy,
   counts: const RosterCounts(boarded: 0, waiting: 0, noShow: 0, absentN: 0),
   stops: [
-    RosterStop(
-      stopId: 's1',
-      seq: 1,
-      name: stopName,
-      students: const [],
-    ),
-    const RosterStop(
-      stopId: 's2',
-      seq: 2,
-      name: '학원',
-      students: [],
-    ),
+    RosterStop(stopId: 's1', seq: 1, name: stopName, students: const []),
+    const RosterStop(stopId: 's2', seq: 2, name: '학원', students: []),
   ],
 );
 
@@ -86,7 +64,7 @@ Future<void> _pumpDrive(
 }) async {
   var calls = 0;
   final overrides = <Override>[
-    tokenStorageProvider.overrideWithValue(_NeverResolvingTokenStorage()),
+    tokenStorageProvider.overrideWithValue(NeverResolvingTokenStorage()),
     positionSourceProvider.overrideWithValue(_NoSample()),
     routeProvider.overrideWith((ref) async => const RouteResponse(stops: [])),
     selectedRunIdProvider.overrideWith((ref) => 'run-1'),
@@ -101,9 +79,8 @@ Future<void> _pumpDrive(
       overrides: overrides,
       child: MaterialApp(
         builder: (context, child) => MediaQuery(
-          data: MediaQuery.of(
-            context,
-          ).copyWith(textScaler: TextScaler.linear(textScale)),
+          data: MediaQuery.of(context)
+              .copyWith(textScaler: TextScaler.linear(textScale)),
           child: child!,
         ),
         home: const DriveModeScreen(),
@@ -130,9 +107,8 @@ void main() {
     );
     expect(find.text('도착 처리'), findsOneWidget);
 
-    ProviderScope.containerOf(
-      tester.element(find.byType(DriveModeScreen)),
-    ).invalidate(driveModeRosterProvider);
+    ProviderScope.containerOf(tester.element(find.byType(DriveModeScreen)))
+        .invalidate(driveModeRosterProvider);
     await tester.pump();
     await tester.pump();
 

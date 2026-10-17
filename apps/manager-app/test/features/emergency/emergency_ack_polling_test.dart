@@ -1,4 +1,4 @@
-import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -18,15 +18,6 @@ import 'package:manager_app/features/offline_queue/domain/send_outcome.dart';
 import 'package:manager_app/features/offline_queue/presentation/offline_queue_providers.dart';
 
 import '../../support/manager_run_fixture.dart';
-
-class _FixedClock implements Clock {
-  const new(this._now);
-
-  final DateTime _now;
-
-  @override
-  DateTime now() => _now;
-}
 
 /// 발신은 항상 성공하고, 이력 조회는 [acked] 가 켜진 뒤에야 "학원이 확인함" 으로 답하는 가짜.
 class _Repo implements EmergencyRepository {
@@ -98,7 +89,7 @@ class _NoPosition implements PositionSource {
   void stop() {}
 }
 
-/// R53 t4 A3 — 실시간 채널(운행 화면이 연다)이 없는 곳(홈 · 알림 · 내 정보 · 운행 준비)에서 보낸 비상은
+/// 실시간 채널(운행 화면이 연다)이 없는 곳(홈 · 알림 · 내 정보 · 운행 준비)에서 보낸 비상은
 /// "학원이 확인했어요" 로 저절로 바뀌지 않았다. 확인 대기 동안 짧은 주기로 이력을 다시 받는다.
 void main() {
   final raisedAt = DateTime(2026, 10, 11, 9);
@@ -117,7 +108,7 @@ void main() {
           pendingRequestsProvider.overrideWith((ref) async => const []),
           selectedRunIdProvider.overrideWith((ref) => 'run-1'),
           emergencyRepositoryProvider.overrideWithValue(repo),
-          clockProvider.overrideWithValue(_FixedClock(raisedAt)),
+          clockProvider.overrideWithValue(FixedClock(raisedAt)),
           positionSourceProvider.overrideWithValue(const _NoPosition()),
         ],
         child: const MaterialApp(home: EmergencyScreen()),
@@ -169,7 +160,7 @@ void main() {
           pendingRequestsProvider.overrideWith((ref) async => const []),
           selectedRunIdProvider.overrideWith((ref) => 'run-1'),
           emergencyRepositoryProvider.overrideWithValue(repo),
-          clockProvider.overrideWithValue(_FixedClock(raisedAt)),
+          clockProvider.overrideWithValue(FixedClock(raisedAt)),
           positionSourceProvider.overrideWithValue(const _NoPosition()),
         ],
         child: const MaterialApp(home: EmergencyScreen()),

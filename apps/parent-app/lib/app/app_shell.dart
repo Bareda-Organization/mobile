@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:baraeda_app/baraeda_app.dart';
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
@@ -9,11 +10,10 @@ import 'package:parent_app/app/app_routes.dart';
 import 'package:parent_app/app/di.dart';
 import 'package:parent_app/core/auth/auth_providers.dart';
 import 'package:parent_app/core/network/network_status.dart';
-import 'package:parent_app/core/refresh/visible_poller.dart';
 import 'package:parent_app/features/notifications/presentation/notification_providers.dart';
 
 /// 로그인 뒤 화면 아래의 탭 막대 — 학부모 `[홈]` `[일정]` `[알림]` `[설정]` · 학생 `[내 버스]` `[알림]`
-/// `[설정]` (R44 · R48).
+/// `[설정]`.
 ///
 /// `router.dart` 의 `StatefulShellRoute` 가 탭마다 화면 상태(스크롤 위치·받아 둔 목록)를
 /// 따로 붙들어 두고,
@@ -72,7 +72,7 @@ class _AppShellState extends ConsumerState<AppShell>
   /// 뒤에 연결을 끊는다. 앱이 돌아왔다 — 끊어 둔 연결이면 다시 붙이고(지도가 같은
   /// 목적지를 구독하고 REST 스냅샷을 다시 읽는다), 끊겨 재연결 대기 중인 연결이면
   /// 다음 타이머(최대 30초)를 기다리지 않고 바로 붙인다. 연결한 적 없거나 일부러
-  /// 끊은 연결은 클라이언트가 건드리지 않는다(R46-FIXRT S-5). 알림 목록의 즉시 갱신은
+  /// 끊은 연결은 클라이언트가 건드리지 않는다. 알림 목록의 즉시 갱신은
   /// [VisiblePoller] 가 맡는다.
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
@@ -106,7 +106,7 @@ class _AppShellState extends ConsumerState<AppShell>
   @override
   Widget build(BuildContext context) {
     // 서버에 못 닿다가 다시 닿았다 — 와이파이·데이터가 돌아온 것이다. 재연결 대기(최대 30초)가 끝나길 기다리지 않고 실시간
-    // 연결을 바로 다시 붙인다. REST 성공이 이 앱에서 망 복귀의 유일한 신호다(R46-FIXCONN C-10).
+    // 연결을 바로 다시 붙인다. REST 성공이 이 앱에서 망 복귀의 유일한 신호다.
     ref.listen(networkStatusProvider.select((status) => status.isOffline), (
       wasOffline,
       isOffline,

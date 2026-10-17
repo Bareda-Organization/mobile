@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -8,7 +9,6 @@ import 'package:parent_app/app/app.dart';
 import 'package:parent_app/app/di.dart';
 import 'package:parent_app/features/auth/presentation/login_screen.dart';
 
-import '../../support/fake_token_storage.dart';
 
 /// 모든 요청에 `401` 을 돌려주는 어댑터 — access 도 refresh 도 거절된 상황.
 class _RejectAllAdapter implements HttpClientAdapter {
@@ -33,7 +33,7 @@ class _RejectAllAdapter implements HttpClientAdapter {
   );
 }
 
-/// R52 낮음 A7 — 저장된 로그인이 앱을 켜는 순간 거절되면, 로그인 화면이 "로그인이 만료됐어요" 를 보여야 한다.
+/// 저장된 로그인이 앱을 켜는 순간 거절되면, 로그인 화면이 "로그인이 만료됐어요" 를 보여야 한다.
 /// 만료 신호는 부팅(`authBootstrapProvider`) 중에 나가는데, 그 신호를 받는 구독은 라우터가 만들어질 때야 생겼다.
 void main() {
   testWidgets('앱을 켤 때 저장된 토큰이 거절되면 로그인 화면에 만료 안내가 뜬다', (tester) async {

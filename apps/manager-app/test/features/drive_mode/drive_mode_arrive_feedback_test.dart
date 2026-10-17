@@ -1,6 +1,4 @@
-import 'dart:async';
-
-import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -69,11 +67,7 @@ class _FakeNavigationRepository implements NavigationRepository {
       waypoints: const [
         NavigationPoint(lat: 37.51, lng: 127.01, name: '1번 승하차지'),
       ],
-      destination: const NavigationPoint(
-        lat: 37.53,
-        lng: 127.03,
-        name: '바른학원',
-      ),
+      destination: const NavigationPoint(lat: 37.53, lng: 127.03, name: '바른학원'),
       truncated: truncated,
       truncatedReason: truncated ? '남은 승하차지가 많아 앞 2곳만 넘겼습니다' : null,
       totalRemainingStops: truncated ? 6 : 2,
@@ -123,15 +117,6 @@ class _FixedAvailabilitySource implements PositionSource {
   }) async => null;
 }
 
-/// 토큰을 영원히 기다려 운행 채널 연결이 시작되지 않게 한다 — 이 시험의 대상이 아니다.
-class _NeverResolvingTokenStorage extends TokenStorage {
-  new()
-    : super(accessTokenKey: 'a', refreshTokenKey: 'r');
-
-  @override
-  Future<String?> readAccessToken() => Completer<String?>().future;
-}
-
 RosterStop _stop(int seq, {bool arrived = false}) => RosterStop(
   stopId: 's$seq',
   seq: seq,
@@ -177,7 +162,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          tokenStorageProvider.overrideWithValue(_NeverResolvingTokenStorage()),
+          tokenStorageProvider.overrideWithValue(NeverResolvingTokenStorage()),
           positionSourceProvider.overrideWithValue(
             _FixedAvailabilitySource(availability),
           ),

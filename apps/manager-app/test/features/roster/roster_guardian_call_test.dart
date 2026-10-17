@@ -1,6 +1,5 @@
-import 'dart:async';
-
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -81,17 +80,6 @@ class _FakeGuardianPhones implements GuardianPhoneRepository {
   }
 }
 
-class _NeverResolvingTokenStorage extends TokenStorage {
-  new()
-    : super(
-        accessTokenKey: 'test_access_token',
-        refreshTokenKey: 'test_refresh_token',
-      );
-
-  @override
-  Future<String?> readAccessToken() => Completer<String?>().future;
-}
-
 const _rawPhone = '010-2345-8814';
 
 RosterResponse _rosterOf({required RiderStatus status, String? maskedPhone}) {
@@ -131,7 +119,7 @@ Future<List<Uri>> _pump(
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
-        tokenStorageProvider.overrideWithValue(_NeverResolvingTokenStorage()),
+        tokenStorageProvider.overrideWithValue(NeverResolvingTokenStorage()),
         selectedRunIdProvider.overrideWith((ref) => 'run-1'),
         currentUserRoleProvider.overrideWith((ref) => UserRole.escort),
         todayRunsProvider.overrideWith((ref) async => [managerRunFixture()]),

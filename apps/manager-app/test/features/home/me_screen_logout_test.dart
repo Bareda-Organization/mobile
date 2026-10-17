@@ -1,4 +1,5 @@
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -16,7 +17,6 @@ import 'package:manager_app/features/home/presentation/me_screen.dart';
 import 'package:manager_app/features/offline_queue/data/models/pending_request_summary.dart';
 import 'package:manager_app/features/offline_queue/domain/offline_queue_repository.dart';
 
-import '../../support/fake_token_storage.dart';
 
 /// `logout` 만 쓰는 가짜 — `sign_out_test.dart` 의 `_StubAuthRepository` 와
 /// 같은 패턴. 나머지 메서드는 이 시험에서 불리면 안 된다.

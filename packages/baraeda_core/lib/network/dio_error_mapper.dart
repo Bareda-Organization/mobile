@@ -47,3 +47,16 @@ Failure _mapBadResponse(DioException exception) {
     statusCode: statusCode,
   );
 }
+
+/// [body] 가 던진 `DioException` 을 [Failure] 로 바꿔 던진다 — 저장소(repository)가
+/// `DioException` 을 화면에 내보내지 않는 유일한 변환 지점이다(CONVENTIONS_FLUTTER.md §6).
+/// 그 밖의 예외는 그대로 통과한다.
+Future<T> guardDio<T>(Future<T> Function() body) async {
+  try {
+    return await body();
+  } on DioException catch (exception) {
+    // Failure 는 의도적으로 Exception/Error 를 상속하지 않는다(dart:core 예외 체계를 흉내 내지 않는다).
+    // ignore: only_throw_errors
+    throw mapDioExceptionToFailure(exception);
+  }
+}

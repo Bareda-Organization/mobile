@@ -1,0 +1,23 @@
+name: baraeda_app
+description: "바래다 두 앱(manager-app · parent-app)이 함께 쓰는 앱 공통 코드 — 두 앱에 같은 내용으로 따로 있던 것을 모은다. 화면 SDK(지도 등)는 앱에 둔다."
+version: 0.0.1
+publish_to: 'none'
+
+environment:
+  sdk: ^3.13.5
+  flutter: ">=3.47.6"
+
+dependencies:
+  baraeda_core:
+    path: ../baraeda_core
+  baraeda_ui:
+    path: ../baraeda_ui
+  flutter:
+    sdk: flutter
+  flutter_riverpod: ^3.4.3
+  go_router: ^18.0.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  very_good_analysis: ^11.0.0

@@ -118,19 +118,4 @@ void main() {
     expect(find.bySemanticsLabel('미승차'), findsOneWidget);
     handle.dispose();
   });
-
-  testWidgets('미등원은 회색 끝남(■) 이고 위험(▲)이 아니다', (tester) async {
-    await tester.pumpWidget(
-      _host(const StudentRow(name: '박지후', ride: RideStatus.absent)),
-    );
-    final pill = tester.widget<BaraedaStatusPill>(
-      find.byType(BaraedaStatusPill),
-    );
-    expect(pill.status, BaraedaStatus.idle);
-    expect(pill.label, '미등원');
-    expect(
-      tester.widget<BaraedaStatusMark>(find.byType(BaraedaStatusMark)).shape,
-      BaraedaStatusShape.square,
-    );
-  });
 }

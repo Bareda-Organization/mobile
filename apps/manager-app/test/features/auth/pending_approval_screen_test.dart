@@ -1,4 +1,5 @@
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart' show DropdownButtonFormField, TextField;
 import 'package:flutter/widgets.dart' show AppLifecycleState;
@@ -20,15 +21,14 @@ import 'package:manager_app/features/home/presentation/home_screen.dart';
 
 import '../../support/fake_academy_contact_store.dart';
 import '../../support/fake_last_session_store.dart';
-import '../../support/fake_token_storage.dart';
 
 class _NoRuns implements ManagerRunRepository {
   @override
   Future<List<ManagerRun>> fetchRuns({DateTime? date}) async => const [];
 }
 
-/// R33 M3 — 승인 대기 화면은 상태를 한 번만 조회해, 관리자가 승인·거절해도 앱을 껐다 켜야 알 수 있었다.
-/// [상태 다시 확인] 은 다시 조회해 화면에 반영하고, 승인(`active`)이면 홈으로 보낸다(학부모 앱 R32 P9 와 같은 동작).
+/// 승인 대기 화면은 상태를 한 번만 조회해, 관리자가 승인·거절해도 앱을 껐다 켜야 알 수 있었다.
+/// [상태 다시 확인] 은 다시 조회해 화면에 반영하고, 승인(`active`)이면 홈으로 보낸다(학부모 앱과 같은 동작).
 class _StubAuthRepository implements AuthRepository {
   /// `signupStatus` 호출 횟수 — [다시 확인] 이 실제로 서버를 다시 부르는지 본다.
   int signupStatusCalls = 0;
@@ -245,7 +245,7 @@ void main() {
     expect(find.byType(ManagerHomeScreen), findsNothing);
   });
 
-  // R52 M6 — 승인은 관계자가 따로 하므로 앱이 돌아오면 바로 다시 보고, 자동 확인이 실패해도 오류 화면으로 바꾸지
+  // 승인은 관계자가 따로 하므로 앱이 돌아오면 바로 다시 보고, 자동 확인이 실패해도 오류 화면으로 바꾸지
   // 않는다(학부모 앱 `VisiblePoller` 와 같은 동작 · frontend `Ruling 473`).
   group('자동 확인 (R52 M6)', () {
     Future<void> backgroundThenResume(WidgetTester tester) async {

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:baraeda_app/baraeda_app.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,7 +12,6 @@ import 'package:parent_app/core/auth/auth_providers.dart';
 import 'package:parent_app/core/change_requests/domain/change_request.dart';
 import 'package:parent_app/core/change_requests/presentation/change_request_providers.dart';
 import 'package:parent_app/core/network/network_status.dart';
-import 'package:parent_app/core/refresh/visible_poller.dart';
 import 'package:parent_app/core/students/presentation/selected_student.dart';
 import 'package:parent_app/core/students/presentation/student_switcher.dart';
 import 'package:parent_app/core/time/service_date.dart';
@@ -23,7 +23,7 @@ import 'package:parent_app/features/home/presentation/widgets/pending_change_bad
 import 'package:parent_app/features/home/presentation/widgets/run_card.dart';
 
 /// P-03·P-04 홈 화면 — 오늘 회차(§3.5) · 등원 여부 토글(§3.6). 운행 정보만 둔다.
-/// 알림 목록(P-09)은 2026-09-30 부터 아래 탭 막대의 `[알림]` 탭이다(`NotificationsScreen`, R44) —
+/// 알림 목록(P-09)은 아래 탭 막대의 `[알림]` 탭이다(`NotificationsScreen`) —
 /// 홈 맨 아래에 이어 붙이면 끝까지 내려야 보였다.
 ///
 /// 역할 분기는 문자열이 아니라 `roleCapabilitiesProvider.canToggleAttendance`
@@ -39,7 +39,7 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 /// 푸시 SDK 가 아직 없어 앱 안 갱신이 유일한 통지 수단이다(F05-06) — 당기지 않아도 [pollInterval] 마다 · 앱에
 /// 돌아올 때 회차를 다시 받는다. 앱이 백그라운드이거나 다른 화면이 홈 위에 있으면
-/// 멈춘다(`VisiblePoller`, R46 D #7).
+/// 멈춘다(`VisiblePoller`).
 /// 알림은 `AppShell` 이 받는다.
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   late final VisiblePoller _poller = VisiblePoller(
@@ -158,7 +158,7 @@ class _ParentSection extends ConsumerWidget {
   }
 }
 
-/// 불러오기 실패 띠 — 띠만 있으면 화면을 나갔다 들어오는 수밖에 없어 [다시 시도] 를 붙인다(R32 P7).
+/// 불러오기 실패 띠 — 띠만 있으면 화면을 나갔다 들어오는 수밖에 없어 [다시 시도] 를 붙인다.
 class _ErrorBanner extends StatelessWidget {
   const new({required this.message, required this.onRetry});
 
@@ -349,7 +349,7 @@ class _RunsSectionState extends ConsumerState<_RunsSection> {
         const SizedBox(height: BaraedaSpacing.space4),
         runsAsync.when(
           // 갱신이 실패해도 마지막으로 받은 회차를 지우지 않는다 — 엘리베이터·지하철에서 카드가 오류 배너로
-          // 바뀌지 않게, 오류는 카드 위에 따로 알린다(R46). 퇴원 학생 오류는 화면을 대체한다.
+          // 바뀌지 않게, 오류는 카드 위에 따로 알린다. 퇴원 학생 오류는 화면을 대체한다.
           skipError:
               !(runsAsync.hasError && isWithdrawnStudent(runsAsync.error!)),
           loading: () => const Center(child: CircularProgressIndicator()),

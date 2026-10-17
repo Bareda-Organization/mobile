@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:dio/dio.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -24,10 +25,8 @@ import 'package:manager_app/features/roster/data/roster_cipher.dart';
 
 import '../../support/fake_academy_contact_store.dart';
 import '../../support/fake_last_session_store.dart';
-import '../../support/fake_notification_repository.dart';
 import '../../support/fake_roster_key_store.dart';
 import '../../support/fake_run_summary_store.dart';
-import '../../support/fake_token_storage.dart';
 import '../../support/manager_run_fixture.dart';
 
 /// 서버에 닿지 못하는 연결 — 어떤 요청이든 연결 두절로 실패한다.
@@ -52,15 +51,6 @@ class _OfflineMe implements AuthRepository {
 
   @override
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
-}
-
-class _FixedClock implements Clock {
-  const new(this._now);
-
-  final DateTime _now;
-
-  @override
-  DateTime now() => _now;
 }
 
 const Map<String, dynamic> _rosterJson = {
@@ -88,7 +78,7 @@ const Map<String, dynamic> _rosterJson = {
   ],
 };
 
-/// R52 H2(수정 라운드 1) — 통신이 끊긴 채 앱을 새로 켜면 **마지막 성공 응답의 회차 요약**으로 홈 · 선택 회차를 채워
+/// 통신이 끊긴 채 앱을 새로 켜면 **마지막 성공 응답의 회차 요약**으로 홈 · 선택 회차를 채워
 /// 저장 명단이 열리고 비상 신고 후보 회차가 있어야 한다(NFR-01 · M-06 · UF-E-07). 회차 목록 · 명단 조회를 가리지
 /// 않고 실제 통신 실패를 거친다.
 void main() {
@@ -112,7 +102,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          clockProvider.overrideWithValue(_FixedClock(now)),
+          clockProvider.overrideWithValue(FixedClock(now)),
           tokenStorageProvider.overrideWithValue(
             FakeTokenStorage(seedRefreshToken: 'refresh'),
           ),

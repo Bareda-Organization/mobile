@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:baraeda_app/baraeda_app.dart';
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
@@ -113,7 +114,7 @@ Future<void> _open(
   String? route,
 ) async {
   if (route != null) {
-    // 그 알림의 자녀로 선택을 먼저 바꾼다 — 안 바꾸면 B 자녀 알림이 A 자녀 지도로 열린다(R52 M3).
+    // 그 알림의 자녀로 선택을 먼저 바꾼다 — 안 바꾸면 B 자녀 알림이 A 자녀 지도로 열린다.
     // 내 자녀 목록에 없는 id 면 건드리지 않는다 — 그 id 를 기기에 기억하면 고른 자녀 선택을 잃는다.
     final studentId = item.studentId;
     // `GET /me/students` 는 학부모 전용이다 — 학생이 부르면 매번 403 이라 학생은 건너뛴다(본인뿐이라 전환할 자녀도 없다).

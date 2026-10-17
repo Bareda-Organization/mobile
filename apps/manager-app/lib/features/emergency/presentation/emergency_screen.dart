@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:baraeda_app/baraeda_app.dart';
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
@@ -8,7 +9,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/network/failure_messages.dart';
-import 'package:manager_app/core/refresh/visible_poller.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/core/time/run_time_labels.dart';
 import 'package:manager_app/core/ui/academy_call_card.dart';
@@ -29,7 +29,7 @@ import 'package:manager_app/features/offline_queue/domain/send_outcome.dart';
 import 'package:manager_app/features/offline_queue/presentation/offline_queue_providers.dart';
 import 'package:manager_app/features/roster/presentation/roster_providers.dart';
 
-/// 확인 대기 중 비상 이력을 다시 받는 주기 — 실시간 채널이 없는 곳의 대체 수단이라 짧게 잡는다(R53 A3).
+/// 확인 대기 중 비상 이력을 다시 받는 주기 — 실시간 채널이 없는 곳의 대체 수단이라 짧게 잡는다.
 const emergencyAckPollInterval = Duration(seconds: 10);
 
 /// EmergencyScreen — 비상 발신·취소·이력 조회 (API_SPEC §4.14·§4.15, M-15,
@@ -42,12 +42,12 @@ const emergencyAckPollInterval = Duration(seconds: 10);
 /// 판단한다 — 클라이언트가 `발신 시각 + 1분` 을 계산하면 단말·서버 시계가
 /// 어긋났을 때(clock skew) 실제와 다른 창을 보여준다.
 ///
-/// 진입점은 홈·운행·명단 화면 머리말의 `EmergencyButton` 이다(R32 M2 — 그 전에는 라우트만
-/// 있고 갈 길이 없었다). 실시간 확인 반영(WS `emergency_acked`, Ruling 277)은 이 화면이
+/// 진입점은 홈·운행·명단 화면 머리말의 `EmergencyButton` 이다.
+/// 실시간 확인 반영(WS `emergency_acked`, Ruling 277)은 이 화면이
 /// 직접 구독하지 않는다 — `ManagerRunChannelController`(DriveMode·StopRoster 가 호스팅)가
 /// `emergency_acked` 를 받을 때마다 `emergencyListProvider` 를 무효화해 둔다. 그 채널이 없는 곳
 /// (홈 · 알림 · 내 정보 · 운행 준비)에서 보낸 신고는 확인 대기 동안 [emergencyAckPollInterval] 마다 이력을
-/// 다시 받아 "학원이 확인했어요" 로 바뀐다(R53 A3) — 별도 WebSocket 클라이언트를 이 화면에 두지 않는다.
+/// 다시 받아 "학원이 확인했어요" 로 바뀐다 — 별도 WebSocket 클라이언트를 이 화면에 두지 않는다.
 class EmergencyScreen extends ConsumerStatefulWidget {
   const new({super.key});
 
@@ -670,7 +670,7 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
         body: '비상 상황이 생기면 위에서 바로 보낼 수 있어요',
       );
     }
-    // stretch 가 없으면 카드가 내용 폭으로 줄어 가운데에 뜬다(R46-SCREEN 화면 확인 — 폭 ~30%).
+    // stretch 가 없으면 카드가 내용 폭으로 줄어 가운데에 뜬다.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -782,7 +782,7 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
   }
 }
 
-/// 선택된 회차가 없을 때의 막다른 화면 — 안내만 두지 않고 급하면 학원에 바로 전화할 수 있게 한다(R53 A4).
+/// 선택된 회차가 없을 때의 막다른 화면 — 안내만 두지 않고 급하면 학원에 바로 전화할 수 있게 한다.
 class _NoRunNotice extends StatelessWidget {
   const new();
 

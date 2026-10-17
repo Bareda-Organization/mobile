@@ -1,6 +1,8 @@
 import 'dart:async';
 
+import 'package:baraeda_app/baraeda_app.dart';
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
@@ -10,7 +12,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/core/auth/user_role.dart';
-import 'package:manager_app/core/constants/api_constants.dart';
 import 'package:manager_app/core/run/manager_connection.dart';
 import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
@@ -55,7 +56,7 @@ class _FakeRosterRepository implements RosterRepository {
   final SendOutcome<RiderUpdateResult>? updateOutcome;
   final Failure? updateFailure;
 
-  /// R46 — 이 번째(1부터) 명단 조회부터 실패시킨다. 갱신 실패 뒤 마지막 명단이 남는지 보는 시험용.
+  /// 이 번째(1부터) 명단 조회부터 실패시킨다. 갱신 실패 뒤 마지막 명단이 남는지 보는 시험용.
   final int? failFetchFromCall;
   String? lastAckRunId;
 
@@ -130,37 +131,6 @@ class _FakeRosterRepository implements RosterRepository {
     required String riderId,
     required NoShowContactRequest request,
   }) => throw UnimplementedError('이 파일의 시험 대상이 아니다');
-}
-
-/// 목표 9 검사용 대역 — `managerRunChannelProvider` 는 구체 클래스
-/// `ManagerRunChannelController` 로 타입이 고정돼 있어(`overrideWith` 가
-/// 정확히 그 타입만 받는다) 그 컨트롤러 자체를 가짜로 바꿔치기할 수
-/// 없다(리버팟 3.4.3 `$FunctionalFamilyOverride` — 생성자가 여는 실제
-/// WebSocket 연결도 그대로 남는다). 대신 그 생성자가 유일하게 주입받는
-/// `TokenStorage.readAccessToken()` 을 영원히 끝나지 않는 대기로 만들어,
-/// `_doConnect()` 의 `await` 지점에서 실행이 멈추게 한다 — `StompClient`
-/// 생성·소켓 연결·재연결 타이머가 전부 그 이후 코드라 하나도 실행되지
-/// 않는다. 결과는 `ManagerChannelStatus.connecting`(생성자가 그 값으로
-/// 시작한다)이 고정되고, 실제 컨트롤러 코드를 그대로 쓰면서도 부수효과가
-/// 없는 결정적 시험 상태를 얻는다.
-class _NeverResolvingTokenStorage extends TokenStorage {
-  new()
-    : super(
-        accessTokenKey: 'test_access_token',
-        refreshTokenKey: 'test_refresh_token',
-      );
-
-  @override
-  Future<String?> readAccessToken() => Completer<String?>().future;
-}
-
-class _FixedClock implements Clock {
-  const new(this._now);
-
-  final DateTime _now;
-
-  @override
-  DateTime now() => _now;
 }
 
 Widget _wrap(Widget child, List<Override> overrides) {
@@ -281,7 +251,7 @@ void main() {
     expect(image.cacheManager, same(studentPhotoCacheManager));
   });
 
-  // R39 Ruling 400 — 서버 seq 는 경유 지점 자리(2)를 비운 채 1·3 으로 온다. 명단 머리가 그 값을 그대로 쓰면
+  // 서버 seq 는 경유 지점 자리(2)를 비운 채 1·3 으로 온다. 명단 머리가 그 값을 그대로 쓰면
   // "1. A · 3. B" 로 번호가 건너뛰고 지도 핀(경유 지점을 뺀 연속 번호 1·2)과 어긋난다.
   testWidgets('정류장 머리 번호는 서버 seq 가 아니라 경유 지점을 뺀 연속 번호다', (tester) async {
     const roster = RosterResponse(
@@ -572,7 +542,7 @@ void main() {
         todayRunsProvider.overrideWith(
           (ref) async => [_managerRun(ackRequired: false)],
         ),
-        // 큐에 실제로 쌓인 것으로 답한다 — 안내는 큐 목록에서 그린다(R46).
+        // 큐에 실제로 쌓인 것으로 답한다 — 안내는 큐 목록에서 그린다.
         pendingRequestsProvider.overrideWith(
           (ref) async => [
             PendingRequestSummary(
@@ -588,7 +558,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // 큐에 이미 쌓인 학생 행은 [탑승] 대신 "전송 대기" 다(R46) — 이 시험은 안내 문구만 본다.
+    // 큐에 이미 쌓인 학생 행은 [탑승] 대신 "전송 대기" 다 — 이 시험은 안내 문구만 본다.
     expect(find.text('처리되지 않았어요 · 대기 중 1건'), findsOneWidget);
   });
 
@@ -647,7 +617,7 @@ void main() {
         selectedRunIdProvider.overrideWith((ref) => runId),
         rosterRepositoryProvider.overrideWithValue(fakeRepo),
         currentUserRoleProvider.overrideWith((ref) => UserRole.escort),
-        clockProvider.overrideWithValue(_FixedClock(pressedAt)),
+        clockProvider.overrideWithValue(FixedClock(pressedAt)),
         todayRunsProvider.overrideWith(
           (ref) async => [_managerRun(ackRequired: false)],
         ),
@@ -784,7 +754,7 @@ void main() {
     // 분기 바깥에 있다"는 구조를 확인하는 데는 같다.
     List<Override> overridesWithBanner(List<Override> base) => [
       ...base,
-      tokenStorageProvider.overrideWithValue(_NeverResolvingTokenStorage()),
+      tokenStorageProvider.overrideWithValue(NeverResolvingTokenStorage()),
     ];
 
     testWidgets('명단이 로딩 중이어도 배너가 뜬다', (tester) async {
@@ -846,7 +816,7 @@ void main() {
     });
   });
 
-  // R46 A — 갱신이 실패해도 마지막 명단을 지우지 않는다. 오류는 목록 위에 따로 알린다.
+  // 갱신이 실패해도 마지막 명단을 지우지 않는다. 오류는 목록 위에 따로 알린다.
   testWidgets('R46 명단 갱신이 실패해도 마지막 명단이 남고 오류와 [다시 시도] 를 알린다', (tester) async {
     final fakeRepo = _FakeRosterRepository(
       roster: _roster(),
@@ -874,7 +844,7 @@ void main() {
     expect(find.text('다시 시도'), findsOneWidget);
   });
 
-  // R46 A — 글자 버튼 4개가 제목을 밀어내 제목이 사라졌다. 앱바에는 비상만 남긴다.
+  // 글자 버튼 4개가 제목을 밀어내 제목이 사라졌다. 앱바에는 비상만 남긴다.
   testWidgets('R46 머리줄에는 제목과 비상만 있고 나머지 단추는 본문 위 줄에 있다', (tester) async {
     tester.view.physicalSize = const Size(375 * 3, 812 * 3);
     tester.view.devicePixelRatio = 3;

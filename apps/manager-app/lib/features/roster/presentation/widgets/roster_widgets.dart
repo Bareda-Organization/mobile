@@ -1,7 +1,7 @@
+import 'package:baraeda_app/baraeda_app.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:manager_app/core/constants/api_constants.dart';
 import 'package:manager_app/core/time/run_time_labels.dart';
 import 'package:manager_app/features/roster/data/models/roster_response.dart';
 import 'package:manager_app/features/roster/presentation/roster_photo.dart';
@@ -420,7 +420,7 @@ class RosterStudentTile extends StatelessWidget {
             ),
             if (actions != null) ...[
               const SizedBox(height: 12),
-              // 응답을 기다리는 동안 흐려지기만 하면 눌렸는지 알 수 없다 — 단추 옆에 진행 표시를 돌린다(R46).
+              // 응답을 기다리는 동안 흐려지기만 하면 눌렸는지 알 수 없다 — 단추 옆에 진행 표시를 돌린다.
               if (busy)
                 Row(
                   children: [

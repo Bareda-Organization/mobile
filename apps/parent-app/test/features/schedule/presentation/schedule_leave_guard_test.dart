@@ -1,4 +1,4 @@
-import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,8 +19,8 @@ import 'package:parent_app/features/schedule/presentation/daily_change_screen.da
 import 'package:parent_app/features/schedule/presentation/schedule_providers.dart';
 import 'package:parent_app/features/schedule/presentation/weekly_address_screen.dart';
 
-/// R32 P14 — 주소·변경 요청을 적다가 뒤로 가면 확인 없이 입력이 사라졌다. R48 에서 일정 화면이 탭이 되고
-/// 편집 둘이 하위 화면(요일별 주소 · 일일 변경)이 되었다 — 두 화면 모두 같은 확인을 거친다.
+/// 주소·변경 요청을 적다가 뒤로 가면 확인 없이 입력이 사라졌다. 일정 화면은 탭이고
+/// 편집 둘은 하위 화면(요일별 주소 · 일일 변경)이다 — 두 화면 모두 같은 확인을 거친다.
 /// 앞 화면 → [path] 로 들어가 Android 뒤로가기(`handlePopRoute`)를 눌러 본다.
 Future<void> _pumpSchedule(
   WidgetTester tester, {
@@ -55,7 +55,7 @@ Future<void> _pumpSchedule(
       retry: (_, _) => null,
       overrides: [
         // 출발 08:00 보다 한참 이른 ① 구간.
-        clockProvider.overrideWithValue(_FixedClock(DateTime(2026, 9, 12, 7))),
+        clockProvider.overrideWithValue(FixedClock(DateTime(2026, 9, 12, 7))),
         currentUserRoleProvider.overrideWith((ref) => UserRole.parent),
         myStudentsProvider.overrideWith(
           (ref) async => [
@@ -97,14 +97,6 @@ Future<void> _pumpSchedule(
   );
   await tester.tap(find.text('일정 열기'));
   await tester.pumpAndSettle();
-}
-
-class _FixedClock implements Clock {
-  const new(this._value);
-  final DateTime _value;
-
-  @override
-  DateTime now() => _value;
 }
 
 void main() {

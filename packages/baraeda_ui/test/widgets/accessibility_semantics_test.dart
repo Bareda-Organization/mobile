@@ -54,17 +54,6 @@ void main() {
         NotificationTile,
         ['늦어짐 안내', '서준', '지연', '오전 8시 58분'],
       ),
-      'StatCard': (
-        const StatCard(label: '탑승', value: '12', unit: '명', sub: '전체'),
-        StatCard,
-        ['탑승', '12', '전체'],
-      ),
-      // 이름 뒤 2자 이니셜('서준')도 낭독되면 '서준' 이 두 번 나온다.
-      'StudentRow': (
-        const StudentRow(name: '김서준', meta: '강남역'),
-        StudentRow,
-        ['서준', '강남역'],
-      ),
     };
     for (final entry in cases.entries) {
       testWidgets(entry.key, (tester) async {
@@ -198,17 +187,6 @@ void main() {
     );
 
     final size = tester.getSize(find.byType(BaraedaIconButton));
-    expect(size.shortestSide, greaterThanOrEqualTo(BaraedaSpacing.tapMin));
-  });
-
-  testWidgets('StudentRow 보호자 전화 버튼은 터치 최소 48 이상이다', (tester) async {
-    await _pump(
-      tester,
-      StudentRow(name: '김서준', phone: '010-0000-0000', onCall: () {}),
-    );
-
-    // 행 전체(첫 InkWell)가 아니라 전화 버튼(마지막 InkWell)의 크기.
-    final size = tester.getSize(find.byType(InkWell).last);
     expect(size.shortestSide, greaterThanOrEqualTo(BaraedaSpacing.tapMin));
   });
 }

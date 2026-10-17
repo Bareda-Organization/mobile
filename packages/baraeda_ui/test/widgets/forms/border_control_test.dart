@@ -91,18 +91,6 @@ void main() {
         expect(border.top.color, colors.borderControl);
       });
 
-      testWidgets('지연 선택 칩(선택 전)은 borderControl', (tester) async {
-        await pump(tester, DelayPicker(onChanged: (_) {}));
-        final borders = tester
-            .widgetList<Container>(find.byType(Container))
-            .map((c) => c.decoration)
-            .whereType<BoxDecoration>()
-            .map((d) => d.border)
-            .whereType<Border>()
-            .map((b) => b.top.color);
-        expect(borders, contains(colors.borderControl));
-      });
-
       testWidgets('코드 입력 칸(입력 전)은 borderControl', (tester) async {
         await pump(
           tester,

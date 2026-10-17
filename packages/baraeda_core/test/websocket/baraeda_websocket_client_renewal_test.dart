@@ -7,8 +7,9 @@ import 'package:flutter_secure_storage_platform_interface/flutter_secure_storage
 import 'package:flutter_test/flutter_test.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
-// 접근 토큰 만료 전 무중단 갈아타기(R46-LATERRT C-14) — 실제 소켓을 받는 가짜 STOMP 서버로 순서를 잰다.
-// 판정 대상은 "만료 전 재발급 → 두 번째 연결 → 구독 이전 → 확인 대기 → 옛 연결 종료" 한 줄기다.
+// 접근 토큰 만료 전 갱신(Ruling 901) — 실제 소켓을 받는 가짜 STOMP 서버로 순서를 잰다.
+// 판정 대상은 "만료 lead 전 재발급 → 지금 연결을 닫음 → 새 토큰으로 다시 접속(연결은 언제나 1개) →
+// 화면이 `connected` 를 받아 재구독 · REST 재조회 한 번" 한 줄기다.
 
 class _FakeSecureStoragePlatform
     with MockPlatformInterfaceMixin
@@ -57,9 +58,8 @@ class _FakeSecureStoragePlatform
   @override
   Future<SecureStorageUpgradeStatus> checkUpgradeStatus({
     required Map<String, String> options,
-  }) async => const SecureStorageUpgradeStatus(
-    state: SecureStorageUpgradeState.ok,
-  );
+  }) async =>
+      const SecureStorageUpgradeStatus(state: SecureStorageUpgradeState.ok);
 }
 
 Future<TokenStorage> _storageWith(String accessToken) async {
@@ -82,13 +82,10 @@ String _jwtExpiringIn(Duration remaining) {
 
 const _destination = '/topic/a';
 
-// 시험이 시간을 줄여 쓴다 — 운영 값(60초 전 · 확인 대기 1.5초 · 쌍둥이 5초)은
-// `TokenRenewalTiming` 기본값.
+// 시험이 시간을 줄여 쓴다 — 운영 값(60초 전)은 `TokenRenewalTiming` 기본값.
 const _fastTiming = TokenRenewalTiming(
   lead: Duration(seconds: 3),
   minDelay: Duration.zero,
-  subscribeSettle: Duration(milliseconds: 200),
-  dedupTail: Duration(milliseconds: 300),
 );
 
 String _envelope(int n) =>
@@ -104,12 +101,8 @@ class _Conn {
   bool closed = false;
 }
 
-/// 연결을 여러 개 받는 가짜 서버 — 연결별 `Authorization`·구독·닫힘을 순서대로 [events] 에 남긴다.
+/// 연결을 여러 개 받는 가짜 서버 — 연결별 CONNECT · DISCONNECT · 구독 · 닫힘을 순서대로 [events] 에 남긴다.
 class _RenewalServer {
-  new({this.rejectSubscribeOnConnection});
-
-  /// 이 번호의 연결이 `SUBSCRIBE` 를 하면 `ERROR FORBIDDEN` 으로 거부하고 닫는다.
-  final int? rejectSubscribeOnConnection;
   final List<_Conn> conns = [];
   final List<String> events = [];
   HttpServer? _server;
@@ -135,24 +128,19 @@ class _RenewalServer {
               conn.auth = line.substring('Authorization:'.length);
             }
           }
+          events.add('connect:${conn.index}');
           _send(conn, 'CONNECTED\nversion:1.2\n\n\x00');
         } else if (text.startsWith('SUBSCRIBE')) {
           final id = RegExp(r'id:(\S+)').firstMatch(text)?.group(1);
-          final destination = RegExp(
-            r'destination:(\S+)',
-          ).firstMatch(text)?.group(1);
+          final destination = RegExp(r'destination:(\S+)')
+              .firstMatch(text)
+              ?.group(1);
           events.add('subscribe:${conn.index}:$destination');
           if (id != null) conn.subscriptionIds.add(id);
-          if (conn.index == rejectSubscribeOnConnection) {
-            _send(conn, 'ERROR\nmessage:FORBIDDEN\ncontent-length:0\n\n\x00');
-            unawaited(socket.close());
-          }
-        } else if (text.startsWith('UNSUBSCRIBE')) {
-          events.add('unsubscribe:${conn.index}');
         } else if (text.startsWith('DISCONNECT')) {
+          events.add('disconnect:${conn.index}');
           // 실서버처럼 DISCONNECT 의 receipt 에 답해야 클라이언트가 소켓을 닫는다.
           final receipt = RegExp(r'receipt:(\S+)').firstMatch(text)?.group(1);
-          // 시험 정리 중 서버가 먼저 소켓을 닫았으면 답할 곳이 없다.
           if (receipt != null) {
             _send(conn, 'RECEIPT\nreceipt-id:$receipt\n\n\x00');
           }
@@ -174,8 +162,7 @@ class _RenewalServer {
     }
   }
 
-  /// [index] 번 연결의 구독자에게 MESSAGE 하나를 보낸다 — `content-type` 이 없으면
-  /// 본문이 바이너리가 된다.
+  /// [index] 번 연결의 구독자에게 MESSAGE 하나를 보낸다.
   void push(int index, String body) {
     final conn = conns[index];
     conn.socket.add(
@@ -207,7 +194,7 @@ Future<void> _connected(BaraedaWebSocketClient client) => client.connectionState
     .timeout(const Duration(seconds: 5));
 
 void main() {
-  group('BaraedaWebSocketClient — 만료 전 무중단 갱신(C-14)', () {
+  group('BaraedaWebSocketClient — 만료 전 갱신(Ruling 901)', () {
     late _RenewalServer server;
 
     tearDown(() async {
@@ -217,12 +204,9 @@ void main() {
     Future<({BaraedaWebSocketClient client, List<String> refreshed})> start({
       required Future<String?> Function(int call) refresh,
       String? initialToken,
-      int? rejectSubscribeOnConnection,
       TokenRenewalTiming timing = _fastTiming,
     }) async {
-      server = _RenewalServer(
-        rejectSubscribeOnConnection: rejectSubscribeOnConnection,
-      );
+      server = _RenewalServer();
       final port = await server.start();
       final refreshed = <String>[];
       var calls = 0;
@@ -243,97 +227,119 @@ void main() {
       return (client: client, refreshed: refreshed);
     }
 
-    test('만료 전에 새 토큰으로 두 번째 연결을 열고, 구독을 옮긴 뒤에야 옛 연결을 닫는다', () async {
+    test('만료 전에 재발급해 지금 연결을 닫은 뒤 새 토큰으로 다시 붙는다 — 연결은 언제나 하나', () async {
       final fresh = _jwtExpiringIn(const Duration(minutes: 10));
       final started = await start(refresh: (_) async => fresh);
       final client = started.client..connect();
       await _connected(client);
-      client.subscribe(_destination, (_) {});
 
-      // 소켓을 받은 것과 CONNECT 프레임이 도착한 것은 다르다 — 부하가 있으면 사이가 벌어진다.
       await _until(
         () => server.conns.length == 2 && server.conns[1].auth != null,
-        what: '두 번째 연결의 CONNECT',
+        what: '새 토큰으로 다시 접속',
       );
+      await _until(() => server.conns[0].closed, what: '옛 연결 종료');
+
       expect(server.conns[1].auth, 'Bearer $fresh');
-      await _until(() => server.conns[0].closed, what: '옛 연결 종료');
-
-      final subscribed = server.events.indexOf('subscribe:1:$_destination');
-      final closed = server.events.indexOf('closed:0');
-      expect(subscribed, isNonNegative, reason: '구독이 새 연결로 옮겨지지 않았다');
+      // 옛 연결에 DISCONNECT 를 보낸 뒤에야 새 연결의 CONNECT 가 온다.
       expect(
-        subscribed,
-        lessThan(closed),
-        reason: '새 연결에 구독을 걸기 전에 옛 연결을 닫았다',
+        server.events.indexOf('disconnect:0'),
+        lessThan(server.events.indexOf('connect:1')),
+        reason: '옛 연결을 닫기 전에 새 연결을 열었다 — 두 번째 연결이 생겼다',
       );
+      expect(server.conns, hasLength(2));
     });
 
-    test('갈아타는 동안 연결 상태는 바뀌지도 알리지도 않는다', () async {
+    test(
+      '다시 붙을 때 connecting → connected 가 한 번씩 나가 화면이 재구독 · REST 재조회를 한 번 한다',
+      () async {
+        final started = await start(
+          refresh: (_) async => _jwtExpiringIn(const Duration(minutes: 10)),
+        );
+        final client = started.client..connect();
+        await _connected(client);
+        final states = <WsConnectionState>[];
+        final sub = client.connectionState.listen(states.add);
+        addTearDown(sub.cancel);
+
+        await _until(() => server.conns.length == 2, what: '다시 접속');
+        await _until(() => states.contains(WsConnectionState.connected));
+        await Future<void>.delayed(const Duration(milliseconds: 300));
+
+        expect(states, [
+          WsConnectionState.connecting,
+          WsConnectionState.connected,
+        ]);
+        expect(server.conns, hasLength(2), reason: '옛 연결의 닫힘을 끊김으로 오인해 또 붙었다');
+      },
+    );
+
+    test('화면이 connected 마다 구독하면 다시 붙은 새 연결의 방송을 받는다', () async {
       final started = await start(
         refresh: (_) async => _jwtExpiringIn(const Duration(minutes: 10)),
       );
-      final client = started.client..connect();
-      await _connected(client);
-      final states = <WsConnectionState>[];
-      final sub = client.connectionState.listen(states.add);
-      addTearDown(sub.cancel);
-
-      await _until(() => server.conns.length == 2);
-      await _until(() => server.conns[0].closed, what: '옛 연결 종료');
-      await Future<void>.delayed(const Duration(milliseconds: 300));
-
-      expect(states, isEmpty);
-      expect(client.state, WsConnectionState.connected);
-      expect(server.conns, hasLength(2), reason: '옛 연결의 닫힘을 끊김으로 오인해 재연결했다');
-    });
-
-    test('겹치는 동안 두 연결로 같은 방송이 와도 한 번만 전달하고, 닫은 뒤 늦게 온 쌍둥이도 거른다', () async {
-      final started = await start(
-        refresh: (_) async => _jwtExpiringIn(const Duration(minutes: 10)),
-      );
-      final client = started.client..connect();
-      await _connected(client);
+      final client = started.client;
       final received = <String>[];
-      client.subscribe(_destination, (e) => received.add(e.runId));
+      // 화면과 같은 방식 — connected 를 받을 때마다 구독한다.
+      final sub = client.connectionState
+          .where((s) => s == WsConnectionState.connected)
+          .listen((_) {
+            client.subscribe(_destination, (e) => received.add(e.runId));
+          });
+      addTearDown(sub.cancel);
+      client.connect();
 
       await _until(
         () => server.events.contains('subscribe:1:$_destination'),
-        what: '새 연결 구독',
+        what: '다시 붙은 연결의 구독',
       );
-      // 겹치는 구간 — 1번은 두 연결 모두로, 2번은 옛 연결로만 먼저 온다.
       server
-        ..push(0, _envelope(1))
-        ..push(1, _envelope(1))
-        ..push(0, _envelope(2));
-      await Future<void>.delayed(const Duration(milliseconds: 100));
-      expect(received, ['1', '2']);
+        ..push(0, _envelope(1)) // 닫힌 옛 연결의 늦은 방송은 버린다
+        ..push(1, _envelope(2));
+      await Future<void>.delayed(const Duration(milliseconds: 150));
 
-      await _until(() => server.conns[0].closed, what: '옛 연결 종료');
-      server
-        ..push(1, _envelope(2)) // 닫은 뒤 새 연결로 늦게 온 2번의 쌍둥이
-        ..push(1, _envelope(3));
-      await Future<void>.delayed(const Duration(milliseconds: 100));
-      expect(received, ['1', '2', '3']);
+      expect(received, ['2']);
     });
 
-    test('갈아탄 뒤 구독 해제는 새 연결에 UNSUBSCRIBE 를 보낸다', () async {
+    test('갱신으로 다시 붙는 동안만 isRenewing 이 참이다 — 끊겨서 다시 붙는 것은 아니다', () async {
+      final started = await start(
+        refresh: (_) async => _jwtExpiringIn(const Duration(minutes: 10)),
+      );
+      final client = started.client;
+      // `connecting` 이벤트를 받는 쪽(화면)이 그 시점에 읽는 값을 그대로 모은다.
+      final renewingAtConnecting = <bool>[];
+      final sub = client.connectionState
+          .where((s) => s == WsConnectionState.connecting)
+          .listen((_) => renewingAtConnecting.add(client.isRenewing));
+      addTearDown(sub.cancel);
+      client.connect();
+      await _until(() => server.conns.length == 2, what: '갱신 접속');
+      await _until(() => client.state == WsConnectionState.connected);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      // 첫 접속의 connecting 은 갱신이 아니고, 갱신으로 다시 붙을 때의 connecting 은 갱신이다.
+      expect(renewingAtConnecting.take(2), [false, true]);
+      expect(client.isRenewing, isFalse, reason: '붙고 나면 갱신 표식은 꺼진다');
+    });
+
+    test('갱신으로 붙으려다 실패하면 isRenewing 이 꺼져 일반 재연결(안내 표시)로 돌아간다', () async {
       final started = await start(
         refresh: (_) async => _jwtExpiringIn(const Duration(minutes: 10)),
       );
       final client = started.client..connect();
       await _connected(client);
-      final unsubscribe = client.subscribe(_destination, (_) {});
-
-      await _until(() => server.conns.length == 2 && server.conns[0].closed);
-      unsubscribe();
+      // 갱신 접속이 시작되자마자 서버를 닫는다.
+      await _until(() => server.conns.length == 2, what: '갱신 접속');
+      await server.stop();
       await _until(
-        () => server.events.contains('unsubscribe:1'),
-        what: '새 연결의 UNSUBSCRIBE',
+        () => client.state == WsConnectionState.reconnecting,
+        what: '재연결 대기',
       );
+
+      expect(client.isRenewing, isFalse);
     });
 
     test('만료 lead 전에 시작한다 — 일찍도 늦게도 아니다', () async {
-      // 만료까지 약 5~6초, lead 3초 → 갈아타기는 2~3초째.
+      // 만료까지 약 5~6초, lead 3초 → 다시 붙기는 2~3초째.
       final started = await start(
         refresh: (_) async => _jwtExpiringIn(const Duration(minutes: 10)),
         initialToken: _jwtExpiringIn(const Duration(seconds: 6)),
@@ -342,12 +348,12 @@ void main() {
       await _connected(client);
 
       await Future<void>.delayed(const Duration(milliseconds: 1200));
-      expect(server.conns, hasLength(1), reason: '만료 lead 보다 일찍 갈아탔다');
+      expect(server.conns, hasLength(1), reason: '만료 lead 보다 일찍 다시 붙었다');
       await Future<void>.delayed(const Duration(milliseconds: 2300));
-      expect(server.conns, hasLength(2), reason: '만료 lead 가 지났는데 갈아타지 않았다');
+      expect(server.conns, hasLength(2), reason: '만료 lead 가 지났는데 다시 붙지 않았다');
     });
 
-    test('갈아탄 뒤에도 새 토큰의 만료 기준으로 다음 갈아타기가 예약된다', () async {
+    test('다시 붙은 뒤에도 새 토큰의 만료 기준으로 다음 갱신이 예약된다', () async {
       final started = await start(
         refresh: (call) async => _jwtExpiringIn(
           call == 1 ? const Duration(seconds: 5) : const Duration(minutes: 10),
@@ -356,42 +362,11 @@ void main() {
       final client = started.client..connect();
       await _connected(client);
 
-      await _until(() => server.conns.length == 3, what: '두 번째 갈아타기');
+      await _until(() => server.conns.length == 3, what: '두 번째 갱신');
       expect(started.refreshed, hasLength(2));
     });
 
-    test('갈아타는 중에 새로 건 구독도 새 연결로 옮겨져 옛 연결을 닫은 뒤에도 방송을 받는다', () async {
-      final started = await start(
-        refresh: (_) async => _jwtExpiringIn(const Duration(minutes: 10)),
-        timing: const TokenRenewalTiming(
-          lead: Duration(seconds: 3),
-          minDelay: Duration.zero,
-          subscribeSettle: Duration(milliseconds: 800),
-          dedupTail: Duration(milliseconds: 300),
-        ),
-      );
-      final client = started.client..connect();
-      await _connected(client);
-      final received = <String>[];
-
-      await _until(
-        () => server.conns.length == 2 && server.conns[1].auth != null,
-        what: '두 번째 연결',
-      );
-      await Future<void>.delayed(const Duration(milliseconds: 100));
-      client.subscribe(_destination, (e) => received.add(e.runId));
-      await _until(
-        () => server.events.contains('subscribe:1:$_destination'),
-        what: '새 연결 구독',
-      );
-
-      await _until(() => server.conns[0].closed, what: '옛 연결 종료');
-      server.push(1, _envelope(5));
-      await Future<void>.delayed(const Duration(milliseconds: 100));
-      expect(received, ['5']);
-    });
-
-    test('재발급이 실패하면 연결을 그대로 두고 다른 연결을 열지 않는다', () async {
+    test('재발급이 실패하면 연결을 그대로 두고 다시 붙지 않는다', () async {
       final started = await start(refresh: (_) async => throw Exception('net'));
       final client = started.client..connect();
       await _connected(client);
@@ -407,27 +382,19 @@ void main() {
       expect(client.state, WsConnectionState.connected);
     });
 
-    test('새 연결이 구독을 거부하면 옛 연결을 그대로 쓰고 새 연결만 닫는다', () async {
-      final started = await start(
-        refresh: (_) async => _jwtExpiringIn(const Duration(minutes: 10)),
-        rejectSubscribeOnConnection: 1,
-      );
+    test('재발급이 거절돼 토큰이 없으면 연결을 그대로 둔다 — 만료 뒤 TOKEN_EXPIRED 경로가 받는다', () async {
+      final started = await start(refresh: (_) async => null);
       final client = started.client..connect();
       await _connected(client);
-      final received = <String>[];
-      client.subscribe(_destination, (e) => received.add(e.runId));
 
-      await _until(() => server.conns.length == 2 && server.conns[1].closed);
-      await Future<void>.delayed(const Duration(milliseconds: 400));
+      await Future<void>.delayed(const Duration(seconds: 2));
 
-      expect(server.conns[0].closed, isFalse, reason: '거부된 갈아타기가 옛 연결까지 닫았다');
+      expect(server.conns, hasLength(1));
+      expect(server.conns[0].closed, isFalse);
       expect(client.state, WsConnectionState.connected);
-      server.push(0, _envelope(7));
-      await Future<void>.delayed(const Duration(milliseconds: 100));
-      expect(received, ['7']);
     });
 
-    test('disconnect() 하면 예약된 갈아타기를 취소한다', () async {
+    test('disconnect() 하면 예약된 갱신을 취소한다', () async {
       final started = await start(
         refresh: (_) async => _jwtExpiringIn(const Duration(minutes: 10)),
       );
@@ -441,29 +408,23 @@ void main() {
       expect(server.conns, hasLength(1));
     });
 
-    test('갈아타는 중에 disconnect() 하면 두 연결을 모두 닫는다', () async {
-      final started = await start(
-        refresh: (_) async => _jwtExpiringIn(const Duration(minutes: 10)),
-      );
+    test('재발급을 기다리는 중에 disconnect() 하면 다시 붙지 않는다', () async {
+      final release = Completer<String?>();
+      final started = await start(refresh: (_) => release.future);
       final client = started.client..connect();
       await _connected(client);
-      client.subscribe(_destination, (_) {});
+      // 갱신 시각이 지나 재발급 호출이 걸릴 때까지 기다린다.
+      await Future<void>.delayed(const Duration(milliseconds: 1500));
 
-      await _until(
-        () => server.conns.length == 2 && server.conns[1].auth != null,
-        what: '두 번째 연결',
-      );
       client.disconnect();
-      await _until(
-        () => server.conns.every((conn) => conn.closed),
-        what: '두 연결 모두 종료',
-      );
+      release.complete(_jwtExpiringIn(const Duration(minutes: 10)));
+      await Future<void>.delayed(const Duration(milliseconds: 500));
 
+      expect(server.conns, hasLength(1), reason: '로그아웃 뒤에 새 연결을 열었다');
       expect(client.state, WsConnectionState.disconnected);
-      expect(server.conns, hasLength(2));
     });
 
-    test('만료 시각을 읽을 수 없는 토큰이면 갈아타기를 예약하지 않는다', () async {
+    test('만료 시각을 읽을 수 없는 토큰이면 갱신을 예약하지 않는다', () async {
       final started = await start(
         refresh: (_) async => _jwtExpiringIn(const Duration(minutes: 10)),
         initialToken: 'not-a-jwt',

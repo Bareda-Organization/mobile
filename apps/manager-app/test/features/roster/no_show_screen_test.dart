@@ -1,4 +1,4 @@
-import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,15 +10,6 @@ import 'package:manager_app/features/roster/data/models/no_show_contact_request.
 import 'package:manager_app/features/roster/data/models/roster_response.dart';
 import 'package:manager_app/features/roster/presentation/no_show_screen.dart';
 import 'package:manager_app/features/roster/presentation/roster_providers.dart';
-
-class _FixedClock implements Clock {
-  const new(this._now);
-
-  final DateTime _now;
-
-  @override
-  DateTime now() => _now;
-}
 
 /// 연락 이력은 서버가 준 `no_show_case.contacts[]` 를 그대로 그린다(`Ruling 823`) — 시각 · 수단 ·
 /// 결과뿐이다.
@@ -64,7 +55,7 @@ void main() {
       ProviderScope(
         overrides: [
           clockProvider.overrideWithValue(
-            _FixedClock(DateTime(2026, 10, 3, 12, 33, 8)),
+            FixedClock(DateTime(2026, 10, 3, 12, 33, 8)),
           ),
           selectedRunIdProvider.overrideWith((ref) => 'run-1'),
           rosterProvider.overrideWith((ref) async => _rosterWith(contacts)),

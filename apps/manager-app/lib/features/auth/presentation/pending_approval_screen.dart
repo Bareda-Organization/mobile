@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:baraeda_app/baraeda_app.dart';
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
@@ -8,10 +9,8 @@ import 'package:intl/intl.dart';
 import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/auth/account_session.dart';
 import 'package:manager_app/core/launcher/device_launchers.dart';
-import 'package:manager_app/core/refresh/visible_poller.dart';
 import 'package:manager_app/core/ui/academy_call_card.dart';
 import 'package:manager_app/core/ui/bottom_action_bar.dart';
-import 'package:manager_app/core/ui/confirm_dialog.dart';
 import 'package:manager_app/core/ui/info_rows_card.dart';
 import 'package:manager_app/core/ui/manager_header.dart';
 import 'package:manager_app/features/auth/presentation/widgets/academy_picker.dart';
@@ -38,7 +37,7 @@ class _PendingApprovalScreenState extends ConsumerState<PendingApprovalScreen> {
   DateTime? _checkedAt;
 
   /// 승인은 관계자가 따로 하므로 이 화면이 스스로 상태를 다시 본다(M11, 시안 "30초마다"). 앱이 보이는 동안만
-  /// 간격마다, 백그라운드에서 돌아오면 간격을 기다리지 않고 바로 본다(R52 M6 · frontend `Ruling 473`).
+  /// 간격마다, 백그라운드에서 돌아오면 간격을 기다리지 않고 바로 본다(frontend `Ruling 473`).
   static const _autoRefreshInterval = Duration(seconds: 30);
   late final VisiblePoller _poller = VisiblePoller(
     interval: _autoRefreshInterval,
@@ -87,7 +86,7 @@ class _PendingApprovalScreenState extends ConsumerState<PendingApprovalScreen> {
 
   /// [상태 다시 확인] — 서버에서 다시 받아 화면에 반영한다. 승인(`active`)이 났으면 `/me` 를
   /// 적용해(저장 역할 포함) 라우터가 홈으로 보내게 한다(안 바꾸면 승인된 뒤에도 이 화면이 대기 중으로 남는다).
-  /// `parent_app` 의 같은 화면과 같은 동작이다(R33 M3).
+  /// `parent_app` 의 같은 화면과 같은 동작이다.
   Future<void> _refreshStatus() async {
     final future = ref.read(authRepositoryProvider).signupStatus();
     setState(() {
@@ -113,7 +112,7 @@ class _PendingApprovalScreenState extends ConsumerState<PendingApprovalScreen> {
   Future<void> _confirmReapply() async {
     final academy = _newAcademy;
     if (academy == null || _submittingReapply) return;
-    final confirmed = await confirmAction(
+    final confirmed = await showConfirmDialog(
       context,
       title: '가입을 다시 신청할까요?',
       body: '신청 학원 · ${academy.name}\n신청한 뒤에는 되돌릴 수 없어요.',

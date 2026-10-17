@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -43,7 +44,7 @@ StudentRun _fixtureRun({
   direction: RunDirection.toAcademy,
   // ⚠ 서버가 주는 값은 **호차 이름 그 자체**다(`ERD bus.bus_no varchar(20)` · 시드 '1호차'·'2호차'
   // · `API_SPEC` "호차"). 맨 숫자 '1' 로 두면 화면이 단위를 덧붙여도 시험이 못 잡는다 —
-  // 실제로 2026-09-20 까지 "1호차번" 이 그렇게 살아남았다.
+  // "1호차번" 같은 중복이 그렇게 살아남은 적이 있다.
   busNo: '1호차',
   departTime: departTime ?? DateTime(2026, 9, 12, 8),
   runStatus: RunStatus.idle,
@@ -75,7 +76,7 @@ Future<void> _pumpWith(
   );
   await tester.tap(find.byType(BaraedaSwitch));
   await tester.pumpAndSettle();
-  // R32 P4 — 끄기는 확인 창을 거친다. 실패 문구 시험은 확인까지 눌러 요청을 보낸다.
+  // 끄기는 확인 창을 거친다. 실패 문구 시험은 확인까지 눌러 요청을 보낸다.
   if (find.text('탑승 취소').evaluate().isNotEmpty) {
     await tester.tap(find.text('탑승 취소'));
     await tester.pumpAndSettle();
@@ -104,7 +105,7 @@ void main() {
     );
   }
 
-  // ⚠ 2026-09-21 실측 — 서버가 주는 시각은 **UTC 순간**(`2026-09-21T10:40:19Z`)인데
+  // 서버가 주는 시각은 **UTC 순간**(`2026-09-21T10:40:19Z`)인데
   // 화면이 그 값의 `hour`·`minute` 를 그대로 읽어 **9시간 어긋난 시각**을 보여줬다
   // (19:40 출발을 "10:40 출발" 로). `DateTime.parse` 는 오프셋이 붙은 문자열을
   // 언제나 **UTC DateTime** 으로 돌려주므로, 벽시계로 쓰려면 `toLocal()` 이 필요하다.
@@ -278,7 +279,7 @@ void main() {
     expect(find.text('오늘 탑승'), findsNothing);
   });
 
-  // ---- R32 P4 — 확인 창 · 스위치 줄의 지도 이동 제외 · 확정까지 남은 시간 ----
+  // ---- 확인 창 · 스위치 줄의 지도 이동 제외 · 확정까지 남은 시간 ----
 
   /// 호출을 기록하는 가짜 저장소 — 취소하면 요청이 나가지 않는다는 시험에 쓴다.
   Future<_RecordingRunRepository> pumpRecording(
@@ -322,7 +323,7 @@ void main() {
           runRepositoryProvider.overrideWithValue(repository),
           // 기본 시각: 확정 전 회차는 확정 시각 전(①), 확정된 회차는 확정 뒤 출발 전(②).
           clockProvider.overrideWithValue(
-            _FixedClock(
+            FixedClock(
               now ??
                   (confirmed
                       ? DateTime(2026, 9, 12, 7, 45)
@@ -438,7 +439,7 @@ void main() {
     await tester.pumpAndSettle();
   });
 
-  // R32 P8 — 승인 마감이 `2026-09-12 07:30:00.000` 그대로 나왔다. 승인 주체도 사양(UF-P-05)
+  // 승인 마감이 `2026-09-12 07:30:00.000` 그대로 나왔다. 승인 주체도 사양(UF-P-05)
   // 대로 학원 관리자다.
   testWidgets('P8 승인 대기 안내의 마감 시각을 한국어 날짜로 보여준다', (tester) async {
     await pumpRecording(
@@ -464,7 +465,7 @@ void main() {
     expect(find.text('학원 관리자 승인 대기 중이에요 (마감 9월 12일 07:30).'), findsOneWidget);
   });
 
-  // R53 t3 A1 · Ruling 870 — ③ 즉시 반영은 운행이 시작되지 않았어도(출발+10분 경과) 난다. "운행이 시작돼" 로
+  // ③ 즉시 반영은 운행이 시작되지 않았어도(출발+10분 경과) 난다. "운행이 시작돼" 로
   // 단정하면 사실과 다른 안내가 된다.
   testWidgets('A1 ③ 즉시 반영 안내는 운행 시작을 단정하지 않는다', (tester) async {
     await pumpRecording(
@@ -515,15 +516,6 @@ void main() {
 
     expect(find.textContaining('확정까지'), findsNothing);
   });
-}
-
-class _FixedClock implements Clock {
-  const new(this._value);
-
-  final DateTime _value;
-
-  @override
-  DateTime now() => _value;
 }
 
 /// 호출된 `riding` 값을 순서대로 기록한다.

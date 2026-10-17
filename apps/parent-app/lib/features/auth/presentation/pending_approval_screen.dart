@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:baraeda_app/baraeda_app.dart';
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
@@ -9,7 +10,6 @@ import 'package:parent_app/app/di.dart';
 import 'package:parent_app/core/auth/academy_contact.dart';
 import 'package:parent_app/core/auth/account_session.dart';
 import 'package:parent_app/core/devices/presentation/device_registration_panel.dart';
-import 'package:parent_app/core/refresh/visible_poller.dart';
 import 'package:parent_app/core/runs/presentation/run_display.dart';
 import 'package:parent_app/core/ui/korean_particle.dart';
 import 'package:parent_app/core/ui/sticky_action_bar.dart';
@@ -18,7 +18,7 @@ import 'package:parent_app/features/auth/presentation/widgets/approval_progress.
 import 'package:url_launcher/url_launcher.dart';
 
 /// 승인 대기 화면이 상태를 다시 조회하는 간격 — 푸시 SDK 가 없어 이 조회가
-/// 승인·거절을 아는 유일한 길이다(R46 B2 #20). 홈의 `pollInterval`(90초)보다 짧게 둔다:
+/// 승인·거절을 아는 유일한 길이다. 홈의 `pollInterval`(90초)보다 짧게 둔다:
 /// 승인을 기다리는 사람은 이 화면 하나만 보고 있고, 계정 상태 조회 한 건은 가볍다.
 const Duration pendingStatusPollInterval = Duration(seconds: 30);
 
@@ -103,14 +103,14 @@ class _PendingApprovalScreenState extends ConsumerState<PendingApprovalScreen> {
     }
   }
 
-  // F2(2026-09-26) — `settings_screen.dart` 가 만든 확인 대화를 재사용한다
+  // F2 — `settings_screen.dart` 가 만든 확인 대화를 재사용한다
   // (`core/auth/account_session.dart` 의 [confirmLogout]). 이 화면은 이제껏
   // 확인 없이 곧장 [signOut] 을 불렀다 — 두 로그아웃 진입점의 동작이
   // 갈리는 비일관성이었다(FIX-P.md §2).
   Future<void> _logout() => confirmLogout(context, ref);
 
   /// [상태 다시 확인] — 서버에서 다시 받아 화면에 반영한다. 승인(`active`)이 났으면 계정 상태를
-  /// 바꿔 라우터가 홈으로 보내게 한다(안 바꾸면 승인된 뒤에도 이 화면이 대기 중으로 남는다, R32 P9).
+  /// 바꿔 라우터가 홈으로 보내게 한다(안 바꾸면 승인된 뒤에도 이 화면이 대기 중으로 남는다).
   Future<void> _refreshStatus() async {
     final future = _loadStatus();
     setState(() {
@@ -316,7 +316,7 @@ class _StatusBody extends StatelessWidget {
           const SizedBox(height: BaraedaSpacing.space5),
           _InfoCard(status: status),
           const SizedBox(height: BaraedaSpacing.space3),
-          // R32 P9 — 상태를 처음 한 번만 조회해, 승인·거절이 나도 앱을 껐다 켜야 알 수 있었다.
+          // 상태를 처음 한 번만 조회해, 승인·거절이 나도 앱을 껐다 켜야 알 수 있었다.
           BaraedaButton(
             label: '상태 다시 확인',
             icon: 'refresh',

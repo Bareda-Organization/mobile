@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter/services.dart';
+import 'package:baraeda_core/baraeda_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
@@ -11,31 +11,17 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 /// 로 그려지면 되므로 예외는 삼킨다.
 class AcademyContactStorage {
   new({FlutterSecureStorage? storage})
-    : _storage = storage ?? const FlutterSecureStorage();
+    : _slot = SecureSlot(
+        'last_academy_contact',
+        storage: storage ?? const FlutterSecureStorage(),
+      );
 
-  static const _key = 'last_academy_contact';
+  final SecureSlot _slot;
 
-  final FlutterSecureStorage _storage;
+  Future<String?> read() => _slot.read();
 
-  Future<String?> read() async {
-    try {
-      return await _storage.read(key: _key);
-    } on PlatformException {
-      return null;
-    } on MissingPluginException {
-      return null;
-    }
-  }
-
-  Future<void> save(String contact) async {
-    try {
-      await _storage.write(key: _key, value: contact);
-    } on PlatformException {
-      // 기억하지 못해도 이번 화면은 그려진다.
-    } on MissingPluginException {
-      // 위젯 시험처럼 저장소 플러그인이 없는 환경.
-    }
-  }
+  // 기억하지 못해도 이번 화면은 그려진다.
+  Future<void> save(String contact) => _slot.write(contact);
 }
 
 /// 기기에 남긴 문의처 저장소 — 시험이 메모리 대역으로 바꾼다.

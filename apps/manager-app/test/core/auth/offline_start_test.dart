@@ -1,4 +1,5 @@
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -21,10 +22,8 @@ import 'package:manager_app/features/offline_queue/presentation/offline_queue_au
 
 import '../../support/fake_academy_contact_store.dart';
 import '../../support/fake_last_session_store.dart';
-import '../../support/fake_notification_repository.dart';
 import '../../support/fake_roster_key_store.dart';
 import '../../support/fake_run_summary_store.dart';
-import '../../support/fake_token_storage.dart';
 import '../../support/manager_run_fixture.dart';
 
 /// 회차 목록은 비어 있다 — 기사 계정이 확인되면 앱이 위치 송신 재개용으로 목록을 한 번 부른다.
@@ -68,7 +67,7 @@ class _MeRepository implements AuthRepository {
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
 }
 
-/// R52 H2 — 통신이 끊긴 채 앱을 새로 켜도 마지막으로 확인한 역할로 들어가 저장 명단 · 대기열 · 비상 · 학원 전화가
+/// 통신이 끊긴 채 앱을 새로 켜도 마지막으로 확인한 역할로 들어가 저장 명단 · 대기열 · 비상 · 학원 전화가
 /// 열려야 한다(NFR-01 · M-06). 인증 거절(401)은 지금처럼 로그인 화면이다.
 void main() {
   const network = Failure.network();

@@ -1,3 +1,4 @@
+import 'package:baraeda_app/baraeda_app.dart';
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
@@ -5,12 +6,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/auth/account_session.dart';
 import 'package:manager_app/core/auth/auth_providers.dart';
-import 'package:manager_app/core/auth/credential_limits.dart';
 import 'package:manager_app/core/network/failure_messages.dart';
 import 'package:manager_app/core/ui/bottom_action_bar.dart';
 import 'package:manager_app/core/ui/manager_header.dart';
 
-/// AUTH-07 · API_SPEC §2.8 — 비밀번호 변경(기사·동승자 공통, R32 M13).
+/// AUTH-07 · API_SPEC §2.8 — 비밀번호 변경(기사 · 동승자 공통).
 ///
 /// 학부모 앱의 같은 화면을 본보기로 이 앱 안에 만들었다(공유 패키지로 옮기지 않는다). 성공하면
 /// 서버가 기존 refresh 토큰을 전량 무효화한다(§2.8) — 그래서 이 기기도 로그아웃해 다시 로그인하게

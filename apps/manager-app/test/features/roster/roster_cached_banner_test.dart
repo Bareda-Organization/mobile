@@ -1,6 +1,4 @@
-import 'dart:async';
-
-import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -15,15 +13,6 @@ import 'package:manager_app/features/roster/presentation/roster_providers.dart';
 import 'package:manager_app/features/roster/presentation/roster_screen.dart';
 
 import '../../support/manager_run_fixture.dart';
-
-/// M-M3(UF-E-07) — 서버에 닿지 못해 기기에 저장해 둔 명단을 보고 있으면 화면이 그렇다고 밝히고, 연결이 돌아왔는지
-/// 주기마다 다시 받아 본다. 서버에서 방금 받은 명단에는 이 안내가 없다.
-class _NeverResolvingTokenStorage extends TokenStorage {
-  new() : super(accessTokenKey: 'a', refreshTokenKey: 'r');
-
-  @override
-  Future<String?> readAccessToken() => Completer<String?>().future;
-}
 
 RosterResponse _roster({DateTime? cachedAt}) => RosterResponse(
   runId: 'run-1',
@@ -61,7 +50,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          tokenStorageProvider.overrideWithValue(_NeverResolvingTokenStorage()),
+          tokenStorageProvider.overrideWithValue(NeverResolvingTokenStorage()),
           selectedRunIdProvider.overrideWith((ref) => 'run-1'),
           savedRunsAtProvider.overrideWith((ref) => savedRunsAt),
           currentUserRoleProvider.overrideWith((ref) => UserRole.escort),
@@ -107,10 +96,7 @@ void main() {
   });
 
   testWidgets('저장본을 보는 동안은 주기마다 서버에서 다시 받아 본다', (tester) async {
-    final harness = await pump(
-      tester,
-      cachedAt: DateTime(2026, 10, 10, 7, 41),
-    );
+    final harness = await pump(tester, cachedAt: DateTime(2026, 10, 10, 7, 41));
     expect(harness.loads(), 1);
 
     await tester.pump(const Duration(seconds: 16));

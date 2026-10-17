@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -25,17 +26,6 @@ import 'package:manager_app/features/offline_queue/domain/send_outcome.dart';
 import 'package:manager_app/features/offline_queue/presentation/offline_queue_providers.dart';
 
 import '../../support/manager_run_fixture.dart';
-
-/// 시각을 고정해 취소 가능 창 판정을 결정적으로 만드는 가짜 시계
-/// (`drive_mode_screen_test.dart` 와 같은 패턴, 이월 11 · Ruling 266).
-class _FixedClock implements Clock {
-  const new(this._now);
-
-  final DateTime _now;
-
-  @override
-  DateTime now() => _now;
-}
 
 /// 테스트 전용 대역 — §4.14(발신·취소)·§4.15(목록) 호출 여부·인자·횟수만
 /// 기록한다.
@@ -188,7 +178,7 @@ void main() {
       ),
       selectedRunIdProvider.overrideWith((ref) => runId),
       emergencyRepositoryProvider.overrideWithValue(fakeRepo),
-      clockProvider.overrideWithValue(_FixedClock(now ?? raisedAt)),
+      clockProvider.overrideWithValue(FixedClock(now ?? raisedAt)),
       positionSourceProvider.overrideWithValue(
         positionSource ?? _FakePositionSource(null),
       ),
@@ -234,7 +224,7 @@ void main() {
     expect(find.text('저장해 둔 목록으로 보고 있어요'), findsNothing);
   });
 
-  // R53 A4 — 선택된 회차가 없는 막다른 화면에도 학원 전화가 있다.
+  // 선택된 회차가 없는 막다른 화면에도 학원 전화가 있다.
   testWidgets('선택된 운행이 없어도 학원 번호가 있으면 전화 단추가 학원 번호를 tel: 로 연다', (tester) async {
     final opened = <Uri>[];
     await tester.pumpWidget(
@@ -993,7 +983,7 @@ void main() {
   });
 
   // N-08 — 비상 신고 memo 는 200자까지다(API_SPEC 자유 입력 메모 상한, 넘으면 422).
-  // R46-LAST `Ruling 583` — 이 칸은 퇴원 파기 대상 밖이라 입력 단계에서 개인정보를 줄인다.
+  // 이 칸은 퇴원 파기 대상 밖이라 입력 단계에서 개인정보를 줄인다.
   testWidgets('상황 메모 칸 아래에 학생 이름·연락처를 적지 말라고 안내한다', (tester) async {
     final fakeRepo = _FakeEmergencyRepository(
       raiseOutcome: Sent(

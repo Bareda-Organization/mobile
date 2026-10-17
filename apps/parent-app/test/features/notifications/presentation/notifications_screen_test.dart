@@ -1,4 +1,5 @@
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,16 +16,6 @@ import 'package:parent_app/core/students/presentation/student_providers.dart';
 import 'package:parent_app/features/notifications/presentation/notification_providers.dart';
 import 'package:parent_app/features/notifications/presentation/notifications_screen.dart';
 
-import '../../../support/fake_notification_repository.dart';
-
-class _FixedClock implements Clock {
-  const new(this._value);
-
-  final DateTime _value;
-
-  @override
-  DateTime now() => _value;
-}
 
 /// 2026-09-30 10:00 KST (수요일).
 final _now = DateTime.utc(2026, 9, 30, 1);
@@ -111,7 +102,7 @@ _pump(
       key: UniqueKey(),
       overrides: [
         notificationRepositoryProvider.overrideWithValue(repository),
-        clockProvider.overrideWithValue(_FixedClock(_now)),
+        clockProvider.overrideWithValue(FixedClock(_now)),
         pushTokenSourceProvider.overrideWithValue(_FixedTokenSource(pushToken)),
         myStudentsProvider.overrideWith(
           (ref) async => students ?? _linkedStudents,
@@ -405,7 +396,7 @@ void main() {
     });
   });
 
-  // R32 P10 — 알림을 눌러도 읽음 처리만 되고 관련 화면으로 가지 않았다.
+  // 알림을 눌러도 읽음 처리만 되고 관련 화면으로 가지 않았다.
   group('알림을 누르면 관련 화면으로 간다', () {
     testWidgets('승차·하차·미승차·도착·지연·운행 시작·노선 변경은 실시간 지도로 간다', (tester) async {
       for (final type in [
@@ -440,7 +431,7 @@ void main() {
       expect(result.pushed, [AppRoutes.schedule]);
     });
 
-    // R52 M3 — B 자녀 알림을 눌렀는데 A 자녀 지도가 열리던 것.
+    // B 자녀 알림을 눌렀는데 A 자녀 지도가 열리던 것.
     testWidgets('다른 자녀의 알림을 누르면 그 자녀로 선택을 먼저 바꾼 뒤 연다', (tester) async {
       final result = await _pump(
         tester,
@@ -458,7 +449,7 @@ void main() {
       expect(result.container.read(selectedStudentIdProvider), 's-2');
     });
 
-    // R52 M3 — 내 자녀가 아닌 id 로 선택을 덮어쓰면 기억해 둔 자녀 선택을 잃는다.
+    // 내 자녀가 아닌 id 로 선택을 덮어쓰면 기억해 둔 자녀 선택을 잃는다.
     testWidgets('목록에 없는 자녀 id 의 알림을 눌러도 선택된 자녀가 바뀌지 않는다', (tester) async {
       final result = await _pump(
         tester,
@@ -494,7 +485,7 @@ void main() {
       expect(result.container.read(selectedStudentIdProvider), 's-2');
     });
 
-    // R52 최종 대조 — `GET /me/students` 는 학부모 전용이라 학생이 부르면 매번 403 이다.
+    // `GET /me/students` 는 학부모 전용이라 학생이 부르면 매번 403 이다.
     testWidgets('학생이 알림을 누르면 자녀 목록을 부르지 않고 그대로 이동한다', (tester) async {
       var studentsCalls = 0;
       final pushed = <String>[];
@@ -518,7 +509,7 @@ void main() {
                 _item('n-1', type: 'arrive', studentId: 's-1'),
               ]),
             ),
-            clockProvider.overrideWithValue(_FixedClock(_now)),
+            clockProvider.overrideWithValue(FixedClock(_now)),
             pushTokenSourceProvider.overrideWithValue(_FixedTokenSource(null)),
             roleCapabilitiesProvider.overrideWithValue(
               RoleCapabilities.of(UserRole.student),
@@ -603,7 +594,7 @@ void main() {
       expect(find.text('알림 n-0'), findsOneWidget);
     });
   });
-  // R48 시안 `notifications*` — 머리 아래 "최근 14일 · 자녀 이름들"
+  // 머리 아래 "최근 14일 · 자녀 이름들"
   // (학생은 "최근 14일"), 안 읽음 알약에는 서버가 센 수.
   group('R48 구성', () {
     Future<void> pumpAs(
@@ -616,7 +607,7 @@ void main() {
           key: UniqueKey(),
           overrides: [
             notificationRepositoryProvider.overrideWithValue(repository),
-            clockProvider.overrideWithValue(_FixedClock(_now)),
+            clockProvider.overrideWithValue(FixedClock(_now)),
             roleCapabilitiesProvider.overrideWithValue(
               RoleCapabilities.of(parent ? UserRole.parent : UserRole.student),
             ),

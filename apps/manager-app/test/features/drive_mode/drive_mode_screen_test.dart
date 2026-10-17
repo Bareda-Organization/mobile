@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_core/testing.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
@@ -16,34 +16,6 @@ import 'package:manager_app/features/home/data/models/manager_run.dart';
 import 'package:manager_app/features/roster/data/models/roster_response.dart';
 import 'package:manager_app/features/route_map/data/models/route_response.dart';
 import 'package:manager_app/features/route_map/presentation/route_providers.dart';
-
-/// 시각을 고정해 판정을 결정적으로 만드는 가짜 시계
-/// ([clockProvider] override 대상, 이월 11 · Ruling 266).
-class _FixedClock implements Clock {
-  const new(this._now);
-
-  final DateTime _now;
-
-  @override
-  DateTime now() => _now;
-}
-
-/// 목표 9 검사용 대역 — `managerRunChannelProvider` 는 구체 클래스
-/// `ManagerRunChannelController` 로 타입이 고정돼 있어 그 컨트롤러 자체를
-/// 가짜로 바꿔치기할 수 없다(`roster_screen_test.dart`의 같은 이름 대역과
-/// 동일한 이유). 대신 그 생성자가 유일하게 주입받는
-/// `TokenStorage.readAccessToken()` 을 영원히 끝나지 않는 대기로 만들어
-/// 실제 컨트롤러를 `ManagerChannelStatus.connecting` 에 고정시킨다.
-class _NeverResolvingTokenStorage extends TokenStorage {
-  new()
-    : super(
-        accessTokenKey: 'test_access_token',
-        refreshTokenKey: 'test_refresh_token',
-      );
-
-  @override
-  Future<String?> readAccessToken() => Completer<String?>().future;
-}
 
 Widget _wrap(Widget child, List<Override> overrides) {
   return ProviderScope(
@@ -64,7 +36,7 @@ const _emptyRoster = RosterResponse(
 
 /// 서버가 `START_WINDOW_CLOSED`(§4.4)로 막는 것과 같은 창을
 /// [ManagerRun.startWindowFrom]·[startWindowTo] 로 미리 화면에서도
-/// 판정한다 — 판정 기준 시각은 [clockProvider] 를 [_FixedClock] 으로
+/// 판정한다 — 판정 기준 시각은 [clockProvider] 를 [FixedClock] 으로
 /// override 해 고정한다(이월 11 · Ruling 266, `DateTime.now()` 직접 호출
 /// 금지).
 ManagerRun _managerRun({
@@ -95,7 +67,7 @@ void main() {
   // 운행 시작은 운행 준비 화면으로 옮겼다(`Ruling 799`) — 시작 가능 시간 판정 · 확인 창 · RUN_CANCELED 처리는
   // `run_ready_screen_test.dart` 가 같은 조건으로 문다.
 
-  // 2026-09-23 — 노선 지도(M-04·M-09)는 기사 전용인데, 버튼이 동승자만 들어가는 명단 화면에만 있어서
+  // 노선 지도(M-04·M-09)는 기사 전용인데, 버튼이 동승자만 들어가는 명단 화면에만 있어서
   // 기사도 동승자도 닿지 못했다. 기사가 홈에서 들어오는 유일한 화면이 여기라 여기서 연다.
   testWidgets('지도의 [크게 보기] 를 누르면 노선 지도 화면으로 간다', (tester) async {
     final now = DateTime(2026, 9, 12, 8);
@@ -112,7 +84,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          clockProvider.overrideWithValue(_FixedClock(now)),
+          clockProvider.overrideWithValue(FixedClock(now)),
           selectedRunIdProvider.overrideWith((ref) => runId),
           driveModeRunProvider.overrideWithValue(
             _managerRun(
@@ -120,7 +92,7 @@ void main() {
               startWindowTo: now.add(const Duration(minutes: 5)),
             ),
           ),
-          // R32 M1 — 운행 화면이 노선을 조회한다. 실제 서버로 나가지 않게 빈 노선으로 막는다.
+          // 운행 화면이 노선을 조회한다. 실제 서버로 나가지 않게 빈 노선으로 막는다.
           routeProvider.overrideWith(
             (ref) async => const RouteResponse(stops: []),
           ),
@@ -145,7 +117,7 @@ void main() {
       final completer = Completer<RosterResponse>();
       await tester.pumpWidget(
         _wrap(const DriveModeScreen(), [
-          clockProvider.overrideWithValue(_FixedClock(now)),
+          clockProvider.overrideWithValue(FixedClock(now)),
           selectedRunIdProvider.overrideWith((ref) => runId),
           driveModeRunProvider.overrideWithValue(
             _managerRun(
@@ -153,14 +125,12 @@ void main() {
               startWindowTo: now.add(const Duration(minutes: 5)),
             ),
           ),
-          // R32 M1 — 운행 화면이 노선을 조회한다. 실제 서버로 나가지 않게 빈 노선으로 막는다.
+          // 운행 화면이 노선을 조회한다. 실제 서버로 나가지 않게 빈 노선으로 막는다.
           routeProvider.overrideWith(
             (ref) async => const RouteResponse(stops: []),
           ),
           driveModeRosterProvider.overrideWith((ref) => completer.future),
-          tokenStorageProvider.overrideWithValue(
-            _NeverResolvingTokenStorage(),
-          ),
+          tokenStorageProvider.overrideWithValue(NeverResolvingTokenStorage()),
         ]),
       );
       await tester.pump();
@@ -172,7 +142,7 @@ void main() {
       final now = DateTime(2026, 9, 12, 8);
       await tester.pumpWidget(
         _wrap(const DriveModeScreen(), [
-          clockProvider.overrideWithValue(_FixedClock(now)),
+          clockProvider.overrideWithValue(FixedClock(now)),
           selectedRunIdProvider.overrideWith((ref) => runId),
           driveModeRunProvider.overrideWithValue(
             _managerRun(
@@ -180,14 +150,12 @@ void main() {
               startWindowTo: now.add(const Duration(minutes: 5)),
             ),
           ),
-          // R32 M1 — 운행 화면이 노선을 조회한다. 실제 서버로 나가지 않게 빈 노선으로 막는다.
+          // 운행 화면이 노선을 조회한다. 실제 서버로 나가지 않게 빈 노선으로 막는다.
           routeProvider.overrideWith(
             (ref) async => const RouteResponse(stops: []),
           ),
           driveModeRosterProvider.overrideWith((ref) async => _emptyRoster),
-          tokenStorageProvider.overrideWithValue(
-            _NeverResolvingTokenStorage(),
-          ),
+          tokenStorageProvider.overrideWithValue(NeverResolvingTokenStorage()),
         ]),
       );
       await tester.pumpAndSettle();
@@ -206,7 +174,7 @@ void main() {
       );
       await tester.pumpWidget(
         _wrap(const DriveModeScreen(), [
-          clockProvider.overrideWithValue(_FixedClock(now)),
+          clockProvider.overrideWithValue(FixedClock(now)),
           selectedRunIdProvider.overrideWith((ref) => runId),
           driveModeRunProvider.overrideWithValue(
             _managerRun(
@@ -214,14 +182,12 @@ void main() {
               startWindowTo: now.add(const Duration(minutes: 5)),
             ),
           ),
-          // R32 M1 — 운행 화면이 노선을 조회한다. 실제 서버로 나가지 않게 빈 노선으로 막는다.
+          // 운행 화면이 노선을 조회한다. 실제 서버로 나가지 않게 빈 노선으로 막는다.
           routeProvider.overrideWith(
             (ref) async => const RouteResponse(stops: []),
           ),
           driveModeRosterProvider.overrideWith((ref) async => empty),
-          tokenStorageProvider.overrideWithValue(
-            _NeverResolvingTokenStorage(),
-          ),
+          tokenStorageProvider.overrideWithValue(NeverResolvingTokenStorage()),
         ]),
       );
       await tester.pumpAndSettle();
