@@ -1049,7 +1049,7 @@ packages:
     source: hosted
     version: "1.0.0"
   stomp_dart_client:
-    dependency: transitive
+    dependency: "direct dev"
     description:
       name: stomp_dart_client
       sha256: "54a73fd73f160a2956036fa39539e283f58535c3e84bff3a40e16003dd320123"

@@ -80,14 +80,15 @@ class PositionTransmitter extends Notifier<PositionTransmission> {
   /// 마지막으로 서버가 받은 좌표의 측정 시각 — GPS 가 새로 재지 못한 틱에 같은 좌표를 다시 보내지 않는다.
   DateTime? _lastSentRecordedAt;
 
-  /// 서버에 닿아 있는지 — 닿지 못하다 닿는 전이에서만 [serverReachedProvider] 를 올린다.
-  bool _reached = false;
+  /// 서버에 닿아 있다고 보는지 — 송신을 시작할 때는 닿는다고 본다. 닿지 못하다 닿는 전이에서만
+  /// [serverReachedProvider] 를 올린다.
+  bool _reached = true;
 
   @override
   PositionTransmission build() {
     _haltedRunId = null;
     _lastSentRecordedAt = null;
-    _reached = false;
+    _reached = true;
     final runId = ref.watch(transmittingRunIdProvider);
     if (runId == null) return const PositionTransmission();
     final source = ref.read(positionSourceProvider)..start();

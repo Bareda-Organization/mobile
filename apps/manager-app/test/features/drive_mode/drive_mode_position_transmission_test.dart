@@ -1,7 +1,11 @@
+import 'dart:async';
+import 'dart:math';
+
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/legacy.dart' show StateProvider;
+import 'package:flutter_riverpod/legacy.dart'
+    show StateNotifierProvider, StateProvider;
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:manager_app/app/di.dart';
@@ -18,9 +22,11 @@ import 'package:manager_app/features/home/data/models/manager_run.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
 import 'package:manager_app/features/position/data/models/position_request.dart';
 import 'package:manager_app/features/position/domain/position_repository.dart';
+import 'package:manager_app/features/position/presentation/position_transmitter.dart';
 import 'package:manager_app/features/roster/data/models/roster_response.dart';
 import 'package:manager_app/features/route_map/data/models/route_response.dart';
 import 'package:manager_app/features/route_map/presentation/route_providers.dart';
+import 'package:stomp_dart_client/stomp_dart_client.dart';
 
 /// 시각을 고정하는 가짜 시계 — `drive_mode_screen_test.dart` 와 같은 패턴.
 class _FixedClock implements Clock {
@@ -124,6 +130,44 @@ class _ScriptedPositionRepository extends _RecordingPositionRepository {
       await Future<void>.error(const Failure.network(message: '연결할 수 없습니다'));
     }
   }
+}
+
+/// 소켓이 열리지 않는 서버 — 활성화하자마자 연결 오류를 알린다. WebSocket 서버만 죽은 상황.
+class _DeadStomp extends StompClient {
+  new(StompConfig config) : super(config: config);
+
+  @override
+  void activate() {
+    scheduleMicrotask(() => config.onWebSocketError('refused'));
+  }
+
+  @override
+  void deactivate() {}
+}
+
+/// 접근 토큰이 없는 저장소 — 연결 헤더만 비운다.
+class _NoTokenStorage implements TokenStorage {
+  @override
+  Future<String?> readAccessToken() async => null;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+/// `nextDouble()` 을 고정값으로 돌려주는 난수 — 재접속 대기를 기준값에 거의 가깝게 고정한다.
+class _FixedRandom implements Random {
+  new(this.value);
+
+  final double value;
+
+  @override
+  double nextDouble() => value;
+
+  @override
+  bool nextBool() => throw UnimplementedError();
+
+  @override
+  int nextInt(int max) => throw UnimplementedError();
 }
 
 Widget _wrap(Widget child, List<Override> overrides) {
@@ -301,31 +345,101 @@ void main() {
     );
     expect(container.read(serverReachedProvider), 0);
 
-    // 첫 성공 — 아직 닿은 적이 없으니 한 번 올린다.
-    await tester.pump(interval);
-    await tester.pump();
-    expect(container.read(serverReachedProvider), 1);
-
-    // 계속 성공 — 이미 닿아 있으니 올리지 않는다.
+    // 송신 시작 뒤 계속 성공 — 이미 닿아 있으니 올리지 않는다.
     await tester.pump(interval);
     await tester.pump();
     await tester.pump(interval);
     await tester.pump();
-    expect(container.read(serverReachedProvider), 1);
+    expect(container.read(serverReachedProvider), 0);
 
     // 실패 구간 — 올리지 않는다.
     repository.failing = true;
     await tester.pump(interval);
     await tester.pump();
-    expect(container.read(serverReachedProvider), 1);
+    expect(container.read(serverReachedProvider), 0);
 
     // 실패 뒤 첫 성공 — 닿은 전이라 한 번 올린다.
     repository.failing = false;
     await tester.pump(interval);
     await tester.pump();
-    expect(container.read(serverReachedProvider), 2);
+    expect(container.read(serverReachedProvider), 1);
+
+    // 이어지는 성공 — 다시 올리지 않는다.
+    await tester.pump(interval);
+    await tester.pump();
+    expect(container.read(serverReachedProvider), 1);
 
     await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  // M-1 — WebSocket 서버만 죽고 REST 는 멀쩡한 60초 동안, 위치 전송이 2초마다 성공해도 연결 시도는
+  // 재접속 대기 계산값(1·2·4·8·16·30초)이 허용하는 횟수를 넘지 않는다.
+  testWidgets('WebSocket 서버만 죽은 60초 동안 연결 시도가 대기 계산값을 넘지 않는다', (tester) async {
+    const fixed = 0.999;
+    var attempts = 0;
+    final client = BaraedaWebSocketClient(
+      url: 'ws://127.0.0.1:1/ws/location',
+      tokenStorage: _NoTokenStorage(),
+      random: _FixedRandom(fixed),
+      stompClientFactory: (config) {
+        attempts++;
+        return _DeadStomp(config);
+      },
+    );
+    final channel =
+        StateNotifierProvider.autoDispose<
+          ManagerRunChannelController,
+          ManagerChannelStatus
+        >((ref) => ManagerRunChannelController(ref, runId, client: client));
+    final source = _FakePositionSource(
+      PositionSample(lat: 37.5, lng: 127, recordedAt: recordedAt),
+      advanceRecordedAt: true,
+    );
+    final repository = _RecordingPositionRepository();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: baseOverrides(
+          role: UserRole.driver,
+          runStatus: RunStatus.moving,
+          positionSource: source,
+          positionRepository: repository,
+        ),
+        child: MaterialApp(
+          home: Consumer(
+            builder: (context, ref, _) {
+              ref
+                ..watch(positionTransmitterProvider)
+                ..watch(channel);
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    const window = Duration(seconds: 60);
+    const interval = PositionConstants.transmissionInterval;
+    for (var t = Duration.zero; t < window; t += interval) {
+      await tester.pump(interval);
+    }
+
+    // 대기 계산값대로라면 60초 안에 몇 번 시도하는가 — 첫 시도 + 회차마다 쌓인 대기가 60초 안인 재시도.
+    const policy = WsBackoffPolicy();
+    final random = _FixedRandom(fixed);
+    var allowed = 1;
+    var elapsed = Duration.zero;
+    for (var attempt = 1; ; attempt++) {
+      elapsed += policy.jitteredDelayFor(attempt, random);
+      if (elapsed > window) break;
+      allowed++;
+    }
+    expect(repository.calls.length, greaterThan(20), reason: '위치 전송은 계속 성공했다');
+    expect(attempts, greaterThan(1), reason: '재접속은 일어났다');
+    expect(attempts, lessThanOrEqualTo(allowed));
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    client.dispose();
   });
 
   // M-2 — GPS 가 새로 재지 못한 틱(음영·정지)에 같은 측정 시각을 다시 보내지 않는다.

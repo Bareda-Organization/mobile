@@ -65,6 +65,7 @@ dev_dependencies:
   json_serializable: ^6.14.1
   plugin_platform_interface: ^2.1.8
   riverpod_generator: ^4.0.9
+  stomp_dart_client: ^3.0.1 # 시험 전용 — 죽은 WebSocket 서버 가짜(drive_mode_position_transmission_test)
   very_good_analysis: ^11.0.0
 
 # For information on the generic Dart part of this file, see the
