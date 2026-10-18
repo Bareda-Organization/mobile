@@ -7,11 +7,13 @@ import 'package:manager_app/core/map/waypoint_chip.dart';
 /// 매니저 앱의 지도 설정 — 모든 지도 화면이 같게 쓴다.
 ///
 /// 순번 물방울 핀 · "경유" 칩 · 파란 노선 · 버스는 노선 2km 안일 때만 맞춤에
-/// 넣는다. 좌표가 오는 즉시 마커를 옮기고 카메라는 초기 위치로만 쓴다.
+/// 넣는다. 좌표가 오는 즉시 마커를 옮기고 카메라는 초기 위치로만 쓴다. 지도 SDK 초기화
+/// 실패는 화면의 지도 오류 콜백으로도 알려 "지도 인증 실패" 안내를 띄운다.
 const managerMapOptions = MapSurfaceOptions(
   markerIcon: _markerIcon,
   fitBusMarginMeters: busFitMarginMeters,
   placeholderBuilder: _placeholder,
+  reportInitFailure: true,
 );
 
 /// 승하차지는 순번 핀(끝이 좌표), 경유 지점은 칩(가운데가 좌표)이다.

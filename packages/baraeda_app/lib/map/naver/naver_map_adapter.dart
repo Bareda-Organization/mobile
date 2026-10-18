@@ -100,6 +100,14 @@ class _NaverMapAdapterState extends State<NaverMapAdapter>
     _initFuture = NaverMapInit.ensureInitialized(
       clientId: _clientId.isEmpty ? null : _clientId,
     );
+    // 초기화 예외도 화면의 지도 오류 콜백으로 알린다(앱이 켠 경우) — 인증 실패와 같은 안내를 띄우게 한다.
+    if (widget.options.reportInitFailure) {
+      unawaited(
+        _initFuture.catchError((Object e) {
+          if (mounted) widget.onAuthFailed?.call(e);
+        }),
+      );
+    }
     _authFailedSub = NaverMapInit.onAuthFailed.listen((ex) {
       widget.onAuthFailed?.call(ex);
     });

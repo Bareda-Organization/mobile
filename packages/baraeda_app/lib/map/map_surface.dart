@@ -70,6 +70,7 @@ class MapSurfaceOptions {
     this.smoothMarkerMotion = false,
     this.followCameraChanges = false,
     this.placeholderBuilder,
+    this.reportInitFailure = false,
   });
 
   /// 마커 아이콘 — 없으면 모든 마커가 SDK 기본 핀이다.
@@ -90,6 +91,11 @@ class MapSurfaceOptions {
 
   /// 초기화 중 · 실패 자리의 위젯. `null` 이면 회색 빈 자리다.
   final MapPlaceholderBuilder? placeholderBuilder;
+
+  /// `true` 면 SDK 초기화 예외를 `MapSurface.onAuthFailed` 로도 알린다 —
+  /// 화면이 "지도 인증 실패" 안내를 띄우게 한다. `false` 면 초기화 실패는
+  /// [placeholderBuilder] 자리만 채운다.
+  final bool reportInitFailure;
 }
 
 /// 화면이 실제로 그리는 지도 위젯 — 내부 구현은 전부 `naver/naver_map_adapter.dart` 에 있다.
