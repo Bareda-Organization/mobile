@@ -1,13 +1,12 @@
 /// 지도 화면 전체가 의존하는 유일한 공개 계약 — 두 앱(학부모 · 매니저)이 같은 지도 위젯을 쓴다.
 ///
 /// 지도 공급자(네이버 · Tmap)는 가격 정책에 따라 바뀔 수 있다(`IMPLEMENTATION_PLAN.md §8.3.1`). 화면이
-/// SDK 타입을
-/// 직접 참조하면 공급자를 바꿀 때 화면을 전부 고쳐야 하므로, SDK 타입은 `naver/` 폴더 밖에 한 줄도 나타나지 않게
-/// 막는다(`map_sdk_boundary_test`). 이 파일은 `naver/naver_map_adapter.dart` 로 위임만 한다.
+/// SDK 타입을 직접 참조하면 공급자를 바꿀 때 화면을 전부 고쳐야 하므로, SDK 타입은 `naver/` 폴더 밖에 한 줄도 나타나지
+/// 않게 막는다(`map_sdk_boundary_test`). 이 파일은 `naver/naver_map_adapter.dart` 로 위임만
+/// 한다.
 ///
 /// 두 앱의 차이(번호 핀 · 경유 칩 · 선 색 · 부드러운 이동 · 맞춤 방식)는 코드 분기가 아니라 [MapSurfaceOptions]
-/// 로
-/// 앱이 정한다.
+/// 로 앱이 정한다.
 library;
 
 import 'package:baraeda_app/map/map_models.dart';
@@ -102,20 +101,19 @@ class MapSurfaceOptions {
 class MapSurface extends StatelessWidget {
   const new({
     required this.camera,
+    required this.options,
     super.key,
     this.markers = const [],
     this.polylines = const [],
     this.fitToContent = false,
     this.fitPadding = const EdgeInsets.all(48),
-    this.options = const MapSurfaceOptions(),
     this.onReady,
     this.onAuthFailed,
     this.onUserGesture,
   });
 
   /// 초기 카메라 위치. [MapSurfaceOptions.followCameraChanges] 가 꺼져 있으면 마커 목록이 바뀌어도
-  /// 카메라를 자동으로
-  /// 다시 맞추지 않는다 — 필요하면 호출부가 새 [MapCamera] 를 내려준다.
+  /// 카메라를 자동으로 다시 맞추지 않는다 — 필요하면 호출부가 새 [MapCamera] 를 내려준다.
   final MapCamera camera;
 
   /// 지도 위에 찍을 마커 목록.
