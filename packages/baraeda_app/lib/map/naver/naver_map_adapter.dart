@@ -10,11 +10,11 @@ import 'package:flutter_naver_map/flutter_naver_map.dart';
 
 /// `MapSurface` 계약을 실제 네이버 지도 SDK 로 구현하는 어댑터 — 두 앱이 같은 코드를 쓴다.
 ///
-/// **이 폴더(`lib/map/naver/`) 바깥 어디에도 `package:flutter_naver_map` 을 import 하지
-/// 않는다** — 화면은
-/// `map_surface.dart` 만 보고, 여기가 SDK 타입(`NaverMap` · `NMarker` · `NLatLng`)이
-/// 나타나는 유일한 자리다.
-/// 이 경계는 `test/map/map_sdk_boundary_test.dart` 가 두 앱과 공용 패키지 전체에 대해 강제한다.
+/// **이 폴더(`lib/map/naver/`) 바깥 어디에도 `package:flutter_naver_map` 을
+/// import 하지 않는다** — 화면은 `map_surface.dart` 만 보고, 여기가 SDK
+/// 타입(`NaverMap` · `NMarker` · `NLatLng`)이 나타나는 유일한 자리다. 이 경계는
+/// `test/map/map_sdk_boundary_test.dart` 가 두 앱과 공용 패키지 전체에 대해
+/// 강제한다.
 ///
 /// 앱마다 다른 것(마커 아이콘 · 선 색 · 이동 방식 · 맞춤 방식)은 [MapSurfaceOptions] 로 받는다.
 class NaverMapAdapter extends StatefulWidget {
@@ -81,8 +81,7 @@ class _NaverMapAdapterState extends State<NaverMapAdapter>
   String? _fittedSignature;
 
   /// 마커 id 별 보간 상태 — 계산 자체는 `MarkerMotionController`(순수)에 맡기고, 이 클래스는 "언제 부를지"만
-  /// 담당한다.
-  /// `MapSurfaceOptions.smoothMarkerMotion` 이 켜졌을 때만 쓴다.
+  /// 담당한다. `MapSurfaceOptions.smoothMarkerMotion` 이 켜졌을 때만 쓴다.
   final MarkerMotionController _motion = MarkerMotionController();
 
   /// 화면 프레임마다 도는 틱 — 보간 중인 마커가 하나라도 있을 때만 켠다(프레임마다 `setPosition` 을 부르는
@@ -157,12 +156,10 @@ class _NaverMapAdapterState extends State<NaverMapAdapter>
   }
 
   /// 위젯 시험 전용 훅 — 실제 SDK 의 `onMapReady` 는 위젯 시험 환경(플랫폼 채널 부재)에서 오지 않아 `_ticker`
-  /// 가
-  /// 정상 경로(`_syncOverlays` → `_syncTicker`)로 시작될 수 없다. `dispose()` 가 이 타이머를 멈추는
-  /// 배선을 검사하려면
-  /// 먼저 돌고 있는 상태를 만들어야 하는데, 시작 경로 자체는 이 검사의 대상이 아니므로(대상은 `dispose()`)
-  /// 같은 `_ticker` 인스턴스를 직접 돌리는 것으로 대신한다(`naver_map_adapter_dispose_test.dart`
-  /// 전용).
+  /// 가 정상 경로(`_syncOverlays` → `_syncTicker`)로 시작될 수 없다. `dispose()` 가 이 타이머를
+  /// 멈추는 배선을 검사하려면 먼저 돌고 있는 상태를 만들어야 하는데, 시작 경로 자체는 이 검사의 대상이 아니므로(대상은
+  /// `dispose()`) 같은 `_ticker` 인스턴스를 직접 돌리는 것으로
+  /// 대신한다(`naver_map_adapter_dispose_test.dart` 전용).
   @visibleForTesting
   void debugStartTickerForTest(VoidCallback onTick) {
     _debugTick = onTick;
@@ -175,11 +172,9 @@ class _NaverMapAdapterState extends State<NaverMapAdapter>
       future: _initFuture,
       builder: (context, snapshot) {
         // 초기화 중이거나 끝내 실패한 경우 앱이 정한 자리(기본은 회색)만 채운다 — `NaverMap` 위젯은 `build()`
-        // 진입 시
-        // `FlutterNaverMap.isInitialized` 를 단언(assert)하므로, 초기화가 끝나지 않은 채로 만들면
-        // 위젯 시험 환경
-        // (플랫폼 채널 부재)에서 그 단언이 곧바로 실패한다. "인증 실패"(`onAuthFailed`)와는 다른 경로라 그 콜백을
-        // 여기서 대신 부르지 않는다.
+        // 진입 시 `FlutterNaverMap.isInitialized` 를 단언(assert)하므로, 초기화가 끝나지 않은 채로
+        // 만들면 위젯 시험 환경 (플랫폼 채널 부재)에서 그 단언이 곧바로 실패한다. "인증 실패"(`onAuthFailed`)와는
+        // 다른 경로라 그 콜백을 여기서 대신 부르지 않는다.
         if (snapshot.connectionState != ConnectionState.done ||
             snapshot.hasError) {
           final placeholder = widget.options.placeholderBuilder;
@@ -348,8 +343,7 @@ class _NaverMapAdapterState extends State<NaverMapAdapter>
   }
 
   /// [MapSurface.fitToContent] — 맞춤 대상(`cameraFit` 이 정한 마커 id · 선)이 바뀐 때만 다시
-  /// 맞춘다.
-  /// 대상은 노선이고, 버스를 넣는지는 [MapSurfaceOptions.fitBusMarginMeters] 가 정한다.
+  /// 맞춘다. 대상은 노선이고, 버스를 넣는지는 [MapSurfaceOptions.fitBusMarginMeters] 가 정한다.
   Future<void> _fitCameraIfNeeded(NaverMapController controller) async {
     if (!widget.fitToContent) return;
     final fit = cameraFit(

@@ -4,9 +4,6 @@ import 'package:baraeda_app/map/map_fit.dart';
 import 'package:baraeda_app/map/map_models.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// R33 M2 — 카메라 맞춤은 **노선**(승하차지 핀 + 도로 경로) 기준이다. 버스는 노선 사각형을 약 2km
-/// 넓힌 범위 안일 때만 맞춤에 넣는다. 오래된 위치로 버스가 노선에서 아주 멀면 세계 지도까지 넓어지던
-/// 결함(시뮬레이터 실측)을 막는다.
 /// 매니저 앱 설정 — 노선 사각형을 2km 넓힌 범위 안의 버스만 맞춤에 넣는다.
 MapFit? withBus(Iterable<MapMarker> markers, Iterable<MapPolyline> polylines) =>
     cameraFit(markers, polylines, busMarginMeters: busFitMarginMeters);
@@ -17,6 +14,9 @@ MapFit? withoutBus(
   Iterable<MapPolyline> polylines,
 ) => cameraFit(markers, polylines, busMarginMeters: null);
 
+/// 카메라 맞춤은 **노선**(승하차지 핀 + 도로 경로) 기준이다. 버스는 노선 사각형을
+/// 약 2km 넓힌 범위 안일 때만 맞춤에 넣는다 — 오래된 위치로 버스가 노선에서 아주
+/// 멀면 화면이 세계 지도까지 넓어지기 때문이다.
 void main() {
   const stopA = MapMarker(
     id: 'a',
