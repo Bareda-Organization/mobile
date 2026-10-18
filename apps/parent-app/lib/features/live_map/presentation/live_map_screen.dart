@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:baraeda_app/baraeda_app.dart';
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
@@ -8,7 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:parent_app/app/app_routes.dart';
 import 'package:parent_app/app/di.dart';
 import 'package:parent_app/core/auth/auth_providers.dart';
-import 'package:parent_app/core/map/map_surface.dart';
+import 'package:parent_app/core/map/parent_map_options.dart';
 import 'package:parent_app/core/routes/domain/route_detail.dart';
 import 'package:parent_app/core/routes/presentation/route_map_overlay.dart';
 import 'package:parent_app/core/routes/presentation/route_providers.dart';
@@ -341,6 +342,7 @@ class _MapPageState extends ConsumerState<_MapPage> {
                     ],
                     polylines: overlay?.polylines ?? const [],
                     fitToContent: fitRoute,
+                    options: parentMapOptions,
                     fitPadding: _fitPadding(context),
                     onUserGesture: () {
                       if (!_following) return;

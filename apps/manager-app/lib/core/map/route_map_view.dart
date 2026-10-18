@@ -1,6 +1,7 @@
+import 'package:baraeda_app/baraeda_app.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:manager_app/core/map/map_surface.dart';
+import 'package:manager_app/core/map/manager_map_options.dart';
 import 'package:manager_app/features/route_map/data/models/route_response.dart';
 
 /// 노선 항목 → 마커. 강제 경유 지점(`is_waypoint`)은 번호 없는 waypoint
@@ -70,6 +71,7 @@ class RouteMapView extends StatelessWidget {
           child: MapSurface(
             camera: MapCamera(lat: anchor.lat, lng: anchor.lng, zoom: 14),
             fitToContent: true,
+            options: managerMapOptions,
             onAuthFailed: onAuthFailed,
             markers: [
               ..._stopMarkersOf(route.stops),

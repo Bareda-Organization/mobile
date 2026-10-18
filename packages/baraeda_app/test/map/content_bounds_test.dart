@@ -1,5 +1,6 @@
+import 'package:baraeda_app/map/map_fit.dart';
+import 'package:baraeda_app/map/map_models.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:manager_app/core/map/map_surface.dart';
 
 /// R32 M1 — 카메라를 내용에 맞출 때 쓰는 사각형. 버스가 노선 밖에 있어도 포함돼야 한다.
 void main() {

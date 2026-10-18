@@ -8,7 +8,7 @@ import 'package:parent_app/app/app_routes.dart';
 import 'package:parent_app/app/di.dart';
 import 'package:parent_app/core/auth/academy_contact.dart';
 import 'package:parent_app/core/auth/auth_providers.dart';
-import 'package:parent_app/core/map/map_surface.dart';
+import 'package:parent_app/core/map/parent_map_options.dart';
 import 'package:parent_app/core/routes/presentation/route_map_overlay.dart';
 import 'package:parent_app/core/routes/presentation/route_providers.dart';
 import 'package:parent_app/core/runs/domain/bus_position.dart';
@@ -256,6 +256,7 @@ class _PreviewBody extends ConsumerWidget {
                               ],
                               polylines: overlay?.polylines ?? const [],
                               fitToContent: fitRoute,
+                              options: parentMapOptions,
                             )
                           : ColoredBox(color: colors.statusIdleSoft),
                     ),

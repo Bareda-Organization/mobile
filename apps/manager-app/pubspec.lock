@@ -345,7 +345,7 @@ packages:
     source: sdk
     version: "0.0.0"
   flutter_naver_map:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: flutter_naver_map
       sha256: "5d76331cc9f5c678adfda7089834b99d0377fd365e7c144da9784b876ceed36e"

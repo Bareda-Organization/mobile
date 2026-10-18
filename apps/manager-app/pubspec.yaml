@@ -42,7 +42,6 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_cache_manager: ^3.4.5
-  flutter_naver_map: ^1.4.4  # F4-B 1단계 — 노선 지도 화면 (docs/frontend/IMPLEMENTATION_PLAN.md §3.2 RouteMapScreen)
   flutter_riverpod: ^3.4.3
   geolocator: ^14.0.3
   go_router: ^18.0.1

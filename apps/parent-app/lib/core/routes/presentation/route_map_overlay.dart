@@ -1,4 +1,4 @@
-import 'package:parent_app/core/map/map_surface.dart';
+import 'package:baraeda_app/baraeda_app.dart';
 import 'package:parent_app/core/routes/domain/route_detail.dart';
 
 /// §3.10 노선을 지도에 얹을 마커와 선으로 바꾼 것 — 홈 미리보기와 실시간 위치(운행 중 · 종료)가 같이 쓴다.

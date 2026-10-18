@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:manager_app/core/map/naver/stop_pin.dart';
+import 'package:manager_app/core/map/stop_pin.dart';
 
 /// 정차지 핀(사용자 지시 2026-09-23 — 끝이 좌표를 가리키는 물방울 핀 + 순번).
 ///

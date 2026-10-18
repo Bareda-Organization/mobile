@@ -11,7 +11,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   test('NaverMap 은 스크롤 뷰 안에서도 제스처를 먼저 받도록 forceGesture: true 로 만든다', () {
     final source = File(
-      '${Directory.current.path}/lib/core/map/naver/naver_map_adapter.dart',
+      '${Directory.current.path}/lib/map/naver/naver_map_adapter.dart',
     ).readAsStringSync();
     final body = source
         .split('\n')

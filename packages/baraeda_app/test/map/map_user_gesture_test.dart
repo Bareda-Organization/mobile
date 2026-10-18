@@ -11,7 +11,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   test('카메라 변경 이유가 gesture·control 일 때만 onUserGesture 를 부른다', () {
     final source = File(
-      '${Directory.current.path}/lib/core/map/naver/naver_map_adapter.dart',
+      '${Directory.current.path}/lib/map/naver/naver_map_adapter.dart',
     ).readAsStringSync();
     final body = source
         .split('\n')

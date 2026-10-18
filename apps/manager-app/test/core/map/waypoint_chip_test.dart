@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:manager_app/core/map/naver/stop_pin.dart';
-import 'package:manager_app/core/map/naver/waypoint_chip.dart';
+import 'package:manager_app/core/map/stop_pin.dart';
+import 'package:manager_app/core/map/waypoint_chip.dart';
 
 /// 강제 경유 지점 칩(R39 Ruling 400) — 승하차지 핀과 모양이 다른 번호 없는 칩 + "경유" 글자.
 /// 색만으로 가르지 않으므로 글자와 모양(핀 윤곽이 아닌 둥근 사각형)이 구분 수단이다.

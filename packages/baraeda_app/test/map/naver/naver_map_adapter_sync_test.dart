@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:baraeda_app/map/map_surface.dart';
+import 'package:baraeda_app/map/naver/naver_map_adapter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:parent_app/core/map/map_surface.dart';
-import 'package:parent_app/core/map/naver/naver_map_adapter.dart';
 
 /// 오버레이 추가·삭제가 끝나기를 시험이 풀어 줄 때까지 붙잡아 두고, 동시에 진행 중인 호출 수의 최댓값을 센다.
 class _BlockingController extends Fake implements NaverMapController {
