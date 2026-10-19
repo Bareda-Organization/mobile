@@ -105,7 +105,7 @@ void main() {
       surface.markers.every((m) => m.kind == MapMarkerKind.stop),
       isTrue,
       reason:
-          'route_map_screen.dart 의 판정(F4-B 2단계 M2) — 매니저 채널에는 '
+          'route_map_screen.dart 의 판정 — 매니저 채널에는 '
           'position 이 없어 실시간 버스 위치를 알 길이 없다. bus 마커가 '
           '하나라도 섞이면 그 판정이 깨진 것이다.',
     );
@@ -197,8 +197,8 @@ void main() {
     expect(find.text('2곳이 미경유로 표시됩니다'), findsOneWidget);
   });
 
-  // F06-11 — 운행 화면 지도 패널과 같은 지도를 두 벌 관리하면서 노선 지도 쪽에 도로 경로·근사 안내·
-  // 카메라 맞춤이 빠져 있었다. 두 화면이 같은 지도 면을 쓰므로 같은 것을 보여야 한다.
+  // 노선 지도는 운행 화면 지도 패널과 같은 도로 경로·근사 안내·카메라 맞춤을 보여야 한다.
+  // 두 화면이 같은 지도 면을 쓴다.
   testWidgets('road_path 가 2점 이상이면 도로 경로 선을 그린다', (tester) async {
     final response = RouteResponse(
       stops: [

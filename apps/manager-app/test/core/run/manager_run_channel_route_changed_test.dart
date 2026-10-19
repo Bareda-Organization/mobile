@@ -237,8 +237,8 @@ void main() {
     expect(roster.stops[1].change, StopChange.skipped);
   });
 
-  // F06-08 — 변경 확인 띠를 켜는 `ack_required` 는 회차 목록(§4.1)에서 온다. 노선이 바뀌었는데 목록을
-  // 다시 받지 않으면 띠가 다음 새로고침까지 안 뜬다. N-03 — payload 는 `{run_id, changed_at}`.
+  // 변경 확인 띠를 켜는 `ack_required` 는 회차 목록(§4.1)에서 온다. 노선이 바뀌었는데 목록을
+  // 다시 받지 않으면 띠가 다음 새로고침까지 안 뜬다. payload 는 `{run_id, changed_at}`.
   test('route_changed 방송 → 회차 목록(ack_required 의 출처)도 다시 받는다', () async {
     expect(runsRepo.fetchCount, 1);
 
@@ -259,7 +259,7 @@ void main() {
     expect(runsRepo.fetchCount, 2);
   });
 
-  // F06-09 — 터널 등으로 끊겼다 다시 붙는 동안 놓친 방송을 되찾을 방법이 없었다. 재연결 때 다시 받는다.
+  // 터널 등으로 끊겼다 다시 붙는 동안 놓친 방송은 재연결 때 다시 받아 되찾는다.
   test('재연결되면 끊긴 동안 놓친 변경을 되찾도록 명단·노선·회차 목록을 다시 받는다', () async {
     client.emitConnected();
     await Future<void>.delayed(Duration.zero);
