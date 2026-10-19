@@ -86,7 +86,7 @@ class EmergencyButton extends ConsumerWidget {
     return showDialog<ManagerRun>(
       context: context,
       builder: (dialogContext) => SimpleDialog(
-        title: const Text('어느 운행의 비상입니까?'),
+        title: const Text('어느 운행의 비상이에요?'),
         children: [
           for (final run in runs)
             SimpleDialogOption(
