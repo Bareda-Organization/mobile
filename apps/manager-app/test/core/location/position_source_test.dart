@@ -287,7 +287,7 @@ void main() {
     expect(source.sample(), isNotNull);
   });
 
-  // M2-02 — 운행 시작 전 화면이 권한·서비스만 다시 본다. 스트림은 start() 가 있어야만 열린다.
+  // 운행 시작 전 화면이 권한·서비스만 다시 본다. 스트림은 start() 가 있어야만 열린다.
   test('recheck() 는 start() 없이 상태만 갱신하고 스트림은 열지 않는다', () async {
     final platform = _FakeGeolocatorPlatform()
       ..checkPermissionResult = LocationPermission.denied;

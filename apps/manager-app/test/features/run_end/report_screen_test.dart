@@ -305,7 +305,7 @@ void main() {
     expect(find.widgetWithText(BaraedaListRow, '김바래'), findsOneWidget);
   });
 
-  // H3(UF-E-04 · M-14 · EXC-02) — 동승자의 [예외 보고] 는 이 화면으로 오는데, 보호자 부재는
+  // UF-E-04 · M-14 · EXC-02 — 동승자의 [예외 보고] 는 이 화면으로 오는데, 보호자 부재는
   // 기사 종료 보류 화면에서만 열렸다. 하원 회차에서는 이 화면에서 보호자 부재를 고를 수 있어야 한다.
   testWidgets('하원 회차의 예외 보고에서 보호자 부재를 골라 학생을 지정해 보고한다', (tester) async {
     final fakeRepo = await pumpReport(

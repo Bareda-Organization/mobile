@@ -74,7 +74,7 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
   /// 쓰면 되고 `ref` 를 다시 묻지 않는다.
   late final WakelockPort _wakelockPort;
 
-  /// 송신기가 아직 안 도는 동안(막 열렸거나 송신이 멈췄을 때) 화면이 직접 재확인한 위치 권한·서비스 상태(M2-02).
+  /// 송신기가 아직 안 도는 동안(막 열렸거나 송신이 멈췄을 때) 화면이 직접 재확인한 위치 권한·서비스 상태.
   /// 송신 중에는 송신기의 상태(`PositionTransmission.availability`)가 우선한다.
   PositionAvailability? _recheckedAvailability;
   Timer? _availabilityTimer;

@@ -111,7 +111,7 @@ void main() {
     } finally {
       probe.close();
     }
-    // F5 M3 목표 — §4.5(도착 처리 소모)·§4.4(출발 창 시각 의존) 재현이
+    // §4.5(도착 처리 소모)·§4.4(출발 창 시각 의존) 재현이
     // 항상 성립하도록 필요할 때만 시드를 되돌린다(real_backend_target.dart
     // 의 함수 주석 참고). 백엔드가 죽어 있으면(!backendReachable) 이 호출도
     // 조용히 실패해 넘어가고, 그 판정은 각 시험의 backendReachable 분기가 한다.
@@ -534,9 +534,9 @@ void main() {
         }
 
         var candidateStops = selectCandidates(roster.stops);
-        // F5 M3 목표 — setUpAll 이 이미 이 조건을 확인·필요시 리셋했지만
+        // setUpAll 이 이미 이 조건을 확인·필요시 리셋했지만
         // (real_backend_target.dart 참고), 이 자리에도 한 번 더 안전판을
-        // 둔다(브리프 후보 (a)) — setUpAll 과 이 시험 실행 사이에 상태가
+        // 둔다 — setUpAll 과 이 시험 실행 사이에 상태가
         // 바뀌었을 가능성(예: 예상 밖의 동시 실행)까지 방어한다. 그래도
         // 없으면 그때는 진짜 "환경 문제"로 건너뛴다 — 재시도까지 실패한
         // 것이므로 더는 이 시험의 책임이 아니다.

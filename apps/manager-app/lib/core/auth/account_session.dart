@@ -29,7 +29,7 @@ import 'package:manager_app/features/route_map/presentation/route_providers.dart
 /// 역할은 "이 계정이 무엇을 할 수 있는가"(정적, `UserRole` 만으로 결정)이고
 /// 상태는 "지금 이 앱을 아예 쓸 수 있는가"(동적, 서버가 로그인·`/me`·게이트
 /// 이벤트로 실시간으로 알려주는 선행조건)다 — `parent_app` 의 같은 파일과
-/// 판단이 같다(§1.1, 보고서 § 아키텍처 결정 2). `RoleCapabilities.of` 는 이
+/// 판단이 같다(§1.1). `RoleCapabilities.of` 는 이
 /// provider 를 참조하지 않는다.
 final StateProvider<AccountStatus?> currentAccountStatusProvider =
     StateProvider<AccountStatus?>((ref) => null);

@@ -52,7 +52,7 @@ class _RunReadyScreenState extends ConsumerState<RunReadyScreen> {
   String? _navNotice;
   bool _naviNotInstalled = false;
 
-  /// 시작 전(송신기가 아직 안 도는 동안) 화면이 직접 재확인한 위치 권한·서비스 상태(M2-02).
+  /// 시작 전(송신기가 아직 안 도는 동안) 화면이 직접 재확인한 위치 권한·서비스 상태.
   PositionAvailability? _availability;
   Timer? _availabilityTimer;
 

@@ -987,7 +987,7 @@ void main() {
     // 이 그룹은 위 그룹과 달리 `client.emit(...)` 을 전혀 부르지 않는다 —
     // WS 연결은 살아 있고 그 버스의 위치 방송만 끊긴(Ruling 349) 상황을
     // 재현한다. 지금 코드는 이 경우 화면을 다시 그리는 계기가 없어
-    // "HH:mm 기준" 표지 가 무기한 남는다(브리프가 지적한 결함 그대로).
+    // "HH:mm 기준" 표지 가 무기한 남는다.
     final t0 = DateTime.utc(2026, 9, 13, 8);
 
     Future<void> pumpConnectedWithPosition(

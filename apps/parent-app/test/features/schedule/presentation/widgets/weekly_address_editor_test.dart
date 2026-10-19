@@ -321,7 +321,7 @@ void main() {
       expect(repository.saved.first.address, '월 등원 주소 고침');
     });
 
-    // H5 — 처음 한 칸만 고칠 수 있던 것: 요일 7 × 방향 2 = 14칸 어디든 추가한다.
+    // 요일 7 × 방향 2 = 14칸 어디든 추가한다.
     testWidgets('H5 등록되지 않은 요일 · 방향 칸에 주소를 넣고 저장하면 그 칸까지 한 번에 간다', (
       tester,
     ) async {

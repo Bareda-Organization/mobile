@@ -417,7 +417,7 @@ void main() {
     expect(button.onPressed, isNotNull);
   });
 
-  // M2-03(F06-15 나머지) — 페이로드에 이름이 없어 명단 캐시에서 찾는다. 못 찾으면 지금 표기 그대로다.
+  // F06-15 — 페이로드에 이름이 없어 명단 캐시에서 찾는다. 못 찾으면 지금 표기 그대로다.
   testWidgets('받아 둔 명단에 그 학생이 있으면 행에 학생 이름을 함께 보여준다', (tester) async {
     await tester.pumpWidget(
       _wrap(const OfflineQueueScreen(), [

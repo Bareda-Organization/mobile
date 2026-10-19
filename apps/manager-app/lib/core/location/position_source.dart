@@ -109,8 +109,7 @@ PositionSample _toSample(Position position) => PositionSample(
   // clockProvider 로 "지금" 을 다시 물으면 안 된다(PositionSample 문서 참고).
   recordedAt: position.timestamp,
   // iOS 는 측정 불가일 때 속도·방향에 -1 을 준다 — §4.12 범위 밖이라 서버가
-  // 거부하므로, 음수면 그 필드를 아예 빼고 보낸다(브리프 §5.8.1.2 마지막
-  // 행 근거).
+  // 거부하므로, 음수면 그 필드를 아예 빼고 보낸다.
   speed: position.speed >= 0 ? _toKmh(position.speed) : null,
   heading: position.heading >= 0 ? position.heading : null,
 );

@@ -150,7 +150,7 @@ class RequestNoticesNotifier extends Notifier<List<RequestNotice>> {
 
 /// 명단(이미 받아 둔 것)에서 요청이 가리키는 학생의 이름 — 승하차 처리(`/runs/{runId}/riders/{riderId}`)와 그 학생의
 /// 미승차 연락 기록(`…/no-show-contacts`)만 해당하고, 같은 회차가 아니거나 못 찾으면 `null`. 큐 행의 본문에는 이름이
-/// 없다(M2-03).
+/// 없다.
 String? rosterNameOf(RosterResponse? roster, PendingRequestSummary request) {
   final match = RegExp(r'^/runs/([^/]+)/riders/([^/]+)(?:/no-show-contacts)?$')
       .firstMatch(request.endpoint);

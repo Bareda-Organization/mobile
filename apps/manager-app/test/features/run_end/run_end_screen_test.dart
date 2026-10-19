@@ -315,7 +315,7 @@ void main() {
     expect(find.text('13명'), findsOneWidget);
   });
 
-  // H3 — 끝난 운행에는 버스에 탄 학생이 없어 보호자 부재를 보고할 수 없다. 현장 보고 줄이 그것을 약속하지 않는다.
+  // 끝난 운행에는 버스에 탄 학생이 없어 보호자 부재를 보고할 수 없다. 현장 보고 줄이 그것을 약속하지 않는다.
   testWidgets('종료 완료 화면의 현장 상황 보고 줄은 보호자 부재를 약속하지 않는다', (tester) async {
     await tester.pumpWidget(
       _wrap(

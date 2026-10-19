@@ -172,8 +172,7 @@ class ManagerRunChannelController extends StateNotifier<ManagerChannelStatus> {
 
   /// `subscribe()` 가 돌려준 해제 콜백 — 타입을 `StompUnsubscribe` 로 적으면
   /// `stomp_dart_client` 를 이 앱의 직접 의존성으로 새로 추가해야 한다
-  /// (`baraeda_core` 만 그 패키지에 의존해도 되게 하려는 경계, 브리프 제약
-  /// "baraeda_core 는 읽기만"과 같은 취지). 구조적 타입이 같아 이 함수
+  /// (`baraeda_core` 만 그 패키지에 의존해도 되게 하려는 경계). 구조적 타입이 같아 이 함수
   /// 타입으로도 그대로 대입·호출된다.
   void Function({Map<String, String>? unsubscribeHeaders})? _unsubscribe;
 
