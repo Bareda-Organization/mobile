@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
-/// `features/<a>` 이 다른 기능 `features/<b>` 를 import 하지 못하게 막는 검사(F05-12).
+/// `features/<a>` 이 다른 기능 `features/<b>` 를 import 하지 못하게 막는 검사.
 ///
 /// **판단 근거** — 두 기능이 함께 쓰는 값은 `core/` 로 올리는 것이 이 앱의 규칙이다
 /// (`CONVENTIONS_FLUTTER.md §2` "기능끼리 서로 import 하지 않음"). 한 기능이 다른 기능의 파일을

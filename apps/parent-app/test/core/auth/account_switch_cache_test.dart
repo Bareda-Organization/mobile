@@ -50,7 +50,7 @@ class _CountingNotifications implements NotificationRepository {
   Future<void> markRead(String notificationId) async {}
 }
 
-/// F05-01 — 한 기기를 두 계정이 나눠 쓴다(UF-X-03 "로그아웃 후 다른 계정"). 로그아웃(역할 null)을
+/// 한 기기를 두 계정이 나눠 쓴다(UF-X-03 "로그아웃 후 다른 계정"). 로그아웃(역할 null)을
 /// 지나면 앞 계정이 받아 둔 자녀·알림·고른 자녀가 다음 계정에 보이면 안 된다.
 void main() {
   test('로그아웃을 지나 다시 로그인하면 자녀·알림·고른 자녀를 새로 받는다', () async {

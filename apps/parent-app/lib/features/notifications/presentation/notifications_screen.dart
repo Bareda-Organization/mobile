@@ -138,7 +138,7 @@ Future<void> _open(
         .read(notificationFeedProvider.notifier)
         .markRead(item.notificationId);
   } on Failure catch (failure) {
-    // F05-13 — 읽음 처리가 실패해도 이동은 이미 끝났다. 알림은 안 읽음으로 남으니 알린다.
+    // 읽음 처리가 실패해도 이동은 이미 끝났다. 알림은 안 읽음으로 남으니 알린다.
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(

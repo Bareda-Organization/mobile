@@ -12,7 +12,7 @@ import 'package:parent_app/core/auth/auth_providers.dart';
 import 'package:parent_app/core/auth/user_role.dart';
 
 
-/// SE — 공유 패키지 C1 이 낸 `BaraedaWebSocketClient.sessionExpired` 를
+/// 공유 패키지가 낸 `BaraedaWebSocketClient.sessionExpired` 를
 /// [RouterRefreshNotifier] 가 구독해 REST 로그인 만료와 같은 경로
 /// (`applyRoleAndStatus(..., role: null, status: null)` — `signOut()` 의
 /// 실패 경로가 이미 쓰는 것과 같은 함수)로 보내는지 검사한다. 역할·상태가

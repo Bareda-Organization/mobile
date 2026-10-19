@@ -20,7 +20,7 @@ export 'package:parent_app/core/change_requests/presentation/change_request_prov
 // ignore: specify_nonobvious_property_types
 final weeklyAddressProvider =
     FutureProvider.family<List<WeeklyAddressEntry>, String>((ref, studentId) {
-      // F05-01 — 계정이 바뀌면(로그아웃 = 역할 null) 앞 계정의 캐시를 버린다.
+      // 계정이 바뀌면(로그아웃 = 역할 null) 앞 계정의 캐시를 버린다.
       ref.watch(currentUserRoleProvider);
       final repository = ref.watch(weeklyAddressRepositoryProvider);
       return repository.getWeeklyAddress(studentId);
@@ -34,5 +34,5 @@ final scheduleUnsavedEditsProvider = Provider.autoDispose<UnsavedEdits>((ref) {
   return edits;
 });
 
-/// 일정 탭이 열리면 신청 이력 자리까지 내려갈지 — 영수증의 [신청 이력 보기] 가 켜고, 일정 탭이 내려간 뒤 끈다(B9).
+/// 일정 탭이 열리면 신청 이력 자리까지 내려갈지 — 영수증의 [신청 이력 보기] 가 켜고, 일정 탭이 내려간 뒤 끈다.
 final scheduleShowHistoryProvider = StateProvider<bool>((ref) => false);

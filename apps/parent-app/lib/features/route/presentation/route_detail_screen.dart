@@ -183,7 +183,7 @@ class _RouteDetailView extends StatelessWidget {
       (s) => s.change == RouteStopChange.skipped,
     );
 
-    // F05-06 — 당겨서 새로고침. 내용이 짧아도 당겨지도록 항상 스크롤 가능하게 둔다.
+    // 당겨서 새로고침. 내용이 짧아도 당겨지도록 항상 스크롤 가능하게 둔다.
     return RefreshIndicator(
       onRefresh: onRefresh,
       child: ListView(

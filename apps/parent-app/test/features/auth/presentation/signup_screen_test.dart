@@ -12,7 +12,7 @@ class _Repository implements AuthRepository {
       Future<List<Never>>.value(const []);
 }
 
-/// F05-11 — API_SPEC §2.2 `login_id` 50자 이하 · `password` UTF-8 72바이트 이하.
+/// API_SPEC §2.2 `login_id` 50자 이하 · `password` UTF-8 72바이트 이하.
 /// 서버 422 문구를 기다리지 않고 입력란 옆에 이유를 보인다.
 void main() {
   Future<void> pumpSignup(WidgetTester tester) async {

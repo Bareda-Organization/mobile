@@ -354,14 +354,14 @@ void main() {
       expect(repository.calls.last, ('login_id', '01000000000', '517249'));
     });
 
-    // L4 — API_SPEC §2.9: 같은 번호는 60초에 1회만 발급된다.
+    // API_SPEC §2.9: 같은 번호는 60초에 1회만 발급된다.
     // 문자가 안 오면 다시 받는 길이 있어야 한다.
     BaraedaButton resendButton(WidgetTester tester) =>
         tester.widget<BaraedaButton>(
           find.widgetWithText(BaraedaButton, '인증번호 다시 받기'),
         );
 
-    testWidgets('L4 처음에는 [인증번호 다시 받기] 가 꺼져 있고 60초가 지나면 켜진다', (tester) async {
+    testWidgets('처음에는 [인증번호 다시 받기] 가 꺼져 있고 60초가 지나면 켜진다', (tester) async {
       await pumpAtCodeStep(tester);
 
       expect(resendButton(tester).onPressed, isNull);
@@ -373,7 +373,7 @@ void main() {
       expect(resendButton(tester).onPressed, isNotNull);
     });
 
-    testWidgets('L4 다시 받으면 같은 번호로 인증번호를 다시 요청하고, 적어 둔 번호는 비우고, 다시 60초 잠근다', (
+    testWidgets('다시 받으면 같은 번호로 인증번호를 다시 요청하고, 적어 둔 번호는 비우고, 다시 60초 잠근다', (
       tester,
     ) async {
       final repository = await pumpAtCodeStep(tester);
@@ -394,7 +394,7 @@ void main() {
       expect(resendButton(tester).onPressed, isNull);
     });
 
-    testWidgets('L4 다시 받기가 429 를 받으면 다시 60초 잠기고 그 뒤 열린다', (tester) async {
+    testWidgets('다시 받기가 429 를 받으면 다시 60초 잠기고 그 뒤 열린다', (tester) async {
       await pumpAtCodeStep(tester, _RateLimitedResendAuthRepository());
       await tester.pump(const Duration(seconds: 60));
       expect(resendButton(tester).onPressed, isNotNull);
@@ -487,7 +487,7 @@ void main() {
     expect(find.byType(CircularProgressIndicator), findsNothing);
   });
 
-  testWidgets('L4 RECOVERY_RATE_LIMITED(429) 는 잠시 뒤에 다시 받으라고 안내한다', (
+  testWidgets('RECOVERY_RATE_LIMITED(429) 는 잠시 뒤에 다시 받으라고 안내한다', (
     tester,
   ) async {
     await _pumpAndRequestCode(tester, 'RECOVERY_RATE_LIMITED');
