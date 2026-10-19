@@ -1,4 +1,4 @@
-// 단추의 꺼짐 · 이유 글 · 긴 이름 — 시안 kit "버튼 · 큰 주 버튼" · "UX 개선 부품"(C3 · M5).
+// 단추의 꺼짐 · 이유 글 · 긴 이름 — 시안 kit "버튼 · 큰 주 버튼" · "UX 개선 부품".
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -22,7 +22,7 @@ double _scale(WidgetTester tester) =>
 void main() {
   const colors = BaraedaColors.light;
 
-  group('꺼진 단추는 누름 · 올림에 반응하지 않는다(C3)', () {
+  group('꺼진 단추는 누름 · 올림에 반응하지 않는다', () {
     testWidgets('꺼진 단추: 누르고 있어도 크기 · 색이 그대로이고 콜백은 없다', (tester) async {
       await tester.pumpWidget(
         _host(const BaraedaButton(label: '변경하기', block: true)),

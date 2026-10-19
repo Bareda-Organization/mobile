@@ -30,10 +30,10 @@ enum BaraedaButtonSize { sm, md, lg, xl }
 /// [BaraedaButtonVariant.danger]는 미탑승 처리·삭제 확정에만 쓴다.
 ///
 /// - [onPressed]가 null이면 꺼짐이다 — 면 `disabledSurface` · 글자 `disabledText`,
-///   누름·올림에 **아무 반응이 없다**(시안 C3). 왜 꺼졌는지는 [disabledReason] 으로
+///   누름·올림에 **아무 반응이 없다**. 왜 꺼졌는지는 [disabledReason] 으로
 ///   단추 아래에 적는다("새 비밀번호를 입력하면 눌러요").
 /// - [name] 은 단추 안 긴 이름이다. 이름만 `…` 로 줄고 [label](동사)은 늘 보인다
-///   (시안 M5 `새솔초 정문 도착 처리`).
+///   (예: `새솔초 정문 도착 처리`).
 /// - 누르는 동안 0.97 배로 줄고 6% 어두워진다(120ms). 움직임 줄이기가 켜져 있으면
 ///   크기는 그대로 두고 색만 바뀐다.
 class BaraedaButton extends StatefulWidget {
@@ -182,7 +182,7 @@ class _BaraedaButtonState extends State<BaraedaButton> {
           borderRadius: radius,
           splashFactory: NoSplash.splashFactory,
           splashColor: Colors.transparent,
-          // 꺼진 단추는 올림 · 눌림 색이 없다 — 켜진 것처럼 보이지 않게(C3).
+          // 꺼진 단추는 올림 · 눌림 색이 없다 — 켜진 것처럼 보이지 않게.
           hoverColor: _disabled
               ? Colors.transparent
               : Colors.black.withValues(alpha: 0.06),

@@ -224,7 +224,7 @@ void main() {
       expect(repository.arrivedStopIds, ['s2']);
     });
 
-    // L3 — 등원은 도착이 곧 종료·전원 자동 하차, 하원은 도착만 기록되고 남은 학생이 있으면 종료가 보류된다(C-15).
+    // 등원은 도착이 곧 종료·전원 자동 하차, 하원은 도착만 기록되고 남은 학생이 있으면 종료가 보류된다(C-15).
     testWidgets('등원 마지막 승하차지 확인 창은 전원 자동 하차와 위치 중단을 알린다', (tester) async {
       await pumpDrive(
         tester,
@@ -241,7 +241,7 @@ void main() {
       expect(find.text('도착했어요 · 운행 종료'), findsOneWidget);
     });
 
-    // A9 — 타고 있는 학생이 0명이면 자동 하차할 사람이 없어 그 줄을 내지 않는다.
+    // 타고 있는 학생이 0명이면 자동 하차할 사람이 없어 그 줄을 내지 않는다.
     testWidgets('등원 마지막 승하차지 확인 창은 탑승 학생이 없으면 전원 하차 줄을 내지 않는다', (tester) async {
       await pumpDrive(
         tester,
@@ -277,7 +277,7 @@ void main() {
       expect(repository.arrivedStopIds, ['s2']);
     });
 
-    // A10 — 직접 보낸 도착이 `403 DUPLICATE_ARRIVE`(이미 처리됨)면 오류 대신 명단을 다시 받는다.
+    // 직접 보낸 도착이 `403 DUPLICATE_ARRIVE`(이미 처리됨)면 오류 대신 명단을 다시 받는다.
     testWidgets('도착 처리가 403 DUPLICATE_ARRIVE 면 오류 없이 명단을 다시 조회한다', (
       tester,
     ) async {

@@ -52,7 +52,7 @@ void main() {
     test(
       'payload 가 없거나 null 이어도 죽지 않고 빈 Map 이 된다 — route_changed 는 본문이 필요 없다',
       () {
-        // F07-08 — `null as Map` TypeError 였다.
+        // `null as Map` 으로 읽으면 TypeError 가 난다.
         for (final json in <Map<String, dynamic>>[
           {
             'event': 'route_changed',

@@ -156,7 +156,7 @@ void main() {
     expect(find.text('오늘 배정된 운행이 없어요'), findsOneWidget);
   });
 
-  // G2 — 홈의 주 단추는 운행 준비로 가고, 홈에서는 운행 시작 요청이 나가지 않는다(`Ruling 799`).
+  // 홈의 주 단추는 운행 준비로 가고, 홈에서는 운행 시작 요청이 나가지 않는다(`Ruling 799`).
   testWidgets('기사 홈의 [운행 준비하기] 는 운행 준비 화면으로 가고 시작 요청은 없다', (tester) async {
     final repo = _CountingDriveRepository();
     await tester.pumpWidget(
@@ -217,7 +217,7 @@ void main() {
     expect(find.text('운행 준비하기'), findsNothing);
   });
 
-  // G2 — 확정 전 회차는 서버가 숫자를 세지 않아 `null` 이다. 0 으로 그리면 "탑승자 0명" 으로 읽힌다.
+  // 확정 전 회차는 서버가 숫자를 세지 않아 `null` 이다. 0 으로 그리면 "탑승자 0명" 으로 읽힌다.
   testWidgets('숫자가 비어 있는(확정 전) 회차는 큰 카드의 숫자 줄을 통째로 숨긴다', (tester) async {
     await tester.pumpWidget(
       wrap([
@@ -324,7 +324,7 @@ void main() {
     expect(find.text('명단 열기'), findsNothing);
   });
 
-  // G2 — 로그아웃은 내 정보 탭 맨 아래에만 있다(`Ruling 826`). 홈 머리말에서 뺀다.
+  // 로그아웃은 내 정보 탭 맨 아래에만 있다(`Ruling 826`). 홈 머리말에는 두지 않는다.
   testWidgets('홈에는 로그아웃이 없다', (tester) async {
     await tester.pumpWidget(
       wrap([

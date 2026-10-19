@@ -101,8 +101,8 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
   @override
   void initState() {
     super.initState();
-    // F2 — 백그라운드 위치 송신은 범위 밖이라, 운행 화면이 켜져 있는
-    // 것이 지금 GPS 송신을 지키는 유일한 수단이다(M-B 2항).
+    // 백그라운드 위치 송신은 범위 밖이라, 운행 화면이 켜져 있는
+    // 것이 지금 GPS 송신을 지키는 유일한 수단이다.
     _wakelockPort = ref.read(wakelockPortProvider);
     unawaited(_wakelockPort.enable());
     _cachedRetryTimer = Timer.periodic(_cachedRetryInterval, (_) {
@@ -155,7 +155,7 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
         title: '마지막 승하차지예요',
         body: toAcademy
             ? '도착 처리가 곧 운행 종료예요. 되돌릴 수 없어요.\n'
-                  // 타고 있는 학생이 없으면 자동 하차할 사람이 없다 — 그 줄을 내지 않는다(A9).
+                  // 타고 있는 학생이 없으면 자동 하차할 사람이 없다 — 그 줄을 내지 않는다.
                   '${hasBoardedRiders ? '· 등원 학생 전원이 자동으로 하차 처리돼요\n' : ''}'
                   '· 위치 보내기가 멈춰요\n'
                   '· 학원 관계자에게 운행 종료가 전달돼요'
@@ -178,7 +178,7 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
           .read(driveModeRepositoryProvider)
           .arriveStop(runId: runId, stopId: stopId);
       // 요청 중에 화면이 닫혀도 서버는 이미 도착을 반영했다 — 화면 생존과 무관한 갱신은 컨테이너로 한다
-      // (닫힌 화면의 `ref` 는 쓸 수 없다, F06-16). 큐에 쌓인 도착이 이번 요청 앞에서 비워졌을 수 있다.
+      // (닫힌 화면의 `ref` 는 쓸 수 없다). 큐에 쌓인 도착이 이번 요청 앞에서 비워졌을 수 있다.
       container.invalidate(pendingRequestsProvider);
       switch (outcome) {
         case Queued():
@@ -225,7 +225,7 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
       }
     } on Failure catch (failure) {
       // 이미 처리된 도착(`403 DUPLICATE_ARRIVE` — 상태와 코드가 짝일 때만)은 실패가 아니라
-      // 명단이 낡았다는 신호다 — 큐 재생과 같이 성공으로 취급하고, 서버 명단을 다시 받아 다음 승하차지를 가리킨다(A10).
+      // 명단이 낡았다는 신호다 — 큐 재생과 같이 성공으로 취급하고, 서버 명단을 다시 받아 다음 승하차지를 가리킨다.
       if (failure case ApiFailure(statusCode: 403, code: 'DUPLICATE_ARRIVE')) {
         container
           ..invalidate(driveModeRosterProvider)

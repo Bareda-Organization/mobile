@@ -222,7 +222,7 @@ void main() {
     expect(find.textContaining('미등원'), findsNothing);
   });
 
-  // L1(UF-D-02) — 기사는 운행을 시작하기 전에도 승하차지 명단(조회 전용)을 열어 볼 수 있다.
+  // 기사는 운행을 시작하기 전에도 승하차지 명단(조회 전용)을 열어 볼 수 있다(UF-D-02).
   testWidgets('운행 시작 전에도 [명단 보기] 로 조회 전용 명단을 연다', (tester) async {
     await tester.pumpWidget(
       wrap(DateTime(2026, 10, 3, 12, 2), _CountingDriveRepository()),
@@ -363,7 +363,7 @@ void main() {
     expect(events, ['requestNotificationPermission', 'startRun']);
   });
 
-  // A3 — 하원 시작은 전원 자동 승차 + 승차 알림(C-07 · Ruling 854)이라 확인 창에서 미리 알린다.
+  // 하원 시작은 전원 자동 승차 + 승차 알림(C-07 · Ruling 854)이라 확인 창에서 미리 알린다.
   testWidgets('하원 시작 확인 창은 자동 승차 알림을 알리고, 등원 확인 창은 알리지 않는다', (tester) async {
     Future<void> openConfirm(RunDirection direction) async {
       await tester.pumpWidget(

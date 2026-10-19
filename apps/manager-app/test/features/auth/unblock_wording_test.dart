@@ -57,7 +57,7 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  // B2 — 잠금 경고는 잔여 2회 이하부터 보인다(학부모 앱과 같다).
+  // 잠금 경고는 잔여 2회 이하부터 보인다(학부모 앱과 같다).
   testWidgets('잔여 시도 3회면 잠금 경고가 없고, 2회 · 1회면 있다', (tester) async {
     await failLogin(tester, 3);
     expect(find.textContaining('번 더 틀리면 계정이 잠겨요'), findsNothing);

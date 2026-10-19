@@ -132,7 +132,7 @@ class _ScheduleBodyState extends ConsumerState<_ScheduleBody> {
   @override
   void initState() {
     super.initState();
-    // 영수증의 [신청 이력 보기] 로 들어왔으면 열자마자 이력 자리로 내려간다(B9).
+    // 영수증의 [신청 이력 보기] 로 들어왔으면 열자마자 이력 자리로 내려간다.
     if (ref.read(scheduleShowHistoryProvider)) _goToRequestedHistory();
   }
 

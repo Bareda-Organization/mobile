@@ -11,7 +11,7 @@ import 'package:parent_app/features/settings/domain/notification_settings.dart';
 final notificationSettingsProvider = FutureProvider<NotificationSettings>((
   ref,
 ) {
-  // F05-01 — 계정이 바뀌면(로그아웃 = 역할 null) 앞 계정의 캐시를 버린다.
+  // 계정이 바뀌면(로그아웃 = 역할 null) 앞 계정의 캐시를 버린다.
   ref.watch(currentUserRoleProvider);
   final repository = ref.watch(notificationSettingsRepositoryProvider);
   return repository.getNotificationSettings();
@@ -19,7 +19,7 @@ final notificationSettingsProvider = FutureProvider<NotificationSettings>((
 
 /// 설정 맨 위 계정 카드가 읽는 내 정보(§2.10) — 이름 · 소속 학원 · 로그인 아이디.
 final myProfileProvider = FutureProvider<MeResponse>((ref) {
-  // F05-01 — 계정이 바뀌면(로그아웃 = 역할 null) 앞 계정의 캐시를 버린다.
+  // 계정이 바뀌면(로그아웃 = 역할 null) 앞 계정의 캐시를 버린다.
   ref.watch(currentUserRoleProvider);
   return ref.watch(authRepositoryProvider).me();
 });

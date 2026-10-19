@@ -57,7 +57,7 @@ class _FailingAfterFirstRuns extends _CountingRuns {
   }
 }
 
-/// F05-06 — 푸시 SDK 가 없어 앱 안 갱신이 유일한 통지 수단이다. 당기지 않아도 앱에 돌아오거나 일정 시간이
+/// 푸시 SDK 가 없어 앱 안 갱신이 유일한 통지 수단이다. 당기지 않아도 앱에 돌아오거나 일정 시간이
 /// 지나면 회차를 다시 받아야 한다(알림은 `AppShell` 이 받는다 — `app_shell_test.dart`).
 void main() {
   late _CountingRuns runs;

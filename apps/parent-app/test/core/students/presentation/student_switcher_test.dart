@@ -39,14 +39,14 @@ void main() {
     expect(find.byType(BaraedaSelect), findsNothing);
   });
 
-  testWidgets('L1 자녀 4명 이상이면 이름 칩 대신 고르는 창 하나다', (tester) async {
+  testWidgets('자녀 4명 이상이면 이름 칩 대신 고르는 창 하나다', (tester) async {
     await _pump(tester, 4);
 
     expect(find.byType(BaraedaFilterPill), findsNothing);
     expect(find.byType(BaraedaSelect), findsOneWidget);
   });
 
-  testWidgets('L1 고르는 창에서 자녀를 고르면 그 자녀로 바뀐다', (tester) async {
+  testWidgets('고르는 창에서 자녀를 고르면 그 자녀로 바뀐다', (tester) async {
     final container = await _pump(tester, 5);
 
     await tester.tap(find.byType(BaraedaSelect));

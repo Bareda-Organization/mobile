@@ -249,7 +249,7 @@ Future<void> _discardPendingRequestsOnce(
 /// 통신 두절 구간에도 저장 명단 · 대기열 · 비상 신고 · 학원 전화가 열려야 한다. 역할이 없으면 지금처럼 오류로
 /// 남겨 [다시 시도] 를 보인다. 서버의 거절(401 · 403)만 로그인 화면으로 남기고 저장한 역할을 지운다.
 // 자동 재시도를 끈다 — Riverpod 3 은 실패한 provider 를 늘어나는 간격으로 조용히 다시 불러 그동안 스피너만
-// 보이는데, 여기서는 곧바로 [다시 시도] 안내를 보이는 것이 낫다(F06-10).
+// 보이는데, 여기서는 곧바로 [다시 시도] 안내를 보이는 것이 낫다.
 final authBootstrapProvider = FutureProvider<void>(retry: (_, _) => null, (
   ref,
 ) async {
@@ -480,7 +480,7 @@ class RouterRefreshNotifier extends ChangeNotifier {
       previous,
       next,
     ) {
-      // 로그아웃·세션 만료(어느 경로든)로 역할이 비면 이 계정 소유의 상태를 함께 버린다(F06-02).
+      // 로그아웃·세션 만료(어느 경로든)로 역할이 비면 이 계정 소유의 상태를 함께 버린다.
       if (previous != null && next == null) _clearAccountScopedState(_ref);
       notifyListeners();
     });

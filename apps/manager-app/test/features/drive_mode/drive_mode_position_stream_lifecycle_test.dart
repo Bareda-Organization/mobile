@@ -114,7 +114,7 @@ void main() {
     currentUserRoleProvider.overrideWith((ref) => role),
     selectedRunIdProvider.overrideWith((ref) => runId),
     driveModeRunProvider.overrideWithValue(currentRun),
-    // F06-12 — 송신 대상은 오늘 회차 목록에서 고른다(화면이 고른 회차가 아니다).
+    // 송신 대상은 오늘 회차 목록에서 고른다(화면이 고른 회차가 아니다).
     todayRunsProvider.overrideWith((ref) async {
       final run = ref.watch(driveModeRunProvider);
       return run == null ? <ManagerRun>[] : [run];
@@ -152,7 +152,7 @@ void main() {
         currentUserRoleProvider.overrideWith((ref) => UserRole.driver),
         selectedRunIdProvider.overrideWith((ref) => runId),
         driveModeRunProvider.overrideWith((ref) => ref.watch(runState)),
-        // F06-12 — 송신 대상은 오늘 회차 목록에서 고른다(화면이 고른 회차가 아니다).
+        // 송신 대상은 오늘 회차 목록에서 고른다(화면이 고른 회차가 아니다).
         todayRunsProvider.overrideWith((ref) async {
           final run = ref.watch(driveModeRunProvider);
           return run == null ? <ManagerRun>[] : [run];

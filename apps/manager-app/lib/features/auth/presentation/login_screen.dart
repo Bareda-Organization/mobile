@@ -63,7 +63,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   static const _staffInactiveNotice = '이 계정은 더 이상 쓸 수 없어요. 다니는 학원에 문의해 주세요';
 
-  /// 잔여 시도가 이 값 이하이면 잠금 경고 띠를 보인다(학부모 앱과 같다, B2).
+  /// 잔여 시도가 이 값 이하이면 잠금 경고 띠를 보인다(학부모 앱과 같다).
   static const _lockWarningThreshold = 2;
 
   @override

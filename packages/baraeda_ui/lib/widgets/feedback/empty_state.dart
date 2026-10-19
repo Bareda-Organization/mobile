@@ -27,7 +27,7 @@ class EmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     return Semantics(
-      // 제목·본문을 자식이 각자 읽는다 — 합친 라벨을 또 얹으면 두 번 읽힌다(F07-10).
+      // 제목·본문을 자식이 각자 읽는다 — 합친 라벨을 또 얹으면 두 번 읽힌다.
       container: true,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),

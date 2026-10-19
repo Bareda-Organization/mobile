@@ -21,7 +21,7 @@ import 'package:manager_app/features/notifications/presentation/notification_pro
 /// 운행 중 화면 · 운행 준비 · 비상 같은 화면은 이 틀 밖에서 위에 덮여 열린다 — 탭 막대가 없다.
 ///
 /// 열려 있는 동안 [todayRunsRefreshInterval] 마다, 앱이 백그라운드에서 돌아올 때 오늘 회차 목록 · 알림을 다시
-/// 받는다 — 확정은 서버 배치가 시각에 맞춰 바꾸므로(F06-13) 한 번 받은 목록은 곧 낡는다.
+/// 받는다 — 확정은 서버 배치가 시각에 맞춰 바꾸므로 한 번 받은 목록은 곧 낡는다.
 class ManagerShell extends ConsumerStatefulWidget {
   const new({required this.navigationShell, super.key});
 

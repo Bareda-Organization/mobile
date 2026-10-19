@@ -1,6 +1,6 @@
 // 목록 칸 — 높이 56 이상, 앞 칸 · 제목 · 보조 줄 · 뒤 칸(시안 `.m-row`).
 // 긴 이름 규칙: 승하차지 · 학원 이름은 제목 두 줄까지 보이고 그 뒤는 `…`,
-// **사람 이름은 자르지 않고 줄을 바꾼다**. 보조 줄도 두 줄까지 보인다(C2).
+// **사람 이름은 자르지 않고 줄을 바꾼다**. 보조 줄도 두 줄까지 보인다.
 
 import 'package:baraeda_ui/theme/baraeda_colors.dart';
 import 'package:baraeda_ui/tokens/motion.dart';
@@ -29,7 +29,7 @@ class BaraedaListRow extends StatefulWidget {
 
   final String title;
 
-  /// 보조 줄 — 두 줄까지 보인다(C2).
+  /// 보조 줄 — 두 줄까지 보인다.
   final String? subtitle;
 
   /// 앞 칸 아이콘(Lucide 이름). 36×36 연한 면 안에 그린다. [leading] 이 우선한다.

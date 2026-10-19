@@ -90,7 +90,7 @@ class _FakeEmergencyRepository implements EmergencyRepository {
 }
 
 /// 항상 같은 좌표 스냅샷(또는 `null`)을 돌려주는 가짜 위치 소스 —
-/// `drive_mode_position_transmission_test.dart` 와 같은 패턴(F1). `sampleOnce`
+/// `drive_mode_position_transmission_test.dart` 와 같은 패턴이다. `sampleOnce`
 /// 는 스트림이 없을 때의 1회 측정을 대역한다 — 호출 횟수를 기록하고,
 /// 값을 즉시 낼지([onceSample]) 완료를 미룰지([onceCompleter], 중복 발신
 /// 시험용)를 고른다.
@@ -323,7 +323,7 @@ void main() {
     expect(fakeRepo.lastRequest?.occurredAt, raisedAt);
   });
 
-  testWidgets('위치 소스가 좌표를 주면 발신 요청에 lat·lng 가 실린다 (F1)', (tester) async {
+  testWidgets('위치 소스가 좌표를 주면 발신 요청에 lat·lng 가 실린다', (tester) async {
     // 비상은 기사·동승자 둘 다 발신한다(ARCHITECTURE §3.3·EXC-04) —
     // 이 시험은 역할을 override 하지 않는다(역할 무관 동작을 확인).
     final fakeRepo = _FakeEmergencyRepository(
@@ -361,7 +361,7 @@ void main() {
     expect(fakeRepo.lastRequest?.lng, 127);
   });
 
-  testWidgets('위치 소스가 null 이면 발신 요청에서 lat·lng 를 생략한다(서버가 최신 수신 좌표로 대체) (F1)', (
+  testWidgets('위치 소스가 null 이면 발신 요청에서 lat·lng 를 생략한다(서버가 최신 수신 좌표로 대체)', (
     tester,
   ) async {
     final fakeRepo = _FakeEmergencyRepository(
@@ -1029,7 +1029,7 @@ void main() {
     );
   });
 
-  // F06-06 — 이력 조회 오류가 `Failure.network(message: …)` 같은 개발용 표기 그대로 화면에 나오면
+  // 이력 조회 오류가 `Failure.network(message: …)` 같은 개발용 표기 그대로 화면에 나오면
   // 긴박한 상황에서 뜻을 알 수 없다. 다른 화면과 같이 일반 문구로 바꾼다.
   testWidgets('이력 조회가 실패하면 개발용 표기 대신 알아볼 수 있는 문구를 보여준다', (tester) async {
     final fakeRepo = _FakeEmergencyRepository(

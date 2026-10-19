@@ -87,7 +87,7 @@ abstract class NotificationFeedNotifierBase
   }
 
   /// §3.13 읽음 처리 — 성공하면 그 행만 읽음으로 바꾸고 안 읽은 수를 하나 줄인다(배지가 바로 준다).
-  /// 실패는 호출한 화면이 안내하도록 그대로 던진다(F05-13).
+  /// 실패는 호출한 화면이 안내하도록 그대로 던진다.
   Future<void> markRead(String notificationId) async {
     await repository.markRead(notificationId);
     final current = state.value;

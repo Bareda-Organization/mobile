@@ -21,7 +21,7 @@ import 'package:manager_app/features/route_map/data/models/route_response.dart';
 import 'package:manager_app/features/route_map/presentation/route_providers.dart';
 
 /// 호출 여부·횟수만 기록하는 가짜 포트 — `PositionSource` 가짜와 같은
-/// 발상(F2). 실제 플랫폼 호출(`wakelock_plus`)은 이 시험에 등장하지 않는다.
+/// 발상이다. 실제 플랫폼 호출(`wakelock_plus`)은 이 시험에 등장하지 않는다.
 class _RecordingWakelockPort implements WakelockPort {
   int enableCallCount = 0;
   int disableCallCount = 0;
@@ -112,7 +112,7 @@ void main() {
     currentUserRoleProvider.overrideWith((ref) => UserRole.driver),
     selectedRunIdProvider.overrideWith((ref) => runId),
     driveModeRunProvider.overrideWithValue(run()),
-    // 위치 송신기가 회차 목록에서 송신 대상을 고른다(F06-12) — 실제 서버로 나가지 않게 막는다.
+    // 위치 송신기가 회차 목록에서 송신 대상을 고른다 — 실제 서버로 나가지 않게 막는다.
     todayRunsProvider.overrideWith((ref) async => [run()]),
     // 운행 화면이 노선을 조회한다. 실제 서버로 나가지 않게 빈 노선으로 막는다.
     routeProvider.overrideWith((ref) async => const RouteResponse(stops: [])),
@@ -122,7 +122,7 @@ void main() {
     wakelockPortProvider.overrideWithValue(port),
   ];
 
-  testWidgets('운행 화면에 들어오면 화면 꺼짐 방지를 1회 켠다 (F2)', (tester) async {
+  testWidgets('운행 화면에 들어오면 화면 꺼짐 방지를 1회 켠다', (tester) async {
     final port = _RecordingWakelockPort();
 
     await tester.pumpWidget(_wrap(const DriveModeScreen(), overridesFor(port)));
@@ -132,7 +132,7 @@ void main() {
     expect(port.disableCallCount, 0);
   });
 
-  testWidgets('운행 화면이 dispose 되면 화면 꺼짐 방지를 1회 끈다 (F2)', (tester) async {
+  testWidgets('운행 화면이 dispose 되면 화면 꺼짐 방지를 1회 끈다', (tester) async {
     final port = _RecordingWakelockPort();
 
     await tester.pumpWidget(_wrap(const DriveModeScreen(), overridesFor(port)));

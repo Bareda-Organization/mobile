@@ -37,7 +37,7 @@ class HomeScreen extends ConsumerStatefulWidget {
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-/// 푸시 SDK 가 아직 없어 앱 안 갱신이 유일한 통지 수단이다(F05-06) — 당기지 않아도 [pollInterval] 마다 · 앱에
+/// 푸시 SDK 가 아직 없어 앱 안 갱신이 유일한 통지 수단이다. 당기지 않아도 [pollInterval] 마다 · 앱에
 /// 돌아올 때 회차를 다시 받는다. 앱이 백그라운드이거나 다른 화면이 홈 위에 있으면
 /// 멈춘다(`VisiblePoller`).
 /// 알림은 `AppShell` 이 받는다.

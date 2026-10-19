@@ -358,8 +358,7 @@ void main() {
     expect(authRepository.registeredWith!.platform, isNotEmpty);
   });
 
-  // F2 — `settings_screen.dart` 의 확인 대화를 그대로 재사용하는지 검사한다.
-  // 지금 코드는 확인 대화 없이 바로 logout() 을 부른다 — 버튼 라벨
+  // `settings_screen.dart` 의 확인 대화(`confirmLogout`)를 그대로 재사용하는지 검사한다.
   // 대화의 확정 버튼 라벨('로그아웃하기')은 `find.descendant` 로
   // `BaraedaDialog` 안쪽만 짚는다.
   group('로그아웃 확인 대화(기존 확인 대화 재사용)', () {

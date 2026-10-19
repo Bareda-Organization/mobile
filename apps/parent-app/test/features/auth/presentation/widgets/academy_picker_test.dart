@@ -32,14 +32,14 @@ Future<void> _search(WidgetTester tester, int resultCount) async {
 
 void main() {
   // API_SPEC §2.1 — 서버는 최대 20건만 주고 잘렸다는 표시를 하지 않는다. 20건이면 검색어를 좁히라고 안내한다.
-  testWidgets('L3 결과가 20건이면 검색어를 좁히라는 안내가 나온다', (tester) async {
+  testWidgets('결과가 20건이면 검색어를 좁히라는 안내가 나온다', (tester) async {
     await _search(tester, 20);
 
     expect(find.text('학원1'), findsOneWidget);
     expect(find.textContaining('검색어를 더 자세히'), findsOneWidget);
   });
 
-  testWidgets('L3 결과가 20건보다 적으면 그 안내가 없다', (tester) async {
+  testWidgets('결과가 20건보다 적으면 그 안내가 없다', (tester) async {
     await _search(tester, 19);
 
     expect(find.text('학원1'), findsOneWidget);

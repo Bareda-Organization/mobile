@@ -20,7 +20,7 @@ import 'package:parent_app/features/notifications/presentation/notification_prov
 /// 이 위젯은 그 위에 막대를 얹는다. 로그인·가입·대기·차단 화면과 지도·일정 같은 하위 화면은 탭 밖 경로라 막대가 없다.
 ///
 /// 알림 탭 배지는 서버가 세는 안 읽은 수(§3.12 `unread_count`)다. 푸시 SDK 가 아직 없어 앱 안 갱신이 유일한
-/// 통지 수단이므로(F05-06), 알림 탭을 열지 않아도 배지가 최신이 되도록
+/// 통지 수단이므로, 알림 탭을 열지 않아도 배지가 최신이 되도록
 /// 여기서 [pollInterval] 마다·앱에 돌아올 때 목록을 다시 받는다.
 class AppShell extends ConsumerStatefulWidget {
   const new({required this.navigationShell, super.key});

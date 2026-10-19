@@ -304,7 +304,7 @@ void main() {
     expect(repository.calls.length, afterArrive);
   });
 
-  // F06-12 — 송신 대상은 "내가 기사이고 운행 중인 회차" 이지 화면에서 고른 회차가 아니다. 운행 중 홈에서
+  // 송신 대상은 "내가 기사이고 운행 중인 회차" 이지 화면에서 고른 회차가 아니다. 운행 중 홈에서
   // 다른 회차 카드를 눌러도 학부모 지도의 버스가 멈추면 안 된다.
   testWidgets('운행 중 홈에서 다른 회차를 골라도 송신은 운행 중인 회차로 이어진다', (tester) async {
     final container = await pumpApp(
@@ -325,7 +325,7 @@ void main() {
     expect(source.stopCalls, 0);
   });
 
-  // K-02② (F06-07 (3)) — 음영 구간에서 앞 요청이 끝나지 않았는데 2초마다 새 요청을 열면 수십 개가 쌓였다가
+  // 음영 구간에서 앞 요청이 끝나지 않았는데 2초마다 새 요청을 열면 수십 개가 쌓였다가
   // 복구 순간 한꺼번에 도착한다. 앞 송신이 진행 중이면 그 주기는 건너뛴다.
   testWidgets('앞 위치 요청이 끝나지 않았으면 다음 주기는 새 요청을 열지 않는다', (tester) async {
     await pumpApp(tester);
@@ -362,7 +362,7 @@ void main() {
     );
   });
 
-  // F06-17 — 좌표가 그대로면 상태가 같은 값이라 화면을 다시 그리게 알리지 않는다.
+  // 좌표가 그대로면 상태가 같은 값이라 화면을 다시 그리게 알리지 않는다.
   testWidgets('같은 좌표가 이어지면 구독자에게 다시 알리지 않는다', (tester) async {
     final container = await pumpApp(tester);
     var notifications = 0;
@@ -376,7 +376,7 @@ void main() {
     expect(notifications, 1, reason: '처음 값이 채워질 때 한 번뿐이어야 한다');
   });
 
-  testWidgets('권한이 없어 못 보내는 동안에는 주기마다 소스에 다시 확인시킨다(F06-03)', (tester) async {
+  testWidgets('권한이 없어 못 보내는 동안에는 주기마다 소스에 다시 확인시킨다', (tester) async {
     await pumpApp(tester, unavailable: true);
     final startsAtBegin = source.startCalls;
 
@@ -385,7 +385,7 @@ void main() {
     expect(source.startCalls, greaterThan(startsAtBegin));
   });
 
-  // F06-16 — 마지막 도착 처리 요청 중에 화면이 닫혀도 서버는 이미 운행을 끝냈다. 종료 처리(위치 송신 중단)가
+  // 마지막 도착 처리 요청 중에 화면이 닫혀도 서버는 이미 운행을 끝냈다. 종료 처리(위치 송신 중단)가
   // 화면 생존에 기대면 송신이 계속되고, 닫힌 화면의 ref 를 써서 처리되지 않은 예외도 남는다.
   testWidgets('운행이 끝난 도착 응답 전에 화면이 닫혀도 송신은 멈추고 예외가 없다', (tester) async {
     final container = await pumpApp(tester);

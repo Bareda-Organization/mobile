@@ -114,7 +114,7 @@ class _RunReadyScreenState extends ConsumerState<RunReadyScreen> {
       // 운행이 시작되면 위치 포그라운드 서비스의 알림이 뜬다 — 그 전에 알림 권한을 묻는다. 거부돼도 시작은 막지 않는다.
       await _requestNotificationPermission();
       await ref.read(driveModeRepositoryProvider).startRun(runId);
-      // 요청 중에 화면이 닫혀도 서버는 이미 시작을 반영했다 — 컨테이너로 갱신한다(F06-16).
+      // 요청 중에 화면이 닫혀도 서버는 이미 시작을 반영했다 — 컨테이너로 갱신한다.
       container
         ..invalidate(todayRunsProvider)
         ..invalidate(driveModeRosterProvider);

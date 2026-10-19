@@ -71,7 +71,7 @@ void endSessionAsExpired(Ref ref) {
 /// 가 저장된 refresh 로 자동 재발급 후 재시도한다 — 이 provider 는 그 재발급
 /// 로직을 다시 구현하지 않는다.
 // 자동 재시도를 끈다 — Riverpod 3 은 실패한 provider 를 늘어나는 간격으로 조용히 다시 불러 그동안 스피너만
-// 보이는데, 여기서는 곧바로 [다시 시도] 안내를 보이는 것이 낫다(F05-10).
+// 보이는데, 여기서는 곧바로 [다시 시도] 안내를 보이는 것이 낫다.
 final authBootstrapProvider = FutureProvider<void>(retry: (_, _) => null, (
   ref,
 ) async {
@@ -92,7 +92,7 @@ final authBootstrapProvider = FutureProvider<void>(retry: (_, _) => null, (
       status: me.status,
     );
   } on Failure catch (failure) {
-    // F05-10 — 연결이 끊겼거나 서버가 잠깐 죽은 것은 로그인이 풀린 것이 아니다. 토큰은 그대로 두고
+    // 연결이 끊겼거나 서버가 잠깐 죽은 것은 로그인이 풀린 것이 아니다. 토큰은 그대로 두고
     // 앱이 [다시 시도] 를 보이게 오류로 남긴다. 그 밖(401 등 인증 거절)은 로그인 화면으로 남긴다.
     if (failure is NetworkFailure ||
         (failure is ApiFailure && failure.statusCode >= 500)) {
@@ -137,7 +137,7 @@ Future<void> signOut(WidgetRef ref) async {
 /// 자체가 역할·상태를 비운다(그 함수 문서 참고) — 여기서 에러를 따로
 /// 처리하지 않는다.
 ///
-/// **F2 — `settings_screen.dart`·`pending_approval_screen.dart`
+/// **`settings_screen.dart`·`pending_approval_screen.dart`
 /// 가 이 함수 하나를 공유한다.** 화면마다 확인 대화를 새로 만들면 문구·
 /// 동작이 갈릴 위험이 있어(실제로 두 화면이 이 함수가 생기기 전까지
 /// 갈려 있었다), `features/` 어느 쪽도 소유하지 않는 `core/auth` 에 둔다
@@ -219,7 +219,7 @@ class RouterRefreshNotifier extends ChangeNotifier {
         AccountGateReason.rejected => AccountStatus.rejected,
       };
     });
-    // SE — WS 재발급까지 실패하면(공유 패키지 C1 `sessionExpired`) REST
+    // WS 재발급까지 실패하면(공유 패키지 `sessionExpired`) REST
     // 로그인 만료와 같은 경로로 보낸다. `signOut()` 의 실패 갈래가 쓰는
     // 것과 같은 [applyRoleAndStatus] 호출이다 — 이미 토큰은
     // `TokenRefresher.refresh()` 가 지운 뒤라 서버에 다시 알릴 것이 없다.
@@ -227,8 +227,8 @@ class RouterRefreshNotifier extends ChangeNotifier {
         .read(webSocketClientProvider)
         .sessionExpired
         .listen((_) => endSessionAsExpired(_ref));
-    // K-01 — REST 재발급이 401 로 거절돼도 같은 처리다(`ApiClient.sessionExpired`).
-    // 이 구독이 없으면 토큰만 지워지고 화면은 로그인된 채 오류 띠만 반복한다(F05-07).
+    // REST 재발급이 401 로 거절돼도 같은 처리다(`ApiClient.sessionExpired`).
+    // 이 구독이 없으면 토큰만 지워지고 화면은 로그인된 채 오류 띠만 반복한다.
     _restSessionExpiredSubscription = _ref
         .read(apiClientProvider)
         .sessionExpired

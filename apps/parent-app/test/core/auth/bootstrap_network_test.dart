@@ -37,7 +37,7 @@ class _MeRepository implements AuthRepository {
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
 }
 
-/// F05-10 — 저장된 로그인이 있는데 시작할 때 연결이 잠깐 끊겨 있으면 로그인 화면이 아니라 다시 시도 화면이어야 한다.
+/// 저장된 로그인이 있는데 시작할 때 연결이 잠깐 끊겨 있으면 로그인 화면이 아니라 다시 시도 화면이어야 한다.
 void main() {
   Future<_MeRepository> pumpApp(WidgetTester tester, Failure failure) async {
     final repository = _MeRepository(failure);

@@ -182,7 +182,7 @@ class ManagerRunChannelController extends StateNotifier<ManagerChannelStatus> {
   bool _forbidden = false;
 
   /// 한 번이라도 연결된 적이 있는지 — 두 번째 이후 `connected` 는 끊겼다 돌아온 것이라, 그동안 놓친
-  /// 방송을 되찾으려고 화면 값을 다시 받는다(F06-09).
+  /// 방송을 되찾으려고 화면 값을 다시 받는다.
   bool _wasConnected = false;
 
   /// 연결이 끊긴 채로 처음 확인된 시각 — 연결 끊김 띠의 `HH:mm 부터`. 재시도 중 `connecting` ↔
@@ -266,7 +266,7 @@ class ManagerRunChannelController extends StateNotifier<ManagerChannelStatus> {
         _ref.invalidate(emergencyListProvider);
       },
       // 확정 뒤 노선(승하차지·도로 경로)이 바뀐 자리 — 지도·남은 승하차지를 새로 받는다.
-      // `ack_required`(변경 확인 띠)는 회차 목록에서 오므로 그것도 다시 받는다(F06-08).
+      // `ack_required`(변경 확인 띠)는 회차 목록에서 오므로 그것도 다시 받는다.
       onRouteChanged: () {
         _ref.invalidate(todayRunsProvider);
         _invalidateRunViews();

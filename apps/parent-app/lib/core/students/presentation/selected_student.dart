@@ -12,7 +12,7 @@ import 'package:parent_app/core/students/domain/student.dart';
 /// 학생 역할은 이 provider 를 쓰지 않는다 — 본인 `student_id` 는
 /// `myStudentIdProvider`(`features/home`) 로 얻는다.
 final selectedStudentIdProvider = StateProvider<String?>((ref) {
-  // F05-01 — 계정이 바뀌면 앞 계정에서 고른 자녀를 버린다.
+  // 계정이 바뀌면 앞 계정에서 고른 자녀를 버린다.
   ref.watch(currentUserRoleProvider);
   return null;
 });

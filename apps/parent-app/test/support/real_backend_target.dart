@@ -27,7 +27,7 @@ String? fixtureDbNameOrNull() => const bool.hasEnvironment('FIXTURE_DB')
 /// `ChangeWindowPolicy.segmentOf` 가 run2 를 결정적으로 ②(APPROVAL_
 /// REQUIRED)에서 ③(CLOSED)으로 넘긴다 — 그 순간부터 두 시험은 기대하는
 /// `CHANGE_LIMIT_REACHED` 대신 `CHANGE_WINDOW_CLOSED` 를 받아 실패한다
-/// (F5 P 판정문 실측 — 조율자가 depart_time 까지 8분 남은 시점을 확인했고
+/// (실측 — depart_time 까지 8분 남은 시점을 확인했고
 /// 그 뒤 실제로 실패 2건이 났다).
 ///
 /// 매니저 앱이 같은 형태(되돌릴 수 없는 상태가 시간이 지나면
@@ -50,7 +50,7 @@ String? fixtureDbNameOrNull() => const bool.hasEnvironment('FIXTURE_DB')
 /// 초기화(Flyway clean+migrate, 순간적이지 않다)가 도는 동안 다른
 /// real_backend 파일(`real_backend_p1~p3_test.dart`)이 같은 스키마를
 /// 동시에 읽으면 전이 상태(테이블 없음·부분 시드)를 코드 결함과 구별할
-/// 수 없이 관측한다 — `M3` 이 매니저 앱에서 밟은 것과 같은 함정이다.
+/// 수 없이 관측한다 — 매니저 앱과 같은 함정이다.
 Future<void> ensureParentSeedIsSafeForTiming(String baseUrl) async {
   final dio = Dio(BaseOptions(baseUrl: baseUrl));
   try {
@@ -70,8 +70,7 @@ Future<void> ensureParentSeedIsSafeForTiming(String baseUrl) async {
     // 판정에 맡기고, 여기서 던지면 "환경 문제"와 "코드 결함"을 가르는 각
     // 시험의 자체 판정(markTestSkipped)이 가려진다. **그 외(401 등)는
     // 던진다** — 로그인 실패는 시드 계정이 손상됐다는 신호라, 여기서
-    // 삼키면 그 손상 상태를 안은 채 나머지 시험이 조용히 돈다(이월 6번,
-    // F5 보고서에서 발견).
+    // 삼키면 그 손상 상태를 안은 채 나머지 시험이 조용히 돈다.
     if (e.type != DioExceptionType.connectionError) rethrow;
   } finally {
     dio.close();

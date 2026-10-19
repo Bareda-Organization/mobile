@@ -159,9 +159,9 @@ void main() {
     );
   });
 
-  // F05-11 — API_SPEC §2.8 새 비밀번호는 UTF-8 72바이트 이하(한글 24자).
+  // API_SPEC §2.8 새 비밀번호는 UTF-8 72바이트 이하(한글 24자).
   // 넘으면 서버 422 를 기다리지 않는다.
-  testWidgets('F05-11 새 비밀번호가 72바이트를 넘으면 이유를 보이고 요청을 보내지 않는다', (tester) async {
+  testWidgets('새 비밀번호가 72바이트를 넘으면 이유를 보이고 요청을 보내지 않는다', (tester) async {
     final repository = _CountingAuthRepository();
     await tester.pumpWidget(
       ProviderScope(
@@ -181,7 +181,7 @@ void main() {
     expect(repository.changePasswordCallCount, 0);
   });
 
-  testWidgets('F05-11 한글 24자(72바이트)는 통과한다', (tester) async {
+  testWidgets('한글 24자(72바이트)는 통과한다', (tester) async {
     final repository = _CountingAuthRepository();
     await tester.pumpWidget(
       ProviderScope(

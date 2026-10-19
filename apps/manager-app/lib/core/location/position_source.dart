@@ -225,7 +225,7 @@ class GeolocatorPositionSource implements PositionSource {
   void start() {
     if (_started) {
       // 권한·서비스 문제로 스트림을 못 연 채라면 다시 확인한다 — 기사가 설정에서 켠 것을 앱 재시작
-      // 없이 알아채야 한다(F06-03).
+      // 없이 알아채야 한다.
       if (_availability != PositionAvailability.available) {
         unawaited(_recheck());
       }
@@ -269,9 +269,9 @@ class GeolocatorPositionSource implements PositionSource {
   /// 스트림이 오류로 끊기거나 끝났다(운행 중 GPS 를 껐다 켠 경우 등) — 죽은
   /// 구독을 비우고 권한·서비스를 다시 확인해 연다. 비우지 않으면 [_startStream]
   /// 의 `_subscription != null` 검사에 막혀, 설정이 정상으로 돌아와도 그 회차가
-  /// 끝날 때까지 위치 송신이 멈춘다(leak K-4). 서비스가 꺼진 탓이면 다시 열지
+  /// 끝날 때까지 위치 송신이 멈춘다. 서비스가 꺼진 탓이면 다시 열지
   /// 않고 [availability] 만 바꾼다 — 그 뒤 송신기의 주기 [start] 가 켜진 것을
-  /// 알아채 연다(F06-03).
+  /// 알아채 연다.
   void _onStreamLost() {
     unawaited(_subscription?.cancel());
     _subscription = null;
@@ -283,7 +283,7 @@ class GeolocatorPositionSource implements PositionSource {
     _started = false;
     unawaited(_subscription?.cancel());
     _subscription = null;
-    // 이 운행의 마지막 좌표를 다음 운행·비상 신고가 "지금 위치" 로 쓰지 않게 버린다(F06-04).
+    // 이 운행의 마지막 좌표를 다음 운행·비상 신고가 "지금 위치" 로 쓰지 않게 버린다.
     _lastSample = null;
   }
 
@@ -295,7 +295,7 @@ class GeolocatorPositionSource implements PositionSource {
   PositionSample? sample() {
     final last = _lastSample;
     if (last == null) return null;
-    // 스트림이 끊긴 뒤(터널·주차장)의 마지막 좌표를 계속 보내지 않는다 — 비면 호출부가 새로 잰다(F06-04).
+    // 스트림이 끊긴 뒤(터널·주차장)의 마지막 좌표를 계속 보내지 않는다 — 비면 호출부가 새로 잰다.
     final age = DateTime.now().difference(last.recordedAt);
     return age > PositionConstants.sampleMaxAge ? null : last;
   }

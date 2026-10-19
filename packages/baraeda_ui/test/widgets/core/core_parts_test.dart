@@ -32,7 +32,7 @@ void main() {
       expect(taps, 1);
     });
 
-    testWidgets('보조 줄은 두 줄까지 보인다(C2) — 한 줄 `…` 로 핵심 정보를 자르지 않는다', (
+    testWidgets('보조 줄은 두 줄까지 보인다 — 한 줄 `…` 로 핵심 정보를 자르지 않는다', (
       tester,
     ) async {
       const sub =

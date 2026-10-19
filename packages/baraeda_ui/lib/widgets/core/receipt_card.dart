@@ -1,4 +1,4 @@
-// 제출 영수증 — 방금 낸 신청의 내용을 그대로 다시 보여 준다(시안 P1 `daily-change--done`).
+// 제출 영수증 — 방금 낸 신청의 내용을 그대로 다시 보여 준다(시안 `daily-change--done`).
 // 위쪽 3px 초록 선 + `✓ 제목` + 이름 · 값 줄들.
 
 import 'package:baraeda_ui/theme/baraeda_colors.dart';

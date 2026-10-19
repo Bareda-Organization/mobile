@@ -36,7 +36,7 @@ class _PendingApprovalScreenState extends ConsumerState<PendingApprovalScreen> {
   SignupStatusResponse? _lastStatus;
   DateTime? _checkedAt;
 
-  /// 승인은 관계자가 따로 하므로 이 화면이 스스로 상태를 다시 본다(M11, 시안 "30초마다"). 앱이 보이는 동안만
+  /// 승인은 관계자가 따로 하므로 이 화면이 스스로 상태를 다시 본다(시안 "30초마다"). 앱이 보이는 동안만
   /// 간격마다, 백그라운드에서 돌아오면 간격을 기다리지 않고 바로 본다(frontend `Ruling 473`).
   static const _autoRefreshInterval = Duration(seconds: 30);
   late final VisiblePoller _poller = VisiblePoller(

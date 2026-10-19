@@ -180,7 +180,7 @@ void main() {
     expect(client.reconnectNowCalls, 1);
   });
 
-  // L4 — 한 방송마다 명단·노선을 바로 다시 받으면, 한 정류장에서 승차가 몰릴 때 탭마다 같은 조회가 연달아 나간다.
+  // 한 방송마다 명단·노선을 바로 다시 받으면, 한 정류장에서 승차가 몰릴 때 탭마다 같은 조회가 연달아 나간다.
   group('이벤트 뒤 화면 값 재조회', () {
     testWidgets('이벤트가 몰려도 첫 이벤트 1초 뒤 한 번만 다시 읽는다', (tester) async {
       final loads = _Loads();

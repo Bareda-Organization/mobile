@@ -106,8 +106,8 @@ void main() {
     expect(find.textContaining('parentA1'), findsNothing);
   });
 
-  // L6 · Ruling 861 ⑤ — 개발용 빠른 로그인(시드 계정 칩)은 앱에서 없앴다. 웹 Ruling 844 와 같은 기준이다.
-  testWidgets('L6 로그인 화면에 시드 계정을 채워 주는 개발용 칩이 없다', (tester) async {
+  // Ruling 861 ⑤ — 개발용 빠른 로그인(시드 계정 칩)은 앱에 두지 않는다. 웹 Ruling 844 와 같은 기준이다.
+  testWidgets('로그인 화면에 시드 계정을 채워 주는 개발용 칩이 없다', (tester) async {
     await _pump(tester);
 
     expect(find.text('학부모(자녀 2)'), findsNothing);

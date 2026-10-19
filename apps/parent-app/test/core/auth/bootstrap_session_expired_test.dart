@@ -65,7 +65,7 @@ void main() {
     expect(find.text('로그인이 만료됐어요. 다시 로그인해 주세요.'), findsOneWidget);
   });
 
-  // A7 — 만료 안내는 인증 거절(401)만 쓴다. 403 같은 다른 거절은 안내를 남기지 않는다.
+  // 만료 안내는 인증 거절(401)만 쓴다. 403 같은 다른 거절은 안내를 남기지 않는다.
   testWidgets('부팅 중 403 으로 거절돼도 만료 안내를 남기지 않는다', (tester) async {
     final tokens = FakeTokenStorage(
       seedRefreshToken: 'r',

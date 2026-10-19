@@ -74,7 +74,7 @@ final _run = StudentRun(
   changeQuotaLeft: 1,
 );
 
-/// F05-02 — 홈에서 ② 구간 탑승을 끄면 접수 안내가 남고 "처리 대기" 배지가 1건으로 바뀌어야 한다.
+/// 홈에서 ② 구간 탑승을 끄면 접수 안내가 남고 "처리 대기" 배지가 1건으로 바뀌어야 한다.
 void main() {
   testWidgets('② 구간 끄기 접수 뒤에도 승인 대기 안내가 남고 처리 대기 배지가 갱신된다', (tester) async {
     final changes = _ServerChangeRequests();

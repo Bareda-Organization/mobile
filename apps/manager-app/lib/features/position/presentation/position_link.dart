@@ -12,7 +12,7 @@ import 'package:manager_app/features/position/presentation/position_transmitter.
 /// GPS 는 그대로인데 전송만 실패하면 버스 점은 정상처럼 움직이고 학부모 화면만 "마지막 확인 위치 N분 전"이 된다.
 ///
 /// [PositionTransmission] 과 **따로** 둔다 — 성공할 때마다(2초) 값이 바뀌므로 같은 상태에 넣으면 지도·운행 화면
-/// 전체가 2초마다 다시 그려진다(F06-17).
+/// 전체가 2초마다 다시 그려진다.
 @immutable
 class PositionLink {
   const new({this.startedAt, this.lastSentAt});

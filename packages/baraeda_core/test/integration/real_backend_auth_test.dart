@@ -71,7 +71,7 @@ class _FakeSecureStoragePlatform
 }
 
 /// `--dart-define=API_BASE_URL` 로 지정한 서버를 실제로 때리는 계약
-/// 시험 — F2 목표 표 7·8·9·11 항. `flutter test` 가 도는 동안 로컬
+/// 시험. `flutter test` 가 도는 동안 로컬
 /// 백엔드(`docker compose up -d postgres redis` + `./gradlew bootRun`)가
 /// 떠 있어야 하고, 없으면 이 그룹 전체가 연결 실패로 죽는다. 그 실패는
 /// 코드 결함이 아니라 환경 문제이므로 `setUpAll` 에서 헬스체크로 미리
@@ -274,8 +274,8 @@ void main() {
         rawDio.close();
       }
       // 서버는 `401 TOKEN_EXPIRED` 를 준다 — 매퍼는 이 조합을 "재로그인 필요"
-      // (`Failure.unauthenticated`)로 옮긴다(프론트 Ruling 386 · 검사 F07-07).
-      // 그전에는 `ApiFailure(401, TOKEN_EXPIRED)` 로 옮겨 이 단언도 그 형태였다.
+      // (`Failure.unauthenticated`)로 옮긴다(프론트 Ruling 386).
+      // `ApiFailure(401, TOKEN_EXPIRED)` 로 옮기면 이 단언이 실패한다.
       expect(refreshFailure, isA<UnauthenticatedFailure>());
 
       // 다음 회차에서도 같은 계정으로 로그인할 수 있어야 한다 — 로그아웃이

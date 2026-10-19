@@ -11,7 +11,7 @@ import 'package:parent_app/core/change_requests/domain/change_request.dart';
 // ignore: specify_nonobvious_property_types
 final changeRequestsProvider = FutureProvider.family<ChangeRequestPage, String>(
   (ref, studentId) {
-    // F05-01 — 계정이 바뀌면(로그아웃 = 역할 null) 앞 계정의 캐시를 버린다.
+    // 계정이 바뀌면(로그아웃 = 역할 null) 앞 계정의 캐시를 버린다.
     ref.watch(currentUserRoleProvider);
     final repository = ref.watch(changeRequestRepositoryProvider);
     return repository.getChangeRequests(studentId);

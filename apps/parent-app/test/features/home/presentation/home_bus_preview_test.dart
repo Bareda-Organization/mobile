@@ -308,7 +308,7 @@ void main() {
   });
 
   // 버스 위치를 못 불러온 화면에도 급할 때 걸 학원 전화가 있다(홈 전체 실패 화면과 같은 카드).
-  group('A11 버스 위치 실패 화면의 학원 전화', () {
+  group('버스 위치 실패 화면의 학원 전화', () {
     Future<void> failToLoad(WidgetTester tester, {String? savedContact}) =>
         _pumpHome(
           tester,

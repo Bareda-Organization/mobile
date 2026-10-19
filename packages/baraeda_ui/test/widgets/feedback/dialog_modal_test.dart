@@ -1,4 +1,4 @@
-// 대화상자 시맨틱 · 단추 쌓기 — 뒤 화면이 읽히지 않는다(웹 `aria-modal` 대응, C5).
+// 대화상자 시맨틱 · 단추 쌓기 — 뒤 화면이 읽히지 않는다(웹 `aria-modal` 대응).
 // 위험 확인은 빨강 위 · 닫기 아래, 3단 선택은 주 · 위험 테두리 · 닫기 순서(시안 kit).
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';

@@ -11,7 +11,7 @@ abstract final class PositionConstants {
   static const transmissionInterval = Duration(seconds: 2);
 
   /// 캐시된 좌표를 "지금 위치" 로 인정하는 최대 나이 — 이보다 오래된 측정값은 GPS 가 끊겼거나 앞 운행의
-  /// 잔재라 송신·비상 신고에 쓰지 않는다(F06-04). 송신 주기의 5배.
+  /// 잔재라 송신·비상 신고에 쓰지 않는다. 송신 주기의 5배.
   static const sampleMaxAge = Duration(seconds: 10);
 
   /// 마지막 성공 전송이 이 시간 안이면 운행 화면이 "위치 전송 중" 으로 본다 — 송신 주기의 3배(한두 번 실패해도

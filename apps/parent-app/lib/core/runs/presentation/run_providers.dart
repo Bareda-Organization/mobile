@@ -17,7 +17,7 @@ final runsForStudentProvider = FutureProvider.family<List<StudentRun>, String>((
   ref,
   studentId,
 ) {
-  // F05-01 — 계정이 바뀌면(로그아웃 = 역할 null) 앞 계정의 캐시를 버린다.
+  // 계정이 바뀌면(로그아웃 = 역할 null) 앞 계정의 캐시를 버린다.
   ref.watch(currentUserRoleProvider);
   return ref.watch(runRepositoryProvider).getRuns(studentId);
 });
@@ -30,7 +30,7 @@ final runsForStudentOnProvider =
       ref,
       key,
     ) {
-      // F05-01 — 계정이 바뀌면(로그아웃 = 역할 null) 앞 계정의 캐시를 버린다.
+      // 계정이 바뀌면(로그아웃 = 역할 null) 앞 계정의 캐시를 버린다.
       ref.watch(currentUserRoleProvider);
       return ref.watch(runRepositoryProvider).getRuns(key.$1, date: key.$2);
     });

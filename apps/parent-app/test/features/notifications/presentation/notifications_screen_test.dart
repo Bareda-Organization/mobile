@@ -383,7 +383,7 @@ void main() {
       expect(find.byKey(NotificationTile.unreadDotKey), findsOneWidget);
     });
 
-    testWidgets('읽음 처리가 실패해도 예외가 새지 않고 안내한다(F05-13)', (tester) async {
+    testWidgets('읽음 처리가 실패해도 예외가 새지 않고 안내한다', (tester) async {
       final repository = FakeNotificationRepository(_many(2))
         ..markFailure = const Failure.network();
       await _pump(tester, repository);

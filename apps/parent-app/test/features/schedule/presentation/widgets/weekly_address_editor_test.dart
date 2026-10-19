@@ -8,7 +8,7 @@ import 'package:parent_app/features/schedule/domain/weekly_address_entry.dart';
 import 'package:parent_app/features/schedule/domain/weekly_address_repository.dart';
 import 'package:parent_app/features/schedule/presentation/widgets/weekly_address_editor.dart';
 
-/// 이월 2-2 — API_SPEC §3.7 `ADDRESS_VERIFICATION_FAILED` 가 이 화면에서
+/// API_SPEC §3.7 `ADDRESS_VERIFICATION_FAILED` 가 이 화면에서
 /// 실제로 안내 문구로 갈리는지 확인한다.
 class _ThrowingWeeklyAddressRepository implements WeeklyAddressRepository {
   new(this.failure);
@@ -112,7 +112,7 @@ void main() {
     expect(find.text('월요일 · 등원', findRichText: true), findsNothing);
   });
 
-  testWidgets('F05-14 저장이 네트워크 오류로 실패하면 네트워크 확인 문구를 보여준다', (tester) async {
+  testWidgets('저장이 네트워크 오류로 실패하면 네트워크 확인 문구를 보여준다', (tester) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -134,8 +134,8 @@ void main() {
     expect(find.text('네트워크 상태를 확인해 주세요'), findsOneWidget);
   });
 
-  // F05-11 — 한 칸을 비우고 저장하면 14건 전체가 거절돼 다른 요일 수정분까지 함께 잃는다. 보내기 전에 막는다.
-  testWidgets('F05-11 칸을 비운 채 저장하면 요청이 나가지 않고 어느 칸인지 안내한다', (tester) async {
+  // 한 칸을 비우고 저장하면 14건 전체가 거절돼 다른 요일 수정분까지 함께 잃는다. 보내기 전에 막는다.
+  testWidgets('칸을 비운 채 저장하면 요청이 나가지 않고 어느 칸인지 안내한다', (tester) async {
     final repository = _RecordingWeeklyAddressRepository();
     await tester.pumpWidget(
       ProviderScope(

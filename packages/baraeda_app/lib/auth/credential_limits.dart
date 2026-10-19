@@ -6,7 +6,7 @@ const int passwordMaxBytes = 72;
 /// API_SPEC §2.2 — `login_id` 는 50자 이하.
 const int loginIdMaxLength = 50;
 
-/// 입력칸 아래 상시 안내 — 한도를 넘으면 [passwordLengthError] 가 이 자리를 대신한다(F05-11).
+/// 입력칸 아래 상시 안내 — 한도를 넘으면 [passwordLengthError] 가 이 자리를 대신한다.
 const String passwordLimitHint =
     '영문 $passwordMaxBytes자 · 한글 ${passwordMaxBytes ~/ 3}자까지';
 

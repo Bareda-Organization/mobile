@@ -1,4 +1,4 @@
-// `BaraedaDialog`·`BaraedaBottomSheet` 공용판의 결함 3종(F07-11 (3) · Ruling 405):
+// `BaraedaDialog`·`BaraedaBottomSheet` 공용판의 결함 3종(Ruling 405):
 // ① 긴 본문·큰 글자에서 넘친다 ② 안드로이드 뒤로가기를 못 받는다 ③ 뒤의 화면을 낭독기가 계속 읽는다.
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';

@@ -65,7 +65,7 @@ class _FakeWsClient extends BaraedaWebSocketClient {
   final List<String> subscribedDestinations = [];
 
   /// `subscribe`·해지 콜백 호출을 시각 순서대로 남긴다 — "자녀를 전환할
-  /// 때 해지가 구독보다 먼저인가"(팀 리드 우려 3)는 최종 상태만 보면
+  /// 때 해지가 구독보다 먼저인가"는 최종 상태만 보면
   /// 안 갈리고 순서를 봐야 갈린다.
   final List<String> callLog = [];
 
@@ -240,7 +240,7 @@ class _MutableClock implements Clock {
 
 final _linkedAt = DateTime(2026);
 
-/// 재연결 포기 띠 제목 — 웹 · 두 앱이 같은 제목을 쓴다(`Ruling 666`, 낮음 A6).
+/// 재연결 포기 띠 제목 — 웹 · 두 앱이 같은 제목을 쓴다(`Ruling 666`).
 const String _gaveUpTitle = WsConnectionNotice.gaveUpTitle;
 
 void main() {
@@ -399,7 +399,7 @@ void main() {
     final studentB = Student(studentId: 's-B', name: 'B', linkedAt: _linkedAt);
 
     testWidgets('자녀를 아직 고르지 않아도(selectedStudentIdProvider == null) 첫 자녀 '
-        '목적지로만 구독하고 null 목적지는 만들지 않는다(팀 리드 우려 2)', (tester) async {
+        '목적지로만 구독하고 null 목적지는 만들지 않는다', (tester) async {
       await pumpConnectedParent(tester, students: [studentA, studentB]);
 
       expect(client.subscribedDestinations, [WsChannel.studentRun('s-A')]);
@@ -410,7 +410,7 @@ void main() {
     });
 
     testWidgets('자녀를 전환하면 새 목적지 구독이 먼저 걸리고 이전 목적지 해지가 '
-        '뒤따른다 — 팀 리드 우려 3 실측: `autoDispose` 는 위젯 재빌드가 새 '
+        '뒤따른다 — 실측: `autoDispose` 는 위젯 재빌드가 새 '
         '목적지를 구독한 *뒤에* 더는 안 읽히는 이전 인스턴스를 해지하므로 '
         '한 프레임 동안 두 목적지가 겹친다. 이 겹침은 둘 다 같은 학부모 '
         '본인 자녀 목적지라 서버 인가상 안전하다(거부 대상이 아니다) — '
@@ -581,7 +581,7 @@ void main() {
     });
 
     testWidgets('거부(forbidden) 후 연결이 되살아나도 같은 목적지를 다시 구독하지 '
-        '않고 "조회 권한 없음"을 유지한다(팀 리드 우려 4 — 재구독 반복 방지)', (tester) async {
+        '않고 "조회 권한 없음"을 유지한다(재구독 반복 방지)', (tester) async {
       await pumpConnected(tester);
       client.forbid(WsChannel.studentRun('s-1'));
       await tester.pump();
@@ -1049,7 +1049,7 @@ void main() {
   });
 
   group('새 좌표가 오면 예약을 다시 거는 동작', () {
-    // 위 F1 그룹은 좌표 하나가 2분을 넘기는 경우만 다룬다. 이 그룹은
+    // 위 그룹은 좌표 하나가 2분을 넘기는 경우만 다룬다. 이 그룹은
     // `_scheduledForReceivedAt` 비교(코드 문서 참고)가 실제로 "새 좌표가
     // 오면 다시 예약한다"를 지키는지를 좌표 두 개(A·B)로 직접 고정한다.
     final t0 = DateTime.utc(2026, 9, 13, 8);
@@ -1138,7 +1138,7 @@ void main() {
     });
   });
 
-  group('F05-04·05 재연결 재구독 · 다음 회차 이벤트 초기화', () {
+  group('재연결 재구독 · 다음 회차 이벤트 초기화', () {
     Future<void> pumpConnected(
       WidgetTester tester, {
       RouteDetail? route,
@@ -1163,7 +1163,7 @@ void main() {
     }
 
     // 새 소켓은 이전 구독을 이어받지 않는다(`_doConnect`) — 재구독 책임은 화면에 있다.
-    testWidgets('F05-04 연결이 끊겼다 되돌아오면 같은 목적지를 다시 구독한다', (tester) async {
+    testWidgets('연결이 끊겼다 되돌아오면 같은 목적지를 다시 구독한다', (tester) async {
       await pumpConnected(tester);
       final destination = WsChannel.studentRun('s-1');
       expect(
@@ -1182,7 +1182,7 @@ void main() {
       );
     });
 
-    testWidgets('F05-05 다음 회차 운행 시작이 오면 앞 회차의 지난 곳·종료 상태를 지운다', (tester) async {
+    testWidgets('다음 회차 운행 시작이 오면 앞 회차의 지난 곳·종료 상태를 지운다', (tester) async {
       await pumpConnected(tester);
       WebSocketEnvelope forRun(
         String runId,
@@ -1252,8 +1252,8 @@ void main() {
     MapSurface surface(WidgetTester tester) =>
         tester.widget<MapSurface>(find.byType(MapSurface));
 
-    // 버스가 움직여 화면 밖으로 나가도 지도가 따라간다. F05-09 는 "카메라를 고정하고
-    // [버스 위치로] 로만 따라간다" 였고, 그러면 켜 두고 기다리는 동안 버스가 지도에서 사라졌다.
+    // 버스가 움직여 화면 밖으로 나가도 지도가 따라간다. 카메라를 고정하고
+    // [버스 위치로] 로만 따라가면 켜 두고 기다리는 동안 버스가 지도에서 사라진다.
     testWidgets('새 좌표가 오면 지도 카메라가 버스를 따라간다', (tester) async {
       await pumpConnected(tester);
 
@@ -1266,7 +1266,7 @@ void main() {
       expect(surface(tester).camera.lat, 37.6);
     });
 
-    // F05-09 의 이유(2초마다 사용자가 옮긴 지도가 되돌아감)는 그대로 지킨다 — 손으로 만지면 따라가기를 멈춘다.
+    // 사용자가 옮긴 지도는 2초마다 되돌아가지 않는다 — 손으로 만지면 따라가기를 멈춘다.
     testWidgets('사용자가 지도를 만지면 따라가기를 멈추고 [버스 위치로] 로 다시 켠다', (
       tester,
     ) async {

@@ -383,7 +383,7 @@ void main() {
   test(
     '재발급 요청이 네트워크 오류로 실패하면 토큰을 지우지 않고 그 네트워크 오류를 던진다',
     () async {
-      // F07-02 — 일시 장애를 로그아웃으로 옮기지 않는다.
+      // 일시 장애를 로그아웃으로 옮기지 않는다.
       final storage = tokenStorage();
       await storage.saveTokens(accessToken: 'expired', refreshToken: 'r1');
       final adapter = _ScriptedAdapter({
@@ -478,7 +478,7 @@ void main() {
   });
 
   test('기본 dio 와 재발급 dio 는 연결·송신·수신 제한 시간을 갖는다', () {
-    // F07-05 — dio 5 의 기본은 제한 없음이다. 재발급 하나가 멈추면 합류한 모든 요청이
+    // dio 5 의 기본은 제한 없음이다. 재발급 하나가 멈추면 합류한 모든 요청이
     // 같이 멈춘다.
     final client = ApiClient(
       tokenStorage: tokenStorage(),

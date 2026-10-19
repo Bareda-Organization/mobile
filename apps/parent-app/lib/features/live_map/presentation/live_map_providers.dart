@@ -14,7 +14,7 @@ import 'package:parent_app/core/runs/presentation/run_providers.dart';
 final FutureProvider<String?> academyNameProvider = FutureProvider<String?>((
   ref,
 ) async {
-  // F05-01 — 계정이 바뀌면(로그아웃 = 역할 null) 앞 계정의 캐시를 버린다.
+  // 계정이 바뀌면(로그아웃 = 역할 null) 앞 계정의 캐시를 버린다.
   ref.watch(currentUserRoleProvider);
   final me = await ref.watch(authRepositoryProvider).me();
   return me.academy?.name;
@@ -32,7 +32,7 @@ final FutureProvider<String?> academyNameProvider = FutureProvider<String?>((
 ///
 /// `autoDispose.family` — 화면을 벗어나거나 자녀를 전환하면 이전
 /// `studentId` 의 인스턴스가 해제되며 구독도 함께 해지된다. **실측
-/// (`live_map_screen_test.dart` "자녀를 전환하면..." — 팀 리드 우려 3)**
+/// (`live_map_screen_test.dart` "자녀를 전환하면...")**
 /// 위젯 빌드가 새 `studentId` 로 다시 `ref.watch` 하는 시점에 새
 /// 인스턴스의 구독이 먼저 걸리고, 더는 아무도 읽지 않는 이전 인스턴스는
 /// 그 뒤 `dispose()` 로 해지된다 — 겹치지 않는다는 가정은 틀렸고, 실제로
@@ -43,7 +43,7 @@ final FutureProvider<String?> academyNameProvider = FutureProvider<String?>((
 /// `myStudentsProvider` 목록에서만 나오므로 이 provider 앞단에서 이미
 /// 막힌다.
 ///
-/// **거부(forbidden) 이후 복구 — 팀 리드 우려 4.** `BaraedaWebSocketClient`
+/// **거부(forbidden) 이후 복구.** `BaraedaWebSocketClient`
 /// 는 서버가 SUBSCRIBE 를 거부하면 세션 전체를 `4403` 으로 닫고, 그 뒤
 /// `_manuallyDisconnected` 가 `false` 라 자동으로 재연결을 시도한다(다른
 /// 화면의 실시간 기능이 계속 쓰는 공용 연결이라 이 자동 재연결 자체는
@@ -85,7 +85,7 @@ class LiveMapNotifier extends StateNotifier<LiveMapState> {
   /// 않는다(새 인스턴스만 재시도한다).
   bool _forbidden = false;
 
-  /// 마지막으로 이벤트를 받은 회차 — 다른 회차의 이벤트가 오면 앞 회차 표시를 비운다(F05-05).
+  /// 마지막으로 이벤트를 받은 회차 — 다른 회차의 이벤트가 오면 앞 회차 표시를 비운다.
   String? _runId;
 
   BaraedaWebSocketClient get _client => _ref.read(webSocketClientProvider);
@@ -182,7 +182,7 @@ class LiveMapNotifier extends StateNotifier<LiveMapState> {
         wsState == WsConnectionState.connecting && _client.isRenewing;
     if (!renewing) _applyConnectionState(wsState);
     if (wsState != WsConnectionState.connected) {
-      // F05-04 — 소켓이 내려가면 그 위의 구독도 사라진다(새 소켓은 이어받지 않는다).
+      // 소켓이 내려가면 그 위의 구독도 사라진다(새 소켓은 이어받지 않는다).
       // 해지 콜백을 비워 두어야 `connected` 로 돌아왔을 때 다시 구독한다.
       _unsubscribe = null;
     } else if (_unsubscribe == null) {
@@ -237,7 +237,7 @@ class LiveMapNotifier extends StateNotifier<LiveMapState> {
 
   void _onEnvelope(WebSocketEnvelope envelope) {
     if (_runId != null && envelope.runId != _runId) {
-      // F05-05 — 같은 자녀 채널로 다음 회차(등원→하원)가 이어져도 앞 회차의 도착·종료 줄이 남지 않게 한다.
+      // 같은 자녀 채널로 다음 회차(등원→하원)가 이어져도 앞 회차의 도착·종료 줄이 남지 않게 한다.
       state = LiveMapState(connection: state.connection);
     }
     _runId = envelope.runId;

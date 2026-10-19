@@ -1,4 +1,4 @@
-// 조작 요소 경계가 전용 토큰 `borderControl` 을 쓰는지 고정한다(F07-09 · Ruling 403).
+// 조작 요소 경계가 전용 토큰 `borderControl` 을 쓰는지 고정한다(Ruling 403).
 // 카드 외곽선은 그대로 `borderDefault` 라는 것도 함께 — 값만 올려 전 화면이 진해지는 회귀를 막는다.
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:baraeda_ui/widgets/forms/code_input_box.dart';

@@ -19,7 +19,7 @@ import 'package:parent_app/features/schedule/presentation/unsaved_edits.dart';
 /// 요일 7 × 방향 2 = **14칸 전부** 주소와 상세 주소(`address_detail`)를
 /// 적을 수 있다(P-05 · STU-06).
 /// 서버가 아직 갖고 있지 않은 칸은 빈 칸으로 열리고, 적은 칸만 저장 요청에 실린다(`PATCH` 는 보낸 칸만 반영).
-/// 서버에 이미 있던 칸을 비우는 것은 막는다 — 칸을 지우는 수단이 없고 빈 주소는 전체를 거절시킨다(F05-11).
+/// 서버에 이미 있던 칸을 비우는 것은 막는다 — 칸을 지우는 수단이 없고 빈 주소는 전체를 거절시킨다.
 ///
 /// 저장하지 않은 요일에는 점을 달고 위에 "저장하지 않은 변경이 있어요" 띠를 둔다.
 /// 저장 단추는 아래에 고정이다.
@@ -84,7 +84,7 @@ class _WeeklyAddressEditorState extends ConsumerState<WeeklyAddressEditor> {
   /// 14칸 — 요일 월~일 × 등원 · 하원 순서.
   late final List<_Slot> _slots;
 
-  /// 지금 보고 있는 요일 — 요일을 바꿔도 다른 요일에 적은 글자는 그대로 둔다(저장은 전체 일괄, F05-11).
+  /// 지금 보고 있는 요일 — 요일을 바꿔도 다른 요일에 적은 글자는 그대로 둔다(저장은 전체 일괄).
   Weekday? _selectedDay;
 
   bool _submitting = false;
@@ -156,7 +156,7 @@ class _WeeklyAddressEditorState extends ConsumerState<WeeklyAddressEditor> {
       final address = slot.address.text.trim();
       final detail = slot.detail.text.trim();
       if (address.isEmpty) {
-        // F05-11 — 한 칸만 비어도 서버가 전체(최대 14건)를 거절해
+        // 한 칸만 비어도 서버가 전체(최대 14건)를 거절해
         // 다른 요일 수정분까지 잃는다. 보내기 전에 막는다.
         final label = '${slot.weekday.longLabel} ${slot.direction.label}';
         if (slot.isRegistered) {

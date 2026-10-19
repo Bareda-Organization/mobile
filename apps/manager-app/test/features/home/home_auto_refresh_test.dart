@@ -14,7 +14,7 @@ import 'package:manager_app/features/home/presentation/widgets/focus_run_card.da
 
 import '../../support/manager_run_fixture.dart';
 
-/// F06-13 — 홈 회차 목록은 한 번 받고 고정이라 확정 시각(출발 30분 전)이 지나도 카드가 잠긴 채 남고,
+/// 홈 회차 목록은 한 번 받고 고정이라 확정 시각(출발 30분 전)이 지나도 카드가 잠긴 채 남고,
 /// 비상 버튼도 그 목록으로 판정한다. 서버 배치(30초 폴링)와 같은 주기로 다시 받는 일은 쉘이 맡는다
 /// (`test/app/manager_shell_refresh_test.dart`).
 /// 머리줄 부제가 `/me` 를 읽는다 — 이 시험의 관심사가 아니라 실제 서버로 나가지 않게 막는다.

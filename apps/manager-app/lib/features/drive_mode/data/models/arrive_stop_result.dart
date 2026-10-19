@@ -31,11 +31,8 @@ class NextStopRef {
     return NextStopRef(
       // `Ruling 275` — 서버가 stop_id 를 int 로 내려도 흡수한다(직접 캐스트 금지).
       stopId: asIdString(json['stop_id']),
-      // 별도 결함(Ruling 275 와 다른 축) — 실제 서버 응답의
-      // 키는 `name` 이 아니라 `stop_name` 이다(실측: POST .../arrive 원문
-      // 응답). 수정 전에는 마지막 지점이 아닌 모든 도착 처리가 항상
-      // TypeError 로 크래시했다(널 캐스트 실패) — Ruling 275 의 int/String
-      // 불일치보다 더 넓게 도달하는 결함이었다.
+      // 서버 응답(POST .../arrive)의 키는 `name` 이 아니라 `stop_name` 이다 —
+      // 키를 잘못 읽으면 마지막 지점이 아닌 모든 도착 처리가 널 캐스트로 실패한다.
       name: json['stop_name'] as String,
     );
   }

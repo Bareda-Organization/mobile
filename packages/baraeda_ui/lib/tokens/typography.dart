@@ -1,7 +1,7 @@
 // 바래다 타이포그래피 — 제목 나눔명조(세리프) / 본문 Noto Sans KR(산세리프).
 // `frontend/design-system/tokens/typography.css` 를 1:1 로 이식한 것.
 //
-// ⚠ 폰트 바이너리는 이 저장소에 없다 (팀 리드 지시 — 다운로드 금지).
+// ⚠ 폰트 바이너리는 이 저장소에 없다 (다운로드 금지).
 // `fonts.css` 원본은 Google Fonts CDN(`@import`)에서 로드하는데, Flutter 는 CDN
 // `@import` 를 쓸 수 없어 두 가지 중 하나가 필요하다:
 //   1) 자체 호스팅 — 나눔명조·Noto Sans KR 의 .ttf(또는 .otf)를

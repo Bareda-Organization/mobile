@@ -45,7 +45,7 @@ enum LiveMapConnection {
 }
 
 /// 화면 상태 전체 — 4개 이벤트(`position`·`stop_arrived`·`run_started`·
-/// `run_ended`)를 각자의 최신값으로만 쌓는다. 지도 위젯은 F4-B 몫이라
+/// `run_ended`)를 각자의 최신값으로만 쌓는다. 지도 위젯은 화면 쪽 담당이라
 /// 좌표를 그리지 않고, 여기서는 값을 들고 있기만 한다.
 class LiveMapState {
   const new({
