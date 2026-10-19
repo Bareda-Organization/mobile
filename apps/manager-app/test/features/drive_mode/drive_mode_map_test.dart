@@ -106,7 +106,7 @@ void main() {
     currentUserRoleProvider.overrideWith((ref) => UserRole.driver),
     selectedRunIdProvider.overrideWith((ref) => 'run-1'),
     driveModeRunProvider.overrideWithValue(_run(now, status)),
-    // 위치 송신기는 화면이 고른 회차가 아니라 오늘 회차 목록에서 송신 대상을 고른다(F06-12).
+    // 위치 송신기는 화면이 고른 회차가 아니라 오늘 회차 목록에서 송신 대상을 고른다.
     todayRunsProvider.overrideWith((ref) async => [_run(now, status)]),
     driveModeRosterProvider.overrideWith(
       (ref) async => RosterResponse(
@@ -238,7 +238,7 @@ void main() {
     );
   });
 
-  // 서버가 road_path·fallback_used 를 얹기 전 응답과 얹은 응답 둘 다 견뎌야 한다(조율자 결정).
+  // 서버가 road_path·fallback_used 를 얹기 전 응답과 얹은 응답 둘 다 견뎌야 한다.
   testWidgets('road_path 가 2점 이상이면 도로 경로 선을 그린다', (tester) async {
     final route = RouteResponse(
       stops: stops,

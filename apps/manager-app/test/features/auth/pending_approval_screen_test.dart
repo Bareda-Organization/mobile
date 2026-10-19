@@ -352,7 +352,7 @@ void main() {
       expect(find.widgetWithText(BaraedaButton, '로그아웃'), findsOneWidget);
     });
 
-    // A8 — 신청한 뒤에는 되돌릴 수 없어 확인 창 한 단계를 거친다.
+    // 신청한 뒤에는 되돌릴 수 없어 확인 창 한 단계를 거친다.
     testWidgets('재신청은 확인 창에서 취소하면 보내지 않는다', (tester) async {
       final repository = await pumpRejected(tester);
 

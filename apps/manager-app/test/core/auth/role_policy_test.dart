@@ -6,11 +6,10 @@ import 'package:manager_app/core/auth/user_role.dart';
 /// 버튼 노출이 갈리는 판단이 여기 한곳에서 맞게 나오는지 확인한다
 /// (IMPLEMENTATION_PLAN.md §1.1).
 ///
-/// ⚠ F2 버전은 `canSendDelayNotification` 을 기사=true·동승자=false 로
-/// 기대했다 — API_SPEC §4.9·USER_FLOWS UF-E-05("기사는 발신 불가")와
-/// 반대였다. 이 파일은 그 반대 방향(동승자만 가능)으로 고쳤다
-/// `canSendArrivalNotification` 도 `canOperateRun` 으로
-/// 이름을 바꿨다 — §4.5 가 이 API 는 알림을 보내지 않는다고 명시한다.
+/// ⚠ `canSendDelayNotification` 은 동승자만 true 다(기사=false).
+/// API_SPEC §4.9·USER_FLOWS UF-E-05("기사는 발신 불가")가 근거다.
+/// `canOperateRun` 은 알림을 보내지 않는다(§4.5) — 그래서 도착 알림 판정에
+/// `canSendArrivalNotification` 이라는 이름을 쓰지 않는다.
 void main() {
   group('RoleCapabilities.of(driver)', () {
     final capabilities = RoleCapabilities.of(UserRole.driver);

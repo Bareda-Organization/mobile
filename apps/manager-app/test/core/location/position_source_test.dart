@@ -159,7 +159,7 @@ void main() {
     expect(sample, isNotNull);
     expect(sample!.lat, 37.5);
     expect(sample.lng, 127);
-    // 기기는 m/s 로 주고 §4.12 는 km/h 로 받는다(L6 · 861 ⑩) — 5 m/s = 18 km/h.
+    // 기기는 m/s 로 주고 §4.12 는 km/h 로 받는다 — 5 m/s = 18 km/h.
     expect(sample.speed, closeTo(18, 0.001));
     expect(sample.heading, 90);
   });
@@ -214,7 +214,7 @@ void main() {
     expect(source.availability, PositionAvailability.serviceDisabled);
   });
 
-  // F06-04 — 캐시된 좌표는 운행이 끝나거나 GPS 가 끊긴 뒤에도 "지금 위치" 로 쓰이면 안 된다.
+  // 캐시된 좌표는 운행이 끝나거나 GPS 가 끊긴 뒤에도 "지금 위치" 로 쓰이면 안 된다.
   // 비상 신고·다음 운행 첫 송신이 몇 시간 전 좌표를 싣고 나간다.
   test('stop() 하면 캐시 좌표를 버린다(다음 운행·비상이 옛 좌표를 쓰지 않는다)', () async {
     final platform = _FakeGeolocatorPlatform();
@@ -248,8 +248,8 @@ void main() {
     expect(source.sample(), isNull);
   });
 
-  // F06-03 — 권한·위치 서비스는 생성 때 한 번만 확인했다. 기사가 설정에서 켜도 앱을 다시 켤 때까지
-  // 송신이 살아나지 않았다. 송신기가 주기마다 start() 를 다시 부르면 그때 다시 확인한다.
+  // 권한·위치 서비스는 생성 때 한 번만 보면 안 된다. 기사가 설정에서 켜도 앱을 다시 켤 때까지
+  // 송신이 살아나지 않는다. 송신기가 주기마다 start() 를 다시 부르면 그때 다시 확인한다.
   test('위치 서비스를 나중에 켜면 start() 재호출로 송신이 되살아난다', () async {
     final platform = _FakeGeolocatorPlatform()..serviceEnabled = false;
     GeolocatorPlatform.instance = platform;

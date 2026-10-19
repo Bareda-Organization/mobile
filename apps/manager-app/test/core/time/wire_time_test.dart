@@ -6,7 +6,7 @@ import 'package:manager_app/features/emergency/data/models/emergency_type.dart';
 import 'package:manager_app/features/position/data/models/position_request.dart';
 import 'package:manager_app/features/roster/data/models/boarding_update_request.dart';
 
-/// F06-18 — API_SPEC §1.1 은 시각을 "ISO-8601 + 오프셋" 으로 규정한다.
+/// API_SPEC §1.1 은 시각을 "ISO-8601 + 오프셋" 으로 규정한다.
 /// `DateTime.now()`(기기 로컬)를 그대로 `toIso8601String()` 하면 오프셋 없는
 /// 문자열이 나가 서버가 거절하거나 서버 시간대로 잘못 읽는다.
 void main() {

@@ -217,7 +217,7 @@ void main() {
     driveModeRunProvider.overrideWithValue(
       _managerRun(runStatus: runStatus, now: now),
     ),
-    // F06-12 — 송신 대상은 오늘 회차 목록에서 고른다(화면이 고른 회차가 아니다).
+    // 송신 대상은 오늘 회차 목록에서 고른다(화면이 고른 회차가 아니다).
     todayRunsProvider.overrideWith((ref) async {
       onRunsLoad?.call();
       final run = ref.watch(driveModeRunProvider);
@@ -257,7 +257,7 @@ void main() {
           currentUserRoleProvider.overrideWith((ref) => UserRole.driver),
           selectedRunIdProvider.overrideWith((ref) => runId),
           driveModeRunProvider.overrideWith((ref) => ref.watch(runState)),
-          // F06-12 — 송신 대상은 오늘 회차 목록에서 고른다(화면이 고른 회차가 아니다).
+          // 송신 대상은 오늘 회차 목록에서 고른다(화면이 고른 회차가 아니다).
           todayRunsProvider.overrideWith((ref) async {
             final run = ref.watch(driveModeRunProvider);
             return run == null ? <ManagerRun>[] : [run];
@@ -572,9 +572,8 @@ void main() {
     expect(PositionConstants.transmissionInterval, const Duration(seconds: 2));
   });
 
-  // 위치 송신은 화면이 아니라 앱 전역이다. 옛 시험(`화면이 dispose 되면 위치 송신
-  // 타이머가 멈춘다`, F4 이월 3번)은 "화면을 나가면 송신이 끊기는" 결함을 고정하고 있었다 —
-  // 반대로, 화면이 사라져도 송신이 이어지는 것을 지킨다. 화면만 걷고 ProviderScope 는 그대로 둔다
+  // 위치 송신은 화면이 아니라 앱 전역이다. 화면이 사라져도 송신이 이어지는 것을 지킨다 —
+  // 화면을 나가면 송신이 끊기면 안 된다. 화면만 걷고 ProviderScope 는 그대로 둔다
   // (같은 overrides 목록 · 같은 위치의 ProviderScope 라 상태가 유지된다).
   testWidgets('화면이 dispose 되어도 위치 송신은 계속된다', (tester) async {
     final source = _FakePositionSource(

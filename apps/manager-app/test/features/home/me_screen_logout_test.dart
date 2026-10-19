@@ -59,7 +59,7 @@ class _StubQueueRepository implements OfflineQueueRepository {
     ),
   );
 
-  /// 로그아웃하면 대기열을 비운다(F06-02) — 여기서는 아무것도 하지 않는다.
+  /// 로그아웃하면 대기열을 비운다 — 여기서는 아무것도 하지 않는다.
   @override
   Future<void> clear() async {}
 

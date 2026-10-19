@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:manager_app/features/auth/presentation/widgets/academy_picker.dart';
 
-/// A13 — 검색 결과가 쪽 크기(20)에 닿으면 더 있을 수 있다고 알린다.
+/// 검색 결과가 쪽 크기(20)에 닿으면 더 있을 수 있다고 알린다.
 void main() {
   const notice = '검색 결과가 많아요. 학원 이름을 더 자세히 입력해 주세요';
 

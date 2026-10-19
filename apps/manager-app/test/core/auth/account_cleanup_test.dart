@@ -48,9 +48,9 @@ class _RejectRefreshAdapter implements HttpClientAdapter {
   );
 }
 
-/// F06-02 — 로그아웃·세션 만료로 역할이 비면 이 계정 소유의 상태(오프라인 큐·회차 캐시·선택값)를
+/// 로그아웃·세션 만료로 역할이 비면 이 계정 소유의 상태(오프라인 큐·회차 캐시·선택값)를
 /// 함께 비운다. 다음 계정이 이전 계정의 대기 요청을 자기 토큰으로 재생하거나 이전 목록을 보면 안 된다.
-/// K-02① — REST 재발급 실패(`ApiClient.sessionExpired`)도 같은 경로로 역할을 비운다.
+/// REST 재발급 실패(`ApiClient.sessionExpired`)도 같은 경로로 역할을 비운다.
 void main() {
   late OfflineQueueDatabase database;
   late _CountingRunsRepository runs;
@@ -144,7 +144,7 @@ void main() {
       await expectCleared();
     },
   );
-  // L7(Ruling 388 · 616) — 세션이 만료돼 큐를 비울 때 보내지 못한 처리를 안내 없이 지우지 않는다. 비상 신고가 섞여
+  // 세션이 만료돼 큐를 비울 때 보내지 못한 처리를 안내 없이 지우지 않는다(Ruling 388 · 616). 비상 신고가 섞여
   // 있으면 그것을 따로 밝힌다. 직접 로그아웃은 확인 창이 이미 알려 주므로 만료 안내를 만들지 않는다.
   test('세션 만료로 큐를 비울 때 버려지는 처리 건수를 만료 안내에 밝힌다', () async {
     await loginWithLeftovers();

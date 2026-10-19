@@ -15,7 +15,7 @@ import 'package:manager_app/features/auth/presentation/signup_screen.dart';
 
 import '../../support/fake_academy_contact_store.dart';
 
-/// 861 ⑥ · L2(UF-X-01) — 가입이 접수되면 곧바로 로그인해 승인 대기 화면으로 간다(학부모 앱과 같은 동작).
+/// 가입이 접수되면 곧바로 로그인해 승인 대기 화면으로 간다(학부모 앱과 같은 동작 · UF-X-01).
 /// 로그인이 실패해도 가입은 접수됐으니 "가입 실패" 로 보이지 않고 로그인 화면으로 돌려보낸다.
 const _academy = AcademySummary(
   id: 'a1',
