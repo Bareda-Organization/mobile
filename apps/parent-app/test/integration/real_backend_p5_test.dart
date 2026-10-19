@@ -117,8 +117,8 @@ Future<void> _expectApiError(
 /// `API_BASE_URL` 이 가리키는 서버가 실제로 어느 DB 를 물고
 /// 있는지는 그 서버를 띄운 사람만 안다 — 회차마다 이름이 바뀌고(이
 /// 파일은 `schoolbus_r4_assert` 를 겨냥해 돈다), 둘이 갈리면 **픽스처는
-/// 옛 DB 에 심기고 검사는 새 서버를 읽어 조용히 실패한다**(조율자가
-/// `8153` 으로 재현). 그래서 DB 이름도 `API_BASE_URL` 과 짝을 이루는
+/// 옛 DB 에 심기고 검사는 새 서버를 읽어 조용히 실패한다**(`8153` 으로 재현).
+/// 그래서 DB 이름도 `API_BASE_URL` 과 짝을 이루는
 /// `--dart-define=FIXTURE_DB` 로 받는다(`real_backend_target.dart` 의
 /// `fixtureDbNameOrNull()`). **주지 않으면 이 픽스처 없이 돌 수 있는
 /// 시험(성공 경로 · 403 두 건)은 그대로 통과하고, 이 픽스처가 필요한

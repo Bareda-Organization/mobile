@@ -100,7 +100,7 @@ void main() {
     expect(find.text('설정을 바꾸지 못했습니다'), findsOneWidget);
   });
 
-  testWidgets('F05-14 네트워크 오류로 실패하면 네트워크 확인 문구를 보여준다', (tester) async {
+  testWidgets('네트워크 오류로 실패하면 네트워크 확인 문구를 보여준다', (tester) async {
     const initial = NotificationSettings(
       arrive: false,
       boarding: true,

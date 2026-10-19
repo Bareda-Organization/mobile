@@ -16,7 +16,7 @@ import 'package:parent_app/core/runs/domain/student_run.dart';
 import 'package:parent_app/features/schedule/presentation/schedule_providers.dart';
 import 'package:parent_app/features/schedule/presentation/widgets/change_request_panel.dart';
 
-/// 이월 2-2 — API_SPEC §3.8 에러 코드(`CHANGE_WINDOW_CLOSED` ·
+/// API_SPEC §3.8 에러 코드(`CHANGE_WINDOW_CLOSED` ·
 /// `CHANGE_LIMIT_REACHED` · `ADDRESS_VERIFICATION_FAILED`)가 이 화면에서
 /// 실제로 다른 문구로 갈리는지 확인한다(`run_card_test.dart`의 §8.3 재현과
 /// 같은 형태, 대상만 변경 신청 화면).
@@ -178,7 +178,7 @@ Future<void> _pumpAndSubmitWith(
   await tester.pumpAndSettle();
 }
 
-/// 회차 조회 횟수를 세는 가짜 — F05-03.
+/// 회차 조회 횟수를 세는 가짜.
 class _CountingRunRepository extends _FixedRunRepository {
   int getCalls = 0;
 
@@ -190,8 +190,8 @@ class _CountingRunRepository extends _FixedRunRepository {
 }
 
 void main() {
-  // F05-03 — ① 구간 신청은 즉시 반영된다. 홈 카드(탑승 스위치·승하차지)가 옛 값으로 남으면 안 된다.
-  testWidgets('F05-03 신청이 반영되면 회차 목록을 다시 받는다', (tester) async {
+  // ① 구간 신청은 즉시 반영된다. 홈 카드(탑승 스위치·승하차지)가 옛 값으로 남으면 안 된다.
+  testWidgets('신청이 반영되면 회차 목록을 다시 받는다', (tester) async {
     final runs = _CountingRunRepository();
     await _pumpAndSubmitWith(
       tester,
@@ -420,7 +420,7 @@ void main() {
     });
   });
 
-  testWidgets('F05-14 신청이 네트워크 오류로 실패하면 네트워크 확인 문구를 보여준다', (tester) async {
+  testWidgets('신청이 네트워크 오류로 실패하면 네트워크 확인 문구를 보여준다', (tester) async {
     await _pumpAndSubmit(tester, const Failure.network());
 
     expect(find.text('네트워크 상태를 확인해 주세요'), findsOneWidget);
@@ -600,8 +600,9 @@ void main() {
       expect(find.text('변경 신청하기'), findsNothing);
     });
 
-    // 영수증의 두 단추가 같은 곳(일정 탭 맨 위)으로 가서 [신청 이력 보기] 의 뜻이 없었다.
-    group('B9 영수증 두 단추', () {
+    // 영수증의 두 단추는 서로 다른 곳으로 간다. 같은 곳(일정 탭 맨 위)으로 가면
+    // [신청 이력 보기] 의 뜻이 없어진다.
+    group('영수증 두 단추', () {
       Future<ProviderContainer> submitUnderRouter(WidgetTester tester) async {
         tester.view.physicalSize = const Size(800, 2400);
         tester.view.devicePixelRatio = 1;

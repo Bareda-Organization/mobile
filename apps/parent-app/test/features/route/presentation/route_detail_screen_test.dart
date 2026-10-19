@@ -20,7 +20,7 @@ import 'package:parent_app/features/route/presentation/route_detail_screen.dart'
 /// (`StudentRouteQueryService.java:178`)는 이미 창을 좁혀 보내므로, 그
 /// 서버를 시험 대상으로 삼으면 "서버가 옳게 자른다" 만 검증되고 "서버
 /// 계약이 깨지거나 다른 소비자가 안 좁힌 응답을 줘도 화면이 버티는가"
-/// 는 확인할 수 없다(팀 리드 지시). 그래서 창을 넘는 목록·`eta`·
+/// 는 확인할 수 없다. 그래서 창을 넘는 목록·`eta`·
 /// `student_count`·기사 `phone` 을 **일부러 포함한** 원본 JSON을
 /// `RouteDetail.fromJson` 에 직접 먹여 그 결과를 돌려준다.
 class _FakeRouteRepository implements RouteRepository {
@@ -28,7 +28,7 @@ class _FakeRouteRepository implements RouteRepository {
 
   final RouteDetail response;
 
-  /// `getRoute` 가 불린 횟수 — 화면이 서버 값을 다시 받는지 본다(F05-06).
+  /// `getRoute` 가 불린 횟수 — 화면이 서버 값을 다시 받는지 본다.
   int calls = 0;
 
   /// 받은 요청 — 화면이 어느 자녀의 어느 회차를 물었는지 본다.
@@ -170,7 +170,7 @@ void main() {
 
   // 목록 번호는 지도 마커와 같이 서버가 준 실제 순번(`seq`)이다.
   // 표시 범위가 3~5번이면 3 · 4 · 5.
-  group('A9 목록 번호는 실제 seq', () {
+  group('목록 번호는 실제 seq', () {
     testWidgets('표시 범위가 3~5번이면 번호 원에 3 · 4 · 5 가 적히고 1 · 2 는 없다', (
       tester,
     ) async {
@@ -513,8 +513,8 @@ void main() {
     });
   });
 
-  // L7 — 기사 · 동승자 객체 자체가 `null` 로 와도 읽는다.
-  test('L7 driver · escort 가 null 이어도 RouteDetail 을 읽는다', () {
+  // 기사 · 동승자 객체 자체가 `null` 로 와도 읽는다.
+  test('driver · escort 가 null 이어도 RouteDetail 을 읽는다', () {
     final route = RouteDetail.fromJson({
       ..._routeJson(
         stops: [_stopJson(stopId: 's-A', seq: 0, name: '정류장A')],
@@ -530,8 +530,8 @@ void main() {
   });
 
 
-  // F05-06 — 한 번 받은 노선을 앱을 끌 때까지 붙들면 확정 뒤에도 "확정 전" 이 남는다.
-  group('F05-06 다시 받기', () {
+  // 한 번 받은 노선을 앱을 끌 때까지 붙들면 확정 뒤에도 "확정 전" 이 남는다.
+  group('다시 받기', () {
     RouteDetail sample() => RouteDetail.fromJson(
       _routeJson(
         stops: [_stopJson(stopId: 's-stop-1', seq: 1, name: '정류장1')],

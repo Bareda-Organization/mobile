@@ -168,8 +168,8 @@ void main() {
     );
   });
 
-  // F05-14 — 연결이 끊긴 것과 서버가 거절한 것은 학부모가 다르게 대응한다(다시 눌러 보기 vs 학원 문의).
-  testWidgets('F05-14 토글이 네트워크 오류로 실패하면 네트워크 확인 문구를 보여준다', (tester) async {
+  // 연결이 끊긴 것과 서버가 거절한 것은 학부모가 다르게 대응한다(다시 눌러 보기 vs 학원 문의).
+  testWidgets('토글이 네트워크 오류로 실패하면 네트워크 확인 문구를 보여준다', (tester) async {
     await _pumpWith(tester, _ThrowingRunRepository(const Failure.network()));
 
     expect(find.text('네트워크 상태를 확인해 주세요'), findsOneWidget);
@@ -465,7 +465,7 @@ void main() {
 
   // ③ 즉시 반영은 운행이 시작되지 않았어도(출발+10분 경과) 난다. "운행이 시작돼" 로
   // 단정하면 사실과 다른 안내가 된다.
-  testWidgets('A1 ③ 즉시 반영 안내는 운행 시작을 단정하지 않는다', (tester) async {
+  testWidgets('③ 즉시 반영 안내는 운행 시작을 단정하지 않는다', (tester) async {
     await pumpRecording(
       tester,
       runStatus: RunStatus.confirmed,

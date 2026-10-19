@@ -14,8 +14,8 @@ import 'package:parent_app/features/auth/presentation/login_screen.dart';
 import 'package:parent_app/features/home/presentation/home_screen.dart';
 
 
-/// `localhost:8080` 을 실제로 때리는 계약 시험 — F2 목표 표 5항(재실행 시
-/// 자동 로그인). `flutter test` 가 도는 동안 로컬 백엔드가 떠 있어야 하고,
+/// `localhost:8080` 을 실제로 때리는 계약 시험 — 재실행 시
+/// 자동 로그인. `flutter test` 가 도는 동안 로컬 백엔드가 떠 있어야 하고,
 /// 없으면 `setUpAll` 헬스체크가 이 그룹 전체를 환경 문제로 건너뛴다
 /// (`real_backend_auth_test.dart` 와 같은 구조).
 ///

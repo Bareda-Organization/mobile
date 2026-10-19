@@ -42,7 +42,7 @@ class NeverResolvingTokenStorage extends TokenStorage {
 
 /// 실서버 계약 시험이 붙을 주소. **주소를 받지 못하면 던진다.**
 ///
-/// 기본값으로 조용히 `localhost:8080`(조율자의 시드 서버)에 붙는 경로를 없애는 것이 이 함수의 전부다 —
+/// 기본값으로 조용히 `localhost:8080`(시드 데이터가 든 서버)에 붙는 경로를 없애는 것이 이 함수의 전부다 —
 /// `--dart-define=API_BASE_URL` 을 빠뜨린 실행이 시드 DB 에 실제 레코드를 만든 일이 있다. 안내 문구가 아니라
 /// 구조로 막는다. 백엔드 없이 나머지 시험만 돌리려면 `flutter test --exclude-tags real_backend`.
 String requireRealBackendBaseUrl() {
@@ -50,7 +50,7 @@ String requireRealBackendBaseUrl() {
     throw StateError(
       '실서버 계약 시험에는 대상 주소가 필요하다. '
       'flutter test --dart-define=API_BASE_URL=http://localhost:<전용포트>/api/v1 로 실행하라. '
-      '주소를 생략하면 기본값 8080(조율자 시드 서버)으로 실제 요청이 나간다. '
+      '주소를 생략하면 기본값 8080(시드 데이터가 든 서버)으로 실제 요청이 나간다. '
       '백엔드 없이 돌리려면 --exclude-tags real_backend 를 쓴다.',
     );
   }
