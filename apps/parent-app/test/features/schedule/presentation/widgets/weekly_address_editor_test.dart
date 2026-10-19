@@ -257,7 +257,7 @@ void main() {
       return repository;
     }
 
-    testWidgets('H5 요일 알약은 7개가 항상 나오고, 고른 요일의 등원 · 하원 주소 칸과 상세 칸이 보인다', (
+    testWidgets('요일 알약은 7개가 항상 나오고, 고른 요일의 등원 · 하원 주소 칸과 상세 칸이 보인다', (
       tester,
     ) async {
       await pumpFour(tester);
@@ -322,7 +322,7 @@ void main() {
     });
 
     // 요일 7 × 방향 2 = 14칸 어디든 추가한다.
-    testWidgets('H5 등록되지 않은 요일 · 방향 칸에 주소를 넣고 저장하면 그 칸까지 한 번에 간다', (
+    testWidgets('등록되지 않은 요일 · 방향 칸에 주소를 넣고 저장하면 그 칸까지 한 번에 간다', (
       tester,
     ) async {
       final repository = await pumpFour(tester);
@@ -343,7 +343,7 @@ void main() {
       expect(added.address, '토 하원 새 주소');
     });
 
-    testWidgets('H5 14칸을 전부 채우면 14건이 한 요청으로 간다', (tester) async {
+    testWidgets('14칸을 전부 채우면 14건이 한 요청으로 간다', (tester) async {
       final repository = _RecordingWeeklyAddressRepository();
       await pumpEditor(tester, repository, const []);
 
@@ -369,7 +369,7 @@ void main() {
       }, hasLength(14));
     });
 
-    testWidgets('H5 상세 주소를 적으면 address_detail 로 같이 가고, 비우면 보내지 않는다', (
+    testWidgets('상세 주소를 적으면 address_detail 로 같이 가고, 비우면 보내지 않는다', (
       tester,
     ) async {
       final repository = await pumpFour(tester);
@@ -393,7 +393,7 @@ void main() {
       expect(monFrom.addressDetail, isNull);
     });
 
-    testWidgets('H5 주소 없이 상세 주소만 적으면 요청이 나가지 않고 안내한다', (tester) async {
+    testWidgets('주소 없이 상세 주소만 적으면 요청이 나가지 않고 안내한다', (tester) async {
       final repository = await pumpFour(tester);
 
       await tester.tap(find.text('수'));
@@ -409,7 +409,7 @@ void main() {
       expect(find.textContaining('주소를 먼저 입력해 주세요'), findsOneWidget);
     });
 
-    testWidgets('H5 서버에 있던 칸을 비우면 요청이 나가지 않는다(칸 삭제 수단이 서버에 없다)', (
+    testWidgets('서버에 있던 칸을 비우면 요청이 나가지 않는다(칸 삭제 수단이 서버에 없다)', (
       tester,
     ) async {
       final repository = await pumpFour(tester);

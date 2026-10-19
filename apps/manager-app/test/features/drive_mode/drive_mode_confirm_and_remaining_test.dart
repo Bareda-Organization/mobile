@@ -371,7 +371,7 @@ void main() {
     expect(rosterLoads, greaterThan(first));
   });
 
-  group('H4 연결 없는 도착 처리', () {
+  group('연결 없는 도착 처리', () {
     testWidgets('저장 안내를 보이고 다음 누름은 다음 승하차지를 보낸다', (tester) async {
       final repository = await pumpDrive(
         tester,
