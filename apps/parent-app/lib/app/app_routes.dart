@@ -4,7 +4,7 @@
 /// 화면들을 import 하므로 그러면 순환 참조가 된다 — 그래서 이 파일 하나로
 /// 뺐다.
 ///
-/// 화면 ↔ 라우트 대응은 IMPLEMENTATION_PLAN.md §3.1 6화면 + docs/archive/rounds/fe-phases-f2-f5.md §5.0 F2 4화면
+/// 화면 ↔ 라우트 대응은 IMPLEMENTATION_PLAN.md §3.1 6화면 + 계정 상태 허용 4화면
 /// 중 3개(로그인·회원가입·대기)를 이 목록에 담는다. 차단 안내(UF-X-04)는
 /// [blockedAccount] 로 존재하되 `redirect` 가 아니라 로그인 화면이 직접
 /// `push` 한다 — `blocked` 는 로그인 자체가 실패해 토큰도 role/status 도
@@ -25,7 +25,7 @@ abstract final class AppRoutes {
   static const liveMap = '/live-map';
   static const routeDetail = '/route-detail';
 
-  /// 노선 자세히 보기로 가는 주소 — 지도가 보던 자녀와 회차를 이어서 넘긴다(M-P2).
+  /// 노선 자세히 보기로 가는 주소 — 지도가 보던 자녀와 회차를 이어서 넘긴다.
   /// 회차 번호가 없으면 서버가 정하는 다음 회차를 본다.
   static String routeDetailFor({required String studentId, String? runId}) =>
       Uri(
@@ -33,7 +33,7 @@ abstract final class AppRoutes {
         queryParameters: {'student_id': studentId, 'run_id': ?runId},
       ).toString();
 
-  /// 일정 탭(P-04) — 학부모 앱 아래 탭 막대의 두 번째 칸(R48). 학생에게는 탭이 없다.
+  /// 일정 탭(P-04) — 학부모 앱 아래 탭 막대의 두 번째 칸. 학생에게는 탭이 없다.
   static const schedule = '/schedule';
 
   /// 요일별 등하원 주소(P-05) — 일정 탭에서 `push` 하는 하위 화면.
@@ -46,7 +46,6 @@ abstract final class AppRoutes {
   /// AUTH-07 · API_SPEC §2.8 — [settings] 화면에서 `push`.
   static const passwordChange = '/password-change';
 
-  /// 자녀 연결 (FEATURE_SPEC §5.1 색인 기준 P-02, BRIEF 표기 "P-01" 은
-  /// 정본과 어긋남 — 보고서 §2 참고) · 학생 코드 생성(S-05).
+  /// 자녀 연결 (FEATURE_SPEC §5.1 색인 기준 P-02) · 학생 코드 생성(S-05).
   static const childLink = '/child-link';
 }

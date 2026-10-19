@@ -1,6 +1,5 @@
-// 두 갈래를 합치면서 조율자가 직접 고친 2건을 고정하는 시험.
-// 조율자 편집에는 게이트 리뷰가 붙지 않으므로(`parallel-agents-git.md §10`)
-// 되돌렸을 때 실패하는 시험이 없으면 그 편집은 고정되지 않은 것이다.
+// 위젯 수정 2건을 고정하는 시험.
+// 되돌렸을 때 실패하는 시험이 없으면 그 수정은 고정되지 않은 것이다.
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';

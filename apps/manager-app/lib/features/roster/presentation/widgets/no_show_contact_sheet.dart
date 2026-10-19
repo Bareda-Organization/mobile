@@ -8,7 +8,7 @@ import 'package:manager_app/features/roster/data/models/no_show_contact_request.
 /// §4.8 연락 시도 기록 입력 시트 — 연락 수단 · 결과 · (선택)최종 판단(시안 `no-show--record`).
 ///
 /// 최종 판단은 대기 시간이 끝난 뒤에만 고를 수 있다 — [waitEndsAt] 까지는 `미정` 만 되고 남은 시간을 세어
-/// 보인다(R32 M12). [waitEndsAt] 을 모르면(`null`) 막지 않는다 — 서버가 최종 판정한다.
+/// 보인다. [waitEndsAt] 을 모르면(`null`) 막지 않는다 — 서버가 최종 판정한다.
 class NoShowContactSheet extends StatefulWidget {
   const new({required this.waitEndsAt, required this.clock, super.key});
 
@@ -141,7 +141,7 @@ class _NoShowContactSheetState extends State<NoShowContactSheet> {
             NoShowContactRequest(
               attemptType: _attemptType,
               result: _result,
-              // 즉시 전송과 오프라인 재생이 같은 키를 쓰도록 기록을 저장하는 순간 한 번만 만든다(R56).
+              // 즉시 전송과 오프라인 재생이 같은 키를 쓰도록 기록을 저장하는 순간 한 번만 만든다.
               clientKey: IdempotencyKeys.generate(),
               decision: _decision,
             ),

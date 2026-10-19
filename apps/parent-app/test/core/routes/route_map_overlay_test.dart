@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:parent_app/core/routes/domain/route_detail.dart';
 import 'package:parent_app/core/routes/presentation/route_map_overlay.dart';
 
-/// R49 `Ruling 831` — 지도에는 §3.10 이 준 표시 범위 승하차지의 번호(실제 `seq`)와 그 사이 경로선만 그린다.
+/// `Ruling 831` — 지도에는 §3.10 이 준 표시 범위 승하차지의 번호(실제 `seq`)와 그 사이 경로선만 그린다.
 /// 도로 좌표(`road_path`)가 2점 미만이면 표시 승하차지를 점선으로 잇는다.
 void main() {
   RouteStop stop(
@@ -137,8 +137,8 @@ void main() {
     );
   });
 
-  // M-P1 — 지나간 곳 표시 · "다음 곳" 강조 핀은 번호와 함께 "몇 곳 전" 을 유추하게 한다(C-08).
-  test('M-P1 도착 시각(arrived_at)이 있어도 없어도 승하차지 핀 모양이 같다', () {
+  // 지나간 곳 표시 · "다음 곳" 강조 핀은 번호와 함께 "몇 곳 전" 을 유추하게 한다(C-08).
+  test('도착 시각(arrived_at)이 있어도 없어도 승하차지 핀 모양이 같다', () {
     final arrived = overlay(
       route(
         stops: [stop(3, arrivedAt: DateTime.utc(2026, 10, 5, 3, 9)), stop(4)],
@@ -153,7 +153,7 @@ void main() {
     );
   });
 
-  test('M-P1 운행 중이어도 "다음 곳" 만 다른 핀으로 강조하지 않는다', () {
+  test('운행 중이어도 "다음 곳" 만 다른 핀으로 강조하지 않는다', () {
     final running = overlay(
       route(
         stops: [
@@ -197,7 +197,7 @@ void main() {
     expect(overlay(route(stops: [stop(3)])).isEmpty, isFalse);
   });
 
-  // R49 F1 — §3.10 stops[] 에는 학원 항목(stop_id null · 등원이면 마지막 ·
+  // §3.10 stops[] 에는 학원 항목(stop_id null · 등원이면 마지막 ·
   // 하원이면 맨 앞이고 seq 가 0)이 섞여 온다. 서버 응답 모양 그대로(JSON) 읽어,
   // 학원에는 번호 대신 "학원" 표시만 단다.
   group('학원 항목(stop_id null) — 번호 없는 학원 표시', () {

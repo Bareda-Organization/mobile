@@ -193,7 +193,7 @@ void main() {
     test(
       '동시에 여러 번 부르면 HTTP 호출은 1회만 나가고 전부 같은 결과를 받는다 — '
       'REST·WS 가 같은 refresh 토큰으로 경합해도 회전이 두 번 일어나지 않는다 '
-      '(백엔드 RefreshCommandService 의 1회용 회전, 보고서 §1)',
+      '(백엔드 RefreshCommandService 의 1회용 회전)',
       () async {
         final storage = _buildTokenStorage();
         await storage.saveTokens(
@@ -306,7 +306,7 @@ void main() {
     });
 
     test('재발급이 도는 중 로그아웃(clear)되면 응답이 와도 토큰을 다시 저장하지 않는다', () async {
-      // F07-06 — 예전엔 로그아웃이 지운 토큰을 재발급 완료가 되살렸다.
+      // 로그아웃이 지운 토큰을 재발급 완료가 되살리지 않는다.
       final storage = _buildTokenStorage();
       await storage.saveTokens(accessToken: 'old', refreshToken: 'r1');
       final gate = Completer<void>();

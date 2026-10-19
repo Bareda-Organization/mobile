@@ -42,8 +42,7 @@ void main() {
     // 시험이 실수로 진짜 서버를 때리지 않게). 그래서 이 시험처럼 **의도적으로**
     // 실제 백엔드를 때리려면 그 대역을 이 파일이 도는 동안만 꺼야 한다 —
     // 꺼 두지 않으면 서버가 떠 있어도 항상 400/빈 본문이 와서 "서버 다운"과
-    // 구별되지 않는다(manager-app 과 같은 원인, 원인 규명 과정은 보고서 §
-    // 실측 참고).
+    // 구별되지 않는다(manager-app 과 같은 원인).
     HttpOverrides.global = null;
     final probe = Dio(BaseOptions(baseUrl: baseUrl));
     try {
@@ -60,7 +59,7 @@ void main() {
   });
 
   testWidgets(
-    '목표 5 — 저장된 refresh 토큰이 있으면 재실행 시 로그인 화면을 건너뛰고 '
+    '저장된 refresh 토큰이 있으면 재실행 시 로그인 화면을 건너뛰고 '
     '홈 화면으로 간다 (실제 로그인 1회로 진짜 토큰을 발급받아 시드)',
     (tester) async {
       if (!backendReachable) {

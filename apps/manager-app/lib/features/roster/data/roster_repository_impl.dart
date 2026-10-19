@@ -15,7 +15,7 @@ import 'package:manager_app/features/roster/domain/roster_repository.dart';
 /// 옮긴다. 승하차 갱신만 `_offlineQueue` 를 거친다(§1.7 M-06, UF-E-07) —
 /// 나머지 쓰기(되돌리기·연락 기록·변경 확인)는 큐 대상이
 /// 아니다(문서상 그 예시로 명시된 것은 승하차 처리뿐이다). 명단 조회는 받은 본문을
-/// `_cache` 에 저장하고, 서버가 응답하지 못하면 그 저장본으로 돌아선다(M-M3).
+/// `_cache` 에 저장하고, 서버가 응답하지 못하면 그 저장본으로 돌아선다.
 class RosterRepositoryImpl implements RosterRepository {
   // 필드를 private 으로 유지하려고 initializing formal 대신 명시 대입을
   // 쓴다(AuthRepositoryImpl 과 같은 이유).
@@ -45,7 +45,7 @@ class RosterRepositoryImpl implements RosterRepository {
   final RosterCache _cache;
 
   /// 저장 직전에 아직 로그인한 계정이 있는지 — 로그아웃 직전에 보낸 요청의 응답이 정리(`RosterCache.clear`) 뒤에
-  /// 도착해도 지운 명단을 다시 저장하지 않는다(M-2).
+  /// 도착해도 지운 명단을 다시 저장하지 않는다.
   final bool Function() _isSignedIn;
 
   @override

@@ -247,7 +247,7 @@ void main() {
 
   // 승인은 관계자가 따로 하므로 앱이 돌아오면 바로 다시 보고, 자동 확인이 실패해도 오류 화면으로 바꾸지
   // 않는다(학부모 앱 `VisiblePoller` 와 같은 동작 · frontend `Ruling 473`).
-  group('자동 확인 (R52 M6)', () {
+  group('자동 확인', () {
     Future<void> backgroundThenResume(WidgetTester tester) async {
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
       await tester.pump();

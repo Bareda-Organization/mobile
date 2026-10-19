@@ -1,6 +1,6 @@
-// `BaraedaButton.sm` — 시안(R48)에서 보이는 크기가 곧 누르는 면(높이 44 = `--tap`)이다.
-// 예전에는 보이는 36 + 누르는 48 이었다(F07-10 · Ruling 404) — 보이는 크기를 44 로 키워
-// 숨은 영역이 필요 없어졌다. 이웃 버튼과 누르는 영역이 겹치면 오조작이므로 그것도 함께 고정한다.
+// `BaraedaButton.sm` — 시안에서 보이는 크기가 곧 누르는 면(높이 44 = `--tap`)이다.
+// 보이는 크기를 44 로 키워 숨은 영역이 필요 없다(Ruling 404).
+// 이웃 버튼과 누르는 영역이 겹치면 오조작이므로 그것도 함께 고정한다.
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';

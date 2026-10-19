@@ -62,14 +62,14 @@ class OfflineQueueRepositoryImpl implements OfflineQueueRepository {
   final Clock _clock;
 
   /// 재생이 확정 거절로 행을 지울 때마다 그 행 하나의 내용을 바로 받는다
-  /// (Ruling 882 · R53 B-6①) — 30초 자동 재생 · 쓰기 직전 재생 · 수동 재시도가 모두
+  /// (Ruling 882) — 30초 자동 재생 · 쓰기 직전 재생 · 수동 재시도가 모두
   /// [_replay] 를 거치므로 어느 경로로 지워져도 한 곳에서 알린다.
   final void Function(List<DroppedRequest> dropped)? _onDropped;
 
-  /// 로그아웃이 시작되면 재생을 막는 빗장(R56) — 없으면 막지 않는다.
+  /// 로그아웃이 시작되면 재생을 막는 빗장 — 없으면 막지 않는다.
   final ReplayGate? _replayGate;
 
-  /// 사용자가 쓴 글이 든 요청(예외 보고 메모)의 본문을 기기에서 암호문으로 두는 도구(R56 · 명단 저장본과 같은
+  /// 사용자가 쓴 글이 든 요청(예외 보고 메모)의 본문을 기기에서 암호문으로 두는 도구(명단 저장본과 같은
   /// `RosterCipher` — AES-GCM 256, 키는 기기 보안 저장소, 로그아웃 때 키 삭제). 없으면 평문이다(시험 전용).
   final RosterCipher? _cipher;
 
@@ -85,9 +85,9 @@ class OfflineQueueRepositoryImpl implements OfflineQueueRepository {
     // 처리를 덮어쓴다(오프라인 '탑승' → 복구 후 '되돌리기' → 재생이 다시
     // '탑승').
     //
-    // 단 새 요청이 비상 신고면 대기 행과 무관하게 직접 보내는 것이 먼저다(R52 M5 · Ruling 616) — 앞의 일반 행이
+    // 단 새 요청이 비상 신고면 대기 행과 무관하게 직접 보내는 것이 먼저다(Ruling 616) — 앞의 일반 행이
     // 5xx 를 되풀이하면 재생이 머리 행에서 멈춰 비상 신고가 큐 뒤로 밀리고, 서버가 살아 있어도 최대 약 5분 동안
-    // 닿지 못했다. 직접 전송이 실패하면 아래 처럼 큐에 쌓는다.
+    // 닿지 못한다. 직접 전송이 실패하면 아래 처럼 큐에 쌓는다.
     if (!PendingRequestSummary.isEmergencyEndpoint(endpoint) &&
         await _hasPending()) {
       // 새 요청 앞의 재생은 시도 횟수에 넣지 않는다 — 서버가 죽은 동안 학생을 연달아 누르면 눌렀을 뿐인데
@@ -191,7 +191,7 @@ class OfflineQueueRepositoryImpl implements OfflineQueueRepository {
     return cipher.decrypt(row.payload);
   }
 
-  /// 같은 학생(같은 [endpoint])에게 같은 승하차 `status` 가 이미 기다리고 있으면 중복이다(R46) — 두 번 눌러도
+  /// 같은 학생(같은 [endpoint])에게 같은 승하차 `status` 가 이미 기다리고 있으면 중복이다 — 두 번 눌러도
   /// 재생 때 같은 처리가 두 번 나가지 않게 한다. 도착 처리(`/stops/{stopId}/arrive`)는 본문이 없어 같은 승하차지의
   /// 같은 요청이 이미 기다리고 있으면 중복이다(859). 그 밖에 `status` 가 없는 요청(비상 발신은 "상황 변화마다
   /// 재발신이 정상", §4.14)은 중복으로 보지 않는다. 영구 실패 행은 기다리는 것이 아니라 다시 눌러 새로 보낼 수 있다.
@@ -247,7 +247,7 @@ class OfflineQueueRepositoryImpl implements OfflineQueueRepository {
     final dropped = <DroppedRequest>[];
     var failedPermanently = 0;
     for (final row in rows) {
-      // 로그아웃이 시작됐으면 새 행을 보내지 않는다 — 이미 나간 요청 1건은 막을 수 없다(R56).
+      // 로그아웃이 시작됐으면 새 행을 보내지 않는다 — 이미 나간 요청 1건은 막을 수 없다.
       if (_replayGate?.isPaused ?? false) break;
       // 재생 도중 대기열이 비워졌으면(로그아웃 · 계정 정리) 남은 행은 앞 계정의 것이다 — 다음 계정의 토큰으로 보내지 않는다.
       if (!await _rowExists(row.id)) break;
@@ -294,7 +294,7 @@ class OfflineQueueRepositoryImpl implements OfflineQueueRepository {
           final item = _toDropped(row, body, exception);
           dropped.add(item);
           await _deleteRow(row.id);
-          // 지운 즉시 알린다(R53 B-6①) — 루프 끝으로 미루면 그 사이 앱이 종료될 때 지운 행의 안내가 사라진다.
+          // 지운 즉시 알린다 — 루프 끝으로 미루면 그 사이 앱이 종료될 때 지운 행의 안내가 사라진다.
           _notifyDropped([item]);
           continue;
         }

@@ -21,7 +21,7 @@ String? fixtureDbNameOrNull() => const bool.hasEnvironment('FIXTURE_DB')
     ? const String.fromEnvironment('FIXTURE_DB')
     : null;
 
-/// F5 P2 목표 — `real_backend_p4_test.dart` 의 §3.6·§3.8 ②구간
+/// `real_backend_p4_test.dart` 의 §3.6·§3.8 ②구간
 /// `CHANGE_LIMIT_REACHED` 시험(Test C·Test F)은 run2 의 `depart_time`
 /// (시드 적용 시각 + 20분)에 기대는데, 재시드 없이 그 시각이 지나면
 /// `ChangeWindowPolicy.segmentOf` 가 run2 를 결정적으로 ②(APPROVAL_
@@ -30,11 +30,11 @@ String? fixtureDbNameOrNull() => const bool.hasEnvironment('FIXTURE_DB')
 /// (F5 P 판정문 실측 — 조율자가 depart_time 까지 8분 남은 시점을 확인했고
 /// 그 뒤 실제로 실패 2건이 났다).
 ///
-/// 매니저 앱(`F5 M3`)이 같은 형태(되돌릴 수 없는 상태가 시간이 지나면
+/// 매니저 앱이 같은 형태(되돌릴 수 없는 상태가 시간이 지나면
 /// 마른다)를 닫은 것과 같은 수단을 쓴다 — **조건부 `POST /dev/reset`**.
 /// `parentA1` 으로 조회한다 — 이 계정은 학생 1(김철수)의 보호자라 run2·
 /// run3·run6 전부 조회 가능하고, `real_backend_p4_test.dart` 의 기존
-/// 시험들이 이미 같은 계정으로 run2·run3 를 호출하고 있어 **`M3` 이 밟은
+/// 시험들이 이미 같은 계정으로 run2·run3 를 호출하고 있어 **매니저 앱이 밟은
 /// "조회 계정이 그 자원에 배치돼 있지 않다" 함정은 이 앱에는 없다**
 /// (run3 를 조회하려 별도 계정을 쓸 필요가 없다).
 ///

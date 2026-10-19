@@ -20,7 +20,7 @@ import 'package:manager_app/features/roster/presentation/widgets/no_show_contact
 /// 연락 이력은 서버가 준 `no_show_case.contacts[]` 를 그대로 그린다(`Ruling 823`) — **시각 · 수단
 /// · 결과뿐**이다.
 /// 메모를 받지 않으므로 "보호자 이름 문의" 같은 줄은 만들지 않는다. 대기 시간은 서버가 정한
-/// `expires_at` 이라 앱에 상수를 두지 않는다(R32 M12).
+/// `expires_at` 이라 앱에 상수를 두지 않는다.
 class NoShowScreen extends ConsumerStatefulWidget {
   const new({required this.riderId, super.key});
 
@@ -35,7 +35,7 @@ class _NoShowScreenState extends ConsumerState<NoShowScreen> {
   bool _busy = false;
   String? _error;
 
-  /// 방금 남긴 연락 기록이 통신 두절로 기기에 쌓였는가 — 서버에 아직 반영되지 않았다(R56).
+  /// 방금 남긴 연락 기록이 통신 두절로 기기에 쌓였는가 — 서버에 아직 반영되지 않았다.
   bool _queued = false;
 
   @override

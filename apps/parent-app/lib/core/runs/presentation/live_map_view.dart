@@ -68,7 +68,7 @@ class LiveMapView {
     };
     final restLoading = state.restPosition is AsyncLoading<BusPosition>;
 
-    // R48 `Ruling 821` — §3.11 스냅샷이 주는 지연 안내 · 운행 시작/종료 시각. WebSocket
+    // `Ruling 821` — §3.11 스냅샷이 주는 지연 안내 · 운행 시작/종료 시각. WebSocket
     // 이벤트(`run_started` ·
     // `run_ended`)를 놓치고 들어와도 시각이 비지 않게, 이벤트가 있으면 이벤트를 쓰고 없으면 스냅샷을 쓴다.
     final ended =
@@ -222,7 +222,7 @@ class LiveMapView {
   final String? runId;
 }
 
-/// 지도 시트와 홈 미리보기가 같이 쓰는 상태 칩 — 칩 문구를 두 곳에서 따로 정하지 않는다(R52 M2).
+/// 지도 시트와 홈 미리보기가 같이 쓰는 상태 칩 — 칩 문구를 두 곳에서 따로 정하지 않는다.
 /// 시트를 그리지 않는 모양(`absent` · `before` · `loading`)은 부르는 쪽이 따로 정한다.
 extension LiveMapViewChip on LiveMapView {
   ({BaraedaStatus status, String label}) get chip => switch (phase) {

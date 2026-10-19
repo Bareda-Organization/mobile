@@ -157,7 +157,7 @@ void main() {
     expect(find.text('전송 대기'), findsOneWidget);
   });
 
-  // R46-FIXRT S-9 — 서버가 5xx 를 되풀이해 재생에서 뺀 행은 "대기 중" 이 아니다. 사용자가 보내지지 않았음을 알고
+  // 서버가 5xx 를 되풀이해 재생에서 뺀 행은 "대기 중" 이 아니다. 사용자가 보내지지 않았음을 알고
   // 직접 지우거나 다시 처리할 수 있어야 한다.
   testWidgets('영구 실패 행은 대기 중 대신 전송 실패로 보이고 삭제할 수 있다', (tester) async {
     final fakeRepo = _FakeOfflineQueueRepository(
@@ -196,8 +196,8 @@ void main() {
     expect(find.text('삭제'), findsNWidgets(2));
   });
 
-  // 화면 확인(R46-FIXRT)에서 발견 — 목록 `Column` 이 가운데 정렬이라 문구가 짧은 카드(`대기 중`)만 내용 폭으로 줄어
-  // 가운데에 떴다. 문구가 긴 `전송 실패` 카드와 폭이 달라 한 목록이 들쭉날쭉했다(`Ruling 592` 와 같은 갈래).
+  // 목록 `Column` 이 가운데 정렬이라 문구가 짧은 카드(`대기 중`)만 내용 폭으로 줄어 가운데에 뜨면,
+  // 문구가 긴 `전송 실패` 카드와 폭이 달라 한 목록이 들쭉날쭉해진다(`Ruling 592` 와 같은 갈래).
   testWidgets('대기 중 카드와 전송 실패 카드는 같은 폭으로 그려진다', (tester) async {
     final fakeRepo = _FakeOfflineQueueRepository(
       pending: [
@@ -417,7 +417,7 @@ void main() {
     expect(button.onPressed, isNotNull);
   });
 
-  // M2-03(F06-15 나머지) — 페이로드에 이름이 없어 명단 캐시에서 찾는다. 못 찾으면 지금 표기 그대로다.
+  // F06-15 — 페이로드에 이름이 없어 명단 캐시에서 찾는다. 못 찾으면 지금 표기 그대로다.
   testWidgets('받아 둔 명단에 그 학생이 있으면 행에 학생 이름을 함께 보여준다', (tester) async {
     await tester.pumpWidget(
       _wrap(const OfflineQueueScreen(), [
@@ -506,7 +506,7 @@ void main() {
     expect(find.byType(AlertBanner), findsNothing, reason: '못 보낸 건수 띠가 없다');
   });
 
-  // M10 — 삭제는 되돌릴 수 없고 학부모 알림도 영영 가지 않는다. 확인 창이 그 결과를 문장으로 알리고 삭제는 빨간 단추다.
+  // 삭제는 되돌릴 수 없고 학부모 알림도 영영 가지 않는다. 확인 창이 그 결과를 문장으로 알리고 삭제는 빨간 단추다.
   testWidgets('삭제 확인 창은 무엇이 사라지는지 알리고 삭제는 위험 단추, 닫기는 아무것도 지우지 않는다', (
     tester,
   ) async {

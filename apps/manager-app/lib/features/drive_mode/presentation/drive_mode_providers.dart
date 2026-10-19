@@ -21,8 +21,8 @@ final driveModeRunProvider = Provider<ManagerRun?>((ref) {
 });
 
 /// §4.2 명단 — DriveMode 는 이 목록의 `arrived_at` 로 "다음 도착 처리할
-/// 승하차지" 를 계산한다(§4.3 노선 정보 API 는 이번 라운드 범위 밖이라
-/// 대신 §4.2 를 재사용, 보고서 § 판단 근거 참고). 기사도 §4.2 조회 권한이
+/// 승하차지" 를 계산한다(§4.3 노선 정보 API 는 쓰지 않고
+/// 대신 §4.2 를 재사용한다). 기사도 §4.2 조회 권한이
 /// 있다(API_SPEC "버스기사(조회)").
 final driveModeRosterProvider = FutureProvider<RosterResponse>((ref) {
   final runId = ref.watch(selectedRunIdProvider);

@@ -30,7 +30,7 @@ void main() {
     expect(parsed.guardianPhone, '010-2XXX-8814');
   });
 
-  // M1(Ruling 341, BR-016) — 버스 간 이동으로 빠진 학생은 `status: absent` ·
+  // Ruling 341, BR-016 — 버스 간 이동으로 빠진 학생은 `status: absent` ·
   // `change: removed` 로 명단에 남는다(§4.2, `run_enums.dart` 가 이 값을
   // 몰라 지금은 `waiting` 으로 대체된다).
   test('status가 absent · change가 removed 인 학생은 absent 로 파싱된다', () {

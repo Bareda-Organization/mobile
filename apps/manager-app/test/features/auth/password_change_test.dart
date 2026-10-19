@@ -15,8 +15,8 @@ import 'package:manager_app/features/auth/presentation/password_change_screen.da
 import 'package:manager_app/features/home/presentation/home_providers.dart';
 import 'package:manager_app/features/home/presentation/me_screen.dart';
 
-/// R32 M13 — 매니저 앱에는 비밀번호를 바꿀 길이 없었다(AUTH-07 · UF-X-09 — 전 역할). 학부모 앱
-/// 화면을 본보기로 만들었다. 성공하면 서버가 refresh 토큰을 전량 무효화하므로 이 기기도
+/// 매니저 앱 비밀번호 변경 화면의 시험(AUTH-07 · UF-X-09 — 전 역할). 학부모 앱
+/// 화면을 본보기로 삼는다. 성공하면 서버가 refresh 토큰을 전량 무효화하므로 이 기기도
 /// 로그아웃해 다시 로그인하게 한다.
 class _RecordingAuthRepository implements AuthRepository {
   new({this.failure});
@@ -71,7 +71,7 @@ void main() {
     final fields = find.byType(TextField);
     await tester.enterText(fields.at(0), current);
     await tester.enterText(fields.at(1), next);
-    // 단추가 입력에 따라 켜지므로(M15) 다시 그린 뒤에 누른다.
+    // 단추가 입력에 따라 켜지므로 다시 그린 뒤에 누른다.
     await tester.pump();
     await tester.tap(find.widgetWithText(BaraedaButton, '변경하기'));
     await tester.pumpAndSettle();
@@ -129,7 +129,7 @@ void main() {
   BaraedaButton changeButton(WidgetTester tester) =>
       tester.widget<BaraedaButton>(find.widgetWithText(BaraedaButton, '변경하기'));
 
-  // M15 — 꺼진 단추는 왜 꺼졌는지 단추 아래에 적는다.
+  // 꺼진 단추는 왜 꺼졌는지 단추 아래에 적는다.
   // Ruling 834 — 공용 입력 부품이 눈 아이콘을 갖는다. 이 화면은 따로 손대지 않는다.
   testWidgets('두 칸 모두 비밀번호 보기 눈 아이콘이 있고 칸마다 따로 바뀐다', (tester) async {
     final handle = tester.ensureSemantics();
@@ -147,9 +147,7 @@ void main() {
     handle.dispose();
   });
 
-  testWidgets('새 비밀번호가 비어 있으면 [변경하기] 가 꺼지고 이유가 단추 아래에 보인다(M15)', (
-    tester,
-  ) async {
+  testWidgets('새 비밀번호가 비어 있으면 [변경하기] 가 꺼지고 이유가 단추 아래에 보인다', (tester) async {
     await pumpScreen(tester, _RecordingAuthRepository());
 
     await tester.enterText(find.byType(TextField).at(0), 'old-pass');
@@ -180,8 +178,8 @@ void main() {
     expect(find.textContaining('입력하면 눌러요'), findsNothing);
   });
 
-  // M14 — 서버는 UTF-8 72바이트(한글 24자)를 넘으면 422 로 거절한다. 입력할 때 미리 알린다.
-  testWidgets('새 비밀번호 칸에 한도 안내가 있고 넘으면 이유를 보이며 단추가 꺼진다(M14)', (tester) async {
+  // 서버는 UTF-8 72바이트(한글 24자)를 넘으면 422 로 거절한다. 입력할 때 미리 알린다.
+  testWidgets('새 비밀번호 칸에 한도 안내가 있고 넘으면 이유를 보이며 단추가 꺼진다', (tester) async {
     final repository = _RecordingAuthRepository();
     await pumpScreen(tester, repository);
     expect(find.text('영문 72자 · 한글 24자까지'), findsOneWidget);

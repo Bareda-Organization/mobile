@@ -14,7 +14,7 @@ import 'package:manager_app/core/ui/academy_call_card.dart';
 import 'package:manager_app/features/home/data/models/manager_run.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
 
-/// 머리말 비상 버튼(M-15 · UF-X-08, R32 M2) — 기사·동승자 모두, 홈·운행·명단 세 화면 머리말에
+/// 머리말 비상 버튼(M-15 · UF-X-08) — 기사·동승자 모두, 홈·운행·명단 세 화면 머리말에
 /// 둔다. 눌러서 비상 신고 화면(`AppRoutes.emergency`)으로 간다.
 ///
 /// 운행 화면·명단 화면은 이미 회차가 골라져 있어 바로 간다. 홈은 회차를 아직 고르지 않았으므로
@@ -54,7 +54,7 @@ class EmergencyButton extends ConsumerWidget {
     if (!context.mounted) return;
     final candidates = runs.where(canRaiseEmergency).toList();
     if (candidates.isEmpty) {
-      // 막힌 채로 끝내지 않는다 — 학원 번호가 있으면 바로 전화할 수 있게 한다(R53 A4).
+      // 막힌 채로 끝내지 않는다 — 학원 번호가 있으면 바로 전화할 수 있게 한다.
       final contact = ref.read(academyContactProvider);
       final opener = ref.read(uriOpenerProvider);
       ScaffoldMessenger.of(context).showSnackBar(

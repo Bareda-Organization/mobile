@@ -36,7 +36,7 @@ import 'package:manager_app/features/route_map/presentation/route_providers.dart
 /// **운행 시작 요청은 이 화면의 확인 창 뒤에만 나간다.**
 ///
 /// [운행 시작] 은 시작 가능 시간(출발 ±10분, §4.4)이 아니거나 노선을 못 받았으면 꺼져 있고 그 이유가 단추 아래에
-/// 보인다(M20). 노선 변경 확인 띠는 홈과 같은 [ChangeAckBanner] 다. 성공하면 운행 화면으로 바꿔 간다.
+/// 보인다. 노선 변경 확인 띠는 홈과 같은 [ChangeAckBanner] 다. 성공하면 운행 화면으로 바꿔 간다.
 class RunReadyScreen extends ConsumerStatefulWidget {
   const new({super.key});
 
@@ -52,7 +52,7 @@ class _RunReadyScreenState extends ConsumerState<RunReadyScreen> {
   String? _navNotice;
   bool _naviNotInstalled = false;
 
-  /// 시작 전(송신기가 아직 안 도는 동안) 화면이 직접 재확인한 위치 권한·서비스 상태(M2-02).
+  /// 시작 전(송신기가 아직 안 도는 동안) 화면이 직접 재확인한 위치 권한·서비스 상태.
   PositionAvailability? _availability;
   Timer? _availabilityTimer;
 
@@ -123,7 +123,7 @@ class _RunReadyScreenState extends ConsumerState<RunReadyScreen> {
     } on Failure catch (failure) {
       if (!mounted) return;
       setState(() => _startError = describeFailure(failure));
-      // M4(Ruling 340) — 취소된 회차는 §4.1 목록에서 빠져야 한다.
+      // Ruling 340 — 취소된 회차는 §4.1 목록에서 빠져야 한다.
       if (failure case ApiFailure(code: 'RUN_CANCELED')) {
         container.invalidate(todayRunsProvider);
       }
@@ -195,7 +195,7 @@ class _RunReadyScreenState extends ConsumerState<RunReadyScreen> {
 
     return Column(
       children: [
-        // 오늘 회차 목록이 저장본이면 홈과 같은 안내를 맨 위에 띄운다(M-9).
+        // 오늘 회차 목록이 저장본이면 홈과 같은 안내를 맨 위에 띄운다.
         const SavedRunsBanner(),
         Expanded(
           child: ListView(

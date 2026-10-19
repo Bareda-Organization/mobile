@@ -60,7 +60,7 @@ ChangeZone changeZoneOf(StudentRun run, DateTime now) {
     // 색도 사양이 가른다(§3 상태표) — 미등원 스톤 · 미승차 레드.
     RiderStatus.absent => (status: BaraedaStatus.idle, label: '미등원'),
     RiderStatus.noShow => (status: BaraedaStatus.missed, label: '미승차'),
-    // 끝난 회차에 대기 값이 남아 있어도 "운행 전" 으로 읽히면 안 된다(R52 A12).
+    // 끝난 회차에 대기 값이 남아 있어도 "운행 전" 으로 읽히면 안 된다.
     RiderStatus.waiting => switch (run.runStatus) {
       RunStatus.moving => (status: BaraedaStatus.moving, label: '이동 중'),
       RunStatus.finished => (status: BaraedaStatus.idle, label: '종료'),

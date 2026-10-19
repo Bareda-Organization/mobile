@@ -11,7 +11,7 @@ import 'package:parent_app/core/students/presentation/student_providers.dart';
 import 'package:parent_app/features/settings/presentation/settings_providers.dart';
 import 'package:parent_app/features/settings/presentation/widgets/notification_settings_panel.dart';
 
-/// 설정 탭 — P-09 · S-03 (R48 시안 `settings` · `settings-student`).
+/// 설정 탭 — P-09 · S-03.
 ///
 /// 맨 위가 계정 카드(이름 · 역할 · 학원 · 아이디), 학부모는 `내 자녀 N명` 과 `자녀 추가`, 학생은 `부모님과 연결하기` 가
 /// 이어진다. **로그아웃은 맨 아래, 이 탭에만 있다**(`Ruling 826` — 홈 머리말에서 뺐다). 되돌릴 수 없는 동작이라

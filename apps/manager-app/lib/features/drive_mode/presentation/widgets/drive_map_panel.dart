@@ -4,13 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:manager_app/core/map/route_map_view.dart';
 import 'package:manager_app/features/route_map/presentation/route_providers.dart';
 
-/// 운행 화면 가운데 지도(M-08·M-09 "노선", R32 M1) — 확정 노선의 도로 경로 · 승하차지 핀 ·
+/// 운행 화면 가운데 지도(M-08·M-09 "노선") — 확정 노선의 도로 경로 · 승하차지 핀 ·
 /// 현재 버스 위치를 한 화면에 보인다. 노선은 §4.3 [routeProvider] 를 그대로 쓰고
 /// (노선 지도 화면과 같은 값), 버스 위치는 기사 단말이 스스로 잰 좌표 [busPosition] 이다.
 class DriveMapPanel extends ConsumerWidget {
   const new({required this.height, this.busPosition, super.key});
 
-  /// 지도 면 높이의 하한·상한 — 작은 화면이어도 지도가 이보다 낮아지지 않는다(R46-FUMGR).
+  /// 지도 면 높이의 하한·상한 — 작은 화면이어도 지도가 이보다 낮아지지 않는다.
   static const minHeight = 140.0;
   static const maxHeight = 320.0;
 

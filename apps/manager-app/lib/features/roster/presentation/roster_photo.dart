@@ -27,7 +27,7 @@ RosterPhoto? resolveRosterPhoto(
   return (url: url, headers: authHeaders);
 }
 
-/// 학생 사진 전용 디스크 캐시(M-8) — 명단 행마다 사진을 다시 받지 않는다. 사진은 개인정보라
+/// 학생 사진 전용 디스크 캐시 — 명단 행마다 사진을 다시 받지 않는다. 사진은 개인정보라
 /// 하루 뒤 만료되고 로그아웃 · 세션 만료에 비운다([studentPhotoCacheClearerProvider]).
 /// 요청은 [RosterPhoto] 의 인증 헤더를 그대로 싣는다.
 final CacheManager studentPhotoCacheManager = CacheManager(

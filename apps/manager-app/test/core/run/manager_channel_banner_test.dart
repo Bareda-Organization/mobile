@@ -8,8 +8,7 @@ import 'package:manager_app/core/run/manager_run_channel.dart';
 /// 자체(`ConsumerWidget`)는 `managerRunChannelProvider` 를 통해 실제
 /// WebSocket 연결을 여는 [ManagerRunChannelController] 에 묶여 있어, 화면
 /// 수준 위젯 시험으로는 가짜 컨트롤러를 깨끗하게 주입할 수 없다 — 그래서
-/// 문구·톤 결정 로직만 떼어 여기서 순수 함수로 검증한다(파일 문서 참고,
-/// 보고서 §1·§2).
+/// 문구·톤 결정 로직만 떼어 여기서 순수 함수로 검증한다(파일 문서 참고).
 void main() {
   group('managerChannelBannerContentFor', () {
     test('connected 는 배너를 그리지 않는다(null)', () {
@@ -56,7 +55,7 @@ void main() {
       expect(
         managerChannelBannerContentFor(ManagerChannelStatus.reconnecting),
         isNotNull,
-        reason: '고르지 않으면 예전처럼 보인다',
+        reason: '고르지 않으면 재연결 배너가 보인다',
       );
     });
 
@@ -76,7 +75,7 @@ void main() {
       expect(content!.tone, AlertTone.missed);
     });
 
-    // R46-FIXCONN C-12 — 같은 끊김을 웹·학부모 앱과 같은 제목으로 알린다.
+    // 같은 끊김을 웹·학부모 앱과 같은 제목으로 알린다.
     // 권한 거부(forbidden)도 제목은 공용 문구다(Ruling 666) — "배정되지 않음" 이라는 업무 의미는 본문이 맡는다.
     test('끊김 제목이 웹·학부모 앱과 같은 공용 문구다', () {
       expect(

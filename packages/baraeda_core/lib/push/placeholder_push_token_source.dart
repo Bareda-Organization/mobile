@@ -16,7 +16,7 @@ class PlaceholderPushTokenSource implements PushTokenSource {
   static const _tokenPrefix = 'placeholder-';
 
   /// [token] 이 이 공급자가 만든 자리표시 값인가 — 그렇다면 이 기기는 실제로는 푸시를 받지 못한다.
-  /// 화면이 "푸시로도 알려 드려요" 같은 약속을 할지 가르는 데 쓴다(M-P3).
+  /// 화면이 "푸시로도 알려 드려요" 같은 약속을 할지 가르는 데 쓴다.
   static bool isPlaceholder(String? token) =>
       token != null && token.startsWith(_tokenPrefix);
 

@@ -107,7 +107,7 @@ void main() {
     return clock;
   }
 
-  testWidgets('연락 기록 시트 제목은 사양 용어 "미승차" 를 쓴다 (R46, B2 #25)', (tester) async {
+  testWidgets('연락 기록 시트 제목은 사양 용어 "미승차" 를 쓴다', (tester) async {
     await openSheet(tester, expiresAt: start.add(const Duration(minutes: 1)));
 
     expect(find.text('연락 기록'), findsWidgets);

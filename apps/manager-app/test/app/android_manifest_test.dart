@@ -1,4 +1,4 @@
-// Android `main` 매니페스트의 권한 선언(R52 M4 · A15).
+// Android `main` 매니페스트의 권한 선언.
 //
 // - 위치: Android 12+ 는 정밀 위치(`ACCESS_FINE_LOCATION`) 단독 요청에
 //   권한 창을 띄우지 않을 수 있어 대략 위치(`ACCESS_COARSE_LOCATION`)를 함께
@@ -9,7 +9,7 @@
 // - 깨우기 잠금: 위치 포그라운드 서비스가 `enableWakeLock: true` 로 뜬다
 //   (`position_source.dart`). 권한이 없으면 Android 가 서비스 시작 때
 //   `SecurityException` 을 던져 위치 송신이 한 번도 일어나지 않는다
-//   (2026-10-17 에뮬레이터에서 확인 — 운행 화면은 "위치 전송 안 됨").
+//   (운행 화면은 "위치 전송 안 됨"으로 보인다).
 // - 알림: Android 13+ 는 이 권한이 없으면 위치 포그라운드 서비스의 "운행 중" 알림이
 //   보이지 않는다. 운행을 시작할 때 요청한다(`run_ready_screen_test.dart`).
 import 'dart:io';

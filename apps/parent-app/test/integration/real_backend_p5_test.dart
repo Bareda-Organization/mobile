@@ -88,7 +88,7 @@ Future<void> _expectApiError(
 }
 
 /// `--dart-define=API_BASE_URL` 로 지정한 서버를 실제로 때리는 계약
-/// 시험 — 목표 8: §3.10(상세 노선)·§3.11(실시간 위치)를 실백엔드로
+/// 시험 — §3.10(상세 노선)·§3.11(실시간 위치)를 실백엔드로
 /// 호출하고, 성공 경로와 두 예외 경로(`404 STUDENT_NOT_FOUND` ·
 /// `403 FORBIDDEN`)를 재현한다. 서버가 안 떠 있으면 `setUpAll` 헬스체크가
 /// 전체를 환경 문제로 건너뛴다(`real_backend_p1_test.dart` 와 같은 구조).
@@ -111,7 +111,7 @@ Future<void> _expectApiError(
 /// (`parentA3` 는 `real_backend_p2_test.dart` 에서만 쓰이고 계정 설정
 /// 시험 용도다). 이 SQL 은 `deleted_at IS NULL` 조건이 있어 **멱등**하다
 /// — 반복 실행해도 두 번째부터는 0행이 갱신되고 상태가 더 나빠지지
-/// 않는다(`phase-goal-loop.md §5.4` 의 "연속 4회 실행" 요구를 만족한다).
+/// 않는다(연속 4회 실행해도 같은 결과다).
 ///
 /// ⚠ **DB 이름을 하드코딩하지 않는다.** `schoolbus_fer3_p` 같은 이름을 문자열로 박아 두면
 /// `API_BASE_URL` 이 가리키는 서버가 실제로 어느 DB 를 물고

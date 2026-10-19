@@ -107,7 +107,7 @@ void main() {
 
 void _noop() {}
 
-// R48 — 목록 칸 보조 줄의 낱말 단위 줄바꿈(기본은 예전 그대로).
+// 목록 칸 보조 줄의 낱말 단위 줄바꿈. 기본값은 일반 Text 를 쓴다.
 void _listRowWrapTests() {
   testWidgets('wrapSubtitleByWord 를 켜면 보조 줄이 WordWrapText 이고, 기본은 그냥 Text 다', (
     tester,

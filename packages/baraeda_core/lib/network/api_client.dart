@@ -105,7 +105,7 @@ class ApiClient {
 
   /// `403 AUTH_PENDING`·`403 AUTH_REJECTED` 를 어느 화면의 어느 호출이
   /// 냈든 한 곳(인터셉터)에서 감지해 흘려보내는 스트림. 라우터가 이것만
-  /// 구독하면 화면마다 게이트 분기를 따로 심을 필요가 없다(목표 7항).
+  /// 구독하면 화면마다 게이트 분기를 따로 심을 필요가 없다.
   Stream<AccountGateReason> get gateEvents => _gateEventsController.stream;
 
   /// refresh 토큰이 거절돼(401) 재로그인이 필요해졌을 때 한 번 흘러가는 신호 — REST 경로의

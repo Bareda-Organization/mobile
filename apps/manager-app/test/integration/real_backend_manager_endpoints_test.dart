@@ -32,7 +32,7 @@ import '../support/real_backend_target.dart';
 
 /// `real_backend_run_flow_test.dart` 와 같은 가짜 보안 저장소 — 이 파일은
 /// 그쪽이 이미 다루지 않은 나머지 §4 엔드포인트(§4.3·§4.4·§4.5·§4.6·§4.7·
-/// §4.8·§4.11·§4.12·§4.13·§4.16)를 실백엔드로 호출한다(F5 M 목표 7·8·9).
+/// §4.8·§4.11·§4.12·§4.13·§4.16)를 실백엔드로 호출한다.
 class _FakeSecureStoragePlatform
     with MockPlatformInterfaceMixin
     implements FlutterSecureStoragePlatform {
@@ -85,10 +85,10 @@ class _FakeSecureStoragePlatform
   );
 }
 
-/// 시드 회차 구성(`V2__seed_data.sql`, F5 M 전용 DB `schoolbus_f5_m`) —
-/// run2: `confirmed`, driverA1/escortA1 배치, 출발 ±10분 창이 이미 지남
-/// (목표 8 `START_WINDOW_CLOSED` 재현 대상, 시간이 지날수록 더 확실히
-/// 닫힌다). run3: `moving`, driverA2/escortA2 배치 — 목표 7·8·9 의 대부분이
+/// 시드 회차 구성(`V2__seed_data.sql`) —
+/// run2: `confirmed`, driverA1/escortA1 배치, 출발 ±10분 창이 지난 상태
+/// (`START_WINDOW_CLOSED` 재현 대상, 시간이 지날수록 더 확실히
+/// 닫힌다). run3: `moving`, driverA2/escortA2 배치 — 이 시험의 대부분이
 /// 이 회차에서 일어난다.
 /// 실서버 시험은 큐를 쓰지 않는다 — 메모리 DB 에 붙인 큐만 만든다(도착 처리가 큐를 거치는 구현이라 필요하다).
 OfflineQueueRepository _offlineQueue(Dio dio) => OfflineQueueRepositoryImpl(
@@ -111,7 +111,7 @@ void main() {
     } finally {
       probe.close();
     }
-    // F5 M3 목표 — §4.5(도착 처리 소모)·§4.4(출발 창 시각 의존) 재현이
+    // §4.5(도착 처리 소모)·§4.4(출발 창 시각 의존) 재현이
     // 항상 성립하도록 필요할 때만 시드를 되돌린다(real_backend_target.dart
     // 의 함수 주석 참고). 백엔드가 죽어 있으면(!backendReachable) 이 호출도
     // 조용히 실패해 넘어가고, 그 판정은 각 시험의 backendReachable 분기가 한다.
@@ -155,7 +155,7 @@ void main() {
     );
 
     test(
-      '결함 수정 확인(F5 M2 목표 A-1, `Ruling 275`) — 프로덕션 '
+      '결함 수정 확인(`Ruling 275`) — 프로덕션 '
       'RouteApi.fetchRoute 는 이제 route_response.dart 의 asIdString 으로 '
       'stop_id 를 흡수한다. 이 백엔드는 §4.3 의 stop_id 를 int(또는 null, '
       '추가된 임시 집결지)로 내려보내지만, 더는 TypeError 를 던지지 않고 '
@@ -187,7 +187,7 @@ void main() {
     );
   });
 
-  group('§4.4 POST /runs/{runId}/start — 목표 8 예외 경로', () {
+  group('§4.4 POST /runs/{runId}/start — 예외 경로', () {
     test(
       'DRIVER_ONLY — 동승자(escortA1)가 run2 의 운행 시작을 호출하면 '
       '403 DRIVER_ONLY 를 받는다',
@@ -249,7 +249,7 @@ void main() {
     );
   });
 
-  group('§4.6 PATCH /runs/{runId}/riders/{riderId} — 목표 9 멱등성', () {
+  group('§4.6 PATCH /runs/{runId}/riders/{riderId} — 멱등성', () {
     // 아래 두 번째 시험이 새 네트워크 호출 없이 이 응답 본문을 재사용한다
     // (같은 상태로의 재요청이 지금은 409 라, 세 번째 호출로 성공 응답을
     // 다시 받을 수 없다 — Ruling 345 아래 주석 참고).
@@ -264,8 +264,8 @@ void main() {
       '백엔드는 int 로 내려 캐스팅이 실패한다(§4.3 과 같은 종류의 결함, '
       '아래 두 번째 시험이 그 실패를 실제 응답 값으로 재현한다) — 그래서 '
       '이 시험은 원재료 dio 로 직접 멱등성을 검증한다. ⚠ run3 은 등원 '
-      '회차라 boarded→alighted 가 막혀 있다(409 RIDER_TRANSITION_NOT_ALLOWED, '
-      'R51 C3) — 쓸 수 있는 전이는 waiting→boarded 뿐인데 시드의 rider 3 은 '
+      '회차라 boarded→alighted 가 막혀 있다(409 RIDER_TRANSITION_NOT_ALLOWED). '
+      '쓸 수 있는 전이는 waiting→boarded 뿐인데 시드의 rider 3 은 '
       '이미 boarded 라서, 먼저 되돌리기(§4.7)로 waiting 으로 돌린 뒤 처리한다. '
       '끝나면 rider 3 은 시드와 같은 boarded 이고 이력 행만 늘어난다',
       () async {
@@ -335,7 +335,7 @@ void main() {
     );
 
     test(
-      '결함 수정 확인(F5 M2 목표 A-3, `Ruling 275`) — 위 시험이 실제로 받은 '
+      '결함 수정 확인(`Ruling 275`) — 위 시험이 실제로 받은 '
       '응답을 그대로 RiderUpdateResult.fromJson 에 먹이면(추가 네트워크 '
       '호출 없이) asIdString 이 rider_id 를 흡수해 캐스팅이 성공하고 값도 '
       '옳게 읽힌다',
@@ -397,8 +397,7 @@ void main() {
     test(
       '동승자(escortA2)가 run3/rider 3 의 방금 바뀐 상태를 되돌린다 — '
       '위 §4.6 시험이 만든 boarded 를 waiting 으로 되돌리고, 시드 값 '
-      '(boarded)으로 다시 승차 처리해 DB 잔여 영향을 줄인다(이력 행은 남는다, '
-      '보고서 2항)',
+      '(boarded)으로 다시 승차 처리해 DB 잔여 영향을 줄인다(이력 행은 남는다)',
       () async {
         if (!backendReachable) {
           markTestSkipped('환경 문제: 백엔드 미기동($baseUrl)');
@@ -411,7 +410,7 @@ void main() {
         final result = await api.revertRiderStatus(
           runId: '3',
           riderId: '3',
-          reason: '실백엔드 계약 시험 — F5 M 목표 9 원복',
+          reason: '실백엔드 계약 시험 — 원복',
         );
 
         expect(result.revertedAt, isNotNull);
@@ -481,9 +480,9 @@ void main() {
     );
   });
 
-  group('§4.5 POST /runs/{runId}/stops/{stopId}/arrive — 목표 8', () {
+  group('§4.5 POST /runs/{runId}/stops/{stopId}/arrive', () {
     test(
-      '결함 수정 확인(F5 M2 목표 A-2·A-5, `Ruling 275` + 널 허용성) — '
+      '결함 수정 확인(`Ruling 275` + 널 허용성) — '
       '기사(driverA2, run3 배치)가 아직 미도착인 정류장에 도착 처리하면 '
       '성공하고, 같은 정류장에 다시 도착 처리를 호출하면 403 '
       'DUPLICATE_ARRIVE 를 받는다. '
@@ -492,19 +491,19 @@ void main() {
       '프로덕션 RosterApi.fetchRoster 로 그 시점의 실제 미도착 정류장을 '
       '골라 쓴다. photo_url 널 허용 수정 전에는 이 호출 자체가 크래시해 '
       '원재료 dio 로 우회해야 했다 — 지금은 정류장 선택 경로 자체가 그 '
-      '수정의 재현 검사를 겸한다(보고서 1항). '
-      '(고정 stopId 를 썼던 이전 버전은 두 번째 전체 실행에서 이미 소모된 '
+      '수정의 재현 검사를 겸한다. '
+      '(stopId 를 고정하면 두 번째 전체 실행에서 이미 소모된 '
       '정류장을 다시 호출해 "첫 도착"이 아니라 곧바로 403 을 받는 형태로 '
-      '깨졌다 — 보고서 1항). 이어서 그 첫 성공 응답을 추가 네트워크 호출 '
+      '깨진다). 이어서 그 첫 성공 응답을 추가 네트워크 호출 '
       '없이 그대로 ArriveStopResult.fromJson 에 먹여, next_stop.stop_id 가 '
       'int 로 와도 asIdString 이 흡수해 캐스팅이 성공하고 값도 옳게 읽히는지 '
       '확인한다(수정 전에는 NextStopRef.fromJson 의 직접 캐스팅이 여기서 '
       'TypeError 를 던졌다). ⚠ 이 시험은 고른 정류장 하나를 영구히 '
       '"도착 처리됨" 으로 만든다 — 그 뒤 회차가 같은 DB 를 재사용한다면 이 '
-      '상태를 그대로 물려받는다(보고서 2항). run3 은 정류장 4개(2·3·1·4 순) '
+      '상태를 그대로 물려받는다. run3 은 정류장 4개(2·3·1·4 순) '
       '뿐이라 이 시험을 4번 넘게 돌리면 미도착 정류장이 바닥나 "환경 문제"로 '
-      '건너뛴다 — F5 M2 목표 B 가 이 소모를 매 실행 전 `/dev/reset` 으로 '
-      '되돌려 막는다(보고서 1항)',
+      '건너뛴다 — 매 실행 전 `/dev/reset` 으로 되돌려 '
+      '이 소모를 막는다',
       () async {
         if (!backendReachable) {
           markTestSkipped('환경 문제: 백엔드 미기동($baseUrl)');
@@ -518,7 +517,7 @@ void main() {
         // 아래 확인이 성립하지 않으므로 제외하고 — seq 가 가장 작은 것을
         // 고른다.
         //
-        // photo_url 널 허용 수정(F5 M2 목표 A-5) 전에는 RosterStudent
+        // photo_url 널 허용 수정 전에는 RosterStudent
         // .fromJson 이 `photo_url` 을 `as String`(비 nullable)으로 캐스팅해
         // 이 호출 자체가 크래시했다(실측: rider 3 김영희, photo_url: null).
         // 지금은 프로덕션 RosterApi 를 그대로 써서 그 수정이 실제로
@@ -535,9 +534,9 @@ void main() {
         }
 
         var candidateStops = selectCandidates(roster.stops);
-        // F5 M3 목표 — setUpAll 이 이미 이 조건을 확인·필요시 리셋했지만
+        // setUpAll 이 이미 이 조건을 확인·필요시 리셋했지만
         // (real_backend_target.dart 참고), 이 자리에도 한 번 더 안전판을
-        // 둔다(브리프 후보 (a)) — setUpAll 과 이 시험 실행 사이에 상태가
+        // 둔다 — setUpAll 과 이 시험 실행 사이에 상태가
         // 바뀌었을 가능성(예: 예상 밖의 동시 실행)까지 방어한다. 그래도
         // 없으면 그때는 진짜 "환경 문제"로 건너뛴다 — 재시도까지 실패한
         // 것이므로 더는 이 시험의 책임이 아니다.
@@ -619,13 +618,12 @@ void main() {
 
   group('§4.13 POST /runs/{runId}/reports', () {
     test(
-      '결함 수정 확인(F5 M2 목표 A-4, `Ruling 275`) — 동승자(escortA2, '
+      '결함 수정 확인(`Ruling 275`) — 동승자(escortA2, '
       'run3 배치)가 기타 사유 보고서를 제출하면 프로덕션 '
       'ReportResult.fromJson 이 report_id 를 asIdString 으로 흡수해 캐스팅이 '
       '성공하고 값도 옳게 읽혀야 한다(수정 전에는 이 백엔드가 report_id 를 '
       "int 로 내려 `json['report_id'] as String` 이 TypeError 를 던졌다). "
-      '⚠ 이 호출은 run3 에 보고서 레코드를 영구히 남긴다(삭제 API 부재, '
-      '보고서 2항)',
+      '⚠ 이 호출은 run3 에 보고서 레코드를 영구히 남긴다(삭제 API 부재)',
       () async {
         if (!backendReachable) {
           markTestSkipped('환경 문제: 백엔드 미기동($baseUrl)');
@@ -658,10 +656,10 @@ void main() {
   group('§4.16 GET /runs/{runId}/navigation — 클라이언트 미구현', () {
     test(
       '⚠ manager-app 코드베이스 전체에 NavigationApi 도, 이 경로를 부르는 '
-      '화면도 없다(grep -rn "navigation" lib/ 매칭 0건, 보고서 확인). '
+      '화면도 없다(grep -rn "navigation" lib/ 매칭 0건). '
       '건너뜀 0 을 지키기 위해 원재료 dio 로만 호출해 서버가 실제로 '
       '응답하는지 확인한다 — 이 호출을 검증하는 프로덕션 코드 경로는 '
-      '이 라운드 기준 존재하지 않는다(가짜 응답 대체가 아니라 미구현)',
+      '현재 존재하지 않는다(가짜 응답 대체가 아니라 미구현)',
       () async {
         if (!backendReachable) {
           markTestSkipped('환경 문제: 백엔드 미기동($baseUrl)');

@@ -39,7 +39,7 @@ Widget _adapter(GlobalKey key, String markerId) => MaterialApp(
   ),
 );
 
-// R33 P2 — 마커 동기화가 겹쳐 시작되면 iOS 에서 핀 이미지가 빈 파일로 저장돼 앱이 종료된다(R32 M1).
+// 마커 동기화가 겹쳐 시작되면 iOS 에서 핀 이미지가 빈 파일로 저장돼 앱이 종료된다.
 // 어댑터가 동기화를 `SerialSync` 로 한 번에 하나만 돌리는지, 앞 동기화가 끝나기 전에 위젯이 두 번 갱신되는 것으로 확인한다.
 void main() {
   testWidgets('마커가 연달아 바뀌어도 오버레이 동기화는 한 번에 하나만 돈다', (tester) async {

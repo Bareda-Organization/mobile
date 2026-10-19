@@ -17,7 +17,7 @@ import 'package:parent_app/features/schedule/presentation/unsaved_edits.dart';
 /// §3.7 요일×방향 주소 편집기 — 요일 알약(월~일) 7개 중 하나를 고르면 그 요일의 등원 · 하원 두 칸이 나온다.
 ///
 /// 요일 7 × 방향 2 = **14칸 전부** 주소와 상세 주소(`address_detail`)를
-/// 적을 수 있다(P-05 · STU-06, H5).
+/// 적을 수 있다(P-05 · STU-06).
 /// 서버가 아직 갖고 있지 않은 칸은 빈 칸으로 열리고, 적은 칸만 저장 요청에 실린다(`PATCH` 는 보낸 칸만 반영).
 /// 서버에 이미 있던 칸을 비우는 것은 막는다 — 칸을 지우는 수단이 없고 빈 주소는 전체를 거절시킨다(F05-11).
 ///
@@ -57,7 +57,7 @@ class _Slot {
   final TextEditingController address;
   final TextEditingController detail;
 
-  /// 저장했거나 불러온 시점의 글자 — 이것과 다르면 저장하지 않은 입력이다(P14).
+  /// 저장했거나 불러온 시점의 글자 — 이것과 다르면 저장하지 않은 입력이다.
   String baselineAddress;
   String baselineDetail;
 
@@ -192,7 +192,7 @@ class _WeeklyAddressEditorState extends ConsumerState<WeeklyAddressEditor> {
 
   Future<void> _save() async {
     if (_submitting) return;
-    // 잠금(`_submitting`)은 이 검사 뒤에 건다 — 앞에서 걸면 경고 뒤 저장 버튼이 영구히 잠긴다(R46).
+    // 잠금(`_submitting`)은 이 검사 뒤에 건다 — 앞에서 걸면 경고 뒤 저장 버튼이 영구히 잠긴다.
     final collected = _collect();
     final entries = collected.entries;
     if (entries == null) {

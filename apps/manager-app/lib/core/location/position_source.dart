@@ -33,7 +33,7 @@ abstract interface class PositionSource {
   void start();
 
   /// 권한·위치 서비스 상태만 다시 확인해 [availability] 를 갱신한다 — 스트림(포그라운드 서비스 알림)은
-  /// 켜지 않고 권한 창도 다시 띄우지 않는다. 운행 시작 전 화면이 설정을 바꾼 것을 알아채는 용도다(M2-02).
+  /// 켜지 않고 권한 창도 다시 띄우지 않는다. 운행 시작 전 화면이 설정을 바꾼 것을 알아채는 용도다.
   Future<void> recheck();
 
   /// 위치 스트림 구독을 멈춘다 — 운행 종료·로그아웃 등 송신기가 멎을 때 부른다.
@@ -41,7 +41,7 @@ abstract interface class PositionSource {
   /// 이 호출로 함께 멎는다. 이미 멈췄으면 아무 것도 하지 않는다(멱등).
   void stop();
 
-  /// 지금 좌표를 한 번만 측정한다(`Ruling 360` 회귀 보완, BRIEF-BG2) —
+  /// 지금 좌표를 한 번만 측정한다(`Ruling 360`) —
   /// [start] 를 부르지 않으므로 Android 포그라운드 서비스 알림·iOS
   /// 백그라운드 갱신을 켜지 않는다. 비상 발신처럼 [sample] 이 `null`(스트림
   /// 미시작 — 동승자 단말, 또는 송신이 끊긴 기사 단말)일 때만 쓴다. [timeout]
@@ -101,8 +101,7 @@ enum PositionAvailability {
 }
 
 /// [Position] → [PositionSample] 변환 — 스트림(`_onPosition`)과 1회 측정
-/// ([GeolocatorPositionSource.sampleOnce])이 같은 함수를 쓴다(BRIEF-BG2,
-/// 두 벌 두지 않는다).
+/// ([GeolocatorPositionSource.sampleOnce])이 같은 함수를 쓴다(두 벌 두지 않는다).
 PositionSample _toSample(Position position) => PositionSample(
   lat: position.latitude,
   lng: position.longitude,
@@ -110,8 +109,7 @@ PositionSample _toSample(Position position) => PositionSample(
   // clockProvider 로 "지금" 을 다시 물으면 안 된다(PositionSample 문서 참고).
   recordedAt: position.timestamp,
   // iOS 는 측정 불가일 때 속도·방향에 -1 을 준다 — §4.12 범위 밖이라 서버가
-  // 거부하므로, 음수면 그 필드를 아예 빼고 보낸다(브리프 §5.8.1.2 마지막
-  // 행 근거).
+  // 거부하므로, 음수면 그 필드를 아예 빼고 보낸다.
   speed: position.speed >= 0 ? _toKmh(position.speed) : null,
   heading: position.heading >= 0 ? position.heading : null,
 );
@@ -305,14 +303,14 @@ class GeolocatorPositionSource implements PositionSource {
   @override
   PositionAvailability get availability => _availability;
 
-  /// [sample] 이 스트림 구독을 못 여는 상황(비상 발신, BRIEF-BG2)의 보완 —
+  /// [sample] 이 스트림 구독을 못 여는 상황(비상 발신)의 보완 —
   /// [start] 없이 좌표를 한 번만 측정한다. 변환 규칙은 [_onPosition] 과
   /// 같은 [_toSample] 을 쓴다(두 벌 두지 않는다).
   @override
   Future<PositionSample?> sampleOnce({
     Duration timeout = const Duration(seconds: 5),
   }) async {
-    // 권한 창이 응답 없이 떠 있어도 [timeout] 을 넘겨 기다리지 않는다 — 비상 신고는 위치 없이 보낸다(R53 A10).
+    // 권한 창이 응답 없이 떠 있어도 [timeout] 을 넘겨 기다리지 않는다 — 비상 신고는 위치 없이 보낸다.
     // 권한 대기와 측정을 합쳐 [timeout] 안이어야 하므로 측정에는 남은 시간만 준다.
     final waited = Stopwatch()..start();
     try {

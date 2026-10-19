@@ -59,7 +59,7 @@ class _OfflineQueueScreenState extends ConsumerState<OfflineQueueScreen> {
   }
 
   /// 잘못 눌러 쌓인 건을 큐에서 지운다 — 서버에 아직 반영되지 않은 처리를 버리는 일이고 학부모 알림도 영영
-  /// 가지 않으므로, 무엇이 사라지는지 알리고 빨간 단추로 한 번 묻는다(M10).
+  /// 가지 않으므로, 무엇이 사라지는지 알리고 빨간 단추로 한 번 묻는다.
   Future<void> _cancel(PendingRequestSummary item) async {
     final colors = context.colors;
     final name = _studentNameOf(item);
@@ -210,7 +210,7 @@ class _OfflineQueueScreenState extends ConsumerState<OfflineQueueScreen> {
     );
   }
 
-  /// 처리 이름에 학생 이름을 덧붙인다(M2-03) — 페이로드에 이름이 없어, 이미 받아 둔 명단(홈·명단 화면이 채운
+  /// 처리 이름에 학생 이름을 덧붙인다 — 페이로드에 이름이 없어, 이미 받아 둔 명단(홈·명단 화면이 채운
   /// 캐시)에서 같은 회차·같은 승차 기록을 찾는다. 명단을 새로 받지 않고(오프라인일 수 있다), 못 찾으면 `null`.
   String? _studentNameOf(PendingRequestSummary item) => rosterNameOf(
     ref.exists(rosterProvider) ? ref.read(rosterProvider).value : null,

@@ -35,7 +35,6 @@ abstract final class BaraedaFontWeight {
 ///
 /// 13 칩·힌트·탭 이름 · 14 보조 줄·작은 단추 · 16 본문·목록 제목·단추·입력 · 20 시트·대화상자·빈 상태 제목·큰 단추 ·
 /// 24 화면 제목 · 30 숫자 칸·운행 중 다음 승하차지 · 40 큰 숫자(출발 시각) · 52 카운트다운.
-/// 예전 15·18·32 는 가까운 단계로 옮겼다(15→14·16, 18→16, 32→30).
 abstract final class BaraedaFontSize {
   static const double cap = 13;
   static const double sub = 14;
@@ -58,7 +57,7 @@ abstract final class BaraedaFontSize {
     count,
   ];
 
-  // 예전 이름 — 같은 8단계 값을 가리킨다. 위젯 쪽 호출부를 안 깨려고 이름을 남겼다.
+  // 호환용 이름 — 같은 8단계 값을 가리킨다. 위젯 쪽 호출부를 안 깨려고 이름을 남겼다.
   static const double display = count;
   static const double h1 = num;
   static const double h2 = disp;

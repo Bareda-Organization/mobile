@@ -31,7 +31,7 @@ class _FakeRouteRepository implements RouteRepository {
   /// `getRoute` 가 불린 횟수 — 화면이 서버 값을 다시 받는지 본다(F05-06).
   int calls = 0;
 
-  /// 받은 요청 — 화면이 어느 자녀의 어느 회차를 물었는지 본다(M-P2).
+  /// 받은 요청 — 화면이 어느 자녀의 어느 회차를 물었는지 본다.
   final List<({String studentId, String? runId})> requests = [];
 
   @override
@@ -168,7 +168,7 @@ void main() {
     });
   });
 
-  // R52 낮음 A9 — 목록 번호는 지도 마커와 같이 서버가 준 실제 순번(`seq`)이다.
+  // 목록 번호는 지도 마커와 같이 서버가 준 실제 순번(`seq`)이다.
   // 표시 범위가 3~5번이면 3 · 4 · 5.
   group('A9 목록 번호는 실제 seq', () {
     testWidgets('표시 범위가 3~5번이면 번호 원에 3 · 4 · 5 가 적히고 1 · 2 는 없다', (
@@ -217,7 +217,7 @@ void main() {
 
   group('①표시 범위 — 서버가 보낸 stops 를 그대로 그린다(재절단 없음)', () {
     testWidgets(
-      '서버가 4개를 보내면 화면도 4개를 그린다(목표 2 — visibleStops 삭제)',
+      '서버가 4개를 보내면 화면도 4개를 그린다',
       (tester) async {
         // Ruling 288 이후 서버는 창(최대 3개) + 합성 학원 항목 1개를
         // 함께 보낸다 — 총 4개. 클라이언트가 다시 자르면 이 중 일부가
@@ -338,7 +338,7 @@ void main() {
     });
   });
 
-  // R48 `Ruling 824` — 타임라인의 "12:09 지남" 은 §3.10 `stops[].arrived_at` 이 그린다.
+  // `Ruling 824` — 타임라인의 "12:09 지남" 은 §3.10 `stops[].arrived_at` 이 그린다.
   group('⑤지난 시각 · 꼬리표 — 타임라인', () {
     testWidgets('도착 처리된 곳에만 "시각 지남" 이 붙고, 아직인 곳에는 없다', (tester) async {
       final route = RouteDetail.fromJson(
@@ -449,8 +449,8 @@ void main() {
     });
   });
 
-  // M-P2 — 지도는 회차 기준인데 상세는 학생 기준만 보내 다른 회차(다음 회차)가 보였다.
-  group('M-P2 지도에서 넘긴 회차로 노선을 받는다', () {
+  // 지도는 회차 기준인데 상세는 학생 기준만 보내 다른 회차(다음 회차)가 보였다.
+  group('지도에서 넘긴 회차로 노선을 받는다', () {
     RouteDetail sample() => RouteDetail.fromJson(
       _routeJson(
         stops: [_stopJson(stopId: 's-stop-1', seq: 1, name: '정류장1')],

@@ -85,7 +85,7 @@ class _PasswordChangeScreenState extends ConsumerState<PasswordChangeScreen> {
     }
   }
 
-  /// 단추가 꺼진 이유 — 꺼져 있으면 단추 아래에 그대로 적는다(M15). 켜져 있으면 `null`.
+  /// 단추가 꺼진 이유 — 꺼져 있으면 단추 아래에 그대로 적는다. 켜져 있으면 `null`.
   String? get _disabledReason {
     if (_currentPasswordController.text.isEmpty) {
       return '현재 비밀번호를 입력하면 눌러요';
@@ -130,7 +130,7 @@ class _PasswordChangeScreenState extends ConsumerState<PasswordChangeScreen> {
                     onChanged: (_) => setState(() {}),
                   ),
                   const SizedBox(height: BaraedaSpacing.space4),
-                  // 한도(M14) — 서버는 UTF-8 72바이트를 넘으면 422 로 거절한다. 입력하는 동안 미리 알린다.
+                  // 한도 — 서버는 UTF-8 72바이트를 넘으면 422 로 거절한다. 입력하는 동안 미리 알린다.
                   BaraedaInput(
                     label: '새 비밀번호',
                     hint: '영문 72자 · 한글 24자까지',

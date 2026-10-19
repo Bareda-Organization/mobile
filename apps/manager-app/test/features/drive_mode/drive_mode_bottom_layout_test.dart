@@ -195,7 +195,7 @@ void main() {
     await pumpCrowded(tester, size: const Size(375, 750), textScale: 1);
 
     // 위치 송신 불가(조작이 막힌 것)가 먼저, 카카오내비 미설치는 접혀 있다.
-    // 도착 처리 결과는 알림이 아니라 토스트라 묶음에 들어오지 않는다(M6).
+    // 도착 처리 결과는 알림이 아니라 토스트라 묶음에 들어오지 않는다.
     expect(find.textContaining('위치 권한이 꺼져'), findsOneWidget);
     expect(find.textContaining('카카오내비가 설치돼'), findsNothing);
 

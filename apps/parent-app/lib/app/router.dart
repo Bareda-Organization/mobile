@@ -53,8 +53,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (location == AppRoutes.blockedAccount) return null;
 
       // pending·rejected 는 토큰은 있으나(로그인 자체는 성공) 허용 4개
-      // 밖의 화면에 못 들어간다(docs/archive/rounds/fe-phases-f2-f5.md §5.0 계정 상태
-      // 게이트 표) — 대기 화면에 고정한다(UF-X-02).
+      // 밖의 화면에 못 들어간다
+      // 대기 화면에 고정한다(UF-X-02).
       if (loggedIn &&
           (status == AccountStatus.pending ||
               status == AccountStatus.rejected)) {
@@ -71,7 +71,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
 
       // 학생에게는 일정 탭이 없다(`AppShell`) — 주소로 들어와도 일정·편집 화면 대신 홈으로 보낸다.
-      // 권한을 모르는 동안(`null`)도 닫아 둔다. 학생용 일정 안내 화면은 R52 `Ruling 874` 로 지웠다.
+      // 권한을 모르는 동안(`null`)도 닫아 둔다. 학생용 일정 안내 화면은 두지 않는다(`Ruling 874`).
       final isScheduleArea =
           location == AppRoutes.schedule ||
           location.startsWith('${AppRoutes.schedule}/');
@@ -109,7 +109,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.blockedAccount,
         builder: (context, state) => const BlockedScreen(),
       ),
-      // 로그인 뒤 탭 — 학부모 홈 · 일정 · 알림 · 설정 / 학생 내 버스 · 알림 · 설정(R48). 탭마다 화면 상태를 따로 붙든다(R44).
+      // 로그인 뒤 탭 — 학부모 홈 · 일정 · 알림 · 설정 / 학생 내 버스 · 알림 · 설정. 탭마다 화면 상태를 따로 붙든다.
       // 아래 나머지 화면(지도·노선 자세히·요일별 주소·일일 변경·비밀번호 변경 …)은 탭 밖 경로라 그 위에 얹히고 탭 막대를
       // 가린다.
       StatefulShellRoute.indexedStack(

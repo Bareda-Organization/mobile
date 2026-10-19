@@ -13,8 +13,8 @@ void main() {
         () => endSessionAsExpired(ref),
   );
 
-  // R51 — 재발급 거절은 다른 기기의 비밀번호 변경 · 차단으로도 생겨, 오래 쓰지 않은 탓이라고 단정하지 않는다.
-  test('로그인이 풀리면 역할을 비우고 원인을 단정하지 않는 "로그인이 만료됐어요" 안내를 남긴다 (R46 · R51)', () {
+  // 재발급 거절은 다른 기기의 비밀번호 변경 · 차단으로도 생겨, 오래 쓰지 않은 탓이라고 단정하지 않는다.
+  test('로그인이 풀리면 역할을 비우고 원인을 단정하지 않는 "로그인이 만료됐어요" 안내를 남긴다', () {
     final container = ProviderContainer(
       overrides: [
         currentUserRoleProvider.overrideWith((ref) => UserRole.parent),
@@ -31,7 +31,7 @@ void main() {
     );
   });
 
-  testWidgets('만료로 돌아온 로그인 화면은 안내를 보여주고, 직접 열었을 때는 없다 (R46)', (tester) async {
+  testWidgets('만료로 돌아온 로그인 화면은 안내를 보여주고, 직접 열었을 때는 없다', (tester) async {
     Future<void> pumpLogin(String? notice) => tester.pumpWidget(
       ProviderScope(
         key: UniqueKey(),

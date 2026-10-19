@@ -139,8 +139,8 @@ class _FixedTokenSource implements PushTokenSource {
 }
 
 void main() {
-  // M-P3 — 푸시를 받을 수 없는 기기에 "푸시로도 알려 드려요" 라고 약속하지 않는다.
-  group('M-P3 푸시 문구', () {
+  // 푸시를 받을 수 없는 기기에 "푸시로도 알려 드려요" 라고 약속하지 않는다.
+  group('푸시 문구', () {
     testWidgets('자리표시 토큰이면 안 읽은 알림이 없다는 화면에 푸시 약속이 없다', (tester) async {
       await _pump(
         tester,
@@ -596,7 +596,7 @@ void main() {
   });
   // 머리 아래 "최근 14일 · 자녀 이름들"
   // (학생은 "최근 14일"), 안 읽음 알약에는 서버가 센 수.
-  group('R48 구성', () {
+  group('구성', () {
     Future<void> pumpAs(
       WidgetTester tester,
       FakeNotificationRepository repository, {

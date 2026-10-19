@@ -51,8 +51,9 @@ class BaraedaListRow extends StatefulWidget {
   /// 사람 이름이면 자르지 않고 줄을 바꾼다. 아니면 두 줄에서 `…`.
   final bool titleIsPersonName;
 
-  /// 참이면 보조 줄을 낱말 단위로만 줄바꿈한다(`WordWrapText`). 기본(거짓)은 예전 그대로다 — 한글이 음절마다
-  /// 끊겨 `탑 / 승` 처럼 낱말 한가운데서 줄이 바뀌는 곳(칩이 오른쪽에 붙어 폭이 좁은 칸)에서 켠다.
+  /// 참이면 보조 줄을 낱말 단위로만 줄바꿈한다(`WordWrapText`). 기본(거짓)은
+  /// Flutter 기본 줄바꿈을 쓴다 — 한글이 음절마다 끊겨 `탑 / 승` 처럼 낱말
+  /// 한가운데서 줄이 바뀌는 곳(칩이 오른쪽에 붙어 폭이 좁은 칸)에서 켠다.
   final bool wrapSubtitleByWord;
 
   @override

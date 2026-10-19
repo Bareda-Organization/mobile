@@ -72,7 +72,7 @@ void main() {
     expect(find.textContaining('50자 이하여야'), findsNothing);
   });
 
-  // R48 시안 `signup` — 승인이 필요하다는 안내를 맨 위에(가입한 뒤에야 알게 되던 것), 주 단추는 맨 아래에 고정.
+  // 시안 `signup` — 승인이 필요하다는 안내를 폼 맨 위에, 주 단추는 맨 아래 고정 줄에 둔다.
   testWidgets('승인 안내가 폼 맨 위에 있고 [가입 신청하기] 는 아래 고정 줄에 있다', (tester) async {
     await pumpSignup(tester);
 

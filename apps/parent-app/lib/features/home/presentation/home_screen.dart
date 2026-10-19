@@ -260,7 +260,7 @@ class _StudentSection extends ConsumerWidget {
               children: [
                 _Preview(studentId: studentId, studentName: '내'),
                 _RunsSection(studentId: studentId, canToggle: false),
-                // P1 — 연결 코드(S-05)로 가는 길. 학생은 일정 탭이 없어 홈 맨 아래에 둔다.
+                // 연결 코드(S-05)로 가는 길. 학생은 일정 탭이 없어 홈 맨 아래에 둔다.
                 BaraedaListGroup(
                   children: [
                     BaraedaListRow(

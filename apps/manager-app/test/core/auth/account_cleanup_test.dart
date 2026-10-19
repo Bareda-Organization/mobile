@@ -178,7 +178,7 @@ void main() {
 
     expect(container.read(sessionExpiredNoticeProvider), isNull);
   });
-  // M-M3 — 기기에 저장한 명단은 계정이 볼 수 있던 학생의 정보라, 로그아웃·세션 만료에 함께 비운다.
+  // 기기에 저장한 명단은 계정이 볼 수 있던 학생의 정보라, 로그아웃·세션 만료에 함께 비운다.
   test('역할이 비면 기기에 저장한 명단도 비운다', () async {
     await loginWithLeftovers();
     await container.read(rosterCacheProvider).save('run-A', {

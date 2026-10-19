@@ -92,7 +92,7 @@ Future<void> _pumpDrive(
 }
 
 void main() {
-  testWidgets('R46 명단 갱신이 실패해도 마지막 명단의 [도착 처리] 가 남고 오류를 따로 알린다', (
+  testWidgets('명단 갱신이 실패해도 마지막 명단의 [도착 처리] 가 남고 오류를 따로 알린다', (
     tester,
   ) async {
     await _pumpDrive(
@@ -117,7 +117,7 @@ void main() {
     expect(find.text('다시 시도'), findsOneWidget);
   });
 
-  testWidgets('R46 처음부터 명단을 못 받으면 오류와 [다시 시도] 를 보인다', (tester) async {
+  testWidgets('처음부터 명단을 못 받으면 오류와 [다시 시도] 를 보인다', (tester) async {
     await _pumpDrive(
       tester,
       roster: (call) {
@@ -132,13 +132,13 @@ void main() {
     expect(find.text('도착 처리'), findsNothing);
   });
 
-  testWidgets('M5 긴 승하차지 이름·큰 글자에도 도착 처리 단추의 동사는 잘리지 않는다', (tester) async {
+  testWidgets('긴 승하차지 이름·큰 글자에도 도착 처리 단추의 동사는 잘리지 않는다', (tester) async {
     tester.view.physicalSize = const Size(375 * 3, 812 * 3);
     tester.view.devicePixelRatio = 3;
     addTearDown(tester.view.reset);
     await _pumpDrive(tester, roster: (_) => _roster(_longName), textScale: 1.3);
 
-    // M5 — 단추에 승하차지 이름이 들어가고, 이름만 `…` 로 줄어든다. 동사(`도착 처리`)는 잘리지 않는다.
+    // 단추에 승하차지 이름이 들어가고, 이름만 `…` 로 줄어든다. 동사(`도착 처리`)는 잘리지 않는다.
     expect(find.text('도착 처리'), findsOneWidget);
     final button = tester.widget<BaraedaButton>(
       find.widgetWithText(BaraedaButton, '도착 처리'),

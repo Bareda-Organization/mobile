@@ -8,7 +8,7 @@ import 'package:manager_app/features/emergency/data/models/emergency_item.dart';
 /// 없으면 `StateError`, 있으면 저장소를 그대로 위임)이다.
 ///
 /// 갱신은 화면 진입(최초 watch) + 수동 새로고침(`ref.invalidate`)뿐이다 —
-/// 실시간 반영(WS `emergency_acked`)은 F4 범위라 이번 라운드는 두지 않는다.
+/// 실시간 반영(WS `emergency_acked`)은 두지 않는다.
 final emergencyListProvider = FutureProvider<EmergencyListResponse>((ref) {
   final runId = ref.watch(selectedRunIdProvider);
   if (runId == null) {

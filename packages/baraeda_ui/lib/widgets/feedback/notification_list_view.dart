@@ -39,7 +39,7 @@ enum NotificationListStyle {
 }
 
 /// 알림 목록 화면의 본문 — `[전체]` `[안 읽음]` 걸러 보기 · 날짜 머리 · 스크롤 끝에서 다음 쪽 자동 받기 ·
-/// 당겨서 새로고침 · 빈/오류 화면. 학부모·학생 앱과 매니저 앱이 함께 쓴다(R44 · R46).
+/// 당겨서 새로고침 · 빈/오류 화면. 학부모·학생 앱과 매니저 앱이 함께 쓴다.
 ///
 /// 이 위젯은 **그리기만** 한다. 알림 목록과 쪽 상태는 앱이 들고
 /// ([items] · [hasNext] · [loadingMore] …) 이 위젯이 부르는 콜백으로만 바꾼다.
@@ -113,7 +113,7 @@ class NotificationListView<T> extends StatefulWidget {
   final bool loadMoreFailed;
 
   /// 이 기기가 실제로 푸시를 받을 수 있는가 — `true` 일 때만 빈 · 오류 화면이 "푸시로도 알려 드려요" 를 말한다.
-  /// 받을 수 없는 기기(Firebase 를 아직 안 붙임)에 약속하면 거짓이다(M-P3, `UF-X-09` ④).
+  /// 받을 수 없는 기기(Firebase 를 아직 안 붙임)에 약속하면 거짓이다(`UF-X-09` ④).
   final bool pushAvailable;
 
   @override

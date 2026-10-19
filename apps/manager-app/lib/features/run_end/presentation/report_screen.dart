@@ -21,7 +21,7 @@ import 'package:manager_app/features/run_end/data/models/report_result.dart';
 /// 항목으로 보호자 부재를 고를 수도 있다(UF-E-04 — 동승자의 [예외 보고] → [보호자 부재 보고]).
 ///
 /// 보고는 학원 관계자에게만 전달된다 — 학부모에게 알려야 하면 동승자가 지연 알림을 보낸다. 접수된 뒤에는 제출
-/// 단추를 꺼 같은 보고가 두 번 나가지 않게 한다(R32 M11).
+/// 단추를 꺼 같은 보고가 두 번 나가지 않게 한다.
 class ReportScreen extends ConsumerStatefulWidget {
   const new({super.key, this.guardianAbsent = false});
 
@@ -41,7 +41,7 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
   String? _errorMessage;
   ReportResult? _result;
 
-  /// 보고가 통신 두절로 기기에 쌓였는가 — 서버에 아직 접수되지 않았다(R56). 같은 보고가 두 번 쌓이지 않게 제출 단추를 끈다.
+  /// 보고가 통신 두절로 기기에 쌓였는가 — 서버에 아직 접수되지 않았다. 같은 보고가 두 번 쌓이지 않게 제출 단추를 끈다.
   bool _queued = false;
 
   static const _typeOptions = [
@@ -91,7 +91,7 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
             request: ReportRequest(
               type: _effectiveType,
               memo: memo,
-              // 즉시 전송과 오프라인 재생이 같은 키를 쓰도록 제출하는 순간 한 번만 만든다(R56).
+              // 즉시 전송과 오프라인 재생이 같은 키를 쓰도록 제출하는 순간 한 번만 만든다.
               clientKey: IdempotencyKeys.generate(),
               riderId: _isGuardianAbsent ? _selectedRiderId : null,
             ),
@@ -281,7 +281,7 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
                         label: '보고 제출',
                         size: BaraedaButtonSize.xl,
                         block: true,
-                        // 접수된 뒤에는 끈다 — 다시 누르면 같은 보고가 한 번 더 관계자에게 통지된다(R32 M11).
+                        // 접수된 뒤에는 끈다 — 다시 누르면 같은 보고가 한 번 더 관계자에게 통지된다.
                         onPressed: (_submitting || _result != null || _queued)
                             ? null
                             : () => _submit(runId),

@@ -47,7 +47,7 @@ class _FakeSource implements PositionSource {
   @override
   PositionAvailability get availability => availabilityValue;
 
-  /// 호출마다 측정 시각이 1초씩 새로 나온 것처럼 돌려준다 — 같은 시각은 다시 보내지 않는다(M-2).
+  /// 호출마다 측정 시각이 1초씩 새로 나온 것처럼 돌려준다 — 같은 시각은 다시 보내지 않는다.
   int _measured = 0;
 
   @override
@@ -339,7 +339,7 @@ void main() {
     expect(repository.calls, hasLength(1));
   });
 
-  testWidgets('전송이 성공하면 마지막 성공 시각을 기록하고, 실패하면 그 시각을 그대로 둔다 (R46)', (
+  testWidgets('전송이 성공하면 마지막 성공 시각을 기록하고, 실패하면 그 시각을 그대로 둔다', (
     tester,
   ) async {
     final container = await pumpApp(tester);

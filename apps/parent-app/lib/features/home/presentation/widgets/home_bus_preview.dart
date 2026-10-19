@@ -260,7 +260,7 @@ class _PreviewBody extends ConsumerWidget {
                             )
                           : ColoredBox(color: colors.statusIdleSoft),
                     ),
-                    // 받은 위치가 없는데 "기준" 시각을 보이면 거짓 정보다(P8).
+                    // 받은 위치가 없는데 "기준" 시각을 보이면 거짓 정보다.
                     if (received != null)
                       Positioned(
                         top: BaraedaSpacing.space2,

@@ -120,9 +120,9 @@ Future<void> _connected(BaraedaWebSocketClient client) => client.connectionState
     .timeout(const Duration(seconds: 3));
 
 void main() {
-  // R46-FIXCONN C-11 — 앱이 백그라운드에서 소켓이 조용히 죽어도 상태는
+  // 앱이 백그라운드에서 소켓이 조용히 죽어도 상태는
   // `connected` 로 남는다. `reconnectNow()` 는 재연결 대기·포기 상태에서만
-  // 동작해, 죽은 소켓은 하트비트 점검(최대 10초 + 종료 시간)에서야 잡혔다.
+  // 동작해, 죽은 소켓은 하트비트 점검(최대 10초 + 종료 시간)에서야 잡힌다.
   // 복귀 때 마지막 서버 프레임(하트비트 포함)이 20초를 넘었으면 연결이 죽은
   // 것으로 보고 바로 다시 붙인다.
   group('BaraedaWebSocketClient — 복귀 직후 죽은 연결 정리(C-11)', () {

@@ -79,7 +79,7 @@ class NoShowCase {
   factory fromJson(Map<String, dynamic> json) {
     final contactsJson = json['contacts'] as List<dynamic>? ?? const [];
     return NoShowCase(
-      // M2(BR-054, Ruling 332) — 서버가 아직 숫자로 보낸다(`Long caseId`).
+      // BR-054, Ruling 332 — 서버가 아직 숫자로 보낸다(`Long caseId`).
       // `rider_id`(rider_update_result.dart)와 같은 방식으로 흡수한다.
       caseId: asIdString(json['case_id']),
       startedAt: DateTime.parse(json['started_at'] as String),
@@ -123,10 +123,10 @@ class RosterStudent {
       riderId: asIdString(json['rider_id']),
       studentId: json['student_id'] as String,
       name: json['name'] as String,
-      // §4.2(2026-09-14 확정) — 미등록 학생이 예외가 아니라 기본 상태라
+      // §4.2 — 미등록 학생이 예외가 아니라 기본 상태라
       // 서버가 `photo_url: null` 을 내려보낸다. `StudentRow`(baraeda_ui)
       // 가 이 값을 받아 렌더하고, 없거나 로드에 실패하면 이름 이니셜로
-      // 대체한다(`R4 A-photo` — roster_screen.dart 가 그대로 전달).
+      // 대체한다(roster_screen.dart 가 그대로 전달).
       photoUrl: json['photo_url'] as String?,
       className: json['class_name'] as String?,
       // 마스킹은 서버가 이미 적용(`010-2XXX-8814`) — 클라이언트는 그대로 표시.
@@ -234,7 +234,7 @@ class RosterResponse {
     this.cachedAt,
   });
 
-  /// [cachedAt] 은 서버가 아니라 이 기기의 저장본에서 읽었을 때만 준다(M-M3).
+  /// [cachedAt] 은 서버가 아니라 이 기기의 저장본에서 읽었을 때만 준다.
   factory fromJson(Map<String, dynamic> json, {DateTime? cachedAt}) {
     final stopsJson = json['stops'] as List<dynamic>? ?? [];
     return RosterResponse(
@@ -259,7 +259,7 @@ class RosterResponse {
   final List<RosterStop> stops;
 
   /// 이 명단을 기기에 저장해 둔 시각 — 서버에 닿지 못해 마지막으로 받은 명단을 보고 있을 때만 값이 있다.
-  /// 서버에서 방금 받은 명단이면 `null`(M-M3 · UF-E-07).
+  /// 서버에서 방금 받은 명단이면 `null`(UF-E-07).
   final DateTime? cachedAt;
 
   /// 지금까지 하차한 학생 수 — 학생 행의 `alighted` 를 센다. `counts` 에는 하차 칸이 없고

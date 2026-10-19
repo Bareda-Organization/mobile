@@ -1,7 +1,6 @@
 // [AppHeader] 시험 — `Scaffold.appBar` 자리에 놓였을 때 상태 표시줄을 비켜서는가.
 //
-// ⚠ 이 검사가 0건이어서 결함이 살아남았다. 2026-09-20 iPhone 17 Pro 시뮬레이터에서
-// 학부모 앱 홈의 제목 "오늘 운행" 이 상태 표시줄 시계와 **겹쳐 그려졌다.**
+// ⚠ 이 검사가 없으면 결함이 살아남는다 — 학부모 앱 홈의 제목 "오늘 운행" 이 상태 표시줄 시계와 **겹쳐 그려진다.**
 // Material `AppBar` 는 안쪽에서 안전 영역을 처리하지만, 직접 만든
 // `PreferredSizeWidget` 은 그 일을 스스로 해야 한다.
 import 'package:baraeda_ui/theme/baraeda_theme.dart';
@@ -43,9 +42,8 @@ void main() {
     expect(top, greaterThanOrEqualTo(59), reason: '제목만 내리고 버튼을 두면 같은 줄이 어긋난다');
   });
 
-  // 2026-09-29 사용자 지적 "앱 화면에서 뒤로가기 버튼" — 학부모 앱의 설정·일정·노선 상세·
-  // 자녀 연결·실시간 위치 5개 화면이 `onBack` 을 안 넘겨 뒤로 버튼이 없었다. 화면마다 넘기게
-  // 하면 다음 화면이 또 빠뜨린다 → 뒤에 화면이 있으면 머리말이 스스로 그린다.
+  // 학부모 앱의 설정·일정·노선 상세·자녀 연결·실시간 위치 5개 화면은 `onBack` 을 넘기지 않으면
+  // 뒤로 버튼이 없다. 화면마다 넘기게 하면 다음 화면이 또 빠뜨린다 → 뒤에 화면이 있으면 머리말이 스스로 그린다.
   testWidgets('뒤에 화면이 있으면 onBack 없이도 뒤로 버튼이 생기고, 누르면 돌아간다', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
@@ -96,7 +94,7 @@ void main() {
     );
   });
 
-  // 시안 R48 머리줄 — 제목 24 + 부제 14 가 `preferredSize`(64) 안에 들어가야 한다.
+  // 머리줄 — 제목 24 + 부제 14 가 `preferredSize`(64) 안에 들어가야 한다.
   // 높이가 고정이라 글자 배율이 크면 넘치므로 배율을 묶는다.
   for (final scale in [1.0, 1.3, 2.0]) {
     testWidgets('부제가 있는 머리줄은 글자 $scale 배에서도 넘치지 않는다', (tester) async {

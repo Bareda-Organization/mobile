@@ -5,7 +5,7 @@ import 'package:manager_app/features/home/presentation/widgets/focus_run_card.da
 
 import '../../support/manager_run_fixture.dart';
 
-/// M-M2(M-07) — 기사 운행 카드에 예상 소요시간이 보인다. 값이 없으면(서버가 모르면) 지어내지 않는다.
+/// M-07 — 기사 운행 카드에 예상 소요시간이 보인다. 값이 없으면(서버가 모르면) 지어내지 않는다.
 void main() {
   Future<void> pump(
     WidgetTester tester,

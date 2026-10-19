@@ -20,7 +20,7 @@ class BaraedaManagerApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final bootstrap = ref.watch(authBootstrapProvider);
-    // 위치 송신은 화면이 아니라 앱 전역이다(R33 M1) — 어느 화면에 있든 돌도록 앱 루트가 붙든다.
+    // 위치 송신은 화면이 아니라 앱 전역이다 — 어느 화면에 있든 돌도록 앱 루트가 붙든다.
     // 송신 좌표가 바뀔 때마다 앱 전체가 다시 그려지지 않게 값은 읽지 않는다.
     ref.watch(positionTransmitterProvider.select((_) => null));
 

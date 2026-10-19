@@ -53,7 +53,7 @@ class _OfflineQueueAutoSyncState extends ConsumerState<OfflineQueueAutoSync> {
     super.dispose();
   }
 
-  /// 통신이 끊긴 채 마지막 역할로 들어온 세션이면 `/me` 를 다시 불러 확인한다(R52 H2). 아니면 아무 일도 없다.
+  /// 통신이 끊긴 채 마지막 역할로 들어온 세션이면 `/me` 를 다시 불러 확인한다. 아니면 아무 일도 없다.
   Future<void> _reverifySession() => ref.read(sessionReverifierProvider)();
 
   Future<void> _flush() async {

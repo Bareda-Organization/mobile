@@ -10,8 +10,8 @@ import 'package:parent_app/features/settings/domain/notification_settings.dart';
 import 'package:parent_app/features/settings/domain/notification_settings_repository.dart';
 import 'package:parent_app/features/settings/presentation/widgets/notification_settings_panel.dart';
 
-/// P2 게이트 조건 ① — 서버가 변경을 거부하면 스위치는 거부 전 값에 머물고
-/// 안내만 떠야 한다. 응답 전에 스위치를 먼저 바꾸는 구현(M-P4 이전)이었다면
+/// 서버가 변경을 거부하면 스위치는 거부 전 값에 머물고
+/// 안내만 떠야 한다. 응답 전에 스위치를 먼저 바꾸는 구현이었다면
 /// 여기서 거짓 상태가 남으므로 이 테스트가 그 회귀를 잡는다.
 class _RejectingNotificationSettingsRepository
     implements NotificationSettingsRepository {
@@ -36,7 +36,7 @@ class _RejectingNotificationSettingsRepository
   ) => Future.error(failure);
 }
 
-/// 응답을 손으로 늦추는 가짜 — 스위치가 응답 전에 바뀌는지 본다(M-P4).
+/// 응답을 손으로 늦추는 가짜 — 스위치가 응답 전에 바뀌는지 본다.
 class _PendingNotificationSettingsRepository
     implements NotificationSettingsRepository {
   new(this._initial);
@@ -129,8 +129,8 @@ void main() {
     expect(find.text('네트워크 상태를 확인해 주세요'), findsOneWidget);
   });
 
-  // M-P4 — C-10: 서버가 처리한 뒤에야 화면이 바뀐다. 응답 전에 먼저 바뀌어 있으면 실패 때 거짓 상태가 잠깐 보인다.
-  group('M-P4 스위치는 서버 응답 뒤에 바뀐다', () {
+  // C-10: 서버가 처리한 뒤에야 화면이 바뀐다. 응답 전에 먼저 바뀌어 있으면 실패 때 거짓 상태가 잠깐 보인다.
+  group('스위치는 서버 응답 뒤에 바뀐다', () {
     const initial = NotificationSettings(
       arrive: false,
       boarding: true,
@@ -205,8 +205,8 @@ void main() {
     });
   });
 
-  // R48 `Ruling 829` — 학생이 받는 알림은 도착 · 운행 시작뿐이라 의미 없는 스위치(미승차)를 뺀다.
-  group('R48 역할별 스위치', () {
+  // `Ruling 829` — 학생이 받는 알림은 도착 · 운행 시작뿐이라 의미 없는 스위치(미승차)를 뺀다.
+  group('역할별 스위치', () {
     const settings = NotificationSettings(
       arrive: true,
       boarding: true,
@@ -252,7 +252,7 @@ void main() {
       expect(find.text('운행 시작 알림'), findsNothing);
     });
 
-    // R53 Ruling 887⑥ — 미승차 설명은 "안 탔거나 하차가 확인되지 않을 때" 까지 포함한다.
+    // Ruling 887⑥ — 미승차 설명은 "안 탔거나 하차가 확인되지 않을 때" 까지 포함한다.
     testWidgets('미승차 스위치 설명은 하차 미확인까지 포함한다', (tester) async {
       await pump(tester, isParent: true);
 

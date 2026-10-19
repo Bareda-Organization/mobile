@@ -1,6 +1,6 @@
 // `BaraedaCard` 폭 — 부모가 폭을 정해 주면(Column stretch) 상태 띠(accent)가
-// 있어도 본체가 그 폭을 채운다(R46-SCREEN). accent 가 있을 때 본체를 Stack 에
-// 넣어, 기본(loose)이면 자식 폭으로 줄어든 결함이 있었다.
+// 있어도 본체가 그 폭을 채운다. accent 가 있을 때 본체를 Stack 에 넣으면
+// 기본(loose)에서 자식 폭으로 줄어드는 결함이 생긴다.
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';

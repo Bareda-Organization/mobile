@@ -21,7 +21,7 @@ enum BaraedaButtonVariant {
 }
 
 /// 버튼 높이. sm 44 · md 48 · xl 64(운행 중 큰 주 버튼).
-/// lg 는 예전 이름이다 — 시안에 52 가 없어 md 와 같은 48 로 둔다.
+/// lg 는 호환용 이름이다 — 시안에 52 가 없어 md 와 같은 48 로 둔다.
 enum BaraedaButtonSize { sm, md, lg, xl }
 
 /// 바래다 기본 버튼.
@@ -200,7 +200,7 @@ class _BaraedaButtonState extends State<BaraedaButton> {
               border: palette.border,
               borderRadius: radius,
             ),
-            // block 이 아니면 내용 폭 — 디자인 킷 `inline-flex`(R43).
+            // block 이 아니면 내용 폭 — 디자인 킷 `inline-flex`.
             // 부모가 폭 상한만 줘도 늘어나지 않는다.
             // 가장 짧은 라벨도 누르는 면은 44×44 이상이다(시안 `--tap`).
             child: ConstrainedBox(

@@ -12,7 +12,7 @@ import 'package:parent_app/core/auth/domain/auth_repository.dart';
 import 'package:parent_app/core/auth/user_role.dart';
 import 'package:parent_app/features/auth/presentation/signup_screen.dart';
 
-/// R46 B2 #20 — 가입이 접수되면 로그인 화면으로 돌려보내지 않고 바로 승인 대기로 들어간다.
+/// 가입이 접수되면 로그인 화면으로 돌려보내지 않고 바로 승인 대기로 들어간다.
 /// 서버는 가입 응답(§2.2)에 토큰을 주지 않지만, `pending` 계정도 로그인은 성공한다(§2.5) —
 /// 방금 입력한 자격으로 로그인해 라우터가 대기 화면으로 보내게 한다.
 class _Repository implements AuthRepository {
@@ -118,7 +118,7 @@ Future<void> _submit(WidgetTester tester) async {
 }
 
 void main() {
-  group('B2 #20 가입 → 승인 대기', () {
+  group('가입 → 승인 대기', () {
     testWidgets('가입이 접수되면 방금 입력한 아이디·비밀번호로 로그인해 대기 계정이 된다', (tester) async {
       final repository = _Repository();
       final container = await _pump(tester, repository);
@@ -139,7 +139,7 @@ void main() {
       expect(find.text('로그인 화면'), findsNothing);
     });
 
-    testWidgets('자동 로그인이 실패하면 예전처럼 로그인 화면으로 돌려보낸다', (tester) async {
+    testWidgets('자동 로그인이 실패하면 로그인 화면으로 돌려보낸다', (tester) async {
       final repository = _Repository(loginFails: true);
       await _pump(tester, repository);
       await _fillAllButAcademy(tester);
@@ -151,7 +151,7 @@ void main() {
     });
   });
 
-  group('B2 #20 [가입 신청하기] 비활성 이유', () {
+  group('[가입 신청하기] 비활성 이유', () {
     testWidgets('빈 칸이 있으면 어느 항목이 비었는지 버튼 아래에 알린다', (tester) async {
       await _pump(tester, _Repository());
       await tester.enterText(find.byType(TextField).at(0), 'parent01');
@@ -174,7 +174,7 @@ void main() {
       );
     });
 
-    // R52 낮음 A5 — 길이 오류는 입력칸 옆에만 뜨고 꺼진 단추 아래는 비어 있었다.
+    // 길이 오류는 입력칸 옆에만 뜨면 안 된다 — 꺼진 단추 아래에도 안내가 나와야 한다.
     testWidgets('아이디가 50자를 넘으면 꺼진 버튼 아래에 줄이라는 안내가 나온다', (tester) async {
       await _pump(tester, _Repository());
       await _fillAllButAcademy(tester);

@@ -21,7 +21,7 @@ import 'package:manager_app/features/roster/data/models/roster_response.dart';
 import 'package:manager_app/features/route_map/data/models/route_response.dart';
 import 'package:manager_app/features/route_map/presentation/route_providers.dart';
 
-/// M1 — 운행 화면 가운데 지도. 실제 네이버 SDK 는 위젯 시험에서 그려지지 않으므로
+/// 운행 화면 가운데 지도. 실제 네이버 SDK 는 위젯 시험에서 그려지지 않으므로
 /// `route_map_screen_test.dart` 와 같이 [MapSurface] 가 받은 인자(핀·선·버스·카메라)만 본다.
 /// ⚠ 지도가 화면에 실제로 떴는지는 이 시험이 못 본다 — 병합 뒤 시뮬레이터로 확인한다.
 

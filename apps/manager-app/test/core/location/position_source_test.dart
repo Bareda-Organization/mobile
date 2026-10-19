@@ -19,7 +19,7 @@ class _FakeGeolocatorPlatform extends GeolocatorPlatform {
   @override
   Future<LocationPermission> checkPermission() async => checkPermissionResult;
 
-  /// 권한 창이 응답 없이 떠 있는 상태를 흉내 낸다(R53 A10) — 켜 두면 `requestPermission` 이 끝나지 않는다.
+  /// 권한 창이 응답 없이 떠 있는 상태를 흉내 낸다 — 켜 두면 `requestPermission` 이 끝나지 않는다.
   bool permissionPromptHangs = false;
 
   @override
@@ -58,7 +58,7 @@ class _FakeGeolocatorPlatform extends GeolocatorPlatform {
     return ended.close();
   }
 
-  /// `sampleOnce` 시험용 — 값을 그대로 낼지, 예외를 던질지 고른다(BRIEF-BG2).
+  /// `sampleOnce` 시험용 — 값을 그대로 낼지, 예외를 던질지 고른다.
   Position? currentPositionResult;
   Exception? currentPositionError;
 
@@ -93,7 +93,7 @@ Position _position({
 void main() {
   // Ruling 360 — Android 는 포그라운드 서비스 알림, iOS 는 사용 중 권한으로
   // 시작한 백그라운드 갱신 유지. 플랫폼 분기를 순수 함수로 빼서 시험이
-  // 실제 GPS 없이 두 분기를 각각 검사할 수 있게 한다(BRIEF-BG 할 일 1).
+  // 실제 GPS 없이 두 분기를 각각 검사할 수 있게 한다.
   group('buildLocationSettings', () {
     test('Android 는 포그라운드 서비스 알림 설정을 싣는다', () {
       final settings = buildLocationSettings(TargetPlatform.android);
@@ -104,7 +104,7 @@ void main() {
       expect(android.foregroundNotificationConfig!.enableWakeLock, isTrue);
     });
 
-    // M-2 — 간격을 안 주면 Android 는 기기 기본 간격으로 갱신해 같은 좌표를 다시 보낸다.
+    // 간격을 안 주면 Android 는 기기 기본 간격으로 갱신해 같은 좌표를 다시 보낸다.
     test('Android 위치 갱신 간격은 송신 주기와 같다', () {
       final android =
           buildLocationSettings(TargetPlatform.android) as AndroidSettings;
@@ -287,7 +287,7 @@ void main() {
     expect(source.sample(), isNotNull);
   });
 
-  // M2-02 — 운행 시작 전 화면이 권한·서비스만 다시 본다. 스트림은 start() 가 있어야만 열린다.
+  // 운행 시작 전 화면이 권한·서비스만 다시 본다. 스트림은 start() 가 있어야만 열린다.
   test('recheck() 는 start() 없이 상태만 갱신하고 스트림은 열지 않는다', () async {
     final platform = _FakeGeolocatorPlatform()
       ..checkPermissionResult = LocationPermission.denied;
@@ -303,8 +303,8 @@ void main() {
     expect(platform.streamOpens, 0);
   });
 
-  // R46-KFIXFE(leak K-4) — 스트림이 오류·종료돼도 구독 변수가 남아 `_startStream` 이 다시 열지 않았다.
-  // availability 는 available 인 채라 송신기도 재시작을 안 불러, 그 회차가 끝날 때까지 위치 송신이 멈췄다.
+  // 스트림이 오류·종료돼도 구독 변수가 남아 `_startStream` 이 다시 열지 않으면 안 된다.
+  // availability 가 available 인 채로 남으면 송신기도 재시작을 부르지 않아 위치 송신이 멈춘다.
   group('위치 스트림이 오류·종료돼도', () {
     test('오류가 나면 구독을 비우고 다시 열어 좌표가 계속 들어온다', () async {
       final platform = _FakeGeolocatorPlatform();
@@ -366,7 +366,7 @@ void main() {
     });
   });
 
-  // BRIEF-BG2 — 스트림 좌표가 없을 때(비상 발신, 동승자 단말·송신 두절
+  // 스트림 좌표가 없을 때(비상 발신, 동승자 단말·송신 두절
   // 기사 단말) 포그라운드 서비스를 켜지 않고 좌표를 한 번만 얻는다.
   group('sampleOnce', () {
     test(
@@ -433,7 +433,7 @@ void main() {
       expect(await source.sampleOnce(), isNull);
     });
 
-    // R53 A10 — 권한 창이 응답을 안 받은 채 떠 있어도 비상 신고가 그 응답까지 기다리지 않는다.
+    // 권한 창이 응답을 안 받은 채 떠 있어도 비상 신고가 그 응답까지 기다리지 않는다.
     test('권한 준비가 끝나지 않아도 상한 안에 null 을 내고 비상 신고는 위치 없이 간다', () async {
       final platform = _FakeGeolocatorPlatform()
         ..checkPermissionResult = LocationPermission.denied

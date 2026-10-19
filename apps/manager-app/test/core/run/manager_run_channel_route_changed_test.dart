@@ -141,7 +141,7 @@ WebSocketEnvelope _envelope(String event, String runId) =>
     });
 
 /// 운행 화면이 보는 두 값(§4.3 노선 · §4.2 명단)을 유지한 채 매니저 채널로
-/// 방송을 흘려, 재조회가 일어나는지·새 응답으로 바뀌는지 본다(R36-FE FE6).
+/// 방송을 흘려, 재조회가 일어나는지·새 응답으로 바뀌는지 본다.
 void main() {
   late ProviderContainer container;
   late _FakeWebSocketClient client;
@@ -199,7 +199,7 @@ void main() {
   }
 
   /// 명단·노선 재조회는 이벤트 뒤 [runViewRefetchWindow] 에 한 번 나간다
-  /// (R46-FIXRT L4) — 그 시간을 지나 보낸다.
+  /// 시험은 그 시간을 지나 보낸다.
   Future<void> waitRefetchWindow() => Future<void>.delayed(
     runViewRefetchWindow + const Duration(milliseconds: 100),
   );

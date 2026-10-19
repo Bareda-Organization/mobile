@@ -67,7 +67,7 @@ class _RunCardState extends ConsumerState<RunCard> {
     final confirmAt = formatClock(run.departTime.subtract(confirmLead));
     final zone = changeZoneOf(run, ref.read(clockProvider).now());
     // 구간마다 결과가 달라 문구와 확인 단추를 가른다(시안 `cancel-ride` · `--approval` · `--moving`).
-    // ②구간의 단추는 취소가 아니라 "요청" 이라 위험색이 아니다 — 취소가 즉시 되는 줄 아는 오해를 막는다(P2).
+    // ②구간의 단추는 취소가 아니라 "요청" 이라 위험색이 아니다 — 취소가 즉시 되는 줄 아는 오해를 막는다.
     final needsApproval = zone == ChangeZone.approval;
     final confirmed = await showConfirmDialog(
       context,

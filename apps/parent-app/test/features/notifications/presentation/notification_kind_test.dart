@@ -42,7 +42,7 @@ void main() {
     expect(kindOf('delay').status, BaraedaStatus.moving);
   });
 
-  // §9.7 은 앞으로도 늘어난다 — 모르는 종류가 초록 '승차' 로 떨어지면 미승차 사고가 정상으로 읽힌다(2026-09-21 실측).
+  // §9.7 은 앞으로도 늘어난다 — 모르는 종류가 초록 '승차' 로 떨어지면 미승차 사고가 정상으로 읽힌다.
   test('모르는 종류는 중립 · 중요 아님으로 떨어진다', () {
     final kind = kindOf('some_new_type');
 

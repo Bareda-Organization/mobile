@@ -116,7 +116,7 @@ class _GatedRosterAdapter implements HttpClientAdapter {
   }
 }
 
-/// M-2 — 기기에 남긴 개인정보(명단 · 특이사항)는 로그아웃·세션 만료에 **빠짐없이 먼저** 지운다.
+/// 기기에 남긴 개인정보(명단 · 특이사항)는 로그아웃·세션 만료에 **빠짐없이 먼저** 지운다.
 void main() {
   late OfflineQueueDatabase database;
   late ProviderContainer container;
@@ -191,7 +191,7 @@ void main() {
     );
   });
 
-  // M-8 — 학생 사진을 디스크에 받아 두므로 개인정보다. 로그아웃 · 세션 만료에 같이 비운다.
+  // 학생 사진을 디스크에 받아 두므로 개인정보다. 로그아웃 · 세션 만료에 같이 비운다.
   test('로그아웃하면 디스크에 받아 둔 학생 사진 캐시도 비운다', () async {
     var cleared = 0;
     buildContainer(

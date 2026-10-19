@@ -181,7 +181,7 @@ void main() {
               '실었다면 여기서 실패한다 — 지금 코드가 바로 이 결함이다.',
         );
         // gaveUp 을 거치지 않고 바로 되살아났다 — 토큰 만료는 네트워크
-        // 실패가 아니므로 백오프 상태를 거치지 않는다는 판단(보고서 §2).
+        // 실패가 아니므로 백오프 상태를 거치지 않는다는 판단.
         expect(states, isNot(contains(WsConnectionState.gaveUp)));
       },
     );
@@ -224,7 +224,7 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 200));
         expect(server.connectCount, 1);
 
-        // R46-FIXRT S-5 — 앱 복귀(reconnectNow)도 만료된 세션의 소켓을 되살리지
+        // 앱 복귀(reconnectNow)도 만료된 세션의 소켓을 되살리지
         // 않는다. 이 상태는 일부러 끊은 것이 아니라(disconnect() 호출 없음)
         // 재발급 실패로 멈춘 것이라 상태로만 가려낼 수 있다.
         client.reconnectNow();

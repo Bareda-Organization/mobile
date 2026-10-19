@@ -4,7 +4,7 @@ import 'package:manager_app/features/home/data/models/manager_run.dart';
 import 'package:manager_app/features/home/data/run_summary_store.dart';
 import 'package:manager_app/features/home/domain/manager_run_repository.dart';
 
-/// [ManagerRunRepository] 에 기기 저장본을 덧댄다(R52 H2) — 오늘 목록을 받으면
+/// [ManagerRunRepository] 에 기기 저장본을 덧댄다 — 오늘 목록을 받으면
 /// 요약을 남기고, 서버에 닿지 못하면(연결 두절 · 5xx) **오늘 저장한** 요약으로
 /// 돌아선다. 통신 두절로 앱을 새로 켜도 홈이 회차를 알아 저장 명단 · 비상 신고에
 /// 닿는다. 4xx 같은 서버의 판단과 다른 날짜 조회는 저장본으로 덮지 않는다.
@@ -40,7 +40,7 @@ class CachedManagerRunRepository implements ManagerRunRepository {
   /// 로그아웃 뒤에 늦게 도착한 응답을 기기에 남기지 않는다.
   final bool Function() _isSignedIn;
 
-  /// 오늘 목록의 출처를 알린다(R56) — 서버에서 새로 받았으면 `null`, 저장본으로 돌아섰으면 그 요약을 받은 시각.
+  /// 오늘 목록의 출처를 알린다 — 서버에서 새로 받았으면 `null`, 저장본으로 돌아섰으면 그 요약을 받은 시각.
   /// 홈이 "저장해 둔 목록으로 보고 있어요" 를 띄우는 근거다. 다른 날짜 조회는 알리지 않는다.
   final void Function(DateTime? savedAt)? _onSource;
 

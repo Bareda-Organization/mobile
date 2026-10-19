@@ -5,8 +5,7 @@
 /// 않는다). 버스 좌표가 2초마다 바뀌어 화면이 다시 그려질 때마다 동기화를 새로
 /// 시작하면, 앞선 동기화가 승하차지 핀 이미지를 만드는 도중에 뒤 동기화가 같은
 /// 핀을 또 만든다. 그렇게 겹쳐 만든 이미지 중 하나가 빈 파일로 저장되고, 네이버
-/// SDK(iOS)가 그 파일을 읽다 앱이 종료됐다(2026-09-30 시뮬레이터 실측 —
-/// `NOverlayImage.makeOverlayImageWithPath`).
+/// SDK(iOS)가 그 파일을 읽다 앱이 종료된다(`NOverlayImage.makeOverlayImageWithPath`).
 class SerialSync {
   /// [_task] 는 한 번 동기화하는 일 — 겹쳐 불리지 않는다.
   new(this._task);

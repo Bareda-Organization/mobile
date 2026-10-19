@@ -14,7 +14,7 @@ import 'package:parent_app/features/home/presentation/home_providers.dart';
 import 'package:parent_app/features/home/presentation/home_screen.dart';
 import '../../../support/no_bus_position.dart';
 
-/// R32 P7 — 홈의 오류 상태 4곳에 [다시 시도] 가 있고(자녀 · 내 정보는 R48 부터 한 화면 `버스 정보를 불러오지
+/// 홈의 오류 상태 4곳에 [다시 시도] 가 있고(자녀 · 내 정보는 한 화면 `버스 정보를 불러오지
 /// 못했어요`), 화면을 당겨서 새로고침할 수 있다.
 /// 첫 호출은 실패하고 다음 호출부터 성공하는 provider 로, 버튼이 실제로 다시 불러오는지 본다.
 final _child = Student(
@@ -74,7 +74,7 @@ Future<_Calls> _pump(
 }
 
 void main() {
-  testWidgets('P7 자녀 목록 오류 띠의 [다시 시도] 가 다시 불러온다', (tester) async {
+  testWidgets('자녀 목록 오류 띠의 [다시 시도] 가 다시 불러온다', (tester) async {
     final calls = await _pump(
       tester,
       role: UserRole.parent,
@@ -89,7 +89,7 @@ void main() {
     expect(find.text('버스 정보를 불러오지 못했어요'), findsNothing);
   });
 
-  testWidgets('P7 내 정보 오류 띠의 [다시 시도] 가 다시 불러온다', (tester) async {
+  testWidgets('내 정보 오류 띠의 [다시 시도] 가 다시 불러온다', (tester) async {
     final calls = await _pump(
       tester,
       role: UserRole.student,
@@ -104,7 +104,7 @@ void main() {
     expect(find.text('버스 정보를 불러오지 못했어요'), findsNothing);
   });
 
-  testWidgets('P7 오늘 회차 오류 띠의 [다시 시도] 가 다시 불러온다', (tester) async {
+  testWidgets('오늘 회차 오류 띠의 [다시 시도] 가 다시 불러온다', (tester) async {
     final calls = await _pump(tester, role: UserRole.parent, failRuns: true);
     expect(find.text('오늘 회차를 불러오지 못했어요'), findsOneWidget);
 
@@ -115,7 +115,7 @@ void main() {
     expect(find.text('오늘 회차를 불러오지 못했어요'), findsNothing);
   });
 
-  testWidgets('P7 화면을 아래로 당기면 회차를 다시 불러온다', (tester) async {
+  testWidgets('화면을 아래로 당기면 회차를 다시 불러온다', (tester) async {
     final calls = await _pump(tester, role: UserRole.parent);
     expect(calls.runs, 1);
 
@@ -125,9 +125,9 @@ void main() {
     expect(calls.runs, 2);
   });
 
-  // R48 시안 `home-parent--error` — 못 불러왔을 때는 큰 그림 + 안내 + 채워진 [다시 시도],
+  // 시안 `home-parent--error` — 못 불러왔을 때는 큰 그림 + 안내 + 채워진 [다시 시도],
   // 그 아래에 급할 때 거는 전화.
-  group('R48 홈 오류 화면', () {
+  group('홈 오류 화면', () {
     BaraedaButton retryButton(WidgetTester tester) => tester
         .widget<BaraedaButton>(find.widgetWithText(BaraedaButton, '다시 시도'));
 

@@ -64,7 +64,7 @@ class _FakeSecureStoragePlatform
   );
 }
 
-/// `/topic/manager/runs/{runId}`(docs/archive/rounds/fe-phases-f2-f5.md §5.4.1 목표 6) 구독 인가를 실제 서버로
+/// `/topic/manager/runs/{runId}` 구독 인가를 실제 서버로
 /// 확인하는 계약 시험 — `real_backend_p3_test.dart`(parent-app, 학생 채널)
 /// 와 같은 구조를 이 앱이 실제로 구독하는 채널 하나에 맞춰 좁힌 것.
 /// `manager_run_channel_test.dart`(단위 시험, 있다면)는 가짜 클라이언트로
@@ -110,7 +110,7 @@ void main() {
   }
 
   test(
-    '목표 6 — 기사(driverA1)가 배치된 회차(1)의 매니저 채널을 구독하면 '
+    '기사(driverA1)가 배치된 회차(1)의 매니저 채널을 구독하면 '
     '거부되지 않는다',
     () async {
       if (!backendReachable) {
@@ -140,7 +140,7 @@ void main() {
   );
 
   test(
-    '목표 6 — 기사(driverA1)가 배치되지 않은 회차(3)의 매니저 채널을 '
+    '기사(driverA1)가 배치되지 않은 회차(3)의 매니저 채널을 '
     '구독하면 forbiddenSubscriptions 에 그 목적지가 실린다 (위 시험과 짝을 '
     '이루는 부정 확인 — "붙는다"만 보여서는 아무 회차나 보이는 것과 '
     '구별되지 않는다)',
@@ -169,7 +169,7 @@ void main() {
   );
 
   test(
-    '목표 6 — 동승자(escortA1)가 배치된 회차(1)의 매니저 채널을 구독하면 '
+    '동승자(escortA1)가 배치된 회차(1)의 매니저 채널을 구독하면 '
     '거부되지 않는다',
     () async {
       if (!backendReachable) {
@@ -199,7 +199,7 @@ void main() {
   );
 
   test(
-    '목표 6 — 동승자(escortA1)가 배치되지 않은 회차(3)의 매니저 채널을 '
+    '동승자(escortA1)가 배치되지 않은 회차(3)의 매니저 채널을 '
     '구독하면 거부된다',
     () async {
       if (!backendReachable) {

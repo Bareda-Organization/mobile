@@ -14,9 +14,9 @@ import 'package:manager_app/features/home/presentation/widgets/focus_run_card.da
 
 import '../../support/manager_run_fixture.dart';
 
-/// F06-13 — 홈 회차 목록은 한 번 받고 고정이라 확정 시각(출발 30분 전)이 지나도 카드가 잠긴 채였고,
-/// 비상 버튼도 그 옛 목록으로 판정했다. 서버 배치(30초 폴링)와 같은 주기로 다시 받는 일은 쉘이 맡는다
-/// (`test/app/manager_shell_refresh_test.dart`, R53 A1).
+/// F06-13 — 홈 회차 목록은 한 번 받고 고정이라 확정 시각(출발 30분 전)이 지나도 카드가 잠긴 채 남고,
+/// 비상 버튼도 그 목록으로 판정한다. 서버 배치(30초 폴링)와 같은 주기로 다시 받는 일은 쉘이 맡는다
+/// (`test/app/manager_shell_refresh_test.dart`).
 /// 머리줄 부제가 `/me` 를 읽는다 — 이 시험의 관심사가 아니라 실제 서버로 나가지 않게 막는다.
 final Override _noMe = meProvider.overrideWith(
   (ref) async => throw StateError('이 시험은 내 정보를 쓰지 않는다'),
@@ -74,8 +74,8 @@ void main() {
     expect(find.textContaining('확정된 운행이 있을 때'), findsNothing);
   });
 
-  // R46 A — 갱신이 실패해도 마지막으로 받은 목록이 남고, 오류는 목록 위에 따로 알린다.
-  testWidgets('R46 주기 갱신이 실패해도 마지막 목록이 남고 오류를 알린다', (tester) async {
+  // 갱신이 실패해도 마지막으로 받은 목록이 남고, 오류는 목록 위에 따로 알린다.
+  testWidgets('주기 갱신이 실패해도 마지막 목록이 남고 오류를 알린다', (tester) async {
     var calls = 0;
     await tester.pumpWidget(
       ProviderScope(
@@ -102,7 +102,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(FocusRunCard), findsOneWidget);
 
-    // 주기 갱신은 쉘이 한다(R53 A1) — 같은 일(목록 무효화)을 직접 일으킨다.
+    // 주기 갱신은 쉘이 한다 — 같은 일(목록 무효화)을 직접 일으킨다.
     ProviderScope.containerOf(tester.element(find.byType(ManagerHomeScreen)))
         .invalidate(todayRunsProvider);
     await tester.pumpAndSettle();

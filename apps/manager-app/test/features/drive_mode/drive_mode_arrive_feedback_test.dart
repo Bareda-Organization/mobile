@@ -215,8 +215,8 @@ void main() {
     );
   }
 
-  group('B2 #15 중간 승하차지 도착 처리 피드백', () {
-    // M6 — 같은 자리 단추의 이름만 바뀌면 처리된 줄 모른다. 서버가 적은 도착 시각
+  group('중간 승하차지 도착 처리 피드백', () {
+    // 같은 자리 단추의 이름만 바뀌면 처리된 줄 모른다. 서버가 적은 도착 시각
     // (§4.5 `arrived_at`)을 토스트로 알린다.
     testWidgets('도착 처리에 성공하면 "<이름> 도착 처리했어요 · 시각" 토스트가 뜬다', (tester) async {
       await pumpDrive(tester);
@@ -230,7 +230,7 @@ void main() {
       await tester.pump(const Duration(seconds: 5));
     });
 
-    testWidgets('성공 직후 2초 안의 두 번째 누름은 다음 승하차지를 처리하지 않는다 (R46)', (tester) async {
+    testWidgets('성공 직후 2초 안의 두 번째 누름은 다음 승하차지를 처리하지 않는다', (tester) async {
       final harness = await pumpDrive(tester);
 
       await tester.tap(find.text('도착 처리'));
@@ -250,22 +250,22 @@ void main() {
     });
   });
 
-  testWidgets('운행 화면 머리줄 부제에도 출발 시각이 있다 (R46, B2 #25)', (tester) async {
+  testWidgets('운행 화면 머리줄 부제에도 출발 시각이 있다', (tester) async {
     await pumpDrive(tester);
 
     // managerRunFixture 의 출발 시각은 2026-09-30 08:00.
     expect(find.text('3호차 · 등원 · 08:00 출발'), findsOneWidget);
   });
 
-  group('A #5 외부 내비(RUN-08)', () {
-    testWidgets('카카오 앱 키가 없으면 길안내 버튼을 그리지 않는다 (R46)', (tester) async {
+  group('외부 내비(RUN-08)', () {
+    testWidgets('카카오 앱 키가 없으면 길안내 버튼을 그리지 않는다', (tester) async {
       await pumpDrive(tester);
 
       expect(find.text('다음 목적지'), findsNothing);
       expect(find.text('남은 전 구간'), findsNothing);
     });
 
-    testWidgets('키가 있으면 서버 경로를 받아 카카오내비 경계에 넘긴다 (R46)', (tester) async {
+    testWidgets('키가 있으면 서버 경로를 받아 카카오내비 경계에 넘긴다', (tester) async {
       final harness = await pumpDrive(tester, naviAppKey: 'KEY-1');
 
       await _openNavigation(tester, '남은 전 구간');
@@ -277,7 +277,7 @@ void main() {
       expect(harness.opened, isEmpty, reason: '열린 것은 카카오내비 하나뿐이다');
     });
 
-    testWidgets('설치돼 있지 않으면 설치 안내를 띄우고 [설치하기] 가 설치 페이지를 연다 (R46)', (
+    testWidgets('설치돼 있지 않으면 설치 안내를 띄우고 [설치하기] 가 설치 페이지를 연다', (
       tester,
     ) async {
       final harness = await pumpDrive(
@@ -297,7 +297,7 @@ void main() {
       expect(harness.opened, [Uri.parse('https://navi.example/install')]);
     });
 
-    testWidgets('설치돼 있는데 열지 못하면 이유를 알린다 (R46)', (tester) async {
+    testWidgets('설치돼 있는데 열지 못하면 이유를 알린다', (tester) async {
       await pumpDrive(
         tester,
         naviAppKey: 'KEY-1',
@@ -310,7 +310,7 @@ void main() {
       expect(find.text('설치하기'), findsNothing);
     });
 
-    testWidgets('서버가 정한 공급자가 카카오가 아니면 열지 않고 안내한다 (R46)', (tester) async {
+    testWidgets('서버가 정한 공급자가 카카오가 아니면 열지 않고 안내한다', (tester) async {
       final harness = await pumpDrive(
         tester,
         naviAppKey: 'KEY-1',
@@ -327,7 +327,7 @@ void main() {
       expect(find.textContaining('카카오내비를 열지 못했어요'), findsOneWidget);
     });
 
-    testWidgets('상한 때문에 잘렸으면 서버가 준 안내 문구를 보인다 (R46)', (tester) async {
+    testWidgets('상한 때문에 잘렸으면 서버가 준 안내 문구를 보인다', (tester) async {
       await pumpDrive(tester, naviAppKey: 'KEY-1', truncated: true);
 
       await _openNavigation(tester, '남은 전 구간');
@@ -336,8 +336,8 @@ void main() {
     });
   });
 
-  group('B2 #19 위치 권한 배너 [설정 열기]', () {
-    testWidgets('권한이 없으면 [설정 열기] 가 앱 설정을 연다 (R46)', (tester) async {
+  group('위치 권한 배너 [설정 열기]', () {
+    testWidgets('권한이 없으면 [설정 열기] 가 앱 설정을 연다', (tester) async {
       final harness = await pumpDrive(
         tester,
         availability: PositionAvailability.permissionDenied,
@@ -350,7 +350,7 @@ void main() {
       expect(harness.settingsOpened, ['app']);
     });
 
-    testWidgets('위치 서비스가 꺼져 있으면 [설정 열기] 가 위치 설정을 연다 (R46)', (tester) async {
+    testWidgets('위치 서비스가 꺼져 있으면 [설정 열기] 가 위치 설정을 연다', (tester) async {
       final harness = await pumpDrive(
         tester,
         availability: PositionAvailability.serviceDisabled,

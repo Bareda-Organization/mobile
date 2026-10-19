@@ -3,7 +3,7 @@ import 'package:baraeda_app/map/naver/naver_map_adapter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-// F4 이월 3번 / F5 목표 19 — `NaverMapAdapter` 가 화면에서 사라질 때
+// `NaverMapAdapter` 가 화면에서 사라질 때
 // (dispose) 마커 보간 프레임 타이머(`_frameTicker`)가 실제로 멈추는지
 // 확인한다.
 //
@@ -20,8 +20,7 @@ import 'package:flutter_test/flutter_test.dart';
 // "dispose() 가 이미 도는 타이머를 멈추는가" 다. 그래서 시작 경로만
 // 시험 전용 훅으로 우회하고, **`dispose()` 자체는 프로덕션 코드 그대로
 // 밟는다** — `_frameTicker.stop()` 을 지우면 이 시험만 실패하는 것을
-// 결함 심기로 직접 확인했다(원복 후 `git status --porcelain` 확인 완료,
-// 판정 근거는 `report-P.md` 1항).
+// 결함 심기로 직접 확인했다(원복 후 `git status --porcelain` 확인 완료).
 void main() {
   testWidgets('화면이 dispose 되면 마커 보간 프레임 타이머가 멈춘다', (tester) async {
     final key = GlobalKey<State<NaverMapAdapter>>();
@@ -63,7 +62,7 @@ void main() {
           '뒤에도 setPosition 호출이 계속 늘어난다',
     );
   });
-  // M-4 (Ruling 899) — 보간 애니메이션은 화면 프레임(Ticker)을 따라가므로, 앱이 백그라운드(paused)인 동안은
+  // Ruling 899 — 보간 애니메이션은 화면 프레임(Ticker)을 따라가므로, 앱이 백그라운드(paused)인 동안은
   // 프레임이 없어 마커 이동(네이티브 `setPosition`) 호출도 0이다. 16ms 타이머였을 때는 백그라운드에서도 돌았다.
   testWidgets('앱이 paused 인 동안은 마커 보간 틱이 불리지 않고 복귀하면 이어진다', (tester) async {
     final key = GlobalKey<State<NaverMapAdapter>>();

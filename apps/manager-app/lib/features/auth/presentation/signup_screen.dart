@@ -50,7 +50,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     super.dispose();
   }
 
-  /// 아직 비어 있는 항목 이름(화면 순서) — 단추 아래에 그대로 적는다(M16).
+  /// 아직 비어 있는 항목 이름(화면 순서) — 단추 아래에 그대로 적는다.
   List<String> get _missing => [
     if (_loginIdController.text.trim().isEmpty) '아이디',
     if (_passwordController.text.isEmpty) '비밀번호',
@@ -97,7 +97,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         ),
       );
       if (!mounted) return;
-      // 서버가 201 을 확정한 뒤에만 다음으로 간다 — 낙관적 UI 금지(COMMON.md §6).
+      // 서버가 201 을 확정한 뒤에만 다음으로 간다 — 낙관적 UI 금지.
       await _signInAfterSignup(repository);
     } on Failure catch (failure) {
       if (!mounted) return;

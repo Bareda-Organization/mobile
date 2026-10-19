@@ -16,7 +16,7 @@ import 'package:manager_app/core/run/manager_run_channel.dart';
 /// ⚠ 호출부는 이 위젯을 `rosterAsync.when(loading/error/data)` 의 **모든
 /// 분기 바깥**에 둬야 한다 — `data` 분기 안에만 두면 "명단이 비어 있다"
 /// (정상, `data` 분기)와 "연결이 끊겨 아무것도 못 받는다"(비정상, 이
-/// 배너가 다루는 것)가 화면에서 구별되지 않는다(목표 9).
+/// 배너가 다루는 것)가 화면에서 구별되지 않는다.
 class ManagerChannelBanner extends ConsumerWidget {
   const new({required this.runId, this.hideReconnecting = false, super.key});
 
@@ -52,7 +52,7 @@ class ManagerChannelBanner extends ConsumerWidget {
 /// 문서 참고) `managerRunChannelProvider` 를 오버라이드하는 위젯 시험은
 /// 가짜 컨트롤러를 만들기 어렵다 — 대신 이 함수만 떼어 Riverpod·Flutter
 /// 없이 단위 시험한다(`mapConnectionState`·`dispatchManagerChannelEvent` 와
-/// 같은 방식, 보고서 §1).
+/// 같은 방식).
 ///
 /// `null` 은 [ManagerChannelStatus.connected] 하나뿐 — 배너를 그리지 않는다.
 ManagerChannelBannerContent? managerChannelBannerContentFor(
@@ -71,7 +71,7 @@ ManagerChannelBannerContent? managerChannelBannerContentFor(
     title: WsConnectionNotice.reconnectingTitle,
     body: '연결이 돌아올 때까지 자동으로 계속 다시 붙어요 — 그동안 다른 직원의 변경이 늦게 보일 수 있어요',
   ),
-  // 기본 재연결 정책은 포기하지 않는다(R46-FIXRT S-5) — 상한을 준 정책에서만 이 상태에 든다.
+  // 기본 재연결 정책은 포기하지 않는다 — 상한을 준 정책에서만 이 상태에 든다.
   ManagerChannelStatus.gaveUp => const ManagerChannelBannerContent(
     tone: AlertTone.missed,
     title: WsConnectionNotice.gaveUpTitle,

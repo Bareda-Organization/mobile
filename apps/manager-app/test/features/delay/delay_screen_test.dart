@@ -165,7 +165,7 @@ void main() {
       ]),
     );
 
-    testWidgets('+ 를 누르면 5분씩 늘고 보내기 단추 이름에 지금 분이 보인다(M4)', (tester) async {
+    testWidgets('+ 를 누르면 5분씩 늘고 보내기 단추 이름에 지금 분이 보인다', (tester) async {
       await pumpEscort(tester);
 
       await tester.tap(find.bySemanticsLabel('5분 늘리기'));
@@ -191,7 +191,7 @@ void main() {
     });
   });
 
-  group('보내기 전 문구 미리보기 (R46, B2 #26)', () {
+  group('보내기 전 문구 미리보기', () {
     Future<void> pumpEscort(WidgetTester tester) => tester.pumpWidget(
       _wrap(const DelayScreen(), [
         selectedRunIdProvider.overrideWith((ref) => runId),
@@ -210,7 +210,7 @@ void main() {
       ]),
     );
 
-    // R46-LAST `Ruling 583` — 이 문구는 탑승 학생 전원의 보호자에게 나가고 퇴원 파기 대상 밖이다.
+    // `Ruling 583` — 이 문구는 탑승 학생 전원의 보호자에게 나가고 퇴원 파기 대상 밖이다.
     testWidgets('안내 문구 칸 아래에 학생 이름·연락처를 적지 말라고 안내한다', (tester) async {
       await pumpEscort(tester);
 
@@ -235,7 +235,7 @@ void main() {
       );
     });
 
-    // R53 A8 · Ruling 856 — 받는 사람 줄이 방향별 실제 수신자와 같다(현재 승하차지 이후 · 등원 미탑승 / 하원 탑승 중).
+    // Ruling 856 — 받는 사람 줄이 방향별 실제 수신자와 같다(현재 승하차지 이후 · 등원 미탑승 / 하원 탑승 중).
     for (final (direction, expected) in [
       (RunDirection.toAcademy, '현재 승하차지 이후의 아직 탑승하지 않은 학생 · 학부모(보호자 전원)'),
       (

@@ -74,13 +74,13 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
   /// 쓰면 되고 `ref` 를 다시 묻지 않는다.
   late final WakelockPort _wakelockPort;
 
-  /// 송신기가 아직 안 도는 동안(막 열렸거나 송신이 멈췄을 때) 화면이 직접 재확인한 위치 권한·서비스 상태(M2-02).
+  /// 송신기가 아직 안 도는 동안(막 열렸거나 송신이 멈췄을 때) 화면이 직접 재확인한 위치 권한·서비스 상태.
   /// 송신 중에는 송신기의 상태(`PositionTransmission.availability`)가 우선한다.
   PositionAvailability? _recheckedAvailability;
   Timer? _availabilityTimer;
 
   /// 기기에 저장해 둔 명단(`RosterResponse.cachedAt`)으로 다음 곳을 가리키는 동안 서버에서 다시 받아 보는
-  /// 주기(M-M3) — 연결이 돌아오면 서버 명단으로 바뀐다. 서버에서 받은 명단이면 아무것도 하지 않는다.
+  /// 주기 — 연결이 돌아오면 서버 명단으로 바뀐다. 서버에서 받은 명단이면 아무것도 하지 않는다.
   static const _cachedRetryInterval = Duration(seconds: 15);
   Timer? _cachedRetryTimer;
 
@@ -211,7 +211,7 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
           } else {
             container.invalidate(driveModeRosterProvider);
             if (!mounted) return;
-            // 같은 자리 단추의 이름만 다음 승하차지로 바뀌면 처리된 줄 모른다 — 처리 사실을 토스트로 알린다(M6).
+            // 같은 자리 단추의 이름만 다음 승하차지로 바뀌면 처리된 줄 모른다 — 처리 사실을 토스트로 알린다.
             // 시각은 서버가 적은 도착 시각(§4.5 `arrived_at`)이다.
             _lockArriveButton();
             showBaraedaToast(
@@ -355,7 +355,7 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
                 const SizedBox(height: 12),
                 const PositionLostBanner(),
                 // rosterAsync.when(...) 의 모든 분기 바깥 — "명단 없음"(정상)과
-                // "연결 끊김"(비정상)을 구별해야 한다(목표 9, ManagerChannelBanner
+                // "연결 끊김"(비정상)을 구별해야 한다(ManagerChannelBanner
                 // 문서 참고).
                 ManagerChannelBanner(runId: runId),
                 // 알림은 가장 중요한 한 건만 보이고 나머지는 접힌다 — 노선 변경 확인은 접히지 않는 맨 위
@@ -629,7 +629,7 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // 이름이 길어도 동사(`도착 처리`)는 잘리지 않는다 — 이름만 `…` 로 줄어든다(M5).
+          // 이름이 길어도 동사(`도착 처리`)는 잘리지 않는다 — 이름만 `…` 로 줄어든다.
           BaraedaButton(
             name: nextStop.name,
             label: '도착 처리',

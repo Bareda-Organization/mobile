@@ -7,8 +7,8 @@ import 'package:manager_app/core/network/failure_messages.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
 
 /// 노선 변경 확인 띠(§4.11 · M-04 · RUN-07) — 확정 뒤 승하차지·명단이 바뀌면
-/// 기사·동승자 둘 다 확인해야 한다. 명단 화면과 운행 화면이 같은 띠를 쓴다
-/// (R32 M4 — 기사는 명단에 가지 않아 운행 화면에도 있어야 한다).
+/// 기사·동승자 둘 다 확인해야 한다. 명단 화면과 운행 화면이 같은 띠를 쓴다.
+/// 기사는 명단에 가지 않아 운행 화면에도 있어야 한다.
 ///
 /// 노출 여부는 §4.1 `ack_required` 가 정하고([ackRequired]), 확인이 성공하면
 /// `todayRunsProvider` 를 다시 받아 서버 값으로 바꾼다. 확인한 뒤에는 초록 "확인했어요" 로 바뀐다.

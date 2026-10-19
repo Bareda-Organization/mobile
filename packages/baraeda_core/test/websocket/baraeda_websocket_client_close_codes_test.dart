@@ -5,7 +5,7 @@ import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:stomp_dart_client/stomp_dart_client.dart';
 
-// M-6 (R57) — 재접속 무작위 폭 · 하트비트 · ERROR `UNAUTHORIZED` · 종료 코드 4500·1008.
+// 재접속 무작위 폭 · 하트비트 · ERROR `UNAUTHORIZED` · 종료 코드 4500·1008.
 // 소켓 없이 STOMP 클라이언트를 가짜로 바꿔 `fake_async` 로 시간을 돌린다.
 
 /// `nextDouble()` 을 고정값으로 돌려주는 난수.

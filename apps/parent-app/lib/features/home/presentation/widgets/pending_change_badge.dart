@@ -25,7 +25,7 @@ class PendingChangeBadge extends ConsumerWidget {
         if (page.pendingCount <= 0) return const SizedBox.shrink();
         return Padding(
           padding: const EdgeInsets.only(bottom: BaraedaSpacing.space4),
-          // R32 P15 — 화면 읽기 프로그램에는 "처리 대기 · 2" 대신 "처리 대기 2건" 으로 읽힌다.
+          // 화면 읽기 프로그램에는 "처리 대기 · 2" 대신 "처리 대기 2건" 으로 읽힌다.
           child: Semantics(
             button: true,
             label: '처리 대기 ${page.pendingCount}건',

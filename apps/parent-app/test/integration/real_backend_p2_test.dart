@@ -63,8 +63,7 @@ class _FakeSecureStoragePlatform
 }
 
 /// `--dart-define=API_BASE_URL` 로 지정한 서버를 실제로 때리는 계약
-/// 시험 — P2 게이트 조건 ⑤. `real_backend_p1_test.dart` 가 담당한 P1
-/// 화면과 달리, 이 파일은
+/// 시험 — `real_backend_p1_test.dart` 가 담당한 화면과 달리, 이 파일은
 /// 설정 4개 엔드포인트(§2.8·§2.9·§2.11·§3.14)를
 /// 최소 1회씩 실제로 호출한다 — 지금까지는 위젯 시험의 가짜
 /// 저장소·가짜 레포지토리로만 검증돼 있었고, 서버가 실제로 그 계약대로

@@ -226,7 +226,7 @@ WebSocketEnvelope _envelope(WsEventType event, Map<String, dynamic> payload) {
   );
 }
 
-/// P1(Ruling 208) — `clockProvider` 로 주입하는 가짜 시계. `home_screen_test.dart`
+/// Ruling 208 — `clockProvider` 로 주입하는 가짜 시계. `home_screen_test.dart`
 /// 의 `_FixedClock` 과 달리 한 시험 안에서 시각을 옮겨(`clock.value = ...`) 2분
 /// 경과 전후를 비교해야 해서 값을 바꿀 수 있게 둔다.
 class _MutableClock implements Clock {
@@ -443,7 +443,7 @@ void main() {
   });
 
   group('연결·이벤트 반영 — 완료 조건 9(데이터 없음 vs 연결 끊김 구분)', () {
-    // P1(Ruling 208) — 이 그룹이 WS 로 실어 보내는 `received_at` 이 대부분
+    // Ruling 208 — 이 그룹이 WS 로 실어 보내는 `received_at` 이 대부분
     // 이 값(2026-09-13T08:00:00Z)이다. `live_map_screen.dart` 가 이제
     // `clockProvider` 로 2분 유실을 판정하므로, 시험을 실제 실행 시각
     // (`DateTime.now()`)에 맡기면 실행 날짜에 따라 "유실"로 잘못 판정될
@@ -510,7 +510,7 @@ void main() {
       );
     });
 
-    // M-7 (Ruling 899 C) — 순서가 뒤바뀌어 늦게 온 옛 위치가 화면 값을 되돌리지 않는다.
+    // Ruling 899 C — 순서가 뒤바뀌어 늦게 온 옛 위치가 화면 값을 되돌리지 않는다.
     testWidgets('화면 값보다 오래된 received_at 의 position 은 무시하고 더 새 것은 반영한다', (
       tester,
     ) async {
@@ -921,7 +921,7 @@ void main() {
     });
   });
 
-  group('연결·이벤트 반영 — P1(Ruling 208·349) 표시 중인 좌표의 신호 유실', () {
+  group('연결·이벤트 반영 — Ruling 208·349 표시 중인 좌표의 신호 유실', () {
     final t0 = DateTime.utc(2026, 9, 13, 8);
 
     Future<void> pumpConnectedWithPosition(
@@ -983,11 +983,11 @@ void main() {
     });
   });
 
-  group('F1(2026-09-26) — 다른 이벤트 없이 시간만 흐르는 경우의 자동 재표시', () {
+  group('다른 이벤트 없이 시간만 흐르는 경우의 자동 재표시', () {
     // 이 그룹은 위 그룹과 달리 `client.emit(...)` 을 전혀 부르지 않는다 —
     // WS 연결은 살아 있고 그 버스의 위치 방송만 끊긴(Ruling 349) 상황을
     // 재현한다. 지금 코드는 이 경우 화면을 다시 그리는 계기가 없어
-    // "HH:mm 기준" 표지 가 무기한 남는다(브리프가 지적한 결함 그대로).
+    // "HH:mm 기준" 표지 가 무기한 남는다.
     final t0 = DateTime.utc(2026, 9, 13, 8);
 
     Future<void> pumpConnectedWithPosition(
@@ -1048,7 +1048,7 @@ void main() {
     });
   });
 
-  group('PF2(2026-09-26) — 새 좌표가 오면 예약을 다시 거는 동작(BRIEF-PF2 완료 조건 1)', () {
+  group('새 좌표가 오면 예약을 다시 거는 동작', () {
     // 위 F1 그룹은 좌표 하나가 2분을 넘기는 경우만 다룬다. 이 그룹은
     // `_scheduledForReceivedAt` 비교(코드 문서 참고)가 실제로 "새 좌표가
     // 오면 다시 예약한다"를 지키는지를 좌표 두 개(A·B)로 직접 고정한다.
@@ -1254,7 +1254,7 @@ void main() {
 
     // 버스가 움직여 화면 밖으로 나가도 지도가 따라간다. F05-09 는 "카메라를 고정하고
     // [버스 위치로] 로만 따라간다" 였고, 그러면 켜 두고 기다리는 동안 버스가 지도에서 사라졌다.
-    testWidgets('R46 P3 새 좌표가 오면 지도 카메라가 버스를 따라간다', (tester) async {
+    testWidgets('새 좌표가 오면 지도 카메라가 버스를 따라간다', (tester) async {
       await pumpConnected(tester);
 
       client.deliver(_envelope(WsEventType.position, pos(37.5)));
@@ -1267,7 +1267,7 @@ void main() {
     });
 
     // F05-09 의 이유(2초마다 사용자가 옮긴 지도가 되돌아감)는 그대로 지킨다 — 손으로 만지면 따라가기를 멈춘다.
-    testWidgets('R46 P3 사용자가 지도를 만지면 따라가기를 멈추고 [버스 위치로] 로 다시 켠다', (
+    testWidgets('사용자가 지도를 만지면 따라가기를 멈추고 [버스 위치로] 로 다시 켠다', (
       tester,
     ) async {
       await pumpConnected(tester);
@@ -1289,7 +1289,7 @@ void main() {
     });
 
     // 지도에 버스 점만 있어 내 승하차지가 어디인지 알 수 없었다. 서버가 준 §3.10 좌표만 쓴다.
-    testWidgets('R46 P1 내 승하차지를 지도 핀과 시트 칸으로 보여준다', (tester) async {
+    testWidgets('내 승하차지를 지도 핀과 시트 칸으로 보여준다', (tester) async {
       await pumpConnected(tester, route: _routeWithMyStop());
       client.deliver(_envelope(WsEventType.position, pos(37.5)));
       await tester.pump();
@@ -1354,7 +1354,7 @@ void main() {
       expect(rendered, isNot(contains(etaClock)));
     });
 
-    testWidgets('R46 P1 노선을 못 받거나 좌표가 없으면 버스만 그리고 오류 띠를 더하지 않는다', (
+    testWidgets('노선을 못 받거나 좌표가 없으면 버스만 그리고 오류 띠를 더하지 않는다', (
       tester,
     ) async {
       await pumpConnected(tester); // 노선 가짜가 실패를 돌려준다
@@ -1372,7 +1372,7 @@ void main() {
   // 그린다.
   // WebSocket 이벤트(`run_started` · `run_ended`)를 놓치고 들어와도 시각이 비지 않고, 지연 띠는 delay
   // 에서 온다.
-  group('R48 §3.11 스냅샷의 지연 띠 · 운행 시각', () {
+  group('§3.11 스냅샷의 지연 띠 · 운행 시각', () {
     final startedAt = DateTime.utc(2026, 9, 13, 3, 5);
     final finishedAt = DateTime.utc(2026, 9, 13, 3, 52);
 
@@ -1502,7 +1502,7 @@ void main() {
   // 시안 `live-map*` — 상태마다 시트 모양이 다르다. 한 모양이 다른 모양의 글자를 섞어 쓰면(예: 종료인데 "이동
   // 중")
   // 학부모가 버스가 아직 달리는 줄 안다.
-  group('R48 시트 — 상태마다 모양이 다르다', () {
+  group('시트 — 상태마다 모양이 다르다', () {
     final started = DateTime.utc(2026, 10, 4, 3, 5);
     final departAt = DateTime.utc(2026, 10, 4, 5, 40);
     final clockNow = DateTime.utc(2026, 10, 4, 3, 14);
@@ -1744,7 +1744,7 @@ void main() {
   });
 
   // `Ruling 831` · `832` — 지도에 표시 범위 승하차지의 번호 마커와 경로선, 문구에 도착지 이름.
-  group('R49 지도 — 노선선 · 번호 · 도착지 이름', () {
+  group('지도 — 노선선 · 번호 · 도착지 이름', () {
     final started = DateTime.utc(2026, 10, 5, 3, 5);
     final finished = DateTime.utc(2026, 10, 5, 3, 52);
     final clockNow = DateTime.utc(2026, 10, 5, 3, 14);
@@ -1865,7 +1865,7 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    // M-P2 — 지도가 보던 자녀와 회차를 노선 자세히로 넘긴다(상세가 다른 회차를 보이던 것).
+    // 지도가 보던 자녀와 회차를 노선 자세히로 넘긴다(상세가 다른 회차를 보이던 것).
     testWidgets('[노선 자세히 보기] 는 지도가 보던 자녀와 회차 번호를 주소에 싣는다', (tester) async {
       String? pushedLocation;
       final router = GoRouter(
@@ -1988,7 +1988,7 @@ void main() {
       expect(map.fitToContent, isTrue);
     });
 
-    // M-P1 — 지나간 곳을 표시하면 번호와 함께 남은 정차 수를 유추하게 한다(C-08).
+    // 지나간 곳을 표시하면 번호와 함께 남은 정차 수를 유추하게 한다(C-08).
     testWidgets('종료 — 지나간 승하차지(arrived_at 있음)도 아닌 곳과 같은 모양이다', (tester) async {
       await pumpMap(
         tester,
@@ -2057,7 +2057,7 @@ void main() {
       expect(find.textContaining('하늘수학'), findsNothing);
     });
 
-    testWidgets('종료 — 이름을 못 얻으면 이름 없는 R48 문구로 떨어진다', (tester) async {
+    testWidgets('종료 — 이름을 못 얻으면 이름 없는 문구로 떨어진다', (tester) async {
       await pumpMap(
         tester,
         position: snapshot(status: RunStatus.finished, withPosition: false),

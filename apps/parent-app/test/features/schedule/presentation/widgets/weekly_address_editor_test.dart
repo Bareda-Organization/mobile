@@ -63,9 +63,9 @@ void main() {
     expect(find.text('주소를 확인할 수 없어요. 다시 입력해 주세요'), findsOneWidget);
   });
 
-  // R51 — 서버는 검증에 실패한 주소 글자를 `details.failed_entries` 로 준다(API_SPEC §3.7).
+  // 서버는 검증에 실패한 주소 글자를 `details.failed_entries` 로 준다(API_SPEC §3.7).
   // 한 줄 "주소를 확인할 수 없습니다" 뿐이면 14칸 중 어느 칸을 고쳐야 하는지 알 수 없다.
-  testWidgets('R51 failed_entries 가 가리키는 칸의 요일 · 방향을 안내하고 그 요일로 옮긴다', (
+  testWidgets('failed_entries 가 가리키는 칸의 요일 · 방향을 안내하고 그 요일로 옮긴다', (
     tester,
   ) async {
     await pumpEditor(
@@ -162,8 +162,8 @@ void main() {
     );
   });
 
-  // R51 — 비운 칸이 지금 보는 요일이 아니면 그 요일로 옮겨 가야 바로 채울 수 있다.
-  testWidgets('R51 비운 칸이 다른 요일이면 안내에 그 요일 · 방향을 쓰고 그 요일로 옮긴다', (tester) async {
+  // 비운 칸이 지금 보는 요일이 아니면 그 요일로 옮겨 가야 바로 채울 수 있다.
+  testWidgets('비운 칸이 다른 요일이면 안내에 그 요일 · 방향을 쓰고 그 요일로 옮긴다', (tester) async {
     final repository = _RecordingWeeklyAddressRepository();
     await pumpEditor(tester, repository, const [
       WeeklyAddressEntry(
@@ -200,8 +200,8 @@ void main() {
     expect(find.text('월요일 · 등원', findRichText: true), findsNothing);
   });
 
-  // R46 A — 검사 경고 뒤에 저장 버튼이 영구히 잠겨 화면을 나갔다 들어와야 했다.
-  testWidgets('R46 칸을 비워 경고가 뜬 뒤 다시 채우면 저장할 수 있다', (tester) async {
+  // 검사 경고 뒤에 칸을 다시 채우면 화면을 나갔다 들어오지 않아도 저장 버튼이 열려야 한다.
+  testWidgets('칸을 비워 경고가 뜬 뒤 다시 채우면 저장할 수 있다', (tester) async {
     final repository = _RecordingWeeklyAddressRepository();
     await tester.pumpWidget(
       ProviderScope(
@@ -226,8 +226,8 @@ void main() {
     expect(repository.saved.single.address, '서울시 강남구 9');
   });
 
-  // R48 — 요일 알약 하나를 고르면 그 요일의 등원 · 하원 두 칸이 나오고, 저장하지 않은 요일에는 점이 붙는다.
-  group('R48 요일 알약', () {
+  // 요일 알약 하나를 고르면 그 요일의 등원 · 하원 두 칸이 나오고, 저장하지 않은 요일에는 점이 붙는다.
+  group('요일 알약', () {
     const monTo = WeeklyAddressEntry(
       weekday: Weekday.mon,
       direction: RunDirection.toAcademy,
@@ -257,7 +257,7 @@ void main() {
       return repository;
     }
 
-    testWidgets('H5 요일 알약은 7개가 항상 나오고, 고른 요일의 등원 · 하원 주소 칸과 상세 칸이 보인다', (
+    testWidgets('요일 알약은 7개가 항상 나오고, 고른 요일의 등원 · 하원 주소 칸과 상세 칸이 보인다', (
       tester,
     ) async {
       await pumpFour(tester);
@@ -321,8 +321,8 @@ void main() {
       expect(repository.saved.first.address, '월 등원 주소 고침');
     });
 
-    // H5 — 처음 한 칸만 고칠 수 있던 것: 요일 7 × 방향 2 = 14칸 어디든 추가한다.
-    testWidgets('H5 등록되지 않은 요일 · 방향 칸에 주소를 넣고 저장하면 그 칸까지 한 번에 간다', (
+    // 요일 7 × 방향 2 = 14칸 어디든 추가한다.
+    testWidgets('등록되지 않은 요일 · 방향 칸에 주소를 넣고 저장하면 그 칸까지 한 번에 간다', (
       tester,
     ) async {
       final repository = await pumpFour(tester);
@@ -343,7 +343,7 @@ void main() {
       expect(added.address, '토 하원 새 주소');
     });
 
-    testWidgets('H5 14칸을 전부 채우면 14건이 한 요청으로 간다', (tester) async {
+    testWidgets('14칸을 전부 채우면 14건이 한 요청으로 간다', (tester) async {
       final repository = _RecordingWeeklyAddressRepository();
       await pumpEditor(tester, repository, const []);
 
@@ -369,7 +369,7 @@ void main() {
       }, hasLength(14));
     });
 
-    testWidgets('H5 상세 주소를 적으면 address_detail 로 같이 가고, 비우면 보내지 않는다', (
+    testWidgets('상세 주소를 적으면 address_detail 로 같이 가고, 비우면 보내지 않는다', (
       tester,
     ) async {
       final repository = await pumpFour(tester);
@@ -393,7 +393,7 @@ void main() {
       expect(monFrom.addressDetail, isNull);
     });
 
-    testWidgets('H5 주소 없이 상세 주소만 적으면 요청이 나가지 않고 안내한다', (tester) async {
+    testWidgets('주소 없이 상세 주소만 적으면 요청이 나가지 않고 안내한다', (tester) async {
       final repository = await pumpFour(tester);
 
       await tester.tap(find.text('수'));
@@ -409,7 +409,7 @@ void main() {
       expect(find.textContaining('주소를 먼저 입력해 주세요'), findsOneWidget);
     });
 
-    testWidgets('H5 서버에 있던 칸을 비우면 요청이 나가지 않는다(칸 삭제 수단이 서버에 없다)', (
+    testWidgets('서버에 있던 칸을 비우면 요청이 나가지 않는다(칸 삭제 수단이 서버에 없다)', (
       tester,
     ) async {
       final repository = await pumpFour(tester);
@@ -428,8 +428,8 @@ void main() {
     });
   });
 
-  // R32 P11 → H5 — 등록된 주소가 없어도 [추가] 단계 없이 14칸이 바로 열린다.
-  group('P11 빈 목록', () {
+  // 등록된 주소가 없어도 [추가] 단계 없이 14칸이 바로 열린다.
+  group('빈 목록', () {
     Future<_RecordingWeeklyAddressRepository> pumpEmpty(
       WidgetTester tester,
     ) async {

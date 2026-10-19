@@ -145,7 +145,7 @@ void main() {
   bool enabled(WidgetTester tester, Finder button) =>
       tester.widget<BaraedaButton>(button).onPressed != null;
 
-  testWidgets('한 학생의 응답을 기다리는 중에 다른 학생을 눌러도 앞 학생의 잠금이 풀리지 않는다 (R46)', (
+  testWidgets('한 학생의 응답을 기다리는 중에 다른 학생을 눌러도 앞 학생의 잠금이 풀리지 않는다', (
     tester,
   ) async {
     await pumpRoster(tester);
@@ -177,7 +177,7 @@ void main() {
     expect(enabled(tester, buttonIn('김바래', '탑승')), isTrue);
   });
 
-  testWidgets('응답을 기다리는 학생 행에는 진행 표시가 돈다 (R46)', (tester) async {
+  testWidgets('응답을 기다리는 학생 행에는 진행 표시가 돈다', (tester) async {
     await pumpRoster(tester);
     repository.gates['r1'] = Completer<SendOutcome<RiderUpdateResult>>();
 
@@ -208,7 +208,7 @@ void main() {
     );
   });
 
-  testWidgets('큐에 쌓인 학생 행은 전송 대기로 바뀌어 같은 처리를 다시 누를 수 없다 (R46)', (tester) async {
+  testWidgets('큐에 쌓인 학생 행은 전송 대기로 바뀌어 같은 처리를 다시 누를 수 없다', (tester) async {
     await pumpRoster(tester);
     repository.queuedRiders.add('r1');
 
@@ -225,7 +225,7 @@ void main() {
     expect(repository.calls, ['r1:boarded']);
   });
 
-  // R46-FIXRT S-9 — 서버가 5xx 를 되풀이해 재생에서 뺀 행은 "전송 대기" 가 아니다. 그 학생은 다시 눌러 새로 보낼 수
+  // 서버가 5xx 를 되풀이해 재생에서 뺀 행은 "전송 대기" 가 아니다. 그 학생은 다시 눌러 새로 보낼 수
   // 있어야 하고, 보내지 못한 처리가 있다는 것은 따로 알린다.
   testWidgets('영구 실패 행은 학생 행을 전송 대기로 바꾸지 않고 따로 알린다', (tester) async {
     await pumpRoster(
@@ -255,7 +255,7 @@ void main() {
     expect(find.text('대기열 1건'), findsOneWidget);
   });
 
-  testWidgets('대기 안내 배너는 다른 학생을 처리해도 지워지지 않고 대기 건수를 보인다 (R46)', (tester) async {
+  testWidgets('대기 안내 배너는 다른 학생을 처리해도 지워지지 않고 대기 건수를 보인다', (tester) async {
     await pumpRoster(tester);
     repository.queuedRiders.add('r1');
 

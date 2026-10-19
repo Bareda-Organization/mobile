@@ -75,7 +75,7 @@ void main() {
     expect(find.text('김바래'), findsOneWidget);
   });
 
-  // M-9 — 명단 자체가 서버에서 온 것이어도 오늘 회차 목록이 저장본이면 화면 맨 위에서 밝힌다(홈과 같은 안내).
+  // 명단 자체가 서버에서 온 것이어도 오늘 회차 목록이 저장본이면 화면 맨 위에서 밝힌다(홈과 같은 안내).
   testWidgets('저장해 둔 회차 목록으로 보는 중이면 명단 화면에도 안내가 뜬다', (tester) async {
     await pump(tester, savedRunsAt: DateTime(2026, 10, 10, 7, 41));
 

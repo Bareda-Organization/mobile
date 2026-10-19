@@ -2,8 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:parent_app/core/common/run_direction.dart';
 import 'package:parent_app/features/live_map/presentation/trip_text.dart';
 
-/// R49 `Ruling 832` — 실시간 위치 · 종료 문구의 도착지 이름. 등원은 학원 이름(`/me` 의 `academy.name`),
-/// 하원은 내 승하차지 이름. 이름을 못 얻으면 R48 의 이름 없는 문구로 떨어진다.
+/// `Ruling 832` — 실시간 위치 · 종료 문구의 도착지 이름. 등원은 학원 이름(`/me` 의 `academy.name`),
+/// 하원은 내 승하차지 이름. 이름을 못 얻으면 이름 없는 문구로 떨어진다.
 void main() {
   group('tripDestination — 어느 쪽 이름이 도착지인가', () {
     test('등원은 학원 이름이다', () {
@@ -104,7 +104,7 @@ void main() {
       );
     });
 
-    test('이름이 없으면 R48 문구 "시각 에 운행을 마쳤어요." 로 떨어진다', () {
+    test('이름이 없으면 문구 "시각 에 운행을 마쳤어요." 로 떨어진다', () {
       expect(
         endedBody(finishedAt: finishedAt, destination: null),
         '12:52 에 운행을 마쳤어요.',

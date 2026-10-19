@@ -11,7 +11,7 @@ import 'package:manager_app/features/auth/presentation/login_screen.dart';
 
 import '../../support/fake_academy_contact_store.dart';
 
-/// M-M7(AUTH-06 · C-11) — 로그인 차단은 **메인 관리자만** 푼다. 학원 관리자(관계자)는 풀 수 없으므로 화면 문구가
+/// AUTH-06 · C-11 — 로그인 차단은 **메인 관리자만** 푼다. 학원 관리자(관계자)는 풀 수 없으므로 화면 문구가
 /// 학원 관리자를 해제 주체로 말하지 않는다. 문의처가 학원이라는 안내(전화·문의)는 그대로다.
 class _WrongPasswordRepository implements AuthRepository {
   const new({this.remaining = 2});

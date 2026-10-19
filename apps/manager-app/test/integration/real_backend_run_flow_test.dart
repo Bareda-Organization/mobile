@@ -68,14 +68,13 @@ class _FakeSecureStoragePlatform
   );
 }
 
-/// 실제 백엔드를 때리는 계약 시험 — R1 목표 3항(자기 포트의 실제 백엔드로
-/// 1회 이상 호출). 시드 계정 `driverA1`·`escortA1`/`password`(BRIEF-m1.md
-/// §5). 대상 서버는 `ApiConstants.baseUrl`(`--dart-define=API_BASE_URL`)이
+/// 실제 백엔드를 때리는 계약 시험 — 자기 포트의 실제 백엔드로 1회 이상 호출한다.
+/// 시드 계정 `driverA1`·`escortA1`/`password`.
+/// 대상 서버는 `ApiConstants.baseUrl`(`--dart-define=API_BASE_URL`)이
 /// 정한다 — `auto_login_test.dart` 와 같은 이유로 하드코딩하지 않는다.
 ///
-/// §4.1(`ManagerRunApi.fetchRuns`)·§4.2(`RosterApi.fetchRoster`)는 한때 이
-/// 백엔드가 스펙과 어긋난 응답을 내려 프로덕션 클라이언트 코드를 그대로
-/// 통과시킬 수 없었다(보고서 참고 — F3 R2 B1 좌석이 서버를 고쳤다):
+/// §4.1(`ManagerRunApi.fetchRuns`)·§4.2(`RosterApi.fetchRoster`)는 스펙 모양의
+/// 응답이어야 프로덕션 클라이언트 코드를 그대로 통과시킬 수 있다:
 ///
 /// 1. `GET /manager/runs` 의 `data` 는 스펙(§4.1)대로 `{items:[...]}` 다.
 /// 2. `run_id`·`stop_id`·`rider_id`·`student_id` 는 스펙(§1.1 "식별자는
@@ -106,7 +105,7 @@ void main() {
     } finally {
       probe.close();
     }
-    // F5 M3 목표 — 아래 §4.2 는 confirmed 회차가 최소 1개 있어야 하는데,
+    // 아래 §4.2 는 confirmed 회차가 최소 1개 있어야 하는데,
     // `real_backend_manager_endpoints_test.dart` 의 §4.4 가 시각이 맞지
     // 않으면 그 회차(run2)를 moving 으로 영구히 옮겨 버린다. 어느 파일이
     // 먼저 실행되는지 고정할 수 없어(파일 탐색 순서) 이 파일도 같은 확인을
@@ -127,7 +126,7 @@ void main() {
     return (auth: auth, dio: client.dio);
   }
 
-  // FE-R2 목표 12 — 이 시험은 "목록 엔드포인트가 응답하고 스펙대로 생겼는가"
+  // 이 시험은 "목록 엔드포인트가 응답하고 스펙대로 생겼는가"
   // 만 본다. 회차 상태(run_status)는 일부러 보지 않는다 — 그것은 §4.2 가
   // 전담한다(겹침이 아니라 계층: 이 시험은 모양, §4.2 는 그 안의 상태값).
   // `runs, isNotEmpty` 만으로는 전 회차가 idle 이어도 통과하지만, 그것은
@@ -173,8 +172,8 @@ void main() {
     'run_id 는 이 시험 안에서 GET /manager/runs 로 매번 새로 찾는다. 이 회차의 '
     'confirmed 여부는 시드의 상대 시각(출발 30분 전 확정)이 실제 시계 경과에 따라 '
     '바뀌므로 고정값을 박으면 시간이 지나면서 idle 로 넘어가 깨진다. '
-    'FE-R2 목표 12 — 이 시험은 §4.1 이 일부러 보지 않는 run_status 를 전담해서 '
-    '검사한다: confirmed 상태인 회차가 하나도 없으면(= BE-R1 이 고친 결함이 다시 '
+    '이 시험은 §4.1 이 일부러 보지 않는 run_status 를 전담해서 '
+    '검사한다: confirmed 상태인 회차가 하나도 없으면(= 고쳐 둔 결함이 다시 '
     '나면) 아래 expect 가 그 자리에서 실패해야 한다',
     () async {
       if (!backendReachable) {

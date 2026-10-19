@@ -10,7 +10,7 @@ import 'package:parent_app/core/auth/auth_providers.dart';
 import 'package:parent_app/core/auth/domain/auth_repository.dart';
 import 'package:parent_app/features/auth/presentation/account_recovery_screen.dart';
 
-/// P2 게이트 조건 ① — 계정 열거(enumeration) 노출 확인. 서버는 번호의 가입 여부를
+/// 계정 열거(enumeration) 노출 확인. 서버는 번호의 가입 여부를
 /// 응답으로 구분하지 않는다(Ruling 553) — 인증번호 요청이 성공한 뒤 안내가 "보냈다" 고
 /// 단정하면 미등록 번호에서는 사실이 아니고, 실패 문구가 코드별로 갈리면 단서가 된다.
 class _FailingAuthRepository implements AuthRepository {
@@ -68,7 +68,7 @@ class _FailingAuthRepository implements AuthRepository {
   Future<void> unregisterDevice(String token) => throw UnimplementedError();
 }
 
-/// FE-R2 목표 10 — 제출 중 표시. `recover()` 가 끝나는 시점을 이
+/// 제출 중 표시. `recover()` 가 끝나는 시점을 이
 /// `Completer` 로 직접 쥐고 있어야 "제출 중" 인 프레임을 관측할 수 있다
 /// (`pumpAndSettle` 로는 그 순간을 지나쳐 버린다). password_change_screen
 /// 과 달리 이 화면은 실패 시에도 `_submitting` 을 내리므로(§ 클래스의
@@ -455,7 +455,7 @@ void main() {
     expect(find.text('인증번호 받기'), findsOneWidget);
   });
 
-  // FE-R2 목표 10 — password_change_screen.dart 와 동일한 표시(버튼
+  // password_change_screen.dart 와 동일한 표시(버튼
   // 비활성화 + `CircularProgressIndicator`)를 이 화면에도 확인한다.
   testWidgets('제출 중에는 진행 표시기가 뜨고, 끝나면 사라진다', (tester) async {
     final repository = _StallingAuthRepository();

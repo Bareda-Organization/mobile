@@ -9,7 +9,7 @@ import 'package:manager_app/core/auth/user_role.dart';
 /// ⚠ F2 버전은 `canSendDelayNotification` 을 기사=true·동승자=false 로
 /// 기대했다 — API_SPEC §4.9·USER_FLOWS UF-E-05("기사는 발신 불가")와
 /// 반대였다. 이 파일은 그 반대 방향(동승자만 가능)으로 고쳤다
-/// (F3 M1 보고서 참고). `canSendArrivalNotification` 도 `canOperateRun` 으로
+/// `canSendArrivalNotification` 도 `canOperateRun` 으로
 /// 이름을 바꿨다 — §4.5 가 이 API 는 알림을 보내지 않는다고 명시한다.
 void main() {
   group('RoleCapabilities.of(driver)', () {

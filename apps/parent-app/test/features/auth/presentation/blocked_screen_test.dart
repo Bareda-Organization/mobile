@@ -28,9 +28,9 @@ Future<void> _pump(WidgetTester tester, {String? saved}) async {
   await tester.pumpAndSettle();
 }
 
-/// R32 P13 — 차단 안내가 "학원 관리자(메인 관리자)" 처럼 두 역할을 섞어, 사용자가 누구에게
-/// 물어야 하는지 알 수 없었다. 문의처는 학원 하나로 적는다(UF-X-04 · Ruling 329).
-/// R48 `Ruling 825` — 차단 화면의 학원 전화는 기기에 저장한 마지막 학원 문의처이고, 없으면 문장만 둔다.
+/// 차단 안내의 문의처는 학원 하나로 적는다 — "학원 관리자(메인 관리자)" 처럼 두 역할을 섞으면
+/// 사용자가 누구에게 물어야 하는지 알 수 없다(UF-X-04 · Ruling 329).
+/// 차단 화면의 학원 전화는 기기에 저장한 마지막 학원 문의처이고(Ruling 825), 없으면 문장만 둔다.
 void main() {
   testWidgets('차단 안내의 문의처는 학원 하나이고 관리자 역할 이름을 섞지 않는다', (tester) async {
     await _pump(tester);

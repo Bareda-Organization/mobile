@@ -43,7 +43,7 @@ void main() {
     );
   });
 
-  testWidgets('띠가 없으면 예전처럼 상태 표시줄 아래에서 시작한다', (tester) async {
+  testWidgets('띠가 없으면 상태 표시줄 아래에서 시작한다', (tester) async {
     await tester.pumpWidget(_app(strip: null));
 
     final title = tester.getRect(find.text('명단'));

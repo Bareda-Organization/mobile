@@ -200,7 +200,7 @@ void main() {
     return repository;
   }
 
-  group('M6 확인 창', () {
+  group('확인 창', () {
     // 운행 시작 확인 창은 운행 준비 화면으로 옮겼다 — `run_ready_screen_test.dart` 가 문다.
 
     testWidgets('마지막 승하차지 도착 — 취소하면 요청이 나가지 않고, 확인해야 나간다', (tester) async {
@@ -355,7 +355,7 @@ void main() {
   // 859(UF-D-04 · §12.2) — 도착 처리는 연결이 없어도 기기에 저장된다. "저장돼요" 안내가 사실이 되려면 저장된 곳을
   // 처리한 곳으로 보고 다음 곳을 가리켜야 하고(같은 곳을 다시 보내지 않는다), 서버 응답이 필요한 종료 화면으로는
   // 가지 않는다.
-  // M-M3 — 기기에 저장해 둔 명단으로 다음 승하차지를 가리키는 동안에도 연결이 돌아오면 서버 명단으로 바뀐다.
+  // 기기에 저장해 둔 명단으로 다음 승하차지를 가리키는 동안에도 연결이 돌아오면 서버 명단으로 바뀐다.
   testWidgets('저장해 둔 명단을 보는 동안은 주기마다 서버에서 다시 받아 본다', (tester) async {
     await pumpDrive(
       tester,
@@ -371,7 +371,7 @@ void main() {
     expect(rosterLoads, greaterThan(first));
   });
 
-  group('H4 연결 없는 도착 처리', () {
+  group('연결 없는 도착 처리', () {
     testWidgets('저장 안내를 보이고 다음 누름은 다음 승하차지를 보낸다', (tester) async {
       final repository = await pumpDrive(
         tester,
@@ -441,7 +441,7 @@ void main() {
       await tester.pump(const Duration(seconds: 6));
     });
 
-    // M-4 — 하원은 마지막 도착이 서버에 닿아도 남은 학생이 있으면 종료가 보류된다.
+    // 하원은 마지막 도착이 서버에 닿아도 남은 학생이 있으면 종료가 보류된다.
     // 저장 안내가 "운행이 끝나요" 라고 약속하면 안 된다.
     testWidgets('등원 마지막 도착 저장 안내는 운행이 끝난다고 알린다', (tester) async {
       await pumpDrive(
@@ -581,7 +581,7 @@ void main() {
     });
   });
 
-  group('M5 남은 승하차지', () {
+  group('남은 승하차지', () {
     testWidgets('도착한 곳은 빼고 남은 곳을 순서대로, 미경유는 건너뜀 표시와 함께 보인다', (tester) async {
       await pumpDrive(
         tester,

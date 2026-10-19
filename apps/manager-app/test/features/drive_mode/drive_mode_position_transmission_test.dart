@@ -310,7 +310,7 @@ void main() {
     },
   );
 
-  // M-1 — 서버에 다시 닿았다는 신호는 "닿지 못하다 닿은" 전이에서만 올린다. 성공 때마다 올리면
+  // 서버에 다시 닿았다는 신호는 "닿지 못하다 닿은" 전이에서만 올린다. 성공 때마다 올리면
   // WebSocket 서버만 죽은 동안 2초마다 재연결 대기가 취소돼 연결 시도가 대기 계산값을 넘는다.
   testWidgets('서버 도달 신호는 끊겼다 닿은 전이에서만 올린다', (tester) async {
     final source = _FakePositionSource(
@@ -363,7 +363,7 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
-  // M-1 — WebSocket 서버만 죽고 REST 는 멀쩡한 60초 동안, 위치 전송이 2초마다 성공해도 연결 시도는
+  // WebSocket 서버만 죽고 REST 는 멀쩡한 60초 동안, 위치 전송이 2초마다 성공해도 연결 시도는
   // 재접속 대기 계산값(1·2·4·8·16·30초)이 허용하는 횟수를 넘지 않는다.
   testWidgets('WebSocket 서버만 죽은 60초 동안 연결 시도가 대기 계산값을 넘지 않는다', (tester) async {
     const fixed = 0.999;
@@ -433,7 +433,7 @@ void main() {
     client.dispose();
   });
 
-  // M-2 — GPS 가 새로 재지 못한 틱(음영·정지)에 같은 측정 시각을 다시 보내지 않는다.
+  // GPS 가 새로 재지 못한 틱(음영·정지)에 같은 측정 시각을 다시 보내지 않는다.
   testWidgets('직전 전송과 같은 기록 시각의 좌표는 다시 보내지 않는다', (tester) async {
     final source = _FakePositionSource(
       PositionSample(lat: 37.5, lng: 127, recordedAt: recordedAt),
@@ -463,7 +463,7 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
-  // M-2 — 전송이 실패한 측정 시각은 서버에 안 갔으므로 다음 틱에 다시 보낸다.
+  // 전송이 실패한 측정 시각은 서버에 안 갔으므로 다음 틱에 다시 보낸다.
   testWidgets('전송이 실패한 기록 시각은 다음 틱에 다시 보낸다', (tester) async {
     final source = _FakePositionSource(
       PositionSample(lat: 37.5, lng: 127, recordedAt: recordedAt),
@@ -564,10 +564,10 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
-  test('위치 전송 주기 상수는 2초로 고정한다 (2026-09-14 사용자 결정)', () {
+  test('위치 전송 주기 상수는 2초로 고정한다', () {
     // ⚠ 값 자체를 하드코딩해 대조한다 — 위 위젯 시험처럼 상수를 그대로
     // 읽어 쓰면 상수가 조용히 바뀌어도 아무 시험도 잡지 못한다. 방송량이
-    // 이 값에 산술적으로 비례하므로(COMMON-B2 §2), 바뀌면 이 시험이
+    // 이 값에 산술적으로 비례하므로, 바뀌면 이 시험이
     // 먼저 깨져 리뷰를 강제해야 한다.
     expect(PositionConstants.transmissionInterval, const Duration(seconds: 2));
   });

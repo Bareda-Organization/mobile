@@ -11,7 +11,7 @@ import 'package:parent_app/core/devices/presentation/device_registration_panel.d
 import 'package:parent_app/core/ui/sticky_action_bar.dart';
 import 'package:parent_app/features/auth/presentation/pending_approval_screen.dart';
 
-/// Ruling 267(P2 게이트 조건 ②) — `pending` 계정 화면에 심은 단말 등록
+/// Ruling 267 — `pending` 계정 화면에 심은 단말 등록
 /// 패널이 실제로 나타나는지(도달성)와 토글이 실제 등록 호출까지 이어지는지
 /// (동작)를 함께 확인한다. 도달성만 보면 "빈 패널이 떠 있을 뿐" 인
 /// 사고를 못 잡고, 동작만 보면 "이 화면에서는 애초에 안 보인다" 는
@@ -205,7 +205,7 @@ void main() {
     expect(find.text('등록된 문의처 없음'), findsNothing);
   });
 
-  // R48 Ruling 825 · 827 — 문의처를 기기에 남기고(차단 화면이 쓴다), 번호 모양이 있을 때만 전화 단추를 둔다.
+  // Ruling 825 · 827 — 문의처를 기기에 남기고(차단 화면이 쓴다), 번호 모양이 있을 때만 전화 단추를 둔다.
   testWidgets('문의처에 번호가 있으면 학원에 전화 단추가 있고 그 문의처를 기기에 남긴다', (tester) async {
     final storage = _RecordingContactStorage();
     await _pumpPendingApproval(
@@ -218,7 +218,7 @@ void main() {
     expect(storage.saved, '02-000-0000');
   });
 
-  // /me 경로와 같은 저장 조건 — 공백 문의처는 이미 남긴 번호를 지우지 않는다(R53 최종 대조).
+  // /me 경로와 같은 저장 조건 — 공백 문의처는 이미 남긴 번호를 지우지 않는다.
   testWidgets('문의처가 공백이면 이미 남긴 번호를 덮어쓰지 않는다', (tester) async {
     final storage = _RecordingContactStorage()..saved = '02-111-1111';
     await _pumpPendingApproval(
@@ -242,8 +242,8 @@ void main() {
     expect(storage.saved, isNull);
   });
 
-  // R32 P9 — 상태를 처음 한 번만 조회해, 관리자가 승인·거절해도 앱을 껐다 켜야 알 수 있었다.
-  testWidgets('P9 [상태 다시 확인] 을 누르면 승인 상태를 다시 조회해 화면에 반영한다', (tester) async {
+  // 처음 한 번만 조회하면 관리자가 승인·거절해도 앱을 껐다 켜야 알 수 있다.
+  testWidgets('[상태 다시 확인] 을 누르면 승인 상태를 다시 조회해 화면에 반영한다', (tester) async {
     final authRepository = _StubAuthRepository()
       ..statusFromSecondCall = AccountStatus.rejected;
     await _pumpPendingApproval(tester, authRepository);
@@ -257,7 +257,7 @@ void main() {
   });
 
   // 승인이 났는데 대기 화면에 남아 있으면 안 된다 — 계정 상태를 갱신해 라우터가 홈으로 보내게 한다.
-  testWidgets('P9 다시 확인했더니 승인됐으면 계정 상태를 active 로 바꾼다', (tester) async {
+  testWidgets('다시 확인했더니 승인됐으면 계정 상태를 active 로 바꾼다', (tester) async {
     final authRepository = _StubAuthRepository()
       ..statusFromSecondCall = AccountStatus.active;
     await _pumpPendingApproval(tester, authRepository);
@@ -272,8 +272,8 @@ void main() {
     expect(container.read(currentAccountStatusProvider), AccountStatus.active);
   });
 
-  // R46 B2 #20 — 푸시 SDK 가 없어 대기 화면이 한 번만 조회하면 승인이 나도 [상태 다시 확인] 을 눌러야 했다.
-  group('R46 주기 재확인', () {
+  // 푸시 SDK 가 없어 대기 화면이 한 번만 조회하면 승인이 나도 [상태 다시 확인] 을 눌러야 한다.
+  group('주기 재확인', () {
     // 사양(UF-X-02)이 정한 값 — 아래 시험은 이 상수로 시간을 흘리므로 값 자체는 여기서 고정한다.
     test('재조회 간격은 30초다', () {
       expect(pendingStatusPollInterval, const Duration(seconds: 30));
@@ -362,7 +362,7 @@ void main() {
   // 지금 코드는 확인 대화 없이 바로 logout() 을 부른다 — 버튼 라벨
   // 대화의 확정 버튼 라벨('로그아웃하기')은 `find.descendant` 로
   // `BaraedaDialog` 안쪽만 짚는다.
-  group('F2 — 로그아웃 확인 대화(P 의 확인 대화 재사용)', () {
+  group('로그아웃 확인 대화(기존 확인 대화 재사용)', () {
     // 로그아웃 버튼은 스크롤 목록 맨 아래라 기본 시험 화면(800x600) 밖에
     // 있다 — `ensureVisible` 로 먼저 스크롤한다.
     Future<void> tapLogoutButton(WidgetTester tester) async {
@@ -416,8 +416,8 @@ void main() {
     });
   });
 
-  // R48 시안 `pending*` — 상태를 칩 + 큰 제목 + 3단계 진행 막대로 먼저 보여 준다.
-  group('R48 승인 대기 · 거절 구성', () {
+  // 시안 `pending*` — 상태를 칩 + 큰 제목 + 3단계 진행 막대로 먼저 보여 준다.
+  group('승인 대기 · 거절 구성', () {
     testWidgets('승인 대기 — 대기 칩 · 확인 중 제목 · 단계 셋 · 30초 자동 확인 안내', (tester) async {
       await _pumpPendingApproval(tester, _StubAuthRepository());
 

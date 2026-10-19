@@ -260,9 +260,9 @@ void main() {
     expect(retried, 1);
   });
 
-  // M-P3 — 푸시를 받을 수 없는 기기(Firebase 를 아직 안 붙인 자리표시 토큰)에
+  // 푸시를 받을 수 없는 기기(Firebase 를 아직 안 붙인 자리표시 토큰)에
   // "푸시로도 알려 드려요" 라고 단정하지 않는다.
-  group('M-P3 푸시 문구는 받을 수 있는 기기에서만', () {
+  group('푸시 문구는 받을 수 있는 기기에서만', () {
     testWidgets('푸시를 받을 수 없으면 어떤 화면에도 푸시 약속이 없다', (tester) async {
       await tester.pumpWidget(_host(unreadOnly: true, unreadCount: 0));
       expect(find.textContaining('푸시'), findsNothing);

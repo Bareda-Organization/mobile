@@ -6,7 +6,7 @@ import 'package:manager_app/features/auth/domain/auth_repository.dart';
 /// 묶는 것)은 `app/di.dart` 가 한다 — `presentation` 은 이 파일을 직접
 /// import 하지 않고 `app/di.dart` 가 노출하는 provider(타입은 [AuthRepository])
 /// 만 본다(CONVENTIONS_FLUTTER.md §2). `parent_app` 의 같은 파일과 내용이
-/// 같다(§1.1, 보고서 § 아키텍처 결정 1).
+/// 같다(§1.1).
 ///
 /// `AuthApi` 는 실패하면 원시 `DioException` 을 던진다 — 여기서
 /// [Failure] 로 옮겨 던지는 것이 이 클래스의 유일한 부가 역할이다.

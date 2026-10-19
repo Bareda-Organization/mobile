@@ -13,7 +13,7 @@ import 'package:parent_app/features/settings/presentation/settings_providers.dar
 import 'package:parent_app/features/settings/presentation/settings_screen.dart';
 import 'package:parent_app/features/settings/presentation/widgets/notification_settings_panel.dart';
 
-/// R48 설정 탭(시안 `settings` · `settings-student`) — 계정 카드 · 자녀 목록의 학년 · 학생 알림 스위치
+/// 설정 탭(시안 `settings` · `settings-student`) — 계정 카드 · 자녀 목록의 학년 · 학생 알림 스위치
 /// 2개 · 로그아웃 맨 아래.
 class _FakeDeviceStorage extends DeviceRegistrationStorage {
   @override

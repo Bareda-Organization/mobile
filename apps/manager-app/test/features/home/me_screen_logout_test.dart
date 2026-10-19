@@ -36,7 +36,7 @@ class _StubAuthRepository implements AuthRepository {
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
 }
 
-/// 대기 목록만 쓰는 가짜 — 로그아웃 확인 창이 미전송 건수를 세는 데만 쓴다(M2-01).
+/// 대기 목록만 쓰는 가짜 — 로그아웃 확인 창이 미전송 건수를 세는 데만 쓴다.
 class _StubQueueRepository implements OfflineQueueRepository {
   new(this.pendingCount, {this.emergencyCount = 0});
 
@@ -212,7 +212,7 @@ void main() {
     expect(find.textContaining('운행 중에 로그아웃하면 명단·위치 송신이 멈춰요'), findsNothing);
   });
 
-  // M2-01(Ruling 388) — 로그아웃하면 미전송 대기열이 버려진다. 비어 있지 않을 때만 알린다.
+  // Ruling 388 — 로그아웃하면 미전송 대기열이 버려진다. 비어 있지 않을 때만 알린다.
   testWidgets('미전송 대기 요청이 있으면 확인 문구에 버려진다는 경고와 건수가 붙는다', (tester) async {
     await pump(tester, authRepository: _StubAuthRepository(), pendingCount: 2);
 
@@ -220,7 +220,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.textContaining('아직 보내지 못한 처리 2건은 버려져요'), findsOneWidget);
-    // 대기열을 먼저 볼 길이 맨 위에 있다(M8).
+    // 대기열을 먼저 볼 길이 맨 위에 있다.
     expect(find.text('대기열 2건 먼저 보기'), findsOneWidget);
   });
 

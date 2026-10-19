@@ -26,7 +26,7 @@ final weeklyAddressProvider =
       return repository.getWeeklyAddress(studentId);
     });
 
-/// 일정 화면의 저장하지 않은 입력 모음 — 화면을 떠나면 함께 버린다(R32 P14).
+/// 일정 화면의 저장하지 않은 입력 모음 — 화면을 떠나면 함께 버린다.
 // ignore: specify_nonobvious_property_types
 final scheduleUnsavedEditsProvider = Provider.autoDispose<UnsavedEdits>((ref) {
   final edits = UnsavedEdits();

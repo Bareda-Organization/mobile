@@ -2,7 +2,7 @@ import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// 좁은 폭(375pt)·글자 1.3배에서 칸이 4개인 세그먼트 — 낱말 중간에서 줄이 바뀌면 "차량 고/장" 처럼 읽힌다(R46, B2 #16).
+/// 좁은 폭(375pt)·글자 1.3배에서 칸이 4개인 세그먼트 — 낱말 중간에서 줄이 바뀌면 "차량 고/장" 처럼 읽힌다.
 void main() {
   const options = [
     BaraedaSegmentedOption('prev', label: '이전 승하차지 대기'),
@@ -48,7 +48,7 @@ void main() {
     }
   });
 
-  testWidgets('기본값은 예전 그대로 라벨 하나를 한 덩어리로 그린다', (tester) async {
+  testWidgets('기본값은 라벨 하나를 한 덩어리로 그린다', (tester) async {
     await pump(tester, wrapByWord: false);
 
     expect(find.text('차량 고장'), findsOneWidget);

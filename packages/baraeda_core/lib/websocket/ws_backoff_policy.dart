@@ -18,7 +18,7 @@ import 'dart:math';
 /// 바로 검사할 수 있다.
 class WsBackoffPolicy {
   /// 기본값은 1·2·4·8·16·30초, 이후 30초(상한) 간격으로 **포기 없이** 계속 시도한다
-  /// (R46-FIXRT S-5). 실제 대기는 [jitteredDelayFor] 가 [0, 기준값] 에서 고른다.
+  /// 실제 대기는 [jitteredDelayFor] 가 [0, 기준값] 에서 고른다.
   const new({
     this.initialDelay = const Duration(seconds: 1),
     this.maxDelay = const Duration(seconds: 30),

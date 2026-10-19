@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/time/run_time_labels.dart';
 
-/// 통신이 끊겨 기기 저장본으로 오늘 회차 목록을 보는 동안 띄우는 안내(R56 · NFR-01) — 홈 · 운행 준비 · 명단 ·
+/// 통신이 끊겨 기기 저장본으로 오늘 회차 목록을 보는 동안 띄우는 안내(NFR-01) — 홈 · 운행 준비 · 명단 ·
 /// 비상 화면이 같은 문구를 쓴다.
 class SavedRunsNotice extends StatelessWidget {
   /// [savedAt] 은 저장본을 서버에서 받은 시각이다.

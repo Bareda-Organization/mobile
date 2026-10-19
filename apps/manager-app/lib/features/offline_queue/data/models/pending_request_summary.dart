@@ -25,7 +25,7 @@ class PendingRequestSummary {
   final String payload;
   final DateTime createdAt;
 
-  /// 서버가 5xx 를 되풀이해 재생에서 뺀 **영구 실패 행**이다(R46-FIXRT). 큐 화면에는 남아 사용자가 직접 지운다 —
+  /// 서버가 5xx 를 되풀이해 재생에서 뺀 **영구 실패 행**이다. 큐 화면에는 남아 사용자가 직접 지운다 —
   /// 명단 행의 "전송 대기" 표시 대상이 아니다(다시 눌러 새로 보낼 수 있다).
   final bool failed;
 
@@ -51,11 +51,11 @@ class PendingRequestSummary {
   /// 이 요청이 비상 신고인가 — [isEmergencyEndpoint].
   bool get isEmergency => isEmergencyEndpoint(endpoint);
 
-  /// 예외 보고(`POST /runs/{runId}/reports`)의 경로인가(R56 · Ruling 894 ⑧) — 통신 두절 때 승하차와 같은 대기열에 쌓인다.
+  /// 예외 보고(`POST /runs/{runId}/reports`)의 경로인가(Ruling 894 ⑧) — 통신 두절 때 승하차와 같은 대기열에 쌓인다.
   static bool isReportEndpoint(String endpoint) =>
       endpoint.endsWith('/reports');
 
-  /// 미승차 연락 기록(`POST /runs/{runId}/riders/{riderId}/no-show-contacts`)의 경로인가(R56 · Ruling 894 ⑧).
+  /// 미승차 연락 기록(`POST /runs/{runId}/riders/{riderId}/no-show-contacts`)의 경로인가(Ruling 894 ⑧).
   static bool isNoShowContactEndpoint(String endpoint) =>
       endpoint.endsWith('/no-show-contacts');
 
@@ -66,7 +66,7 @@ class PendingRequestSummary {
   bool get isNoShowContact => isNoShowContactEndpoint(endpoint);
 
   /// 승하차 처리(`/runs/{runId}/riders/{riderId}`)면 그 학생의 rider id, 아니면 `null` — 명단 행이 "전송 대기"
-  /// 로 바뀌는 근거다(R46). 같은 학생 경로 아래의 연락 기록은 상태 처리가 아니라 행을 "전송 대기" 로 바꾸지 않는다.
+  /// 로 바뀌는 근거다. 같은 학생 경로 아래의 연락 기록은 상태 처리가 아니라 행을 "전송 대기" 로 바꾸지 않는다.
   String? get riderId {
     if (!endpoint.contains('/riders/') || isNoShowContact) return null;
     return endpoint.split('/riders/').last.split('/').first;
@@ -98,7 +98,7 @@ class PendingRequestSummary {
   }
 
   /// 이 처리를 기록한 시각 — 본문의 `occurred_at`(오프라인에서 누른 실제 시각)이 있으면 그것, 없으면 큐에 쌓인 시각.
-  /// 학생 이름을 명단에서 못 찾을 때 어느 처리인지 알아보는 단서로 쓴다(R53 F3).
+  /// 학생 이름을 명단에서 못 찾을 때 어느 처리인지 알아보는 단서로 쓴다.
   DateTime get recordedAt {
     final raw = _decodeBody()['occurred_at'];
     final parsed = raw is String ? DateTime.tryParse(raw) : null;

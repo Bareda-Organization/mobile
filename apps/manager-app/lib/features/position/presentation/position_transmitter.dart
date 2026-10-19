@@ -16,7 +16,7 @@ import 'package:meta/meta.dart';
 
 /// 마지막 승하차지 도착 처리 응답(`is_final`)을 받은 회차 id — 종료 화면이 도착 응답 스냅샷
 /// ([lastArriveResultProvider])이 그 회차의 것인지 가르는 데도 쓴다. 운행이 끝난 응답이면 위치 송신은 여기서
-/// 끝난다(R33 M1). 하원 잔류로 종료가 보류된 응답(`finish_pending`)이면 서버 회차가 아직 `moving` 이고 남은
+/// 끝난다. 하원 잔류로 종료가 보류된 응답(`finish_pending`)이면 서버 회차가 아직 `moving` 이고 남은
 /// 학생의 학부모가 버스 위치를 봐야 하므로 송신은 계속된다(`Ruling 855`).
 final StateProvider<String?> transmissionEndedRunIdProvider =
     StateProvider<String?>((ref) => null);
@@ -156,7 +156,7 @@ class PositionTransmitter extends Notifier<PositionTransmission> {
         if (ref.mounted) ref.invalidate(todayRunsProvider);
       }
       // 배경 전송 실패 — 다음 주기가 대신한다(§1.9 는 화면 액션의 낙관적 표시를 금지할 뿐이다). 실패는 조용히
-      // 넘기되 마지막 성공 시각은 그대로 둬서, 운행 화면의 상태 칩이 "N초 전 마지막 전송" 으로 드러낸다(R46).
+      // 넘기되 마지막 성공 시각은 그대로 둬서, 운행 화면의 상태 칩이 "N초 전 마지막 전송" 으로 드러낸다.
     } finally {
       _sending = false;
     }

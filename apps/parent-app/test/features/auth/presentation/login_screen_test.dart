@@ -7,7 +7,7 @@ import 'package:parent_app/app/di.dart';
 import 'package:parent_app/core/auth/domain/auth_repository.dart';
 import 'package:parent_app/features/auth/presentation/login_screen.dart';
 
-/// R48 로그인(시안 `login` · `--error`) — 브랜드 줄 `학부모 · 학생`(P4) · 입력 칸 라벨에 `*` 없음 ·
+/// 로그인(시안 `login` · `--error`) — 브랜드 줄 `학부모 · 학생` · 입력 칸 라벨에 `*` 없음 ·
 /// 잔여 시도가 적으면 잠금 경고.
 class _FailingLoginRepository implements AuthRepository {
   new(this.remaining);
@@ -115,7 +115,7 @@ void main() {
     expect(find.textContaining('개발용'), findsNothing);
   });
 
-  testWidgets('브랜드 줄에 이 앱을 쓰는 사람이 적혀 있다 — 학부모 · 학생(P4)', (tester) async {
+  testWidgets('브랜드 줄에 이 앱을 쓰는 사람이 적혀 있다 — 학부모 · 학생', (tester) async {
     await _pump(tester);
 
     expect(find.text('바래다'), findsOneWidget);

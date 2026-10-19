@@ -24,7 +24,7 @@ final FutureProvider<String?> academyNameProvider = FutureProvider<String?>((
 /// 하나만 구독한다(공용 `webSocketClientProvider`, §1 판단 근거: 학부모는
 /// `selectedStudentIdProvider` 로, 학생은 `myStudentIdProvider`
 /// (`features/home`)로 각각 정확히 하나의 `studentId` 만 얻는다 — 두
-/// 갈래 다 여러 목적지를 동시에 구독할 일이 설계상 없어 COMMON.md 의
+/// 갈래 다 여러 목적지를 동시에 구독할 일이 설계상 없어
 /// 과다신고 조항이 걸리지 않는다). 이 provider 의 인자 타입이 `String`
 /// (nullable 아님)이라, `selectedStudentIdProvider` 가 아직 `null` 인
 /// 동안에는 이 notifier 자체가 만들어지지 않는다 — `live_map_screen.dart`

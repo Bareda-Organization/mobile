@@ -19,6 +19,6 @@ class AcademyRef {
   final String name;
 
   /// 학원 대표 연락처 — 학원이 등록하지 않았으면 `null`. 매니저 앱이 통신 두절 때 학원에 전화를 거는 번호다
-  /// (R46-MGR, API_SPEC §2.5·§2.10).
+  /// (API_SPEC §2.5·§2.10).
   final String? contact;
 }

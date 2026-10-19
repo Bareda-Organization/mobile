@@ -41,7 +41,7 @@ class BaraedaSegmentedControl extends StatelessWidget {
   final bool block;
 
   /// `true` 면 라벨을 낱말 단위로 줄바꿈한다 — 칸이 좁을 때 "차량 고/장" 처럼 낱말 중간에서 끊기지 않고
-  /// "차량 / 고장" 두 줄이 된다. 칸이 4개 이상인 좁은 화면에서 켠다(R46). 기본값은 예전 그대로다.
+  /// "차량 / 고장" 두 줄이 된다. 칸이 4개 이상인 좁은 화면에서 켠다. 기본값은 낱말 단위로 줄바꿈하지 않는다.
   final bool wrapByWord;
 
   @override

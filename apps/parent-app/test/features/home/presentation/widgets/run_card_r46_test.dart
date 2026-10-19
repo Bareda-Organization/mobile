@@ -10,9 +10,9 @@ import 'package:parent_app/core/common/run_direction.dart';
 import 'package:parent_app/core/runs/domain/student_run.dart';
 import 'package:parent_app/features/home/presentation/widgets/run_card.dart';
 
-/// R46 학부모 앱 홈 카드 — 지도 진입 표시(B2 #11) ·
-/// 승인 대기 카운트다운(A #15, `FEATURE_SPEC P-03`) ·
-/// 용어 통일(B2 #25, 사양 용어 "탑승 취소").
+/// 학부모 앱 홈 카드 — 지도 진입 표시 ·
+/// 승인 대기 카운트다운(`FEATURE_SPEC P-03`) ·
+/// 용어 통일(사양 용어 "탑승 취소").
 class _MutableClock implements Clock {
   new(this.value);
 
@@ -91,7 +91,7 @@ Future<void> _pump(
 }
 
 void main() {
-  group('B2 #11 지도 진입 표시', () {
+  group('지도 진입 표시', () {
     testWidgets('운행 중인 오늘 카드에 [실시간 위치 보기 ›] 가 있고 누르면 지도로 간다', (tester) async {
       final pushed = <String>[];
       await _pump(
@@ -126,9 +126,9 @@ void main() {
     });
   });
 
-  // R52 `Ruling 870` — 마감은 출발 시각이 아니라 서버가 준 `deadline_at`
+  // `Ruling 870` — 마감은 출발 시각이 아니라 서버가 준 `deadline_at`
   // (운행 시작 또는 출발 + 10분 중 먼저)이다.
-  group('A #15 승인 대기 카운트다운(P-03) · R52 870 마감 = deadline_at', () {
+  group('승인 대기 카운트다운(P-03) · 마감 = deadline_at', () {
     final departTime = DateTime(2026, 9, 12, 8);
     // 서버 마감 = 출발 + 10분.
     final deadline = DateTime(2026, 9, 12, 8, 10);
@@ -217,7 +217,7 @@ void main() {
     });
   });
 
-  // R52 최종 대조 — 서버는 출발 + 10분이 지나면 운행 미시작이어도 ③이다.
+  // 서버는 출발 + 10분이 지나면 운행 미시작이어도 ③이다.
   // ②로 두면 "승인 요청" 창으로 끈 것이 되돌릴 수 없는 즉시 취소가 된다.
   group('구간 판정은 서버 segmentOf 와 같다', () {
     testWidgets('출발 + 10분 0초가 지난 confirmed 회차는 ③ 확인 창이다 — 승인 요청이 아니다', (
@@ -262,9 +262,9 @@ void main() {
     });
   });
 
-  // R52 `Ruling 874`② — "잔여 변경 N회" 는 ②구간(승인 필요 · 회차당 1번)에서만 뜻이 있다.
+  // `Ruling 874`② — "잔여 변경 N회" 는 ②구간(승인 필요 · 회차당 1번)에서만 뜻이 있다.
   // ①은 횟수 제한이 없고 ③은 신청할 수 없다.
-  group('R52 874② 잔여 변경 횟수는 ②구간에서만', () {
+  group('잔여 변경 횟수는 ②구간에서만', () {
     testWidgets('②구간(확정 뒤 · 운행 전)이면 보인다', (tester) async {
       await _pump(
         tester,
@@ -308,7 +308,7 @@ void main() {
     );
   });
 
-  group('B2 #25 용어 — 탑승 취소', () {
+  group('용어 — 탑승 취소', () {
     testWidgets('스위치를 끄면 확인 창 제목과 버튼이 사양 용어 "탑승 취소" 다', (tester) async {
       await _pump(tester, run: _run());
 
@@ -322,10 +322,10 @@ void main() {
     });
   });
 
-  // R48 시안 `cancel-ride` · `--approval` · `--moving` — 구간마다 확인 단추의 글자와 색이
-  // 다르다(P2).
+  // 시안 `cancel-ride` · `--approval` · `--moving` — 구간마다 확인 단추의 글자와 색이
+  // 다르다.
   // ② 구간의 단추는 취소가 아니라 "요청" 이다 — 위험색(빨강)이 아니라 주 단추(초록)여야 취소가 즉시 되는 줄 아는 오해가 없다.
-  group('R48 탑승 취소 확인 창 — 구간별 단추', () {
+  group('탑승 취소 확인 창 — 구간별 단추', () {
     BaraedaButton confirmButton(WidgetTester tester, String label) =>
         tester.widget<BaraedaButton>(find.widgetWithText(BaraedaButton, label));
 
@@ -353,7 +353,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.textContaining('학원 관리자의 승인이 필요해요'), findsOneWidget);
-      // 마감은 출발 시각이 아니라 서버 `deadline_at` 이라 확인 창에는 시각을 적지 않는다(R52 870).
+      // 마감은 출발 시각이 아니라 서버 `deadline_at` 이라 확인 창에는 시각을 적지 않는다(Ruling 870).
       expect(
         find.textContaining('운행이 시작되기 전까지 승인되지 않으면 자동으로 반려돼요'),
         findsOneWidget,

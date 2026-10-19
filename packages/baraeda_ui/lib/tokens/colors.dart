@@ -26,8 +26,8 @@ abstract final class BaraedaPalette {
   static const Color amber400 = Color(0xFFF8BC58);
   static const Color amber300 = Color(0xFFFBD08A);
   static const Color amber100 = Color(0xFFFDF0D8);
-  // 글자 잉크 — 자기 옅은 면([amber100]) 위에서도 4.5:1 이상이 되게 어둡게 잡았다(F07-09).
-  // R48: 시안(`mkit` `--t-move`)의 `#8A560C` 로 맞췄다.
+  // 글자 잉크 — 자기 옅은 면([amber100]) 위에서도 4.5:1 이상이 되게 어둡게 잡는다.
+  // 시안(`mkit` `--t-move`)의 `#8A560C` 와 같다.
   static const Color amberInk = Color(0xFF8A560C);
 
   // 레드 — 미탑승·긴급. 라이트는 [red500], 다크는 [red300].
@@ -35,7 +35,7 @@ abstract final class BaraedaPalette {
   static const Color red500 = Color(0xFFE05C4B);
   static const Color red300 = Color(0xFFF08A7A);
   static const Color red100 = Color(0xFFFBE3DF);
-  // [red100] 위 글자 4.5:1 이상(F07-09). R48: 시안(`mkit` `--t-bad`)의 `#A8301F` 로 맞췄다.
+  // [red100] 위 글자 4.5:1 이상. 시안(`mkit` `--t-bad`)의 `#A8301F` 와 같다.
   static const Color redInk = Color(0xFFA8301F);
   // 위험 단추 면 · 위험 칩의 ▲ 모양(`mkit` `--bad-solid` · `--c-bad`).
   // 웹 `--red-ink` 와 같은 값.

@@ -26,7 +26,7 @@ import 'package:manager_app/features/roster/presentation/widgets/change_ack_bann
 /// `운행 준비하기` 가 운행 준비 화면으로 간다 — 운행 시작 요청은 그 화면의 확인 창 뒤에만 나간다(`Ruling 799`).
 /// 동승자는 카드 안 `명단 열기` 가 명단 탭으로 간다.
 ///
-/// 목록의 주기 갱신 · 앱 복귀 갱신은 쉘(`ManagerShell`)이 맡는다 — 동승자는 홈을 열지 않을 수도 있다(R53 A1).
+/// 목록의 주기 갱신 · 앱 복귀 갱신은 쉘(`ManagerShell`)이 맡는다 — 동승자는 홈을 열지 않을 수도 있다.
 class ManagerHomeScreen extends ConsumerStatefulWidget {
   const new({super.key});
 
@@ -52,7 +52,7 @@ class _ManagerHomeScreenState extends ConsumerState<ManagerHomeScreen> {
       body: runsAsync.when(
         // 주기 갱신 중에는 받아 둔 목록을 그대로 두고 바꿔 그린다 — 30초마다 뼈대가 뜨지 않게.
         skipLoadingOnReload: true,
-        // 갱신이 실패해도 마지막으로 받은 목록을 지우지 않는다 — 오류는 목록 위에 따로 알린다(R46).
+        // 갱신이 실패해도 마지막으로 받은 목록을 지우지 않는다 — 오류는 목록 위에 따로 알린다.
         skipError: true,
         loading: () => const _HomeSkeleton(),
         error: (error, _) => _HomeError(
@@ -242,8 +242,8 @@ class _HomeBody extends ConsumerWidget {
     );
   }
 
-  /// 큰 카드가 가리키는 회차로 선택 회차를 맞춘다(R52 H1) — 앞 회차가 끝난 뒤에도 선택이 그 회차에 남아 있으면
-  /// 운행 준비 · 명단 · 운행 화면이 끝난 회차를 그렸다.
+  /// 큰 카드가 가리키는 회차로 선택 회차를 맞춘다 — 앞 회차가 끝난 뒤에도 선택이 그 회차에 남아 있으면
+  /// 운행 준비 · 명단 · 운행 화면이 끝난 회차를 그린다.
   void _selectFocusRun(WidgetRef ref, ManagerRun focus) {
     ref.read(selectedRunIdProvider.notifier).state = focus.runId;
   }

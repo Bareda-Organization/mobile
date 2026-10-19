@@ -128,7 +128,7 @@ void main() {
     await database.close();
   });
 
-  // R46 — 같은 학생에게 같은 승하차 처리를 두 번 누르면 큐에 두 줄이 쌓여 재생 때 같은 처리가 두 번 나간다.
+  // 같은 학생에게 같은 승하차 처리를 두 번 누르면 큐에 두 줄이 쌓여 재생 때 같은 처리가 두 번 나간다.
   test('같은 학생·같은 승하차 처리는 큐에 한 번만 쌓는다', () async {
     final database = OfflineQueueDatabase.forTesting(NativeDatabase.memory());
     final dio = Dio(BaseOptions(baseUrl: 'https://example.invalid'))
@@ -424,8 +424,8 @@ void main() {
 
     await database.close();
   });
-  // R52 M5(Ruling 616) — 앞의 일반 행이 5xx 를 되풀이하는 동안에도 새 비상 신고는 대기 행과 무관하게 직접 보낸다.
-  // 새 요청 앞의 재생이 머리 행에서 멈추면 비상 신고가 큐 뒤로 밀려 최대 약 5분 동안 서버에 닿지 못했다.
+  // Ruling 616 — 앞의 일반 행이 5xx 를 되풀이하는 동안에도 새 비상 신고는 대기 행과 무관하게 직접 보낸다.
+  // 새 요청 앞의 재생이 머리 행에서 멈추면 비상 신고가 큐 뒤로 밀려 최대 약 5분 동안 서버에 닿지 못한다.
   group('비상 신고는 대기열 앞 행에 막히지 않는다', () {
     Future<(OfflineQueueDatabase, OfflineQueueRepositoryImpl, _OfflineAdapter)>
     queueWithStuckRider() async {

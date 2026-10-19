@@ -47,23 +47,19 @@ const Map<String, IconData> _kBaraedaIconGlyphs = {
   // 매니저 앱 머리줄의 비밀번호 변경(`BaraedaIconButton`)이 쓴다.
   'lock': Icons.lock_outline,
   'house': Icons.home,
-  // 학부모·학생 앱의 자녀 연결 화면(S-05)이 쓰는 아이콘 2종 — 기존 매핑에
-  // 빠져 있어 그 화면을 렌더링하는 즉시 `assert(glyph != null)` 로 죽었다
-  // (F3 R1 게이트 리뷰 🔴-2 테스트 추가 중 발견, 역할 분기와는 무관한
-  // 별도 결함).
+  // 학부모·학생 앱의 자녀 연결 화면(S-05)이 쓰는 아이콘 2종 — 이 매핑에 없으면
+  // 그 화면을 렌더링하는 즉시 `assert(glyph != null)` 로 죽는다.
   'link': Icons.link,
   'user-plus': Icons.person_add,
   // `AlertTone.info`(`alert_banner.dart`)가 쓰는 아이콘 — 가입 승인 대기
   // 화면(`pending_approval_screen.dart`)의 `pending` 상태 배너를 그리는
-  // 순간 `assert(glyph != null)` 로 죽었다(P2 게이트 조건 ② 시험 작성 중
-  // 발견, 역할 분기와는 무관한 별도 결함 — 위 `link`·`user-plus` 와 같은
-  // 형태).
+  // 순간 `assert(glyph != null)` 로 죽는다.
   'info': Icons.info,
-  // 알림 목록 행(`NotificationTile`)이 종류마다 다른 모양으로 쓰는 아이콘 — 색만으로 종류를 가르지 않는다(R44).
+  // 알림 목록 행(`NotificationTile`)이 종류마다 다른 모양으로 쓰는 아이콘 — 색만으로 종류를 가르지 않는다.
   'log-in': Icons.login,
   'user-x': Icons.person_off,
   'calendar-check': Icons.event_available,
-  // R48 시안 부품 견본(`mkit/kit.html` "아이콘")에 있고 위에 없던 것들 —
+  // 시안 부품 견본(`mkit/kit.html` "아이콘")에 있는 아이콘 —
   // 연결 끊김 띠 · 지도 단추 · 되돌리기 · 목록 행이 쓴다.
   'wifi-off': Icons.wifi_off,
   'crosshair': Icons.my_location,

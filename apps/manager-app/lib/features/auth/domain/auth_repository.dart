@@ -7,8 +7,8 @@ import 'package:baraeda_core/baraeda_core.dart';
 /// 메서드 이름·시그니처는 `AuthApi` 를 그대로 옮긴 것이 아니라 이 앱
 /// 화면이 실제로 필요로 하는 것만 추린다 — §2.11 기기 등록처럼 화면이
 /// 아직 안 쓰는 것은 여기 노출하지 않는다. `parent_app` 의 같은 파일과
-/// 내용이 같다 — 인증 데이터 계약은 역할과 무관하다(§1.1, 보고서 § 아키텍처
-/// 결정 1: 데이터 계층은 `baraeda_core` 하나, 이 인터페이스만 앱마다 얇게 둔다).
+/// 내용이 같다 — 인증 데이터 계약은 역할과 무관하다(§1.1). 데이터 계층은
+/// `baraeda_core` 하나, 이 인터페이스만 앱마다 얇게 둔다.
 abstract interface class AuthRepository {
   /// §2.1.
   Future<List<AcademySummary>> searchAcademies(String query);

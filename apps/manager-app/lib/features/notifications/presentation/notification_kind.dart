@@ -5,7 +5,7 @@ import 'package:manager_app/app/app_routes.dart';
 ///
 /// 받는 종류는 `route_changed`(확정 노선 변경, NTF-10 중요) ·
 /// `assignment_changed`(당일 배치 변경) ·
-/// `run_canceled`(확정된 회차의 취소, R56 · Ruling 894 ⑤ · 중요) ·
+/// `run_canceled`(확정된 회차의 취소, Ruling 894 ⑤ · 중요) ·
 /// `signup_decided`(가입 승인·거절) 넷이다.
 /// 눌렀을 때 갈 화면은 [destinationOf] 가 정한다 — 알림이 회차 식별자(`run_id`, Ruling 542)를 실어 오는
 /// 노선·배치 변경 알림은 그 회차의 화면으로, 회차 취소 알림은 홈으로 간다. 모르는 종류는 안내(스톤) 모양으로 두어 초록 '완료'로

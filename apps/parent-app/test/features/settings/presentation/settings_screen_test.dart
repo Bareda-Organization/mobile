@@ -17,9 +17,8 @@ import 'package:parent_app/features/settings/presentation/settings_screen.dart';
 /// 상태 provider 를 비움 — `router.dart` 가 이 값을 보고 리다이렉트한다)을
 /// 만족하는지 검사한다.
 ///
-/// **진입점 자체는 이미 있다**(`a27f15eb`, 2026-09-23) — 이 파일은 "탭
-/// 즉시 로그아웃" 이던 지금 동작에 확인 대화를 끼워 넣는 변경만 잡는다
-/// (보고서 §2 — BRIEF 의 "진입점 부재" 전제와 실측이 어긋난 지점).
+/// **진입점**(설정 탭의 로그아웃)은 확인 대화를 거친 뒤에만 로그아웃한다.
+/// 이 파일은 탭 즉시 로그아웃으로 되돌아가는 변경을 잡는다.
 class _StubAuthRepository implements AuthRepository {
   new({this.logoutFailure});
 

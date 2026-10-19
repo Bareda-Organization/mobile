@@ -91,7 +91,7 @@ class _FakeEmergencyRepository implements EmergencyRepository {
 
 /// 항상 같은 좌표 스냅샷(또는 `null`)을 돌려주는 가짜 위치 소스 —
 /// `drive_mode_position_transmission_test.dart` 와 같은 패턴(F1). `sampleOnce`
-/// 는 스트림이 없을 때(BG2)의 1회 측정을 대역한다 — 호출 횟수를 기록하고,
+/// 는 스트림이 없을 때의 1회 측정을 대역한다 — 호출 횟수를 기록하고,
 /// 값을 즉시 낼지([onceSample]) 완료를 미룰지([onceCompleter], 중복 발신
 /// 시험용)를 고른다.
 class _FakePositionSource implements PositionSource {
@@ -155,7 +155,7 @@ void main() {
   List<Override> overridesFor({
     required _FakeEmergencyRepository fakeRepo,
     DateTime? now,
-    // `_submit` 이 sample() null 이면 sampleOnce() 로 넘어간다(BG2) — 이
+    // `_submit` 이 sample() null 이면 sampleOnce() 로 넘어간다 — 이
     // 값을 안 주는 시험은 기본 provider(di.dart 의 실제
     // GeolocatorPositionSource) 로 떨어져 플랫폼 채널을 두드리다 예외를
     // 낸다. 좌표를 직접 다루지 않는 시험은 이 기본값(둘 다 null)으로
@@ -195,7 +195,7 @@ void main() {
     expect(find.text('선택된 운행이 없어요 — 홈에서 운행을 선택하세요'), findsOneWidget);
   });
 
-  // M-9 — 오늘 회차 목록이 기기 저장본이면 비상 화면도 그렇다고 밝힌다(홈과 같은 안내).
+  // 오늘 회차 목록이 기기 저장본이면 비상 화면도 그렇다고 밝힌다(홈과 같은 안내).
   testWidgets('저장해 둔 회차 목록으로 보는 중이면 비상 화면에도 안내가 뜬다', (tester) async {
     final fakeRepo = _FakeEmergencyRepository(
       list: const EmergencyListResponse(items: []),
@@ -394,10 +394,10 @@ void main() {
     expect(fakeRepo.lastRequest?.lng, isNull);
   });
 
-  // BRIEF-BG2 — Ruling 360 이후 위치 스트림이 기사 운행 화면에서만 열려
+  // Ruling 360 이후 위치 스트림이 기사 운행 화면에서만 열려
   // (`positionSourceProvider.sample()`), 스트림이 없을 때(동승자 단말·송신
   // 두절 기사 단말)는 발신 시점에 1회만 좌표를 측정해 보완한다.
-  testWidgets('스트림 좌표가 없으면(sample() null) 1회 측정 좌표를 요청에 싣는다 (BG2)', (
+  testWidgets('스트림 좌표가 없으면(sample() null) 1회 측정 좌표를 요청에 싣는다', (
     tester,
   ) async {
     final fakeRepo = _FakeEmergencyRepository(
@@ -434,7 +434,7 @@ void main() {
     expect(fakeSource.sampleOnceCallCount, 1);
   });
 
-  testWidgets('1회 측정이 실패(null)해도 좌표 없이 발신은 그대로 진행한다 (BG2)', (tester) async {
+  testWidgets('1회 측정이 실패(null)해도 좌표 없이 발신은 그대로 진행한다', (tester) async {
     final fakeRepo = _FakeEmergencyRepository(
       raiseOutcome: Sent(
         EmergencyRaiseResult(
@@ -467,7 +467,7 @@ void main() {
     expect(find.text('비상 알림을 보냈어요'), findsOneWidget);
   });
 
-  testWidgets('스트림 좌표가 있으면(sample() 값 있음) 1회 측정을 부르지 않는다 (BG2)', (
+  testWidgets('스트림 좌표가 있으면(sample() 값 있음) 1회 측정을 부르지 않는다', (
     tester,
   ) async {
     final fakeRepo = _FakeEmergencyRepository(
@@ -511,7 +511,7 @@ void main() {
     expect(fakeSource.sampleOnceCallCount, 0);
   });
 
-  testWidgets('측정을 기다리는 동안 두 번째 탭은 새 발신을 만들지 않는다 (BG2)', (tester) async {
+  testWidgets('측정을 기다리는 동안 두 번째 탭은 새 발신을 만들지 않는다', (tester) async {
     // 1회 측정이 끝나기 전까지는 버튼이 다시 그려지기 전이라(pump 없이
     // 연속 탭) onPressed 가 아직 살아 있는 옛 위젯을 그대로 다시 호출할 수
     // 있다 — `_submit` 자체의 재진입 가드가 없으면 두 번째 호출도 끝까지
@@ -568,7 +568,7 @@ void main() {
     expect(find.text('비상 알림 보내기'), findsNothing);
   });
 
-  testWidgets('비상이 큐에 쌓이면 학원에 전화하라고 알리고 [학원에 전화]가 학원 번호를 tel: 로 연다 (R46)', (
+  testWidgets('비상이 큐에 쌓이면 학원에 전화하라고 알리고 [학원에 전화]가 학원 번호를 tel: 로 연다', (
     tester,
   ) async {
     final fakeRepo = _FakeEmergencyRepository(
@@ -598,7 +598,7 @@ void main() {
     expect(opened, [Uri(scheme: 'tel', path: '02-555-0101')]);
   });
 
-  testWidgets('학원 번호를 모르면 전화 안내 문구만 보이고 전화 버튼은 없다 (R46)', (tester) async {
+  testWidgets('학원 번호를 모르면 전화 안내 문구만 보이고 전화 버튼은 없다', (tester) async {
     final fakeRepo = _FakeEmergencyRepository(
       raiseOutcome: const Queued<EmergencyRaiseResult>(),
       list: const EmergencyListResponse(items: []),
@@ -618,7 +618,7 @@ void main() {
     expect(find.textContaining('학원에 전화'), findsNothing);
   });
 
-  testWidgets('학원 번호가 공백뿐이어도 전화 버튼은 없다 — 걸리지 않는 버튼을 그리지 않는다 (R46)', (
+  testWidgets('학원 번호가 공백뿐이어도 전화 버튼은 없다 — 걸리지 않는 버튼을 그리지 않는다', (
     tester,
   ) async {
     final fakeRepo = _FakeEmergencyRepository(
@@ -878,7 +878,7 @@ void main() {
     expect(find.text('확인 대기 중'), findsNWidgets(2));
   });
 
-  testWidgets('발신 이력 카드는 내용 폭으로 줄어 가운데에 뜨지 않고 화면 폭을 채운다 (R46-SCREEN)', (
+  testWidgets('발신 이력 카드는 내용 폭으로 줄어 가운데에 뜨지 않고 화면 폭을 채운다', (
     tester,
   ) async {
     final fakeRepo = _FakeEmergencyRepository(

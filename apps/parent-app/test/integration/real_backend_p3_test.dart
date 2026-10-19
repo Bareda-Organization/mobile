@@ -60,7 +60,7 @@ class _FakeSecureStoragePlatform
   }) async => SecureStorageUpgradeStatus.unsupported;
 }
 
-/// `/topic/students/{studentId}/run`(docs/archive/rounds/fe-phases-f2-f5.md §5.4.1 5번) 구독 인가를 실제 서버로
+/// `/topic/students/{studentId}/run` 구독 인가를 실제 서버로
 /// 확인하는 계약 시험 — `baraeda_websocket_client_connect_test.dart` 와
 /// 같은 구조(완료 조건 1·2 형태)를 이 화면이 실제로 구독하는 채널 하나에
 /// 맞춰 좁힌 것. `live_map_screen_test.dart` 는 가짜 클라이언트로 화면
@@ -109,7 +109,7 @@ void main() {
   }
 
   test(
-    '목표 5 — 학부모(parentA1)가 연결된 자녀(학생 1)의 회차 채널을 구독하면 '
+    '학부모(parentA1)가 연결된 자녀(학생 1)의 회차 채널을 구독하면 '
     '거부되지 않는다',
     () async {
       if (!backendReachable) {
@@ -139,7 +139,7 @@ void main() {
   );
 
   test(
-    '목표 5 — 학부모(parentA1)가 연결되지 않은 학생(학생 3)의 회차 채널을 '
+    '학부모(parentA1)가 연결되지 않은 학생(학생 3)의 회차 채널을 '
     '구독하면 forbiddenSubscriptions 에 그 목적지가 실린다 (위 시험과 짝을 '
     '이루는 부정 확인 — "붙는다"만 보여서는 아무 학생이나 보이는 것과 '
     '구별되지 않는다)',
@@ -168,7 +168,7 @@ void main() {
   );
 
   test(
-    '목표 5 — 학생(studentA4) 본인이 자기 회차 채널(학생 4)을 구독하면 '
+    '학생(studentA4) 본인이 자기 회차 채널(학생 4)을 구독하면 '
     '거부되지 않는다',
     () async {
       if (!backendReachable) {
@@ -198,7 +198,7 @@ void main() {
   );
 
   test(
-    '목표 5 — 학생(studentA4)이 남의 회차 채널(학생 1)을 구독하면 거부된다',
+    '학생(studentA4)이 남의 회차 채널(학생 1)을 구독하면 거부된다',
     () async {
       if (!backendReachable) {
         markTestSkipped('환경 문제: $baseUrl 백엔드 미기동');

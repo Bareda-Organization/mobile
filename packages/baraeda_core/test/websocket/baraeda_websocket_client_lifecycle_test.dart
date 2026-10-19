@@ -153,7 +153,7 @@ void main() {
     });
 
     test('연결 중·연결됨에 connect() 를 또 불러도 소켓을 하나 더 열지 않는다', () async {
-      // F07-04 — 예전엔 `_stompClient` 를 정리 없이 덮어써 소켓이 누수됐다.
+      // connect() 를 또 부를 때 `_stompClient` 를 정리 없이 덮어쓰면 소켓이 누수된다.
       server = _StompServer();
       final port = await server.start();
       final client = BaraedaWebSocketClient(
@@ -235,8 +235,8 @@ void main() {
     });
 
     test('payload 가 없거나 깨진 프레임은 그 프레임만 버리고 구독은 계속 산다', () async {
-      // F07-08 — 예전엔 `null as Map` TypeError 가 STOMP 콜백 밖으로 새 처리되지 않은
-      // 오류가 됐고, 이벤트가 안 오는 것으로만 보였다.
+      // payload 가 null 이어도 `null as Map` TypeError 가 STOMP 콜백 밖으로 새지 않고
+      // 그 프레임만 버려야 한다 — 새면 이벤트가 안 오는 것으로만 보인다.
       server = _StompServer();
       final port = await server.start();
       final debug = <String>[];

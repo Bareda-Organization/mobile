@@ -105,7 +105,7 @@ void main() {
     } finally {
       probe.close();
     }
-    // 목표 9(driverBlocked 로그인은 항상 실패)가 첫 실행만 초록이던 문제 — 다른 앱의
+    // driverBlocked 로그인은 항상 실패해야 한다 — 다른 앱의
     // 실서버 시험이 공유 시드 DB 에서 이 계정의 차단을 풀어 버리면 되돌릴 API 가 없다.
     // 매 실행 전에 상태를 확인하고, 풀려 있을 때만 `/dev/reset` 으로 되돌린다.
     if (backendReachable) {
@@ -130,7 +130,7 @@ void main() {
   }
 
   test(
-    '목표 7 — pending 계정은 허용 목록 밖 호출에서 403 AUTH_PENDING 을 받는다 '
+    'pending 계정은 허용 목록 밖 호출에서 403 AUTH_PENDING 을 받는다 '
     '(실제 호출 1회)',
     () async {
       if (!backendReachable) {
@@ -169,7 +169,7 @@ void main() {
   );
 
   test(
-    '목표 8 — rejected 계정은 signup-status 응답에 거절 사유를 담아 온다',
+    'rejected 계정은 signup-status 응답에 거절 사유를 담아 온다',
     () async {
       if (!backendReachable) {
         markTestSkipped('환경 문제: $baseUrl 백엔드 미기동');
@@ -204,7 +204,7 @@ void main() {
   );
 
   test(
-    '목표 9 — blocked 계정은 로그인 자체가 실패하고 사유가 담겨 온다',
+    'blocked 계정은 로그인 자체가 실패하고 사유가 담겨 온다',
     () async {
       if (!backendReachable) {
         markTestSkipped('환경 문제: $baseUrl 백엔드 미기동');
@@ -233,7 +233,7 @@ void main() {
   );
 
   test(
-    'R11 신규 — 로그아웃(§2.7)은 서버의 refresh 토큰을 무효화하고 로컬 '
+    '로그아웃(§2.7)은 서버의 refresh 토큰을 무효화하고 로컬 '
     '토큰도 지운다 (실제 호출)',
     () async {
       if (!backendReachable) {
@@ -290,7 +290,7 @@ void main() {
   );
 
   test(
-    '목표 11 — 학원 검색은 비활성 학원(운영정지)을 제외한다 (실제 호출)',
+    '학원 검색은 비활성 학원(운영정지)을 제외한다 (실제 호출)',
     () async {
       if (!backendReachable) {
         markTestSkipped('환경 문제: $baseUrl 백엔드 미기동');

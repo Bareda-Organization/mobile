@@ -9,7 +9,7 @@ import 'package:parent_app/app/di.dart';
 import 'package:parent_app/core/network/network_status.dart';
 import 'package:parent_app/core/network/offline_bar.dart';
 
-/// R46 B2 #22 — 연결이 끊기면 카드마다 오류 띠를 나열하지 않고 화면 맨 위 한 줄로 알린다.
+/// 연결이 끊기면 카드마다 오류 띠를 나열하지 않고 화면 맨 위 한 줄로 알린다.
 /// 판정은 `connectivity_plus` 가 아니라 요청 결과다 — 기기가 와이파이에 붙어 있어도 서버에 못 닿는 경우
 /// (음영 구간·서버 중단)를 앞의 방식은 잡지 못한다.
 class _Adapter implements HttpClientAdapter {
