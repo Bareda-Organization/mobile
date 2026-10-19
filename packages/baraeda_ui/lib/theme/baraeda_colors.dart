@@ -109,7 +109,7 @@ class BaraedaColors extends ThemeExtension<BaraedaColors> {
   final Color borderDefault;
 
   /// 조작 요소(입력칸·스위치 꺼짐 트랙·보조 버튼·선택 칩)의 경계 — 인접 면과 3:1 이상(WCAG 1.4.11).
-  /// [borderDefault] 는 카드 외곽선·타임라인 점 같은 장식 구분선이라 그대로 둔다(F07-09).
+  /// [borderDefault] 는 카드 외곽선·타임라인 점 같은 장식 구분선이라 그대로 둔다.
   final Color borderControl;
   final Color borderStrong;
   final Color borderInverse;
@@ -232,7 +232,7 @@ class BaraedaColors extends ThemeExtension<BaraedaColors> {
     statusMovingSoft: BaraedaPalette.amber100,
     statusMissed: BaraedaPalette.redInk,
     statusMissedSoft: BaraedaPalette.red100,
-    // stone500 은 stone100 알약 위에서 4.04 였다(F07-09).
+    // stone500 은 stone100 알약 위 대비가 4.04 라 글자에 쓰지 않는다.
     statusIdle: BaraedaPalette.stone600,
     statusIdleSoft: BaraedaPalette.stone100,
     focusRing: BaraedaPalette.green500,

@@ -1,4 +1,4 @@
-// 토스트 — 220ms ease-out · 가벼운 성공 햅틱 1회(C7). 운행 중 다크 구역에서는 움직임 없음.
+// 토스트 — 220ms ease-out · 가벼운 성공 햅틱 1회. 운행 중 다크 구역에서는 움직임 없음.
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';

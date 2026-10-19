@@ -12,7 +12,7 @@ import 'package:baraeda_ui/widgets/core/icon_button.dart';
 import 'package:baraeda_ui/widgets/core/word_wrap_text.dart';
 import 'package:flutter/material.dart';
 
-/// 입력 칸의 종류 — 종류마다 자동 완성 · 자판 · 철자 교정 속성이 정해진다(시안 C4).
+/// 입력 칸의 종류 — 종류마다 자동 완성 · 자판 · 철자 교정 속성이 정해진다.
 enum BaraedaInputKind {
   /// 일반 글자.
   text,

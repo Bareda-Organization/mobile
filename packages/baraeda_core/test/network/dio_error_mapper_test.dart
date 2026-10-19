@@ -23,7 +23,6 @@ DioException _badResponse({
 void main() {
   group('mapDioExceptionToFailure — API_SPEC §8 에러 코드', () {
     test('401 TOKEN_EXPIRED 는 재로그인이 필요한 Failure.unauthenticated 로 옮긴다', () {
-      // F07-07 — `Failure.unauthenticated` 는 선언만 있고 만들어지는 곳이 없었다.
       // 인터셉터가 재발급까지 실패한 401 을 그대로 던지므로 여기서 옮긴다.
       final exception = _badResponse(
         statusCode: 401,

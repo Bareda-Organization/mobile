@@ -48,7 +48,7 @@ class BaraedaStatusPill extends StatelessWidget {
     final text = label ?? status.label;
     final large = size == BaraedaStatusPillSize.lg;
 
-    // 자식 Text 가 같은 문구를 이미 갖고 있어 자식을 가린다 — 안 그러면 두 번 읽힌다(F07-10).
+    // 자식 Text 가 같은 문구를 이미 갖고 있어 자식을 가린다 — 안 그러면 두 번 읽힌다.
     return Semantics(
       label: text,
       excludeSemantics: true,

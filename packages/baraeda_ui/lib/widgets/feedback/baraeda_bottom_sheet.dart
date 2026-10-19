@@ -2,7 +2,7 @@
 // 원본: `frontend/design-system/components/feedback/BottomSheet.jsx` + 시안 `.m-sheet`.
 //
 // Flutter `showModalBottomSheet`/`material.BottomSheet` 와 이름이 겹쳐
-// `Baraeda` 접두를 붙인다(팀 리드 지시).
+// `Baraeda` 접두를 붙인다.
 
 import 'package:baraeda_ui/theme/baraeda_colors.dart';
 import 'package:baraeda_ui/theme/baraeda_drive_zone.dart';

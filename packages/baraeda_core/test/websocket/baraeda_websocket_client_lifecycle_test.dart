@@ -145,7 +145,7 @@ Future<void> _connected(BaraedaWebSocketClient client) => client.connectionState
     .timeout(const Duration(seconds: 5));
 
 void main() {
-  group('BaraedaWebSocketClient — 수명주기(F07-03·04·08)', () {
+  group('BaraedaWebSocketClient — 수명주기', () {
     late _StompServer server;
 
     tearDown(() async {
@@ -174,7 +174,7 @@ void main() {
     });
 
     test('재발급을 기다리는 사이 disconnect() 하면 재발급이 끝나도 소켓을 되살리지 않는다', () async {
-      // F07-03 — 로그아웃 뒤 실시간 방송이 계속 들어오던 경로.
+      // 로그아웃 뒤에는 재발급이 끝나도 실시간 방송 소켓을 다시 열지 않는다.
       server = _StompServer(expireFirstConnection: true);
       final port = await server.start();
       final refreshGate = Completer<String?>();
@@ -201,7 +201,7 @@ void main() {
     });
 
     test('재발급 요청이 일시 장애로 실패하면 sessionExpired 가 아니라 백오프로 재연결한다', () async {
-      // F07-02 의 WS 쪽 — 재발급이 네트워크 오류로 던지면 세션 종료로 오인하지 않는다.
+      // 재발급이 네트워크 오류로 던지면 세션 종료로 오인하지 않는다.
       server = _StompServer(expireFirstConnection: true);
       final port = await server.start();
       var refreshCalls = 0;
@@ -270,7 +270,7 @@ void main() {
     });
 
     test('connect() 직후 disconnect() 하면 토큰을 읽고 돌아와도 소켓을 열지 않는다', () async {
-      // F07-03(b) — `_doConnect` 안 저장소 읽기 `await` 뒤의 좁은 틈.
+      // `_doConnect` 안 저장소 읽기 `await` 뒤의 좁은 틈.
       server = _StompServer();
       final port = await server.start();
       final client = BaraedaWebSocketClient(
@@ -289,7 +289,7 @@ void main() {
     });
 
     test('연결이 끊겨 재연결을 예약할 때 지터를 더한 대기를 쓴다', () async {
-      // F07-13(c) 의 배선 — 정책에 지터가 있어도 클라이언트가 안 쓰면 몰림은 그대로다.
+      // 정책에 지터가 있어도 클라이언트가 그 값을 쓰지 않으면 재연결이 한꺼번에 몰린다.
       server = _StompServer();
       final policy = _SpyPolicy();
       final client = BaraedaWebSocketClient(

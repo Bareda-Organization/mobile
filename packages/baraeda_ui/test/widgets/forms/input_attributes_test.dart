@@ -1,4 +1,4 @@
-// 입력 칸 속성(C4) — 종류마다 자동 완성 · 자판 · 철자 교정이 다르다. 높이 52 · 오류는 경고 아이콘 + 2px 테두리.
+// 입력 칸 속성 — 종류마다 자동 완성 · 자판 · 철자 교정이 다르다. 높이 52 · 오류는 경고 아이콘 + 2px 테두리.
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';

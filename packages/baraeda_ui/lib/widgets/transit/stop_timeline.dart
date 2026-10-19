@@ -123,7 +123,7 @@ class _StopTimelineRow extends StatelessWidget {
     final titleColor = skipped ? colors.statusMissed : colors.textPrimary;
 
     // 진행 상태는 번호 원의 모양으로만 드러나므로 낭독 문구에 말로 싣고,
-    // 자식 Text 는 가려 같은 문구가 두 번 읽히지 않게 한다(F07-10).
+    // 자식 Text 는 가려 같은 문구가 두 번 읽히지 않게 한다.
     return Semantics(
       button: onTap != null,
       onTap: onTap,

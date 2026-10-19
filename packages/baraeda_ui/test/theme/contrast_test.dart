@@ -1,4 +1,4 @@
-// 명도 대비 시험 — WCAG 2.x 본문 글자 4.5:1 (F07-09). 글자색과 그 글자가 올라가는 면을
+// 명도 대비 시험 — WCAG 2.x 본문 글자 4.5:1. 글자색과 그 글자가 올라가는 면을
 // 짝지어 고정한다. 계산은 Flutter 의 `Color.computeLuminance`(상대 휘도)를 쓴다.
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/painting.dart';
@@ -50,7 +50,7 @@ void main() {
   });
 
   // 비텍스트 UI 경계 3:1 (WCAG 1.4.11) — 조작 요소 전용 토큰
-  // `borderControl` (F07-09, Ruling 403).
+  // `borderControl` (Ruling 403).
   // 경계선은 자기 안쪽 면(입력칸 배경 = 카드)과 바깥 면(페이지 바탕·카드) 양쪽에서 구분돼야 한다.
   group('조작 요소 경계 명도 대비 3:1', () {
     const minUi = 3.0;

@@ -255,7 +255,6 @@ void main() {
       expect(adapter.callCount, 2);
     });
     test('네트워크 오류·5xx 로 실패하면 토큰을 남기고 그 오류를 던진다 — 유효한 세션을 지우지 않는다', () async {
-      // F07-02
       for (final failing in <ResponseBody Function()>[
         () => _json(503, {
           'error': {'code': 'SERVICE_UNAVAILABLE', 'message': '점검'},
@@ -281,7 +280,7 @@ void main() {
     });
 
     test('서버가 401 로 거절하면 sessionInvalidated 로 알린다', () async {
-      // F07-07 — REST·WS 가 같이 쓰는 재로그인 신호의 출처.
+      // REST·WS 가 같이 쓰는 재로그인 신호의 출처.
       final storage = _buildTokenStorage();
       await storage.saveTokens(accessToken: 'old', refreshToken: 'dead');
       final refresher = TokenRefresher(
