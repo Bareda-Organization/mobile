@@ -43,7 +43,7 @@ class EmergencyButton extends ConsumerWidget {
       await context.push(AppRoutes.emergency);
       return;
     }
-    // 홈 목록은 한 번 받은 뒤 낡을 수 있다(확정 시각이 지났는데 "확정된 운행이 없다" 로 막힌다, F06-13) —
+    // 홈 목록은 한 번 받은 뒤 낡을 수 있다(확정 시각이 지났는데 "확정된 운행이 없다" 로 막힌다) —
     // 판정 직전에 다시 받는다. 못 받으면 가진 목록으로 판정한다(통신 두절에서도 신고 길이 막히지 않게).
     List<ManagerRun> runs;
     try {
@@ -86,7 +86,7 @@ class EmergencyButton extends ConsumerWidget {
     return showDialog<ManagerRun>(
       context: context,
       builder: (dialogContext) => SimpleDialog(
-        title: const Text('어느 운행의 비상입니까?'),
+        title: const Text('어느 운행의 비상이에요?'),
         children: [
           for (final run in runs)
             SimpleDialogOption(

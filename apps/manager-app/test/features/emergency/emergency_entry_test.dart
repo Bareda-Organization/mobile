@@ -225,7 +225,7 @@ void main() {
 
     await tester.tap(find.text('비상'));
     await tester.pumpAndSettle();
-    expect(find.text('어느 운행의 비상입니까?'), findsOneWidget);
+    expect(find.text('어느 운행의 비상이에요?'), findsOneWidget);
     expect(find.text(_emergencyMarker), findsNothing);
 
     await tester.tap(find.textContaining('5호차').last);
