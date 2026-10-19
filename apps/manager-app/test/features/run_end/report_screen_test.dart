@@ -82,7 +82,7 @@ Widget _wrap(
   );
 }
 
-/// 지금 탑승 중인 학생만 담은 명단 — 하차 대기 인원·보고 대상은 이 명단에서 읽는다(F06-14).
+/// 지금 탑승 중인 학생만 담은 명단 — 하차 대기 인원·보고 대상은 이 명단에서 읽는다.
 Override _boardedRoster(
   List<({String id, String name})> riders, {
   RunDirection direction = RunDirection.toAcademy,

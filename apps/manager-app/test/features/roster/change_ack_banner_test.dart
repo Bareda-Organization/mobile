@@ -23,7 +23,7 @@ class _AckOnlyRosterRepository implements RosterRepository {
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
 }
 
-/// F06-08 — 한 번 확인하면 그 화면이 떠 있는 동안 두 번째 노선 변경의 띠가 뜨지 않았다.
+/// 확인한 뒤 다음 노선 변경이 오면 화면이 떠 있어도 띠를 다시 띄운다.
 void main() {
   testWidgets('확인한 뒤 다음 변경으로 ack_required 가 다시 켜지면 띠가 다시 뜬다', (tester) async {
     final ackRequired = ValueNotifier<bool>(true);
@@ -63,7 +63,7 @@ void main() {
     expect(find.text('변경 확인'), findsOneWidget);
   });
 
-  // F06-16 — 확인 요청 중 화면이 닫혀도 닫힌 화면의 ref 를 써서 처리되지 않은 예외가 남으면 안 된다.
+  // 확인 요청 중 화면이 닫혀도 닫힌 화면의 ref 를 써서 처리되지 않은 예외가 남으면 안 된다.
   testWidgets('확인 요청 중 화면이 닫혀도 예외 없이 끝난다', (tester) async {
     final repository = _AckOnlyRosterRepository()..gate = Completer<void>();
     await tester.pumpWidget(

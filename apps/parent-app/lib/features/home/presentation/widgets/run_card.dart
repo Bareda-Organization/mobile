@@ -124,7 +124,7 @@ class _RunCardState extends ConsumerState<RunCard> {
               ? runsForStudentProvider(widget.studentId)
               : runsForStudentOnProvider((widget.studentId, date)),
         )
-        // F05-02 — ② 구간 접수는 신청 이력·처리 대기 배지에 나타난다.
+        // ② 구간 접수는 신청 이력·처리 대기 배지에 나타난다.
         ..invalidate(changeRequestsProvider(widget.studentId));
     } on Failure catch (failure) {
       if (!mounted) return;

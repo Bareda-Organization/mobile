@@ -594,8 +594,8 @@ void main() {
     expect(fakeRepo.lastUpdateClientKey, isNotNull);
   });
 
-  // F06-05 — 오프라인으로 쌓였다 나중에 재생되는 승하차 처리도 누른 시각을 서버가 알아야 한다
-  // (미승차 3분 대기 · 학부모 알림 시각의 기준). 비상 발신은 이미 보내고 있었다.
+  // 오프라인으로 쌓였다 나중에 재생되는 승하차 처리도 누른 시각을 서버가 알아야 한다
+  // (미승차 3분 대기 · 학부모 알림 시각의 기준). 비상 발신은 이미 누른 시각을 보낸다.
   testWidgets('승하차 처리 요청에 누른 시각(occurred_at)이 clockProvider 값으로 실린다', (
     tester,
   ) async {

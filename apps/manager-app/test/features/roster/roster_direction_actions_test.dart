@@ -91,7 +91,7 @@ void main() {
     expect(button('되돌리기'), findsOneWidget);
   });
 
-  // A16 — 혼자 귀가 여부는 하원에서만 뜻이 있다(C-07). 등원 회차에는 경고를 내지 않는다.
+  // 혼자 귀가 여부는 하원에서만 뜻이 있다(C-07). 등원 회차에는 경고를 내지 않는다.
   testWidgets('혼자 귀가 불가 경고는 하원에만 뜨고 등원에는 뜨지 않는다', (tester) async {
     await pump(tester, RunDirection.toAcademy);
     expect(find.text('혼자 귀가 불가 · 보호자 확인'), findsNothing);

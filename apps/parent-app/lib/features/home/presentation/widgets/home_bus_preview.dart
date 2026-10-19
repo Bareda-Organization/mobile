@@ -29,7 +29,7 @@ const Duration busPreviewInterval = Duration(seconds: 30);
 // ignore: specify_nonobvious_property_types
 final homeBusPositionProvider = FutureProvider.autoDispose
     .family<BusPosition?, String>((ref, studentId) async {
-      // F05-01 — 계정이 바뀌면(로그아웃 = 역할 null) 앞 계정의 캐시를 버린다.
+      // 계정이 바뀌면(로그아웃 = 역할 null) 앞 계정의 캐시를 버린다.
       ref.watch(currentUserRoleProvider);
       try {
         return await ref
@@ -107,7 +107,7 @@ class _HomeBusPreviewState extends ConsumerState<HomeBusPreview> {
               onPressed: _reload,
             ),
           ),
-          // 위치를 못 받아도 급한 사람이 갈 곳이 있다 — 번호를 줄 때만 나온다(A11 · Ruling 827).
+          // 위치를 못 받아도 급한 사람이 갈 곳이 있다 — 번호를 줄 때만 나온다(Ruling 827).
           if (phoneNumberOf(ref.watch(savedAcademyContactProvider).value)
               case final phone?) ...[
             const SizedBox(height: BaraedaSpacing.space3),

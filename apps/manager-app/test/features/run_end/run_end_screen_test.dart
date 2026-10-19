@@ -52,7 +52,7 @@ Widget _wrap(
   );
 }
 
-/// 지금 탑승 중인 학생만 담은 명단 — 하차 대기 인원·보고 대상은 이 명단에서 읽는다(F06-14).
+/// 지금 탑승 중인 학생만 담은 명단 — 하차 대기 인원·보고 대상은 이 명단에서 읽는다.
 Override _boardedRoster(List<({String id, String name})> riders) =>
     rosterProvider.overrideWith(
       (ref) async => RosterResponse(
@@ -260,7 +260,7 @@ void main() {
     expect(find.widgetWithText(BaraedaButton, '보호자 부재 보고'), findsOneWidget);
   });
 
-  // F06-14 — 도착 응답(§4.5) 스냅샷은 도착 순간의 값이다. 종료 화면은 도착 시각만 거기서 읽고, 하차 대기
+  // 도착 응답(§4.5) 스냅샷은 도착 순간의 값이다. 종료 화면은 도착 시각만 거기서 읽고, 하차 대기
   // 인원·종료 여부·다른 회차 구분은 지금의 명단·회차 목록·회차 표식으로 정한다.
   testWidgets('동승자가 하차를 처리해 명단이 줄면 하차 대기 인원도 따라 준다', (tester) async {
     await tester.pumpWidget(
@@ -461,7 +461,7 @@ void main() {
       expect(find.widgetWithText(BaraedaButton, '보호자 부재 보고'), findsOneWidget);
     });
 
-    // A16 — 혼자 귀가 경고는 하원 회차에만 뜬다. 등원에는 "혼자 귀가" 라는 개념이 없다.
+    // 혼자 귀가 경고는 하원 회차에만 뜬다. 등원에는 "혼자 귀가" 라는 개념이 없다.
     testWidgets('하원 종료 보류 줄에는 혼자 귀가 불가 경고가 붙는다', (tester) async {
       await tester.pumpWidget(
         _wrap(

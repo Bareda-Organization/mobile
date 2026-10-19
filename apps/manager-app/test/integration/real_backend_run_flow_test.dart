@@ -14,7 +14,7 @@ import 'package:manager_app/features/delay/data/models/delay_request.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import '../support/real_backend_target.dart';
 
-// `real_backend_auth_test.dart`(F2, baraeda_core) 와 같은 구조 — 진짜
+// `real_backend_auth_test.dart` 와 같은 구조 — 진짜
 // 소켓 스토리지 대신 메모리에만 담는다.
 class _FakeSecureStoragePlatform
     with MockPlatformInterfaceMixin
@@ -93,7 +93,7 @@ void main() {
 
   setUpAll(() async {
     // widget test 바인딩이 HttpOverrides.global 을 항상 400 을 주는 대역으로
-    // 바꿔 두므로(F2 auto_login_test.dart 와 같은 함정), 이 파일이 도는 동안만
+    // 바꿔 두므로(auto_login_test.dart 와 같은 함정), 이 파일이 도는 동안만
     // 끈다.
     HttpOverrides.global = null;
     final probe = Dio(BaseOptions(baseUrl: baseUrl));

@@ -150,7 +150,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // F06-15 — 개발용 문자열(PATCH /runs/…)이 아니라 무슨 처리인지 알아볼 수 있어야 한다.
+    // 개발용 문자열(PATCH /runs/…)이 아니라 무슨 처리인지 알아볼 수 있어야 한다.
     expect(find.text('미승차 처리'), findsOneWidget);
     expect(find.textContaining('PATCH'), findsNothing);
     expect(find.text('10:00:00 · 대기 중'), findsOneWidget);
@@ -349,7 +349,7 @@ void main() {
     expect(find.text('대기 중인 처리가 없어요'), findsNWidgets(2));
   });
 
-  // F06-15 — 잘못 눌러 쌓인 건을 지울 수단이 없었다.
+  // 잘못 눌러 쌓인 건을 지울 수 있어야 한다.
   testWidgets('대기 항목의 [삭제] 를 확인하면 그 건만 큐에서 지운다', (tester) async {
     final fakeRepo = _FakeOfflineQueueRepository(
       pending: [
@@ -394,7 +394,7 @@ void main() {
     expect(find.text('하차 처리'), findsOneWidget);
   });
 
-  // F06-15 — 재시도가 예외로 끝나면 버튼이 영구히 잠겼다.
+  // 재시도가 예외로 끝나도 버튼이 잠기지 않아야 한다.
   testWidgets('재시도가 예외로 끝나도 버튼이 다시 눌린다', (tester) async {
     final fakeRepo = _FakeOfflineQueueRepository(
       pending: [_riderRequest()],
@@ -417,7 +417,7 @@ void main() {
     expect(button.onPressed, isNotNull);
   });
 
-  // F06-15 — 페이로드에 이름이 없어 명단 캐시에서 찾는다. 못 찾으면 지금 표기 그대로다.
+  // 페이로드에 이름이 없어 명단 캐시에서 찾는다. 못 찾으면 지금 표기 그대로다.
   testWidgets('받아 둔 명단에 그 학생이 있으면 행에 학생 이름을 함께 보여준다', (tester) async {
     await tester.pumpWidget(
       _wrap(const OfflineQueueScreen(), [

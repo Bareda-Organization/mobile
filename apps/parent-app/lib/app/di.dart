@@ -44,7 +44,7 @@ final tokenStorageProvider = Provider<TokenStorage>(
   ),
 );
 
-/// 이월 항목 — 위젯이 `DateTime.now()` 를 직접 부르지 않게 하는 주입점
+/// 위젯이 `DateTime.now()` 를 직접 부르지 않게 하는 주입점
 /// (CONVENTIONS_FLUTTER.md §9). 프로덕션은 항상 [SystemClock] 이라 실
 /// 시각을 그대로 쓰고, 시험만 이 provider 를 고정 시각 가짜 구현으로
 /// override 한다.
@@ -69,7 +69,7 @@ final apiClientProvider = Provider<ApiClient>((ref) {
   return client;
 });
 
-/// F4-A 2단계 — `/ws/location` STOMP 연결. `apiClientProvider` 와 달리
+/// `/ws/location` STOMP 연결. `apiClientProvider` 와 달리
 /// **앱 전역에 하나만** 둔다(autoDispose 아님) — 지도에서 자녀를 전환하는 동안
 /// 재연결 핸드셰이크를 반복하지 않기 위함이다. 구독 자체는 화면 쪽
 /// (`live_map_providers.dart`)이 필요할 때만 걸고 dispose 시 반드시
