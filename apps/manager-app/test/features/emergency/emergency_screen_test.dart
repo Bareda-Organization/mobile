@@ -195,7 +195,7 @@ void main() {
     expect(find.text('선택된 운행이 없어요 — 홈에서 운행을 선택하세요'), findsOneWidget);
   });
 
-  // M-9 — 오늘 회차 목록이 기기 저장본이면 비상 화면도 그렇다고 밝힌다(홈과 같은 안내).
+  // 오늘 회차 목록이 기기 저장본이면 비상 화면도 그렇다고 밝힌다(홈과 같은 안내).
   testWidgets('저장해 둔 회차 목록으로 보는 중이면 비상 화면에도 안내가 뜬다', (tester) async {
     final fakeRepo = _FakeEmergencyRepository(
       list: const EmergencyListResponse(items: []),
@@ -394,7 +394,7 @@ void main() {
     expect(fakeRepo.lastRequest?.lng, isNull);
   });
 
-  // BRIEF-BG2 — Ruling 360 이후 위치 스트림이 기사 운행 화면에서만 열려
+  // Ruling 360 이후 위치 스트림이 기사 운행 화면에서만 열려
   // (`positionSourceProvider.sample()`), 스트림이 없을 때(동승자 단말·송신
   // 두절 기사 단말)는 발신 시점에 1회만 좌표를 측정해 보완한다.
   testWidgets('스트림 좌표가 없으면(sample() null) 1회 측정 좌표를 요청에 싣는다 (BG2)', (

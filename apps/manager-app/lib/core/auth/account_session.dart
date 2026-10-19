@@ -39,7 +39,7 @@ final StateProvider<AccountStatus?> currentAccountStatusProvider =
 /// (user_role.dart 의 `fromWireValueOrNull` 이 죽지 않게 한 것과 같은 이유).
 /// 라우터에 별도 화면을 두지 않고 로그인 화면이 이 값을 직접 읽어 인라인
 /// 안내로 처리한다 — 목표 표의 화면 4종에 없는 화면을 새로 만들지 않기
-/// 위해서다(COMMON.md §6 "목표 표에 없는 기능을 더하지 마라").
+/// 위해서다.
 final StateProvider<bool> unsupportedRoleProvider = StateProvider<bool>(
   (ref) => false,
 );
@@ -113,7 +113,7 @@ void _clearAccountScopedState(Ref ref, {bool announceDiscarded = false}) {
   ref.read(academyContactProvider.notifier).state = null;
   // 로그아웃 · 세션 만료 뒤에는 이 기기가 기억한 역할로 다시 들어갈 수 없다.
   _forgetDeviceSession(ref);
-  // 디스크에 받아 둔 학생 사진도 이 계정의 개인정보다(M-8).
+  // 디스크에 받아 둔 학생 사진도 이 계정의 개인정보다.
   unawaited(_clearStudentPhotos(ref));
   ref.read(transmissionEndedRunIdProvider.notifier).state = null;
   ref.read(lastArriveResultProvider.notifier).state = null;
@@ -137,14 +137,14 @@ Future<void> _clearStudentPhotos(Ref ref) async {
 }
 
 /// 기기에 남긴 이 계정의 것을 지운다. **명단(학생 특이사항 포함)을 먼저** 지운다 — 대기열 쪽이 예외를 던져도
-/// 개인정보는 남지 않는다(M-2). 명단 삭제가 실패해도 대기열 정리는 그대로 이어진다(`finally`).
+/// 개인정보는 남지 않는다. 명단 삭제가 실패해도 대기열 정리는 그대로 이어진다(`finally`).
 Future<void> _discardOfflineQueue(
   Ref ref, {
   required bool announceDiscarded,
   required String? contact,
 }) async {
   try {
-    // 기기에 저장한 명단도 이 계정의 것이다(M-M3) — 다음 계정이 보면 안 된다.
+    // 기기에 저장한 명단도 이 계정의 것이다 — 다음 계정이 보면 안 된다.
     await ref.read(rosterCacheProvider).clear();
   } finally {
     await _discardPendingRequests(
@@ -512,7 +512,7 @@ class RouterRefreshNotifier extends ChangeNotifier {
         .read(apiClientProvider)
         .sessionExpired
         .listen((_) {
-          // 앱을 켜 세션을 되살리다 거절된 경우(M-2) — 역할이 원래 비어 있어 위 "역할이 비는 순간" 정리가 돌지 않는다.
+          // 앱을 켜 세션을 되살리다 거절된 경우 — 역할이 원래 비어 있어 위 "역할이 비는 순간" 정리가 돌지 않는다.
           // 지난 계정이 기기에 남긴 명단·대기열이 그대로 남지 않게 같은 정리를 직접 태운다.
           final restoreFailed = _ref.read(currentUserRoleProvider) == null;
           endSessionAsExpired(_ref);

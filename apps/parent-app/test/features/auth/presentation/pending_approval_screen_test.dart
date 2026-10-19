@@ -11,7 +11,7 @@ import 'package:parent_app/core/devices/presentation/device_registration_panel.d
 import 'package:parent_app/core/ui/sticky_action_bar.dart';
 import 'package:parent_app/features/auth/presentation/pending_approval_screen.dart';
 
-/// Ruling 267(P2 게이트 조건 ②) — `pending` 계정 화면에 심은 단말 등록
+/// Ruling 267 — `pending` 계정 화면에 심은 단말 등록
 /// 패널이 실제로 나타나는지(도달성)와 토글이 실제 등록 호출까지 이어지는지
 /// (동작)를 함께 확인한다. 도달성만 보면 "빈 패널이 떠 있을 뿐" 인
 /// 사고를 못 잡고, 동작만 보면 "이 화면에서는 애초에 안 보인다" 는

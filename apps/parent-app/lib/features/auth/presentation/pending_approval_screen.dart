@@ -29,7 +29,7 @@ const Duration pendingStatusPollInterval = Duration(seconds: 30);
 /// `403 AUTH_PENDING`/`AUTH_REJECTED` 로 막지만, 화면단에서도 미리
 /// 막아 불필요한 실패 요청을 줄인다).
 ///
-/// Ruling 267(P2 게이트 조건 ②) — §2.11 단말 등록은 `pending` 계정도
+/// Ruling 267 — §2.11 단말 등록은 `pending` 계정도
 /// 호출 가능한데(`API_SPEC §1.4` "pending: … `POST`·`DELETE /me/devices`"),
 /// 이 화면 말고는 `pending`·`rejected` 계정이 갈 수 있는 화면이 없다.
 /// `router.dart` 를 고쳐 예외를 추가하는 대신(Option A 채택, B·C·D 는
@@ -103,10 +103,10 @@ class _PendingApprovalScreenState extends ConsumerState<PendingApprovalScreen> {
     }
   }
 
-  // F2 — `settings_screen.dart` 가 만든 확인 대화를 재사용한다
+  // `settings_screen.dart` 가 만든 확인 대화를 재사용한다
   // (`core/auth/account_session.dart` 의 [confirmLogout]). 이 화면은 이제껏
   // 확인 없이 곧장 [signOut] 을 불렀다 — 두 로그아웃 진입점의 동작이
-  // 갈리는 비일관성이었다(FIX-P.md §2).
+  // 갈리는 비일관성이었다.
   Future<void> _logout() => confirmLogout(context, ref);
 
   /// [상태 다시 확인] — 서버에서 다시 받아 화면에 반영한다. 승인(`active`)이 났으면 계정 상태를

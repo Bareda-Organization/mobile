@@ -163,7 +163,7 @@ final rosterApiProvider = Provider<RosterApi>((ref) {
   return RosterApi(dio: ref.watch(apiClientProvider).dio);
 });
 
-/// 마지막으로 받은 명단의 로컬 저장소(M-M3) — 오프라인 대기열과 같은 기기 DB 를 쓴다.
+/// 마지막으로 받은 명단의 로컬 저장소 — 오프라인 대기열과 같은 기기 DB 를 쓴다.
 final rosterCacheProvider = Provider<RosterCache>((ref) {
   return DriftRosterCache(
     database: ref.watch(offlineQueueDatabaseProvider),
@@ -186,7 +186,7 @@ final rosterRepositoryProvider = Provider<RosterRepository>((ref) {
     api: ref.watch(rosterApiProvider),
     offlineQueue: ref.watch(offlineQueueRepositoryProvider),
     cache: ref.watch(rosterCacheProvider),
-    // 로그아웃 뒤에 늦게 도착한 응답을 기기에 남기지 않는다(M-2).
+    // 로그아웃 뒤에 늦게 도착한 응답을 기기에 남기지 않는다.
     isSignedIn: () => ref.read(currentUserRoleProvider) != null,
   );
 });
@@ -280,7 +280,7 @@ final positionSourceProvider = Provider<PositionSource>((ref) {
   return source;
 });
 
-/// 운행을 시작할 때 알림 권한을 요청하는 포트(M-3). 시험은 이 provider 를 가짜로 덮는다.
+/// 운행을 시작할 때 알림 권한을 요청하는 포트. 시험은 이 provider 를 가짜로 덮는다.
 final notificationPermissionPortProvider = Provider<NotificationPermissionPort>(
   (ref) => PermissionHandlerNotificationPort(),
 );

@@ -8,8 +8,7 @@ import 'package:manager_app/core/run/manager_run_channel.dart';
 /// 자체(`ConsumerWidget`)는 `managerRunChannelProvider` 를 통해 실제
 /// WebSocket 연결을 여는 [ManagerRunChannelController] 에 묶여 있어, 화면
 /// 수준 위젯 시험으로는 가짜 컨트롤러를 깨끗하게 주입할 수 없다 — 그래서
-/// 문구·톤 결정 로직만 떼어 여기서 순수 함수로 검증한다(파일 문서 참고,
-/// 보고서 §1·§2).
+/// 문구·톤 결정 로직만 떼어 여기서 순수 함수로 검증한다(파일 문서 참고).
 void main() {
   group('managerChannelBannerContentFor', () {
     test('connected 는 배너를 그리지 않는다(null)', () {

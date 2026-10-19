@@ -60,7 +60,7 @@ class _AppShellState extends ConsumerState<AppShell>
     super.dispose();
   }
 
-  /// 백그라운드에 이만큼 머물면 실시간 연결을 끊는다 — 안 보는 동안 서버 세션과 배터리를 차지하지 않는다(M-5).
+  /// 백그라운드에 이만큼 머물면 실시간 연결을 끊는다 — 안 보는 동안 서버 세션과 배터리를 차지하지 않는다.
   static const _backgroundDisconnectAfter = Duration(seconds: 60);
 
   Timer? _backgroundTimer;

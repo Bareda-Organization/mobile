@@ -56,7 +56,7 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
   final Set<String> _expandedStopIds = {};
   bool _pastExpanded = false;
 
-  /// 기기에 저장해 둔 명단을 보는 동안 서버에서 다시 받아 보는 주기(M-M3) — 연결이 돌아오면 저장본이 서버
+  /// 기기에 저장해 둔 명단을 보는 동안 서버에서 다시 받아 보는 주기 — 연결이 돌아오면 저장본이 서버
   /// 명단으로 바뀐다. 서버에서 받은 명단이면 아무것도 하지 않는다.
   static const _cachedRetryInterval = Duration(seconds: 15);
   Timer? _cachedRetryTimer;
@@ -140,7 +140,7 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
     } on Failure catch (failure) {
       if (!mounted) return;
       setState(() => _errorMessage = describeFailure(failure));
-      // M3(Ruling 345) — 같은 상태 재요청 포함, 다른 사람이 이미 처리했을
+      // Ruling 345 — 같은 상태 재요청 포함, 다른 사람이 이미 처리했을
       // 수 있어 낡은 화면이 그대로 남지 않도록 명단을 다시 불러온다.
       if (failure case ApiFailure(code: 'RIDER_TRANSITION_NOT_ALLOWED')) {
         ref.invalidate(rosterProvider);
@@ -265,7 +265,7 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
     // "연결 끊김"(비정상)이 화면에서 구별돼야 한다(ManagerChannelBanner 문서 참고).
     return Column(
       children: [
-        // 오늘 회차 목록이 저장본이면 홈과 같은 안내를 맨 위에 띄운다(M-9).
+        // 오늘 회차 목록이 저장본이면 홈과 같은 안내를 맨 위에 띄운다.
         const SavedRunsBanner(),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
@@ -546,7 +546,7 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
     required bool queued,
   }) {
     final busy = _pendingRiderIds.contains(student.riderId);
-    // M1(Ruling 341, BR-016) — `absent`(`change=removed`) 행은 버스 간 이동으로 빠진
+    // Ruling 341, BR-016 — `absent`(`change=removed`) 행은 버스 간 이동으로 빠진
     // 학생이라 조작 대상이
     // 아니다. 배지만 보여주고 [탑승]·[미승차] 등은 아예 그리지 않는다(canDecide 여부와 무관).
     final badge = student.status == RiderStatus.absent

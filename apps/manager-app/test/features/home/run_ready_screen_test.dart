@@ -319,7 +319,7 @@ void main() {
     expect(find.text('DRIVE_MARKER'), findsOneWidget);
   });
 
-  // M-9 — 오늘 회차 목록이 기기 저장본이면 운행 준비 화면도 그렇다고 밝힌다(홈과 같은 안내).
+  // 오늘 회차 목록이 기기 저장본이면 운행 준비 화면도 그렇다고 밝힌다(홈과 같은 안내).
   testWidgets('저장해 둔 회차 목록으로 보는 중이면 운행 준비 화면에도 안내가 뜬다', (tester) async {
     await tester.pumpWidget(
       wrap(
@@ -406,7 +406,7 @@ void main() {
     expect(find.text('DRIVE_MARKER'), findsNothing);
   });
 
-  // M4(Ruling 340) — 취소된 회차에 시작을 시도하면 서버가 409 RUN_CANCELED 로 거절한다. 문구를 보인다.
+  // Ruling 340 — 취소된 회차에 시작을 시도하면 서버가 409 RUN_CANCELED 로 거절한다. 문구를 보인다.
   testWidgets('409 RUN_CANCELED 면 문구를 보이고 운행 화면으로 가지 않는다', (tester) async {
     final repo = _CountingDriveRepository(
       failure: const ApiFailure(

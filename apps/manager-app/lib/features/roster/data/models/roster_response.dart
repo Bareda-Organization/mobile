@@ -79,7 +79,7 @@ class NoShowCase {
   factory fromJson(Map<String, dynamic> json) {
     final contactsJson = json['contacts'] as List<dynamic>? ?? const [];
     return NoShowCase(
-      // M2(BR-054, Ruling 332) — 서버가 아직 숫자로 보낸다(`Long caseId`).
+      // BR-054, Ruling 332 — 서버가 아직 숫자로 보낸다(`Long caseId`).
       // `rider_id`(rider_update_result.dart)와 같은 방식으로 흡수한다.
       caseId: asIdString(json['case_id']),
       startedAt: DateTime.parse(json['started_at'] as String),
@@ -234,7 +234,7 @@ class RosterResponse {
     this.cachedAt,
   });
 
-  /// [cachedAt] 은 서버가 아니라 이 기기의 저장본에서 읽었을 때만 준다(M-M3).
+  /// [cachedAt] 은 서버가 아니라 이 기기의 저장본에서 읽었을 때만 준다.
   factory fromJson(Map<String, dynamic> json, {DateTime? cachedAt}) {
     final stopsJson = json['stops'] as List<dynamic>? ?? [];
     return RosterResponse(
@@ -259,7 +259,7 @@ class RosterResponse {
   final List<RosterStop> stops;
 
   /// 이 명단을 기기에 저장해 둔 시각 — 서버에 닿지 못해 마지막으로 받은 명단을 보고 있을 때만 값이 있다.
-  /// 서버에서 방금 받은 명단이면 `null`(M-M3 · UF-E-07).
+  /// 서버에서 방금 받은 명단이면 `null`(UF-E-07).
   final DateTime? cachedAt;
 
   /// 지금까지 하차한 학생 수 — 학생 행의 `alighted` 를 센다. `counts` 에는 하차 칸이 없고

@@ -5,7 +5,7 @@ import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/features/roster/data/models/roster_response.dart';
 import 'package:manager_app/features/roster/presentation/widgets/roster_widgets.dart';
 
-/// M-M1(RST-02 · M-03) — 명단의 학생 행은 이름 · 반 · 연락처 · 혼자 귀가 여부 · 상태와 함께
+/// RST-02 · M-03 — 명단의 학생 행은 이름 · 반 · 연락처 · 혼자 귀가 여부 · 상태와 함께
 /// **특이사항**을 보인다.
 RosterStudent _student({String? note}) => RosterStudent(
   riderId: 'r1',

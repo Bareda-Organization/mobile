@@ -79,7 +79,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         ),
       );
       if (!mounted) return;
-      // 서버가 201 을 확정한 뒤에만 다음으로 간다 — 낙관적 UI 금지(COMMON.md §6).
+      // 서버가 201 을 확정한 뒤에만 다음으로 간다 — 낙관적 UI 금지.
       await _signInAfterSignup(repository);
     } on Failure catch (failure) {
       if (!mounted) return;

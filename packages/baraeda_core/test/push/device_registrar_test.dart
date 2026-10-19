@@ -335,7 +335,7 @@ void main() {
     expect(second, first);
   });
 
-  // M-P3 — 화면이 "이 기기는 아직 푸시를 받을 수 없다" 를 가를 수 있어야 한다.
+  // 화면이 "이 기기는 아직 푸시를 받을 수 없다" 를 가를 수 있어야 한다.
   test('자리표시 토큰은 자리표시로 알아보고, 진짜 토큰 · 토큰 없음은 아니라고 한다', () async {
     final source = PlaceholderPushTokenSource(deviceStorage);
     final token = await source.currentToken();

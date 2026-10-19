@@ -228,7 +228,7 @@ void main() {
       ),
     );
 
-    // 제출하면 폼 대신 신청 내용 영수증이 나온다(P1) — 마감 시각은 한국어 날짜로 읽힌다.
+    // 제출하면 폼 대신 신청 내용 영수증이 나온다 — 마감 시각은 한국어 날짜로 읽힌다.
     expect(find.text('승인 요청을 보냈어요'), findsOneWidget);
     expect(find.textContaining('마감 9월 12일 07:30'), findsOneWidget);
   });

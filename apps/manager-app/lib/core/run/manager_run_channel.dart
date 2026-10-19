@@ -20,8 +20,8 @@ import 'package:meta/meta.dart';
 /// "아직 연결을 시도한 적이 없다"(초기값)와 "수동으로 끊었다" 둘 다를
 /// 뜻하는데, [ManagerRunChannelController] 는 생성 즉시 `connect()` 를
 /// 부르므로 화면이 관측할 수 있는 초기 프레임은 사실상 없다 — 그 틈을
-/// [connecting] 으로 메운다(빈 화면보다 "연결 중" 배지가 낫다는 판단,
-/// 보고서 §1). [forbidden] 은 이 채널에만 있는 상태로, 서버가 4403 으로
+/// [connecting] 으로 메운다(빈 화면보다 "연결 중" 배지가 낫다는 판단).
+/// [forbidden] 은 이 채널에만 있는 상태로, 서버가 4403 으로
 /// 세션을 닫은 뒤에는 [WsConnectionState] 의 자동 재연결이 아예 의미가
 /// 없어(배정되지 않은 회차를 계속 재시도해 봐야 다시 거부된다) 별도로
 /// 분리한다.
@@ -118,7 +118,7 @@ const Duration runViewRefetchWindow = Duration(seconds: 1);
 /// `runId` 하나에 대한 `/topic/manager/runs/{runId}` 구독을 소유하는
 /// 컨트롤러 — DriveMode·StopRoster 화면이 각자 [managerRunChannelProvider]
 /// 로 이 컨트롤러를 얻는다(두 화면은 기사·동승자로 역할이 갈려 한 세션에
-/// 동시에 뜨지 않는다 — `home_screen.dart` `_openRun` · 보고서 §1).
+/// 동시에 뜨지 않는다 — `home_screen.dart` `_openRun`).
 ///
 /// 생성자가 [BaraedaWebSocketClient.connectionState] ·
 /// [BaraedaWebSocketClient.forbiddenSubscriptions] 를 구독한 **다음에**
@@ -308,7 +308,7 @@ class ManagerRunChannelController extends StateNotifier<ManagerChannelStatus> {
 /// 읽는 진입점. `autoDispose` 라 두 화면 다 언마운트되면(예: 홈으로 돌아가
 /// 다른 회차를 고르면) 소켓도 함께 정리된다 — 앱 전역 싱글턴으로 두지
 /// 않은 이유는 화면이 하나도 없을 때 배정 안 된 회차의 소켓을 계속 물고
-/// 있을 이유가 없기 때문이다(보고서 §1 "화면별 인스턴스 vs 전역 싱글턴").
+/// 있을 이유가 없기 때문이다.
 final StateNotifierProviderFamily<
   ManagerRunChannelController,
   ManagerChannelStatus,

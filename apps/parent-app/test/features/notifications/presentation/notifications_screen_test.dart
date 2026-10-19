@@ -139,7 +139,7 @@ class _FixedTokenSource implements PushTokenSource {
 }
 
 void main() {
-  // M-P3 — 푸시를 받을 수 없는 기기에 "푸시로도 알려 드려요" 라고 약속하지 않는다.
+  // 푸시를 받을 수 없는 기기에 "푸시로도 알려 드려요" 라고 약속하지 않는다.
   group('M-P3 푸시 문구', () {
     testWidgets('자리표시 토큰이면 안 읽은 알림이 없다는 화면에 푸시 약속이 없다', (tester) async {
       await _pump(

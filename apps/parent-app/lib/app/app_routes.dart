@@ -25,7 +25,7 @@ abstract final class AppRoutes {
   static const liveMap = '/live-map';
   static const routeDetail = '/route-detail';
 
-  /// 노선 자세히 보기로 가는 주소 — 지도가 보던 자녀와 회차를 이어서 넘긴다(M-P2).
+  /// 노선 자세히 보기로 가는 주소 — 지도가 보던 자녀와 회차를 이어서 넘긴다.
   /// 회차 번호가 없으면 서버가 정하는 다음 회차를 본다.
   static String routeDetailFor({required String studentId, String? runId}) =>
       Uri(
@@ -46,7 +46,6 @@ abstract final class AppRoutes {
   /// AUTH-07 · API_SPEC §2.8 — [settings] 화면에서 `push`.
   static const passwordChange = '/password-change';
 
-  /// 자녀 연결 (FEATURE_SPEC §5.1 색인 기준 P-02, BRIEF 표기 "P-01" 은
-  /// 정본과 어긋남 — 보고서 §2 참고) · 학생 코드 생성(S-05).
+  /// 자녀 연결 (FEATURE_SPEC §5.1 색인 기준 P-02) · 학생 코드 생성(S-05).
   static const childLink = '/child-link';
 }

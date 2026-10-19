@@ -10,7 +10,7 @@ import 'package:parent_app/core/auth/auth_providers.dart';
 import 'package:parent_app/core/auth/domain/auth_repository.dart';
 import 'package:parent_app/features/auth/presentation/account_recovery_screen.dart';
 
-/// P2 게이트 조건 ① — 계정 열거(enumeration) 노출 확인. 서버는 번호의 가입 여부를
+/// 계정 열거(enumeration) 노출 확인. 서버는 번호의 가입 여부를
 /// 응답으로 구분하지 않는다(Ruling 553) — 인증번호 요청이 성공한 뒤 안내가 "보냈다" 고
 /// 단정하면 미등록 번호에서는 사실이 아니고, 실패 문구가 코드별로 갈리면 단서가 된다.
 class _FailingAuthRepository implements AuthRepository {

@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:manager_app/features/roster/data/models/rider_update_result.dart';
 
-/// M2(BR-054, Ruling 332) — §4.6 응답 `no_show_case.case_id` 를 서버가
+/// BR-054 · Ruling 332 — §4.6 응답 `no_show_case.case_id` 를 서버가
 /// 아직 숫자로 보내는데(`RiderStatusUpdateResponse.java` `Long caseId`)
 /// `NoShowCase.fromJson` 이 `as String` 으로 직접 캐스트해 [미승차] 응답
 /// 파싱이 형변환 예외로 죽는다 — `rider_id`(같은 파일)와 같은 방식으로

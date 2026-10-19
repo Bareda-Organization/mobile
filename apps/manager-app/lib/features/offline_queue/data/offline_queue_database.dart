@@ -34,7 +34,7 @@ class PendingRequests extends Table {
   IntColumn get attempts => integer().withDefault(const Constant(0))();
 }
 
-/// 마지막으로 받은 명단(M-M3 · UF-E-07) — 앱을 다시 켠 뒤 오프라인이어도 명단을 본다.
+/// 마지막으로 받은 명단(UF-E-07) — 앱을 다시 켠 뒤 오프라인이어도 명단을 본다.
 /// 회차마다 한 행이고 서버 응답 본문(§4.2)을 그대로 담는다. 계정 소유의 정보라 로그아웃·세션 만료에 비운다.
 class CachedRosters extends Table {
   TextColumn get runId => text()();

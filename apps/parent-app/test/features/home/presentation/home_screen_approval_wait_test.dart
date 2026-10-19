@@ -17,7 +17,7 @@ import 'package:parent_app/features/home/presentation/home_providers.dart';
 import 'package:parent_app/features/home/presentation/home_screen.dart';
 import '../../../support/no_bus_position.dart';
 
-/// A #15(`FEATURE_SPEC P-03`) — ②구간 신청이 승인을 기다리는 회차 카드에 "출발까지" 남은 시간을 붙인다.
+/// `FEATURE_SPEC P-03` — ②구간 신청이 승인을 기다리는 회차 카드에 "출발까지" 남은 시간을 붙인다.
 /// 신청 이력(§3.9)의 `pending` 이 기준이라 앱을 다시 켜도 남는다(토글 직후 한 번 뜨는 안내와 별개).
 class _Runs implements RunRepository {
   @override

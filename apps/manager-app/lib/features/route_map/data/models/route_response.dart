@@ -26,7 +26,7 @@ enum RouteStopChange {
 /// `change` · `studentCount` 는 널 허용으로 둔다. `stopId` · `seq` · `name` ·
 /// `lat` · `lng` 는 세 자리(목록·현재·다음) 모두에서 항상 온다고 가정한다 —
 /// 정본에 이 셋이 서로 다른 하위 집합을 보낸다는 근거는 없다(확신 없는
-/// 지점, 보고서 2항).
+/// 지점).
 class RouteStop {
   const new({
     required this.stopId,

@@ -220,7 +220,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.textContaining('아직 보내지 못한 처리 2건은 버려져요'), findsOneWidget);
-    // 대기열을 먼저 볼 길이 맨 위에 있다(M8).
+    // 대기열을 먼저 볼 길이 맨 위에 있다.
     expect(find.text('대기열 2건 먼저 보기'), findsOneWidget);
   });
 

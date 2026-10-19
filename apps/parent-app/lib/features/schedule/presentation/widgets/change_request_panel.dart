@@ -216,7 +216,7 @@ class _ChangeRequestPanelState extends ConsumerState<ChangeRequestPanel> {
         ?.where((r) => r.runId == _selectedRunId)
         .firstOrNull;
     final canSubmit = !_submitting && _missingInput == null;
-    // 구간②(승인 필요)는 단추 글자부터 다르다 — 취소가 즉시 되는 줄 아는 오해를 막는다(P2).
+    // 구간②(승인 필요)는 단추 글자부터 다르다 — 취소가 즉시 되는 줄 아는 오해를 막는다.
     final needsApproval =
         selectedRun != null &&
         changeZoneOf(selectedRun, ref.read(clockProvider).now()) ==
@@ -388,7 +388,7 @@ class _ChangeRequestPanelState extends ConsumerState<ChangeRequestPanel> {
     );
   }
 
-  /// 제출 뒤 화면 — 무엇을 신청했는지 영수증으로 보여 주고, 승인 전에는 원래 승하차지로 버스가 온다는 말을 한다(P1).
+  /// 제출 뒤 화면 — 무엇을 신청했는지 영수증으로 보여 주고, 승인 전에는 원래 승하차지로 버스가 온다는 말을 한다.
   Widget _buildReceipt(_Receipt receipt) {
     final deadline = receipt.deadlineAt;
     final deadlineText = deadline == null

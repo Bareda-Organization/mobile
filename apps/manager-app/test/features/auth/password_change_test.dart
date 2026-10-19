@@ -71,7 +71,7 @@ void main() {
     final fields = find.byType(TextField);
     await tester.enterText(fields.at(0), current);
     await tester.enterText(fields.at(1), next);
-    // 단추가 입력에 따라 켜지므로(M15) 다시 그린 뒤에 누른다.
+    // 단추가 입력에 따라 켜지므로 다시 그린 뒤에 누른다.
     await tester.pump();
     await tester.tap(find.widgetWithText(BaraedaButton, '변경하기'));
     await tester.pumpAndSettle();
@@ -129,7 +129,7 @@ void main() {
   BaraedaButton changeButton(WidgetTester tester) =>
       tester.widget<BaraedaButton>(find.widgetWithText(BaraedaButton, '변경하기'));
 
-  // M15 — 꺼진 단추는 왜 꺼졌는지 단추 아래에 적는다.
+  // 꺼진 단추는 왜 꺼졌는지 단추 아래에 적는다.
   // Ruling 834 — 공용 입력 부품이 눈 아이콘을 갖는다. 이 화면은 따로 손대지 않는다.
   testWidgets('두 칸 모두 비밀번호 보기 눈 아이콘이 있고 칸마다 따로 바뀐다', (tester) async {
     final handle = tester.ensureSemantics();
@@ -180,7 +180,7 @@ void main() {
     expect(find.textContaining('입력하면 눌러요'), findsNothing);
   });
 
-  // M14 — 서버는 UTF-8 72바이트(한글 24자)를 넘으면 422 로 거절한다. 입력할 때 미리 알린다.
+  // 서버는 UTF-8 72바이트(한글 24자)를 넘으면 422 로 거절한다. 입력할 때 미리 알린다.
   testWidgets('새 비밀번호 칸에 한도 안내가 있고 넘으면 이유를 보이며 단추가 꺼진다(M14)', (tester) async {
     final repository = _RecordingAuthRepository();
     await pumpScreen(tester, repository);

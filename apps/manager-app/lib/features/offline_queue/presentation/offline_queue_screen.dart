@@ -59,7 +59,7 @@ class _OfflineQueueScreenState extends ConsumerState<OfflineQueueScreen> {
   }
 
   /// 잘못 눌러 쌓인 건을 큐에서 지운다 — 서버에 아직 반영되지 않은 처리를 버리는 일이고 학부모 알림도 영영
-  /// 가지 않으므로, 무엇이 사라지는지 알리고 빨간 단추로 한 번 묻는다(M10).
+  /// 가지 않으므로, 무엇이 사라지는지 알리고 빨간 단추로 한 번 묻는다.
   Future<void> _cancel(PendingRequestSummary item) async {
     final colors = context.colors;
     final name = _studentNameOf(item);

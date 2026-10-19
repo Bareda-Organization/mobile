@@ -40,7 +40,7 @@ void main() {
     expect(next?.name, '바래다학원 A');
   });
 
-  // M1(Ruling 341, BR-016) — DriveMode 는 `driveModeRosterProvider` 로 같은
+  // Ruling 341, BR-016 — DriveMode 는 `driveModeRosterProvider` 로 같은
   // §4.2 응답·모델을 소비한다. `absent`(`change=removed`) 학생이 섞여 있어도
   // 파싱이 깨지지 않고, 정류장 자체의 도착 판정(`nextUnarrivedStop`)은
   // 학생 개인 상태와 무관하게 그대로 동작해야 한다.

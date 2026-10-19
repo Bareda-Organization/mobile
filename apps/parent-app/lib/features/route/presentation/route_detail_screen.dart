@@ -20,7 +20,7 @@ import 'package:url_launcher/url_launcher.dart';
 /// (`roleCapabilitiesProvider.canToggleAttendance`, §1.1) — 학부모는
 /// 연결된 자녀 중 선택한 한 명, 학생은 본인 `student_id` 하나.
 ///
-/// 지도에서 넘어오면 [originStudentId] · [runId] 로 지도가 보던 회차를 그대로 받는다(M-P2).
+/// 지도에서 넘어오면 [originStudentId] · [runId] 로 지도가 보던 회차를 그대로 받는다.
 /// 다른 자녀로 바꾸면 그 회차는 남의 것이라 보내지 않는다.
 class RouteDetailScreen extends ConsumerWidget {
   const new({this.originStudentId, this.runId, super.key});

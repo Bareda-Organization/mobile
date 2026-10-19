@@ -76,7 +76,7 @@ Future<void> _pump(
   await tester.pump();
 }
 
-/// M5(Ruling 329 · UF-X-04) — 매니저 앱(기사·동승자)은 학부모·학생과 같은
+/// Ruling 329 · UF-X-04 — 매니저 앱(기사·동승자)은 학부모·학생과 같은
 /// "학원 관계자 경유" 복구만 연다. 전화번호 복구 화면(SMS 연동 전 503)은
 /// 만들지 않고, 로그인 화면에 안내 한 줄만 둔다(parent-app
 /// `account_recovery_screen.dart` · 웹 `LoginForm.tsx` 와 같은 안내 방향).

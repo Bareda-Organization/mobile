@@ -323,7 +323,7 @@ void main() {
   });
 
   // 시안 `cancel-ride` · `--approval` · `--moving` — 구간마다 확인 단추의 글자와 색이
-  // 다르다(P2).
+  // 다르다.
   // ② 구간의 단추는 취소가 아니라 "요청" 이다 — 위험색(빨강)이 아니라 주 단추(초록)여야 취소가 즉시 되는 줄 아는 오해가 없다.
   group('탑승 취소 확인 창 — 구간별 단추', () {
     BaraedaButton confirmButton(WidgetTester tester, String label) =>

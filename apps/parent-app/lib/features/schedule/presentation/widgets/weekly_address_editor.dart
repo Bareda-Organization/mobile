@@ -57,7 +57,7 @@ class _Slot {
   final TextEditingController address;
   final TextEditingController detail;
 
-  /// 저장했거나 불러온 시점의 글자 — 이것과 다르면 저장하지 않은 입력이다(P14).
+  /// 저장했거나 불러온 시점의 글자 — 이것과 다르면 저장하지 않은 입력이다.
   String baselineAddress;
   String baselineDetail;
 

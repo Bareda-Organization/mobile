@@ -11,7 +11,7 @@ import 'package:manager_app/core/run/manager_run_channel.dart';
 /// [BaraedaWebSocketClient] 를 상속해 실제 소켓을 열지 않고 3개 스트림만
 /// 시험이 직접 흘려보낼 수 있게 만든 가짜 — `connect()` 를 no-op 으로
 /// 덮어 네트워크 시도를 막는다. `frontend/packages/**`(`baraeda_core`)는
-/// 읽기만 할 수 있어 그 클래스 자체는 고치지 않는다(COMMON.md §3) — 대신
+/// 읽기만 할 수 있어 그 클래스 자체는 고치지 않는다 — 대신
 /// 그 클래스가 이미 `final`이 아니고 각 멤버가 평범한 오버라이드 가능한
 /// getter/메서드라, 상속만으로 시험용 대역을 만들 수 있다.
 class _FakeWebSocketClient extends BaraedaWebSocketClient {

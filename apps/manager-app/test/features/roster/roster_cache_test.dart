@@ -14,7 +14,7 @@ import 'package:manager_app/features/roster/data/roster_repository_impl.dart';
 
 import '../../support/fake_roster_key_store.dart';
 
-/// M-M3(M-06 · BRD-06 · UF-E-07 · `USER_FLOWS §12.2`) — 명단은 로컬에 저장돼 앱을 다시 켠 뒤
+/// M-06 · BRD-06 · UF-E-07 · `USER_FLOWS §12.2` — 명단은 로컬에 저장돼 앱을 다시 켠 뒤
 /// 오프라인이어도 마지막으로 받은 명단을 본다. 서버가 응답하지 못할 때(연결 없음 · 5xx)만
 /// 저장본으로 돌아서고, 4xx 같은 서버의 판단(권한 없음 · 회차 없음)은 저장본으로 덮지 않는다.
 const Map<String, dynamic> _rosterJson = {

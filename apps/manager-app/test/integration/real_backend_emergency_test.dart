@@ -81,7 +81,7 @@ class _FakeSecureStoragePlatform
 /// 버튼을 보여줄지 판단하는 것과 같은 조건(`now.isBefore(cancelableUntil)`,
 /// `emergency_screen.dart` 참고)을 그 실제 파싱 결과로 직접 계산한다.
 ///
-/// 시드 `driverA1`(BRIEF-em.md 계정)은 회차 1(idle)·2(confirmed)·7(confirmed)
+/// 시드 `driverA1`은 회차 1(idle)·2(confirmed)·7(confirmed)
 /// 에 driver 로 배치돼 있다(`assignment` 시드 실측). **발신은 확정
 /// (confirmed) 이후 회차에만 받는다**(API_SPEC §4.14 "발신 시점" · BR-109)
 /// — 회차 1(idle)로 부르면 `assertAssignedDriverOrEscort` 는 통과해도

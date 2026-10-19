@@ -47,7 +47,7 @@ class _FakeSource implements PositionSource {
   @override
   PositionAvailability get availability => availabilityValue;
 
-  /// 호출마다 측정 시각이 1초씩 새로 나온 것처럼 돌려준다 — 같은 시각은 다시 보내지 않는다(M-2).
+  /// 호출마다 측정 시각이 1초씩 새로 나온 것처럼 돌려준다 — 같은 시각은 다시 보내지 않는다.
   int _measured = 0;
 
   @override

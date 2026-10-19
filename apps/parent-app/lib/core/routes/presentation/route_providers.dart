@@ -11,7 +11,7 @@ typedef RouteRequest = ({String studentId, String? runId});
 /// 확정·③구간 제외가 반영되도록 들어올 때마다 새로 받는다).
 ///
 /// 이미 끝난 회차의 종료 화면이 "지나온 구간"을 그리려면 기본값(다음 회차)이 아니라 그 회차의 노선이어야 하고
-/// (`Ruling 831`), 지도에서 넘어간 노선 자세히도 같은 회차를 봐야 한다(M-P2).
+/// (`Ruling 831`), 지도에서 넘어간 노선 자세히도 같은 회차를 봐야 한다.
 /// `runId` 가 `null` 이면 서버 기본값이다.
 // `FutureProvider.family` 의 반환형은 `flutter_riverpod` 가 공개하지 않는 내부 타입이라 명시할 수 없다.
 // ignore: specify_nonobvious_property_types

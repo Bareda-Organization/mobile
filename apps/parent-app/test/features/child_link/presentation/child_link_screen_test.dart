@@ -252,7 +252,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('코드가 올바르지 않거나 만료됐어요'), findsOneWidget);
-        // P2 — 서버는 오류 · 상한 초과 · 중복을 이 코드 하나로 합친다(실재 노출 방지). 그래서 매번 고정 안내를 함께 보여
+        // 서버는 오류 · 상한 초과 · 중복을 이 코드 하나로 합친다(실재 노출 방지). 그래서 매번 고정 안내를 함께 보여
         // 상한에 걸린 학부모가 무한정 재시도하지 않게 한다.
         expect(find.text(_invalidNotice), findsOneWidget);
         expect(

@@ -518,7 +518,7 @@ void main() {
         // 아래 확인이 성립하지 않으므로 제외하고 — seq 가 가장 작은 것을
         // 고른다.
         //
-        // photo_url 널 허용 수정(F5 M2 목표 A-5) 전에는 RosterStudent
+        // photo_url 널 허용 수정 전에는 RosterStudent
         // .fromJson 이 `photo_url` 을 `as String`(비 nullable)으로 캐스팅해
         // 이 호출 자체가 크래시했다(실측: rider 3 김영희, photo_url: null).
         // 지금은 프로덕션 RosterApi 를 그대로 써서 그 수정이 실제로

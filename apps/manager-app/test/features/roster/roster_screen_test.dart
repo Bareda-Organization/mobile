@@ -64,7 +64,7 @@ class _FakeRosterRepository implements RosterRepository {
   String? lastUpdateClientKey;
   DateTime? lastUpdateOccurredAt;
 
-  /// M3 — 실패 시 명단이 **다시 조회됐는지**(재조회 1회) 확인하는 시험이 읽는다.
+  /// 실패 시 명단이 **다시 조회됐는지**(재조회 1회) 확인하는 시험이 읽는다.
   int fetchRosterCallCount = 0;
 
   /// 되돌리기 요청이 서버로 나간 횟수 — 확인 창 앞에서는 0 이어야 한다.
@@ -239,7 +239,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // M-8 — 디스크 캐시가 있는 이미지 위젯이고, 인증 헤더와 학생 사진 전용 캐시 저장소를 쓴다.
+    // 디스크 캐시가 있는 이미지 위젯이고, 인증 헤더와 학생 사진 전용 캐시 저장소를 쓴다.
     final image = tester.widget<CachedNetworkImage>(
       find.byType(CachedNetworkImage),
     );
@@ -663,7 +663,7 @@ void main() {
     expect(find.textContaining('운행 중'), findsWidgets);
   });
 
-  // M3(Ruling 345) — 같은 상태 재요청 포함, 서버가 409
+  // Ruling 345 — 같은 상태 재요청 포함, 서버가 409
   // RIDER_TRANSITION_NOT_ALLOWED 로 거절하면 전용 문구를 보여주고 명단을
   // 다시 불러와야 한다(재요청 사이 다른 사람이 이미 처리했을 수 있어서).
   testWidgets('409 RIDER_TRANSITION_NOT_ALLOWED 면 전용 문구 + 명단을 다시 불러온다', (
@@ -698,7 +698,7 @@ void main() {
     expect(fakeRepo.fetchRosterCallCount, 2);
   });
 
-  // M1(Ruling 341, BR-016) — 버스 간 이동으로 빠진 학생은 `status: absent` ·
+  // Ruling 341, BR-016 — 버스 간 이동으로 빠진 학생은 `status: absent` ·
   // `change: removed` 로 명단에 남는다(§4.2). 다른 버스로 옮긴 학생에게
   // [탑승]·[미승차] 버튼이 보이면 안 되고, "금일 삭제" 배지만 보여야 한다.
   testWidgets('금일 삭제(absent·removed) 학생은 배지만 보이고 조작 버튼이 없다', (tester) async {

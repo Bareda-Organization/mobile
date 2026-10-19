@@ -80,7 +80,7 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
   Timer? _availabilityTimer;
 
   /// 기기에 저장해 둔 명단(`RosterResponse.cachedAt`)으로 다음 곳을 가리키는 동안 서버에서 다시 받아 보는
-  /// 주기(M-M3) — 연결이 돌아오면 서버 명단으로 바뀐다. 서버에서 받은 명단이면 아무것도 하지 않는다.
+  /// 주기 — 연결이 돌아오면 서버 명단으로 바뀐다. 서버에서 받은 명단이면 아무것도 하지 않는다.
   static const _cachedRetryInterval = Duration(seconds: 15);
   Timer? _cachedRetryTimer;
 
@@ -211,7 +211,7 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
           } else {
             container.invalidate(driveModeRosterProvider);
             if (!mounted) return;
-            // 같은 자리 단추의 이름만 다음 승하차지로 바뀌면 처리된 줄 모른다 — 처리 사실을 토스트로 알린다(M6).
+            // 같은 자리 단추의 이름만 다음 승하차지로 바뀌면 처리된 줄 모른다 — 처리 사실을 토스트로 알린다.
             // 시각은 서버가 적은 도착 시각(§4.5 `arrived_at`)이다.
             _lockArriveButton();
             showBaraedaToast(
@@ -629,7 +629,7 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // 이름이 길어도 동사(`도착 처리`)는 잘리지 않는다 — 이름만 `…` 로 줄어든다(M5).
+          // 이름이 길어도 동사(`도착 처리`)는 잘리지 않는다 — 이름만 `…` 로 줄어든다.
           BaraedaButton(
             name: nextStop.name,
             label: '도착 처리',

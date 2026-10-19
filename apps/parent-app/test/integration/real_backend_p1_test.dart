@@ -68,7 +68,7 @@ class _FakeSecureStoragePlatform
 }
 
 /// `--dart-define=API_BASE_URL` 로 지정한 서버를 실제로 때리는 계약
-/// 시험 — P1 이 담당한 홈·일정·자녀연결 화면이 쓰는 §3 엔드포인트 전부를
+/// 시험 — 홈·일정·자녀연결 화면이 쓰는 §3 엔드포인트 전부를
 /// 최소 1회씩 실제로 호출해 파싱까지 성공하는지 확인한다. 서버가 안 떠
 /// 있으면 `setUpAll` 헬스체크가 전체를 환경 문제로 건너뛴다
 /// (`real_backend_auth_test.dart` 와 같은 구조).

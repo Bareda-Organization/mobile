@@ -58,7 +58,7 @@ class _FakeGeolocatorPlatform extends GeolocatorPlatform {
     return ended.close();
   }
 
-  /// `sampleOnce` 시험용 — 값을 그대로 낼지, 예외를 던질지 고른다(BRIEF-BG2).
+  /// `sampleOnce` 시험용 — 값을 그대로 낼지, 예외를 던질지 고른다.
   Position? currentPositionResult;
   Exception? currentPositionError;
 
@@ -104,7 +104,7 @@ void main() {
       expect(android.foregroundNotificationConfig!.enableWakeLock, isTrue);
     });
 
-    // M-2 — 간격을 안 주면 Android 는 기기 기본 간격으로 갱신해 같은 좌표를 다시 보낸다.
+    // 간격을 안 주면 Android 는 기기 기본 간격으로 갱신해 같은 좌표를 다시 보낸다.
     test('Android 위치 갱신 간격은 송신 주기와 같다', () {
       final android =
           buildLocationSettings(TargetPlatform.android) as AndroidSettings;

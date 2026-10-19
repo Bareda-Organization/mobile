@@ -10,7 +10,7 @@ import 'package:parent_app/core/auth/account_session.dart';
 import 'package:parent_app/core/auth/domain/auth_repository.dart';
 import 'package:parent_app/features/settings/presentation/password_change_screen.dart';
 
-/// P2 게이트 조건 ① — `password_change_screen.dart:33`(정확한 줄은 그
+/// `password_change_screen.dart:33`(정확한 줄은 그
 /// 사이 다른 편집으로 이동했으나 대상은 `_submit()` 첫머리의
 /// `isEmpty` 빈 입력 가드) 를 없애면 빈 문자열로도
 /// `AuthRepository.changePassword` 가 호출된다. 이 테스트는 입력을 전혀

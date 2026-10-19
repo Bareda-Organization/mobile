@@ -31,7 +31,7 @@ class _FakeRouteRepository implements RouteRepository {
   /// `getRoute` 가 불린 횟수 — 화면이 서버 값을 다시 받는지 본다(F05-06).
   int calls = 0;
 
-  /// 받은 요청 — 화면이 어느 자녀의 어느 회차를 물었는지 본다(M-P2).
+  /// 받은 요청 — 화면이 어느 자녀의 어느 회차를 물었는지 본다.
   final List<({String studentId, String? runId})> requests = [];
 
   @override
@@ -449,7 +449,7 @@ void main() {
     });
   });
 
-  // M-P2 — 지도는 회차 기준인데 상세는 학생 기준만 보내 다른 회차(다음 회차)가 보였다.
+  // 지도는 회차 기준인데 상세는 학생 기준만 보내 다른 회차(다음 회차)가 보였다.
   group('M-P2 지도에서 넘긴 회차로 노선을 받는다', () {
     RouteDetail sample() => RouteDetail.fromJson(
       _routeJson(

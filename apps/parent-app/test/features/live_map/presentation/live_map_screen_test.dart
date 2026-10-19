@@ -226,7 +226,7 @@ WebSocketEnvelope _envelope(WsEventType event, Map<String, dynamic> payload) {
   );
 }
 
-/// P1(Ruling 208) — `clockProvider` 로 주입하는 가짜 시계. `home_screen_test.dart`
+/// Ruling 208 — `clockProvider` 로 주입하는 가짜 시계. `home_screen_test.dart`
 /// 의 `_FixedClock` 과 달리 한 시험 안에서 시각을 옮겨(`clock.value = ...`) 2분
 /// 경과 전후를 비교해야 해서 값을 바꿀 수 있게 둔다.
 class _MutableClock implements Clock {
@@ -443,7 +443,7 @@ void main() {
   });
 
   group('연결·이벤트 반영 — 완료 조건 9(데이터 없음 vs 연결 끊김 구분)', () {
-    // P1(Ruling 208) — 이 그룹이 WS 로 실어 보내는 `received_at` 이 대부분
+    // Ruling 208 — 이 그룹이 WS 로 실어 보내는 `received_at` 이 대부분
     // 이 값(2026-09-13T08:00:00Z)이다. `live_map_screen.dart` 가 이제
     // `clockProvider` 로 2분 유실을 판정하므로, 시험을 실제 실행 시각
     // (`DateTime.now()`)에 맡기면 실행 날짜에 따라 "유실"로 잘못 판정될
@@ -510,7 +510,7 @@ void main() {
       );
     });
 
-    // M-7 (Ruling 899 C) — 순서가 뒤바뀌어 늦게 온 옛 위치가 화면 값을 되돌리지 않는다.
+    // Ruling 899 C — 순서가 뒤바뀌어 늦게 온 옛 위치가 화면 값을 되돌리지 않는다.
     testWidgets('화면 값보다 오래된 received_at 의 position 은 무시하고 더 새 것은 반영한다', (
       tester,
     ) async {
@@ -1865,7 +1865,7 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    // M-P2 — 지도가 보던 자녀와 회차를 노선 자세히로 넘긴다(상세가 다른 회차를 보이던 것).
+    // 지도가 보던 자녀와 회차를 노선 자세히로 넘긴다(상세가 다른 회차를 보이던 것).
     testWidgets('[노선 자세히 보기] 는 지도가 보던 자녀와 회차 번호를 주소에 싣는다', (tester) async {
       String? pushedLocation;
       final router = GoRouter(
@@ -1988,7 +1988,7 @@ void main() {
       expect(map.fitToContent, isTrue);
     });
 
-    // M-P1 — 지나간 곳을 표시하면 번호와 함께 남은 정차 수를 유추하게 한다(C-08).
+    // 지나간 곳을 표시하면 번호와 함께 남은 정차 수를 유추하게 한다(C-08).
     testWidgets('종료 — 지나간 승하차지(arrived_at 있음)도 아닌 곳과 같은 모양이다', (tester) async {
       await pumpMap(
         tester,

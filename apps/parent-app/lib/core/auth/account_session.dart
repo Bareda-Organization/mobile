@@ -26,7 +26,7 @@ final StateProvider<AccountStatus?> currentAccountStatusProvider =
 /// (user_role.dart 의 `fromWireValueOrNull` 이 죽지 않게 한 것과 같은 이유).
 /// 라우터에 별도 화면을 두지 않고 로그인 화면이 이 값을 직접 읽어 인라인
 /// 안내로 처리한다 — 목표 표의 화면 4종에 없는 화면을 새로 만들지 않기
-/// 위해서다(COMMON.md §6 "목표 표에 없는 기능을 더하지 마라").
+/// 위해서다.
 final StateProvider<bool> unsupportedRoleProvider = StateProvider<bool>(
   (ref) => false,
 );

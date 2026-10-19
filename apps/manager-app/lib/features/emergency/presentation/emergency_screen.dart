@@ -136,7 +136,7 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
     // 재진입 가드 — 1회 측정(sampleOnce)을 기다리는 동안 버튼이 아직
     // 비활성으로 다시 그려지기 전이면(pump 전) 두 번째 탭이 옛 onPressed
     // 를 그대로 다시 부를 수 있다. 이 가드가 없으면 그 재호출도 끝까지
-    // 진행돼 중복 발신이 나간다(BRIEF-BG2 "중복 발신 방지").
+    // 진행돼 중복 발신이 나간다.
     if (_submitting) return;
     final memo = _memoController.text.trim();
     if (_type == EmergencyType.etc && memo.isEmpty) {
@@ -253,7 +253,7 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
       ),
       body: Column(
         children: [
-          // 오늘 회차 목록이 저장본이면 홈과 같은 안내를 맨 위에 띄운다(M-9).
+          // 오늘 회차 목록이 저장본이면 홈과 같은 안내를 맨 위에 띄운다.
           const SavedRunsBanner(),
           Expanded(
             child: runId == null
@@ -352,7 +352,7 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // 급하면 먼저 전화(M2) — 번호는 저장된 학원 연락처이고, 번호 모양이 아니면 그리지 않는다.
+        // 급하면 먼저 전화 — 번호는 저장된 학원 연락처이고, 번호 모양이 아니면 그리지 않는다.
         const AcademyCallCard(lead: '급하면 먼저 전화하세요'),
         const SizedBox(height: 16),
         if (_errorMessage != null) ...[
@@ -416,7 +416,7 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
     onPressed: _submitting ? null : () => _submit(runId),
   );
 
-  /// 상황이 바뀌면 같은 화면에서 다시 보낸다 — 지우기 어려운 빨간 면이 아니라 테두리 단추(M3).
+  /// 상황이 바뀌면 같은 화면에서 다시 보낸다 — 지우기 어려운 빨간 면이 아니라 테두리 단추.
   Widget _resendButton() => BaraedaButton(
     label: '새 상황으로 다시 보내기',
     icon: 'triangle-alert',

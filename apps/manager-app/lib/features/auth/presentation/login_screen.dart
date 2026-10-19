@@ -58,7 +58,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   /// 삭제된 매니저로 거절됐는가 — 안내 아래에 학원 전화 단추를 둔다.
   bool _staffInactive = false;
 
-  /// 서버가 알려 준 남은 시도 횟수(`remaining_attempts`) — 한도 안내(M14)에 쓴다. 모르면 `null`.
+  /// 서버가 알려 준 남은 시도 횟수(`remaining_attempts`) — 한도 안내에 쓴다. 모르면 `null`.
   int? _remainingAttempts;
 
   static const _staffInactiveNotice = '이 계정은 더 이상 쓸 수 없어요. 다니는 학원에 문의해 주세요';
@@ -250,7 +250,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    // M5(Ruling 329 · UF-X-04) — 매니저(기사·동승자)도 학부모·학생과 같은 "학원
+                    // Ruling 329 · UF-X-04 — 매니저(기사·동승자)도 학부모·학생과 같은 "학원
                     // 관계자 경유"
                     // 복구만 연다. 전화번호 복구 화면(SMS 연동 전 503, §5.22)은 만들지 않고 안내만 둔다.
                     Text.rich(

@@ -7,7 +7,7 @@ import 'package:parent_app/app/di.dart';
 import 'package:parent_app/core/auth/domain/auth_repository.dart';
 import 'package:parent_app/core/devices/presentation/device_registration_panel.dart';
 
-/// P2 게이트 조건 ① — `device_registration_panel.dart:89` 에 `on Failure
+/// `device_registration_panel.dart:89` 에 `on Failure
 /// catch` 블록 안에서 `_registered = value;` 를 끼워 넣으면, 서버 등록이
 /// 실패해도 스위치가 "켜졌다" 로 표시된다(실패가 성공으로 둔갑). 이
 /// 테스트는 실패 후 스위치가 실패 전 상태(꺼짐)를 유지하는지 직접 본다.

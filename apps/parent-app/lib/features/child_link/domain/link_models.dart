@@ -1,7 +1,6 @@
-/// 자녀 연결 2종 응답 (API_SPEC §3.3·§3.4, Ruling 324). 화면 진입점은 BRIEF 상
-/// "P-01·S-05" 로 적혀 있으나 `FEATURE_SPEC.md §5.1` 색인의 정본 기준
-/// 기능 ID 는 **P-02**(자녀 연결·인증 코드) 다 — P-01 은 가입·로그인.
-/// 이 파일·화면의 주석은 정본 기준 P-02 로 적는다(보고서 §2 참고).
+/// 자녀 연결 2종 응답 (API_SPEC §3.3·§3.4, Ruling 324). 화면 진입점의 기능 ID 는
+/// `FEATURE_SPEC.md §5.1` 색인 기준 **P-02**(자녀 연결·인증 코드) 다 — P-01 은 가입·로그인.
+/// 이 파일·화면의 주석도 P-02 로 적는다.
 library;
 
 import 'package:parent_app/core/common/json_id.dart';

@@ -21,7 +21,7 @@ import 'package:manager_app/features/roster/presentation/roster_providers.dart';
 /// DelayScreen — 지연 알림 전송 (API_SPEC §4.9, M-05), 동승자 전용
 /// (role_policy.dart `canSendDelayNotification`). 시안 `delay` · `delay--sent`.
 ///
-/// 분(5분 단위 스텝퍼) · 사유(카드 4칸) · 안내 문구를 고르고 `N분 지연 알림 보내기`(M4)를 누른다. 보낸 뒤에는
+/// 분(5분 단위 스텝퍼) · 사유(카드 4칸) · 안내 문구를 고르고 `N분 지연 알림 보내기`를 누른다. 보낸 뒤에는
 /// 폼 대신 **영수증**(지연 시간 · 사유 · 보낸 시각 · 받은 사람)을 보여 주고, 상황이 달라지면 `다시 보내기` 로
 /// 같은 값이 채워진 폼으로 돌아간다. 알림 수신 확인·이력 조회는 두지 않는다.
 class DelayScreen extends ConsumerStatefulWidget {

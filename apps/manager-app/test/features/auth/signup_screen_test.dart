@@ -82,7 +82,7 @@ void main() {
     expect(find.text('영문 72자 · 한글 24자까지'), findsOneWidget);
   });
 
-  // M16 — 꺼진 단추는 무엇이 비었는지 단추 아래에 적는다.
+  // 꺼진 단추는 무엇이 비었는지 단추 아래에 적는다.
   testWidgets('아직 비운 항목을 단추 아래에 순서대로 알리고 단추는 꺼져 있다(M16)', (tester) async {
     await pumpScreen(tester);
 

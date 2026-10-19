@@ -52,7 +52,7 @@ class ManagerChannelBanner extends ConsumerWidget {
 /// 문서 참고) `managerRunChannelProvider` 를 오버라이드하는 위젯 시험은
 /// 가짜 컨트롤러를 만들기 어렵다 — 대신 이 함수만 떼어 Riverpod·Flutter
 /// 없이 단위 시험한다(`mapConnectionState`·`dispatchManagerChannelEvent` 와
-/// 같은 방식, 보고서 §1).
+/// 같은 방식).
 ///
 /// `null` 은 [ManagerChannelStatus.connected] 하나뿐 — 배너를 그리지 않는다.
 ManagerChannelBannerContent? managerChannelBannerContentFor(

@@ -7,7 +7,7 @@ import 'package:dio/dio.dart';
 /// 창(depart_time ±10분) 위에 올라타 §4.4 가 기대하는 `START_WINDOW_CLOSED`
 /// 대신 200(운행 시작 성공)을 받고, 그 성공이 `run2` 를 `confirmed` 에서
 /// `moving` 으로 영구히 옮겨 §4.2(confirmed 회차 존재 확인)까지 함께
-/// 무너뜨린다(F5 M3 보고서 1항 실측 — 두 실패가 같은 원인의 다른 증상).
+/// 무너뜨린다(실측 — 두 실패가 같은 원인의 다른 증상).
 ///
 /// 두 조건이 더 있다.
 /// ③ 비상 알림 시험(BR-109)이 쓰는 `run1` 은 시드 적용 +2.5h 에 서버의 확정
@@ -41,8 +41,8 @@ import 'package:dio/dio.dart';
 /// `driverA2` 이고 `driverA1` 은 배치돼 있지 않다. 첫 구현이 driverA1
 /// 토큰으로 그 호출을 했다가 403 을 받았고, 그 예외가 아래 `on DioException`
 /// 에 먹혀 "리셋이 필요 없다"로 조용히 오판됐다 — §4.5 가 3번 연속 정류장을
-/// 소모한 뒤 4번째 실행에서 재시도까지 실패해 건너뛰는 형태로 드러났다
-/// (판정 실행 1회차 4번째 반복에서 재현, 보고서 1항). run2 상태·창 확인은
+/// 소모한 뒤 4번째 실행에서 재시도까지 실패해 건너뛰는 형태로 드러났다.
+/// run2 상태·창 확인은
 /// driverA1 으로 충분해(`/manager/runs` 는 배치 여부와 무관하게 응답한다)
 /// 그대로 두고, run3 조회에만 driverA2 로 별도 로그인한다.
 Future<void> ensureManagerSeedIsSafeForTiming(String baseUrl) async {

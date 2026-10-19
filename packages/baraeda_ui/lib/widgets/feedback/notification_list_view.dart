@@ -113,7 +113,7 @@ class NotificationListView<T> extends StatefulWidget {
   final bool loadMoreFailed;
 
   /// 이 기기가 실제로 푸시를 받을 수 있는가 — `true` 일 때만 빈 · 오류 화면이 "푸시로도 알려 드려요" 를 말한다.
-  /// 받을 수 없는 기기(Firebase 를 아직 안 붙임)에 약속하면 거짓이다(M-P3, `UF-X-09` ④).
+  /// 받을 수 없는 기기(Firebase 를 아직 안 붙임)에 약속하면 거짓이다(`UF-X-09` ④).
   final bool pushAvailable;
 
   @override

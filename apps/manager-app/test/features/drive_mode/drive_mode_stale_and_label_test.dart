@@ -138,7 +138,7 @@ void main() {
     addTearDown(tester.view.reset);
     await _pumpDrive(tester, roster: (_) => _roster(_longName), textScale: 1.3);
 
-    // M5 — 단추에 승하차지 이름이 들어가고, 이름만 `…` 로 줄어든다. 동사(`도착 처리`)는 잘리지 않는다.
+    // 단추에 승하차지 이름이 들어가고, 이름만 `…` 로 줄어든다. 동사(`도착 처리`)는 잘리지 않는다.
     expect(find.text('도착 처리'), findsOneWidget);
     final button = tester.widget<BaraedaButton>(
       find.widgetWithText(BaraedaButton, '도착 처리'),

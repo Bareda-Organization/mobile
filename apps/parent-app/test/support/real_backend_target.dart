@@ -21,7 +21,7 @@ String? fixtureDbNameOrNull() => const bool.hasEnvironment('FIXTURE_DB')
     ? const String.fromEnvironment('FIXTURE_DB')
     : null;
 
-/// F5 P2 목표 — `real_backend_p4_test.dart` 의 §3.6·§3.8 ②구간
+/// `real_backend_p4_test.dart` 의 §3.6·§3.8 ②구간
 /// `CHANGE_LIMIT_REACHED` 시험(Test C·Test F)은 run2 의 `depart_time`
 /// (시드 적용 시각 + 20분)에 기대는데, 재시드 없이 그 시각이 지나면
 /// `ChangeWindowPolicy.segmentOf` 가 run2 를 결정적으로 ②(APPROVAL_

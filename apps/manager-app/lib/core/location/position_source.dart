@@ -101,8 +101,7 @@ enum PositionAvailability {
 }
 
 /// [Position] → [PositionSample] 변환 — 스트림(`_onPosition`)과 1회 측정
-/// ([GeolocatorPositionSource.sampleOnce])이 같은 함수를 쓴다(BRIEF-BG2,
-/// 두 벌 두지 않는다).
+/// ([GeolocatorPositionSource.sampleOnce])이 같은 함수를 쓴다(두 벌 두지 않는다).
 PositionSample _toSample(Position position) => PositionSample(
   lat: position.latitude,
   lng: position.longitude,
@@ -305,7 +304,7 @@ class GeolocatorPositionSource implements PositionSource {
   @override
   PositionAvailability get availability => _availability;
 
-  /// [sample] 이 스트림 구독을 못 여는 상황(비상 발신, BRIEF-BG2)의 보완 —
+  /// [sample] 이 스트림 구독을 못 여는 상황(비상 발신)의 보완 —
   /// [start] 없이 좌표를 한 번만 측정한다. 변환 규칙은 [_onPosition] 과
   /// 같은 [_toSample] 을 쓴다(두 벌 두지 않는다).
   @override
