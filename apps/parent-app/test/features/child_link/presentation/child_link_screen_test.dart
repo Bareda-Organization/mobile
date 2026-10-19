@@ -283,8 +283,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('이미 연결된 자녀예요'), findsOneWidget);
-      // 시도 상한 안내는 LINK_CODE_INVALID 전용 — 다른 에러 코드까지 번지면 무관한 상황(이미 연결된 자녀)에도 시도 상한
-      // 얘기가 뜬다.
+      // 시도 상한 안내는 LINK_CODE_INVALID 전용 — 다른 에러 코드까지 번지면
+      // 무관한 상황(이미 연결된 자녀)에도 시도 상한 얘기가 뜬다.
       expect(find.text(_invalidNotice), findsNothing);
       expect(
         tester.widget<BaraedaCodeInput>(find.byType(BaraedaCodeInput)).invalid,
