@@ -91,8 +91,8 @@ class _SilentServer {
 }
 
 void main() {
-  // R46-FIXCONN C-4 — 소켓은 열렸는데 CONNECTED 가 안 오면 한도가 없어
-  // `connecting` 에서 영영 막혔다(재연결 타이머는 close·error 뒤에만 예약된다).
+  // 소켓은 열렸는데 CONNECTED 가 안 오면 한도가 없을 때 `connecting` 에서 영영
+  // 막힌다(재연결 타이머는 close·error 뒤에만 예약된다).
   // 한도를 넘기면 시도를 끊고 백오프 재연결로 이어진다.
   group('BaraedaWebSocketClient — 연결 시도 시간 제한(C-4)', () {
     late _SilentServer server;

@@ -1,8 +1,7 @@
 import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/core/time/wire_time.dart';
 
-/// §4.6 `verify_method` — `photo`(사진) · `manual`(명단 육안 확인). 이번
-/// 라운드는 카메라 연동을 범위에 두지 않아(스코프 밖, 보고서 참고)
+/// §4.6 `verify_method` — `photo`(사진) · `manual`(명단 육안 확인). 카메라 연동은 범위 밖이라
 /// [BoardingUpdateRequest] 가 항상 `manual` 로 고정한다.
 enum VerifyMethod {
   photo('photo'),

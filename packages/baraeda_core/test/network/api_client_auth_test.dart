@@ -247,9 +247,8 @@ void main() {
   });
 
   test('성공 응답의 data 봉투를 벗겨 돌려준다', () async {
-    // api_client.dart 의 실제 진단된 결함 — 서버는 2xx 를
-    // `{success, data, message}` 로 감싸는데 예전 코드는 이 봉투를 벗기지
-    // 않고 루트에서 필드를 읽었다. 이 시험은 그 결함을 refresh 흐름과
+    // 서버는 2xx 를 `{success, data, message}` 로 감싸므로 data 를 벗겨 읽어야 한다.
+    // 이 시험은 그 봉투 처리를 refresh 흐름과
     // 무관하게 일반 GET 응답 하나로 독립 검증한다.
     final storage = tokenStorage();
     await storage.saveTokens(accessToken: 'valid', refreshToken: 'r1');
@@ -338,8 +337,6 @@ void main() {
       client.dispose();
     },
   );
-  // --- F07-01 · F07-02 · F07-05 · F07-07 (2026-09-30 전체 검사) ---
-
   Map<String, dynamic> refreshOk() => {
     'success': true,
     'data': {'access_token': 'new-access', 'refresh_token': 'new-refresh'},
@@ -349,8 +346,8 @@ void main() {
   test(
     '재발급에 성공한 뒤 재시도가 업무 오류(409)로 끝나면 새 토큰을 지키고 그 409 를 그대로 던진다',
     () async {
-      // F07-01 — 예전 코드는 재시도가 어떤 DioException 으로 끝나도 저장소를 통째로
-      // 비우고 재시도의 진짜 오류 대신 옛 401 을 돌려줬다.
+      // 재시도가 어떤 DioException 으로 끝나도 저장소를 통째로 비우지 않는다.
+      // 재시도의 진짜 오류를 던지고, 옛 401 로 바꾸지 않는다.
       final storage = tokenStorage();
       await storage.saveTokens(accessToken: 'expired', refreshToken: 'r1');
       final adapter = _ScriptedAdapter({
@@ -424,8 +421,8 @@ void main() {
   test(
     '재발급을 서버가 401 로 거절하면 sessionExpired 로 한 번 알린다 — REST 에도 재로그인 신호가 있다',
     () async {
-      // F07-07 — 예전엔 WS 쪽에만 만료 신호가 있어 REST 만 쓰는 화면은 토큰이 지워져도
-      // 요청마다 401 띠만 반복했다.
+      // REST 만 쓰는 화면도 세션 만료를 알아야 한다. 신호가 WS 쪽에만 있으면
+      // 토큰이 지워진 뒤에도 요청마다 401 띠만 반복된다.
       final storage = tokenStorage();
       await storage.saveTokens(accessToken: 'expired', refreshToken: 'dead');
       final adapter = _ScriptedAdapter({

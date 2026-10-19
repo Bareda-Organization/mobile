@@ -7,7 +7,7 @@ import 'package:parent_app/core/students/domain/student.dart';
 import 'package:parent_app/core/students/presentation/selected_student.dart';
 import 'package:parent_app/core/students/presentation/student_switcher.dart';
 
-/// R46 B2 #13 — 다자녀: 고른 자녀를 앱을 다시 켠 뒤에도 기억하고, 전환은 한 번 누름으로 끝난다.
+/// 다자녀: 고른 자녀를 앱을 다시 켠 뒤에도 기억하고, 전환은 한 번 누름으로 끝난다.
 class _MemoryStorage extends SelectedStudentStorage {
   new() : saved = null;
 
@@ -107,7 +107,7 @@ void main() {
       expect(pills.map((p) => p.selected), [true, false]);
     });
 
-    // UF-P-02 · frontend Ruling 472 — 4명 이상은 칩이 좁아져 고르는 창이다(R51 L1).
+    // UF-P-02 · frontend Ruling 472 — 4명 이상은 칩이 좁아져 고르는 창이다.
     testWidgets('자녀 4명 이상은 알약 대신 고르는 창이다 — 열어서 고른다', (tester) async {
       final container = await pump(tester, [
         for (var i = 1; i <= 4; i++) _child('s-$i', '자녀$i'),

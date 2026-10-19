@@ -262,7 +262,7 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
 
     // ManagerChannelBanner 는 rosterAsync.when(...) 의 모든 분기 바깥에 둔다 — "명단
     // 없음"(정상, data 분기)과
-    // "연결 끊김"(비정상)이 화면에서 구별돼야 한다(목표 9, ManagerChannelBanner 문서 참고).
+    // "연결 끊김"(비정상)이 화면에서 구별돼야 한다(ManagerChannelBanner 문서 참고).
     return Column(
       children: [
         // 오늘 회차 목록이 저장본이면 홈과 같은 안내를 맨 위에 띄운다(M-9).

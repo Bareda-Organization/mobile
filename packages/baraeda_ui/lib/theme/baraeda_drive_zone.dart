@@ -40,8 +40,7 @@ class BaraedaDriveZone extends StatelessWidget {
   /// 라우트 · 오버레이를 **열기 전에** 호출한 자리의 테마와 구역 여부를 지금 한 번 읽어 둔다.
   ///
   /// 읽는 것을 경로 빌더 안으로 미루면 안 된다 — 호출한 화면이 닫히는 중에도 열려 있던 경로는
-  /// 다시 그려지는데, 그때 호출 위치는 이미 비활성이라 `Theme.of` 가 예외를 던진다
-  /// (2026-10-04 학부모 앱 일정 화면 `[나가기]` 시험에서 확인).
+  /// 다시 그려지는데, 그때 호출 위치는 이미 비활성이라 `Theme.of` 가 예외를 던진다.
   static ({ThemeData theme, bool inZone}) capture(BuildContext from) =>
       (theme: Theme.of(from), inZone: isIn(from));
 

@@ -25,7 +25,7 @@ import 'package:parent_app/features/live_map/presentation/widgets/live_map_befor
 import 'package:parent_app/features/live_map/presentation/widgets/live_map_sheet.dart';
 
 /// P-07 · S-02 실시간 버스 위치 (UF-P-07, `API_SPEC §3.11 · §7`) — 전체 화면 지도 위에 아래 시트를
-/// 얹는 구성(R48 시안 `live-map*`).
+/// 얹는 구성.
 ///
 /// 어떤 모양을 그릴지는 [LiveMapView.resolve] 가 정하고(운행 전 · 달리는 중 · 신호 없음 · 연결 끊김 · 종료 ·
 /// 불러오는 중 ·
@@ -144,10 +144,9 @@ class _StudentLiveMap extends ConsumerWidget {
 /// (Ruling 349 — 과부하 때 `position` 방송은 버려질 수 있다) 서버가 다시 판정해 줄 기회가 없다 — 그래서 이 화면이
 /// 매 빌드마다 `clockProvider` 로 직접 잰다.
 ///
-/// **F1(2026-09-26) — 표시 중인 좌표가 2분을 넘기는 "그 시점"에 화면을 한 번 다시 그린다.** 유실 판정은 매 빌드마다
-/// 다시
-/// 재는 순수 계산이라 다른 WS 이벤트가 재빌드를 일으켜야만 갱신됐다 — 방송만 끊기고 다른 이벤트도 없는 좁은 경우는
-/// 재빌드 계기가 아예 없었다. 주기 폴링 대신 좌표 하나당 1회 예약이면 충분하다.
+/// **표시 중인 좌표가 2분을 넘기는 "그 시점"에 화면을 한 번 다시 그린다.** 유실 판정은 매 빌드마다 다시 재는 순수 계산이라,
+/// 다른 WS 이벤트가 재빌드를 일으켜야만 갱신된다. 방송만 끊기고 다른 이벤트가 없으면 재빌드 계기가 없으므로,
+/// 주기 폴링 없이 좌표 하나당 1회 예약으로 충분하다.
 class _LiveMapBody extends ConsumerStatefulWidget {
   const new({required this.studentId, this.studentName, this.switcher});
 
@@ -254,7 +253,7 @@ class _MapPage extends ConsumerStatefulWidget {
 class _MapPageState extends ConsumerState<_MapPage> {
   bool _authFailed = false;
 
-  /// R46 P3 — 버스를 따라가는 중인가. 켜 두면 새 좌표마다 카메라가 버스로 옮겨 가고, 사용자가 손으로 지도를
+  /// 버스를 따라가는 중인가. 켜 두면 새 좌표마다 카메라가 버스로 옮겨 가고, 사용자가 손으로 지도를
   /// 움직이면 꺼진다(F05-09 — 2초마다 사용자가 옮긴 지도를 되돌리지 않는다). [버스 위치로] 가 다시 켠다.
   bool _following = true;
 
@@ -663,7 +662,7 @@ class _Sheet extends StatelessWidget {
           body: view.forbidden ? '이 회차의 위치 정보를 볼 권한이 없어요' : '네트워크를 확인해 주세요.',
           inlineAction: !view.forbidden,
           // 권한 거절은 다시 해도 같은 결과라 단추를 두지 않는다. 그 외에는 이 자녀의 연결 상태를 새로 만들어
-          // (구독·재연결·위치 스냅샷 재조회) 화면을 나갔다 오는 것과 같게 한다(R32 P7).
+          // (구독·재연결·위치 스냅샷 재조회) 화면을 나갔다 오는 것과 같게 한다.
           action: view.forbidden
               ? null
               : BaraedaButton(

@@ -18,7 +18,7 @@ enum WsEventType {
   runEnded('run_ended'),
 
   /// 확정 뒤 노선 변경 — 매니저 채널이 받으면 노선·명단을 다시 조회한다.
-  /// ⚠ `API_SPEC §7.1` 에 아직 없다(R36-FE FE6 — 백엔드가 방송을 추가해야 온다).
+  /// ⚠ `API_SPEC §7.1` 에 아직 없다(백엔드가 방송을 추가해야 온다).
   routeChanged('route_changed'),
 
   /// 비상 알림 발신 (`POST /runs/{runId}/emergency`) — 관계자·메인 관리자 채널 전용.

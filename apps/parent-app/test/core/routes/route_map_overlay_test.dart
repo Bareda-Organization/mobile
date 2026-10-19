@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:parent_app/core/routes/domain/route_detail.dart';
 import 'package:parent_app/core/routes/presentation/route_map_overlay.dart';
 
-/// R49 `Ruling 831` — 지도에는 §3.10 이 준 표시 범위 승하차지의 번호(실제 `seq`)와 그 사이 경로선만 그린다.
+/// `Ruling 831` — 지도에는 §3.10 이 준 표시 범위 승하차지의 번호(실제 `seq`)와 그 사이 경로선만 그린다.
 /// 도로 좌표(`road_path`)가 2점 미만이면 표시 승하차지를 점선으로 잇는다.
 void main() {
   RouteStop stop(
@@ -197,7 +197,7 @@ void main() {
     expect(overlay(route(stops: [stop(3)])).isEmpty, isFalse);
   });
 
-  // R49 F1 — §3.10 stops[] 에는 학원 항목(stop_id null · 등원이면 마지막 ·
+  // §3.10 stops[] 에는 학원 항목(stop_id null · 등원이면 마지막 ·
   // 하원이면 맨 앞이고 seq 가 0)이 섞여 온다. 서버 응답 모양 그대로(JSON) 읽어,
   // 학원에는 번호 대신 "학원" 표시만 단다.
   group('학원 항목(stop_id null) — 번호 없는 학원 표시', () {

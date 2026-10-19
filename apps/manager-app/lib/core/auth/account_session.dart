@@ -54,13 +54,13 @@ final StateProvider<bool> mustChangePasswordProvider = StateProvider<bool>(
 );
 
 /// 세션이 만료돼(재발급 거절) 로그인 화면으로 돌아왔을 때 그 화면이 보여 줄 안내 — 처음 열었거나 직접 로그아웃했으면
-/// `null` 이다. 로그인에 성공하면 로그인 화면이 비운다(R46).
+/// `null` 이다. 로그인에 성공하면 로그인 화면이 비운다.
 final StateProvider<String?> sessionExpiredNoticeProvider =
     StateProvider<String?>((ref) => null);
 
 /// 재발급이 거절돼 로그인이 풀렸다 — REST·WS 두 경로가 같은 처리를 한다. 안내를 **먼저** 남기고 역할을 비운다:
 /// 역할이 비면 위치 송신 여부(`transmittingRunIdProvider`)도 같이 사라져 더는 알 수 없다. 운행 중이던 기사에게는
-/// 위치 전송이 멈췄다는 것을 더한다 — 그 기사 화면은 로그인 화면으로 바뀌므로 경고도 거기서 한다(R46).
+/// 위치 전송이 멈췄다는 것을 더한다 — 그 기사 화면은 로그인 화면으로 바뀌므로 경고도 거기서 한다.
 void endSessionAsExpired(Ref ref) {
   final wasTransmitting = ref.read(transmittingRunIdProvider) != null;
   ref.read(sessionExpiredNoticeProvider.notifier).state = wasTransmitting
@@ -75,14 +75,14 @@ void endSessionAsExpired(Ref ref) {
   );
 }
 
-/// 통신이 끊긴 채 앱을 켜서 **마지막으로 확인한 역할로 들어온 상태**(R52 H2) — `/me` 로 다시 확인하기 전까지 `true`.
+/// 통신이 끊긴 채 앱을 켜서 **마지막으로 확인한 역할로 들어온 상태** — `/me` 로 다시 확인하기 전까지 `true`.
 /// 다시 확인되면 끄고, 로그아웃 · 세션 만료로 역할이 비어도 끈다.
 final StateProvider<bool> unverifiedSessionProvider = StateProvider<bool>(
   (ref) => false,
 );
 
 /// 이 기기가 기억한 세션 흔적 — 마지막 역할과 오늘 회차 요약 — 을 지운다. 인증이 거절됐거나 계정이 게이트에 걸렸거나
-/// 로그아웃한 뒤에는 통신 두절로 앱을 켜도 그 계정으로 들어갈 수 없다(R52 H2).
+/// 로그아웃한 뒤에는 통신 두절로 앱을 켜도 그 계정으로 들어갈 수 없다.
 void _forgetDeviceSession(Ref ref) {
   unawaited(ref.read(lastSessionStoreProvider).clear());
   unawaited(ref.read(runSummaryStoreProvider).clear());
@@ -111,7 +111,7 @@ void _clearAccountScopedState(Ref ref, {bool announceDiscarded = false}) {
   ref.read(mustChangePasswordProvider.notifier).state = false;
   ref.read(unverifiedSessionProvider.notifier).state = false;
   ref.read(academyContactProvider.notifier).state = null;
-  // 로그아웃 · 세션 만료 뒤에는 이 기기가 기억한 역할로 다시 들어갈 수 없다(R52 H2).
+  // 로그아웃 · 세션 만료 뒤에는 이 기기가 기억한 역할로 다시 들어갈 수 없다.
   _forgetDeviceSession(ref);
   // 디스크에 받아 둔 학생 사진도 이 계정의 개인정보다(M-8).
   unawaited(_clearStudentPhotos(ref));
@@ -176,7 +176,7 @@ Future<void> _discardPendingRequests(
       ),
     );
 
-/// 대기 요청 정리를 한 번에 하나씩만 돌린다(R53 F2) — 앱 시작 `/me` 401 + 재발급 401 이면 세션 만료 구독과
+/// 대기 요청 정리를 한 번에 하나씩만 돌린다 — 앱 시작 `/me` 401 + 재발급 401 이면 세션 만료 구독과
 /// [authBootstrapProvider] 가 같은 정리를 거의 동시에 부른다. 두 번째가 첫 번째의
 /// `fetchPending` ~ `clear` 사이에 끼면
 /// 같은 비상 신고 행을 두 번 세므로, 앞 정리가 대기열을 비운 뒤에 다음이 돌아
@@ -209,7 +209,7 @@ Future<void> _discardPendingRequestsOnce(
   final emergencies = discarded.where((request) => request.isEmergency).length;
   // 어느 경로로 비우든(로그아웃 · 세션 만료 · 거절 정리) 못 보낸 비상 신고는 확인할 때까지 기기에 남긴다(Ruling 886).
   // 건수는 이 한 곳에서만 더한다 — 아래 로그인 화면 안내 · 앱 맨 위 안내는 각자 문장만 만든다.
-  // 대기열을 비우기 **전에** 올리고 기기 저장이 **끝난 뒤** 비운다(R53 B-6) —
+  // 대기열을 비우기 **전에** 올리고 기기 저장이 **끝난 뒤** 비운다 —
   // 그 사이 프로세스가 죽으면 행도 안내도 남지 않는다.
   if (emergencies > 0) {
     await ref
@@ -218,7 +218,7 @@ Future<void> _discardPendingRequestsOnce(
         .timeout(_persistWaitLimit, onTimeout: () {});
   }
   final notice = ref.read(sessionExpiredNoticeProvider);
-  // 앱 맨 위 안내의 건수는 비상 안내와 같은 이유로 기기 저장이 끝난 뒤 비운다(R56) — 안내 문장은 메모리에 먼저 올라간다.
+  // 앱 맨 위 안내의 건수는 비상 안내와 같은 이유로 기기 저장이 끝난 뒤 비운다 — 안내 문장은 메모리에 먼저 올라간다.
   if (notice == null && announceDiscarded && discarded.isNotEmpty) {
     await ref
         .read(requestNoticesProvider.notifier)
@@ -245,7 +245,7 @@ Future<void> _discardPendingRequestsOnce(
 /// 가 저장된 refresh 로 자동 재발급 후 재시도한다 — 이 provider 는 그 재발급
 /// 로직을 다시 구현하지 않는다.
 ///
-/// `/me` 가 서버의 거절이 아닌 실패(연결 실패 · 5xx · 게이트웨이 HTML 오류 등)이고 마지막으로 확인한 역할이 기기에 있으면 그 역할로 들어간다(R52 H2) —
+/// `/me` 가 서버의 거절이 아닌 실패(연결 실패 · 5xx · 게이트웨이 HTML 오류 등)이고 마지막으로 확인한 역할이 기기에 있으면 그 역할로 들어간다 —
 /// 통신 두절 구간에도 저장 명단 · 대기열 · 비상 신고 · 학원 전화가 열려야 한다. 역할이 없으면 지금처럼 오류로
 /// 남겨 [다시 시도] 를 보인다. 서버의 거절(401 · 403)만 로그인 화면으로 남기고 저장한 역할을 지운다.
 // 자동 재시도를 끈다 — Riverpod 3 은 실패한 provider 를 늘어나는 간격으로 조용히 다시 불러 그동안 스피너만
@@ -351,7 +351,7 @@ Future<bool> _enterWithLastSession(Ref ref) async {
   return true;
 }
 
-/// 마지막 역할로 들어온 세션을 `/me` 로 다시 확인한다(R52 H2) — 연결이 돌아오는 주기 · 앱 복귀 · 서버 도달
+/// 마지막 역할로 들어온 세션을 `/me` 로 다시 확인한다 — 연결이 돌아오는 주기 · 앱 복귀 · 서버 도달
 /// 신호마다 부른다. 아직 닿지 않으면 그대로 두고 다음 기회를 기다린다. 인증 거절은 인터셉터가 세션 만료로 처리한다.
 final Provider<Future<void> Function()> sessionReverifierProvider =
     Provider<Future<void> Function()>((ref) {
@@ -396,7 +396,7 @@ Future<void> _resumeMovingRun(Ref ref) async {
   }
 }
 
-/// 로그아웃(2026-09-23 사용자 지시) — 서버에 알리고, **실패해도** 이 기기의 역할·상태를 비운다. 역할이
+/// 로그아웃 — 서버에 알리고, **실패해도** 이 기기의 역할·상태를 비운다. 역할이
 /// 비면 라우터가 로그인 화면으로 보낸다(판정은 라우터 한 곳). 토큰은 `AuthApi.logout` 이 성패와 무관하게
 /// 지운다 — 여기서 역할까지 비우지 않으면 토큰 없이 로그인된 화면에 갇혀 요청마다 401 이 난다.
 ///
@@ -406,7 +406,7 @@ Future<void> signOut(WidgetRef ref) async {
   final unsupported = ref.read(unsupportedRoleProvider.notifier);
   final role = ref.read(currentUserRoleProvider.notifier);
   final status = ref.read(currentAccountStatusProvider.notifier);
-  // 로그아웃이 시작되면 새 재생을 막는다(R56) — 대기열이 비워지기 전에 앞 계정의 처리가 전송되지 않게. 풀리는 곳은
+  // 로그아웃이 시작되면 새 재생을 막는다 — 대기열이 비워지기 전에 앞 계정의 처리가 전송되지 않게. 풀리는 곳은
   // 대기열 정리와 새 로그인이다.
   ref.read(replayGateProvider).pause();
   try {
@@ -428,7 +428,7 @@ void applyLoginResponse(WidgetRef ref, LoginResponse response) {
     status: response.status,
   );
   ref.read(sessionExpiredNoticeProvider.notifier).state = null;
-  // 앞 로그아웃이 잠근 재생을 새 로그인이 푼다(R56) — 대기열 정리가 어떤 이유로 끝나지 않았어도 영구히 잠기지 않는다.
+  // 앞 로그아웃이 잠근 재생을 새 로그인이 푼다 — 대기열 정리가 어떤 이유로 끝나지 않았어도 영구히 잠기지 않는다.
   ref.read(replayGateProvider).resume();
   ref.read(mustChangePasswordProvider.notifier).state =
       response.mustChangePassword;

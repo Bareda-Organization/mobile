@@ -15,8 +15,8 @@ import 'package:manager_app/features/auth/presentation/password_change_screen.da
 import 'package:manager_app/features/home/presentation/home_providers.dart';
 import 'package:manager_app/features/home/presentation/me_screen.dart';
 
-/// R32 M13 — 매니저 앱에는 비밀번호를 바꿀 길이 없었다(AUTH-07 · UF-X-09 — 전 역할). 학부모 앱
-/// 화면을 본보기로 만들었다. 성공하면 서버가 refresh 토큰을 전량 무효화하므로 이 기기도
+/// 매니저 앱 비밀번호 변경 화면의 시험(AUTH-07 · UF-X-09 — 전 역할). 학부모 앱
+/// 화면을 본보기로 삼는다. 성공하면 서버가 refresh 토큰을 전량 무효화하므로 이 기기도
 /// 로그아웃해 다시 로그인하게 한다.
 class _RecordingAuthRepository implements AuthRepository {
   new({this.failure});

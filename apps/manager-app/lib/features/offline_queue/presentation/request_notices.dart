@@ -92,7 +92,7 @@ class RequestNoticesNotifier extends Notifier<List<RequestNotice>> {
   /// 이 계정의 저장분을 정리하며 미전송 처리를 버린 일을 안내로 남긴다(앱 시작 `/me` 거절 · 대기·거절 상태).
   /// 비상 신고 [emergencies] 건은 기기 저장 안내([unsentEmergencyProvider])가
   /// 따로 세므로(호출부가 더한다 · Ruling 886) 여기서는 뺀 나머지만 안내로 남긴다.
-  /// 건수와 시각은 기기에도 남겨 앱을 껐다 켜도 알린다(R56 · 학생 이름은 남기지 않는다) — 돌려주는 Future 는 기기 저장이
+  /// 건수와 시각은 기기에도 남겨 앱을 껐다 켜도 알린다(학생 이름은 남기지 않는다) — 돌려주는 Future 는 기기 저장이
   /// 끝나면 완료되며, 대기열을 비우기 전에 기다려야 하는 호출부가 쓴다.
   Future<void> addDiscarded({required int count, required int emergencies}) {
     final others = count - emergencies;
@@ -134,7 +134,7 @@ class RequestNoticesNotifier extends Notifier<List<RequestNotice>> {
       ),
     );
     final request = item.request;
-    // 명단(메모리)에서 학생을 못 찾으면 기록 시각으로 대신한다(R53 F3) — 이름 없이는 어느 처리인지 알 수 없다.
+    // 명단(메모리)에서 학생을 못 찾으면 기록 시각으로 대신한다 — 이름 없이는 어느 처리인지 알 수 없다.
     final what = studentName == null
         ? '${request.description} · '
               '${DateFormat('M월 d일 HH:mm').format(request.recordedAt)} 기록'
@@ -262,7 +262,7 @@ class _UnsentEmergencyBanner extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: 8),
-        // 그때 저장한 번호만 쓴다(R53 F4) — 번호가 없다고 지금 로그인한 계정의 학원 번호로 대신하면, 다른 학원에서
+        // 그때 저장한 번호만 쓴다 — 번호가 없다고 지금 로그인한 계정의 학원 번호로 대신하면, 다른 학원에서
         // 보낸 비상 신고 안내가 엉뚱한 학원 전화로 이어진다.
         if (looksLikePhoneNumber(unsent.contact))
           AcademyCallCard(lead: '학원에 바로 전화해 주세요', contact: unsent.contact)

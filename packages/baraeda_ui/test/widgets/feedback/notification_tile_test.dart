@@ -1,4 +1,4 @@
-// R44 — 알림 목록 행. 안 읽음/읽음이 한눈에 갈리는지 · 중요 표시 · 낭독 한 번 · 누르는 영역을 잰다.
+// 알림 목록 행. 안 읽음/읽음이 한눈에 갈리는지 · 중요 표시 · 낭독 한 번 · 누르는 영역을 잰다.
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';

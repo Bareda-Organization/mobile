@@ -355,7 +355,7 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
                 const SizedBox(height: 12),
                 const PositionLostBanner(),
                 // rosterAsync.when(...) 의 모든 분기 바깥 — "명단 없음"(정상)과
-                // "연결 끊김"(비정상)을 구별해야 한다(목표 9, ManagerChannelBanner
+                // "연결 끊김"(비정상)을 구별해야 한다(ManagerChannelBanner
                 // 문서 참고).
                 ManagerChannelBanner(runId: runId),
                 // 알림은 가장 중요한 한 건만 보이고 나머지는 접힌다 — 노선 변경 확인은 접히지 않는 맨 위

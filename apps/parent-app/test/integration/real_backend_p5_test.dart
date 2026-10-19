@@ -88,7 +88,7 @@ Future<void> _expectApiError(
 }
 
 /// `--dart-define=API_BASE_URL` 로 지정한 서버를 실제로 때리는 계약
-/// 시험 — 목표 8: §3.10(상세 노선)·§3.11(실시간 위치)를 실백엔드로
+/// 시험 — §3.10(상세 노선)·§3.11(실시간 위치)를 실백엔드로
 /// 호출하고, 성공 경로와 두 예외 경로(`404 STUDENT_NOT_FOUND` ·
 /// `403 FORBIDDEN`)를 재현한다. 서버가 안 떠 있으면 `setUpAll` 헬스체크가
 /// 전체를 환경 문제로 건너뛴다(`real_backend_p1_test.dart` 와 같은 구조).

@@ -192,7 +192,7 @@ class _WeeklyAddressEditorState extends ConsumerState<WeeklyAddressEditor> {
 
   Future<void> _save() async {
     if (_submitting) return;
-    // 잠금(`_submitting`)은 이 검사 뒤에 건다 — 앞에서 걸면 경고 뒤 저장 버튼이 영구히 잠긴다(R46).
+    // 잠금(`_submitting`)은 이 검사 뒤에 건다 — 앞에서 걸면 경고 뒤 저장 버튼이 영구히 잠긴다.
     final collected = _collect();
     final entries = collected.entries;
     if (entries == null) {

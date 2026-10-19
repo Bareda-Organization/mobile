@@ -105,7 +105,7 @@ void main() {
     } finally {
       probe.close();
     }
-    // 목표 9(driverBlocked 로그인은 항상 실패)가 첫 실행만 초록이던 문제 — 다른 앱의
+    // driverBlocked 로그인은 항상 실패해야 한다 — 다른 앱의
     // 실서버 시험이 공유 시드 DB 에서 이 계정의 차단을 풀어 버리면 되돌릴 API 가 없다.
     // 매 실행 전에 상태를 확인하고, 풀려 있을 때만 `/dev/reset` 으로 되돌린다.
     if (backendReachable) {

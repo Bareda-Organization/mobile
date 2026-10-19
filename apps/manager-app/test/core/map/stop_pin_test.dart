@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:manager_app/core/map/stop_pin.dart';
 
-/// 정차지 핀(사용자 지시 2026-09-23 — 끝이 좌표를 가리키는 물방울 핀 + 순번).
+/// 정차지 핀(끝이 좌표를 가리키는 물방울 핀 + 순번).
 ///
 /// 끝점이 좌표에 오는 것은 SDK 기본 기준점(아래 가운데)과 이 위젯의 "끝점 = 아래 끝" 이 맞물려야
 /// 성립한다 — 위젯이 [StopPin.size] 보다 크게 그려지면 이미지 아래에 빈칸이 생겨 끝점이 좌표에서
@@ -21,7 +21,7 @@ void main() {
     expect(StopPin.size.height, greaterThan(StopPin.size.width));
   });
 
-  // R39 Ruling 400 — 오늘 서지 않는 승하차지는 색만이 아니라 흐림과 번호 취소선으로도 다르다.
+  // Ruling 400 — 오늘 서지 않는 승하차지는 색만이 아니라 흐림과 번호 취소선으로도 다르다.
   testWidgets('skipped 핀은 번호에 취소선이 있고 흐리게 그려지며 크기는 그대로다', (tester) async {
     await tester.pumpWidget(
       const Directionality(

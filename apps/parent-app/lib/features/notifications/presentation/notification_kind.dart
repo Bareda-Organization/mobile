@@ -4,7 +4,7 @@ import 'package:parent_app/app/app_routes.dart';
 /// 종류 → 목록 모양. 운행·승하차·도착·지연은 실시간 지도(UF-P-07), 변경 결과는 일정 화면의 신청 이력(UF-P-06).
 ///
 /// ⚠ **모르는 종류를 초록으로 떨어뜨리지 않는다.** §9.7 은 앞으로도 늘고, 새 종류가 초록 '승차'로 보이면
-/// `no_show`(버스가 왔는데 아이가 안 나온 사고)도 정상으로 읽힌다 — 2026-09-21 까지 모든 알림이 그 상태였다.
+/// `no_show`(버스가 왔는데 아이가 안 나온 사고)도 정상으로 읽힌다.
 NotificationKind kindOf(String type) => switch (type) {
   'boarding' => const NotificationKind(
     icon: 'log-in',

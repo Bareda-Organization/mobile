@@ -9,7 +9,7 @@ const _chipLimit = 3;
 
 /// 자녀 전환 — 홈·지도·일정·노선이 같은 모양을 쓴다(`FEATURE_SPEC P-02` "자녀 2명 이상일 때만 노출").
 ///
-/// 이름 앞에 첫 글자 동그라미를 단 알약이 가로로 이어지고, 한 번 눌러 바꾼다(R48 시안 `.m-pill`).
+/// 이름 앞에 첫 글자 동그라미를 단 알약이 가로로 이어지고, 한 번 눌러 바꾼다(`.m-pill` 모양).
 /// 알약은 이름이 길면 그 칸만 `…` 로 줄고, **4명 이상이면 알약 대신 고르는 창(드롭다운) 하나**다.
 class StudentSwitcher extends ConsumerWidget {
   const new({required this.students, required this.selectedId, super.key});

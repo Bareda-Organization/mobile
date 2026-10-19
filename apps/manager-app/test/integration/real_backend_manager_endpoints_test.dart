@@ -32,7 +32,7 @@ import '../support/real_backend_target.dart';
 
 /// `real_backend_run_flow_test.dart` 와 같은 가짜 보안 저장소 — 이 파일은
 /// 그쪽이 이미 다루지 않은 나머지 §4 엔드포인트(§4.3·§4.4·§4.5·§4.6·§4.7·
-/// §4.8·§4.11·§4.12·§4.13·§4.16)를 실백엔드로 호출한다(F5 M 목표 7·8·9).
+/// §4.8·§4.11·§4.12·§4.13·§4.16)를 실백엔드로 호출한다.
 class _FakeSecureStoragePlatform
     with MockPlatformInterfaceMixin
     implements FlutterSecureStoragePlatform {
@@ -85,10 +85,10 @@ class _FakeSecureStoragePlatform
   );
 }
 
-/// 시드 회차 구성(`V2__seed_data.sql`, F5 M 전용 DB `schoolbus_f5_m`) —
-/// run2: `confirmed`, driverA1/escortA1 배치, 출발 ±10분 창이 이미 지남
-/// (목표 8 `START_WINDOW_CLOSED` 재현 대상, 시간이 지날수록 더 확실히
-/// 닫힌다). run3: `moving`, driverA2/escortA2 배치 — 목표 7·8·9 의 대부분이
+/// 시드 회차 구성(`V2__seed_data.sql`) —
+/// run2: `confirmed`, driverA1/escortA1 배치, 출발 ±10분 창이 지난 상태
+/// (`START_WINDOW_CLOSED` 재현 대상, 시간이 지날수록 더 확실히
+/// 닫힌다). run3: `moving`, driverA2/escortA2 배치 — 이 시험의 대부분이
 /// 이 회차에서 일어난다.
 /// 실서버 시험은 큐를 쓰지 않는다 — 메모리 DB 에 붙인 큐만 만든다(도착 처리가 큐를 거치는 구현이라 필요하다).
 OfflineQueueRepository _offlineQueue(Dio dio) => OfflineQueueRepositoryImpl(

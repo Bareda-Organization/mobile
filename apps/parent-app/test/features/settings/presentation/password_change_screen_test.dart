@@ -68,7 +68,7 @@ class _CountingAuthRepository implements AuthRepository {
   Future<void> unregisterDevice(String token) => throw UnimplementedError();
 }
 
-/// FE-R2 목표 10 — 제출 중 표시. `changePassword` 가 끝나는 시점을 이
+/// 제출 중 표시. `changePassword` 가 끝나는 시점을 이
 /// `Completer` 로 직접 쥐고 있어야 "제출 중" 인 프레임을 관측할 수 있다
 /// (`pumpAndSettle` 로는 그 순간을 지나쳐 버린다).
 class _StallingAuthRepository implements AuthRepository {
@@ -197,7 +197,7 @@ void main() {
     expect(find.textContaining('72바이트'), findsNothing);
   });
 
-  // FE-R2 목표 10 — 버튼 비활성화뿐 아니라 로딩 표시기도 함께 뜨는지 본다.
+  // 버튼 비활성화뿐 아니라 로딩 표시기도 함께 뜨는지 본다.
   // `changePassword` 응답이 오기 전 프레임을 `pump()` 로 붙잡아 확인한다.
   testWidgets('제출 중에는 진행 표시기가 뜨고, 끝나면 사라진다', (tester) async {
     final repository = _StallingAuthRepository();
@@ -230,7 +230,7 @@ void main() {
     expect(find.byType(CircularProgressIndicator), findsNothing);
   });
 
-  // R48 시안 `password*` — 꺼진 단추에는 왜 꺼졌는지가 단추 바로 아래에 있다(막다른 길을 만들지 않는다).
+  // 꺼진 단추에는 왜 꺼졌는지가 단추 바로 아래에 있다(막다른 길을 만들지 않는다).
   group('R48 꺼진 [변경하기] 의 이유', () {
     test('이유는 무엇이 비었는지에 따라 달라진다 — 다 채웠으면 이유가 없다', () {
       expect(

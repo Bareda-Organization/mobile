@@ -34,7 +34,7 @@ class ManagerHeader extends ConsumerWidget implements PreferredSizeWidget {
 
   /// 머리줄 **위**에 붙는 한 줄 띠(시안 `.m-strip` — 연결 끊김
   /// `BaraedaConnectionStrip`). 상태 표시줄은 띠가 비키고 머리줄은 그 아래에서
-  /// 시작한다. 없으면 예전과 같다.
+  /// 시작한다. 없으면 머리줄만 그린다.
   final Widget? strip;
 
   /// 띠 한 줄의 높이 — `BaraedaConnectionStrip` 의 최소 높이(40)와 같다.

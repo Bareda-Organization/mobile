@@ -23,7 +23,7 @@ String describeFailure(Failure failure) => switch (failure) {
   // drive_mode_screen.dart 호출부가 트리거).
   ApiFailure(code: 'RUN_CANCELED') => '취소된 회차예요',
   // §4.15 403 은 배치되지 않은 회차·타 학원 회차·존재하지 않는 회차 세
-  // 경우를 한 코드로 묶는다(2026-09-09 문면 정정, Ruling 259(b)) — 회차
+  // 경우를 한 코드로 묶는다(Ruling 259(b)) — 회차
   // 존재 여부를 코드로 구별하면 배치되지 않은 매니저에게 그 회차가
   // 있다는 사실 자체가 새어 나간다. 그래서 이 문구도 하나만 둔다.
   ApiFailure(code: 'FORBIDDEN') => '이 회차를 이용할 권한이 없어요',
@@ -42,6 +42,6 @@ String describeFailure(Failure failure) => switch (failure) {
 };
 
 /// `AsyncValue.error` 로 온 값 → 화면 문구. [Failure] 면 [describeFailure], 그 밖의 예외는
-/// 원문(`Exception: …`)을 그대로 보이지 않고 일반 문구로 바꾼다(R32 M8).
+/// 원문(`Exception: …`)을 그대로 보이지 않고 일반 문구로 바꾼다.
 String describeError(Object error) =>
     describeFailure(error is Failure ? error : const Failure.unknown());

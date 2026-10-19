@@ -1,4 +1,4 @@
-// R44 — 알림 행의 명도 대비. 글자 4.5:1 · 아이콘·점·막대 3:1 (WCAG 1.4.3 · 1.4.11).
+// 알림 행의 명도 대비. 글자 4.5:1 · 아이콘·점·막대 3:1 (WCAG 1.4.3 · 1.4.11).
 // 다크 테마의 옅은 색은 알파가 있어 바탕에 겹친 값으로 계산한다.
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/painting.dart';

@@ -147,7 +147,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    // 로그인이 만료돼 돌아왔다면 이유를 알린다(R46) — 이유 없이 로그인 화면만 나오면 오류인 줄 안다.
+    // 로그인이 만료돼 돌아왔다면 이유를 알린다 —이유 없이 로그인 화면만 나오면 오류인 줄 안다.
     final expiredNotice = ref.watch(sessionExpiredNoticeProvider);
     final remaining = _remainingAttempts;
     return Scaffold(

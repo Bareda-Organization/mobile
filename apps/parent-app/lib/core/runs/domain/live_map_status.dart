@@ -22,14 +22,14 @@ enum LiveMapConnection {
 
   /// 재시도 상한 도달 — `WsConnectionState.gaveUp`. "데이터 없음"이
   /// 아니라 "연결 끊김"으로 표시해야 하는 자리. 기본 재연결 정책은 상한이
-  /// 없어(R46-FIXRT S-5) 운영에서는 이 상태에 들지 않는다.
+  /// 없어 운영에서는 이 상태에 들지 않는다.
   gaveUp,
 
   /// 이 학생 회차 채널 구독이 서버에서 거부됨(FORBIDDEN) — 연결 자체는
   /// 살아있어도 이 화면은 데이터를 받을 수 없다.
   forbidden;
 
-  /// `!isUsable` 이 곧 "연결 끊김" 표시 조건 — FE-R2 목표1의 `!error`
+  /// `!isUsable` 이 곧 "연결 끊김" 표시 조건 — `!error`
   /// 가드와 같은 자리에 쓴다(§4 참고). `idle`·`connecting` 은 아직
   /// 실패로 확정되지 않았으므로 "데이터 없음"도 "연결 끊김"도 아니고
   /// 로딩으로 그린다.
@@ -89,7 +89,7 @@ class LiveMapState {
   /// `lastStopArrived` 만 보면 안 된다 — 실제로 위젯 시험에서
   /// `run_started` 단독 수신 시 "데이터 없음" 화면이 잘못 뜨는 결함으로
   /// 드러났다. 화면은 `connection.isLost` 를 먼저 검사해야 이 값과
-  /// 겹치지 않는다(목표 9).
+  /// 겹치지 않는다.
   bool get hasNoData =>
       position == null &&
       lastStopArrived == null &&

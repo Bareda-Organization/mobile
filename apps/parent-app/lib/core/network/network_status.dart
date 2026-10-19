@@ -3,7 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:parent_app/app/di.dart';
 
-/// 서버에 닿는지 여부 — 화면 맨 위 한 줄 표시(`OfflineBar`)의 근거다(R46 B2 #22).
+/// 서버에 닿는지 여부 — 화면 맨 위 한 줄 표시(`OfflineBar`)의 근거다.
 class NetworkStatus {
   const new({this.isOffline = false, this.lastReachableAt});
 

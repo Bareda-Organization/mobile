@@ -68,14 +68,13 @@ class _FakeSecureStoragePlatform
   );
 }
 
-/// 실제 백엔드를 때리는 계약 시험 — R1 목표 3항(자기 포트의 실제 백엔드로
-/// 1회 이상 호출). 시드 계정 `driverA1`·`escortA1`/`password`(BRIEF-m1.md
-/// §5). 대상 서버는 `ApiConstants.baseUrl`(`--dart-define=API_BASE_URL`)이
+/// 실제 백엔드를 때리는 계약 시험 — 자기 포트의 실제 백엔드로 1회 이상 호출한다.
+/// 시드 계정 `driverA1`·`escortA1`/`password`.
+/// 대상 서버는 `ApiConstants.baseUrl`(`--dart-define=API_BASE_URL`)이
 /// 정한다 — `auto_login_test.dart` 와 같은 이유로 하드코딩하지 않는다.
 ///
-/// §4.1(`ManagerRunApi.fetchRuns`)·§4.2(`RosterApi.fetchRoster`)는 한때 이
-/// 백엔드가 스펙과 어긋난 응답을 내려 프로덕션 클라이언트 코드를 그대로
-/// 통과시킬 수 없었다(보고서 참고 — F3 R2 B1 좌석이 서버를 고쳤다):
+/// §4.1(`ManagerRunApi.fetchRuns`)·§4.2(`RosterApi.fetchRoster`)는 스펙 모양의
+/// 응답이어야 프로덕션 클라이언트 코드를 그대로 통과시킬 수 있다:
 ///
 /// 1. `GET /manager/runs` 의 `data` 는 스펙(§4.1)대로 `{items:[...]}` 다.
 /// 2. `run_id`·`stop_id`·`rider_id`·`student_id` 는 스펙(§1.1 "식별자는
@@ -127,7 +126,7 @@ void main() {
     return (auth: auth, dio: client.dio);
   }
 
-  // FE-R2 목표 12 — 이 시험은 "목록 엔드포인트가 응답하고 스펙대로 생겼는가"
+  // 이 시험은 "목록 엔드포인트가 응답하고 스펙대로 생겼는가"
   // 만 본다. 회차 상태(run_status)는 일부러 보지 않는다 — 그것은 §4.2 가
   // 전담한다(겹침이 아니라 계층: 이 시험은 모양, §4.2 는 그 안의 상태값).
   // `runs, isNotEmpty` 만으로는 전 회차가 idle 이어도 통과하지만, 그것은

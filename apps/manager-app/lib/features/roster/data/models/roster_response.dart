@@ -123,10 +123,10 @@ class RosterStudent {
       riderId: asIdString(json['rider_id']),
       studentId: json['student_id'] as String,
       name: json['name'] as String,
-      // §4.2(2026-09-14 확정) — 미등록 학생이 예외가 아니라 기본 상태라
+      // §4.2 — 미등록 학생이 예외가 아니라 기본 상태라
       // 서버가 `photo_url: null` 을 내려보낸다. `StudentRow`(baraeda_ui)
       // 가 이 값을 받아 렌더하고, 없거나 로드에 실패하면 이름 이니셜로
-      // 대체한다(`R4 A-photo` — roster_screen.dart 가 그대로 전달).
+      // 대체한다(roster_screen.dart 가 그대로 전달).
       photoUrl: json['photo_url'] as String?,
       className: json['class_name'] as String?,
       // 마스킹은 서버가 이미 적용(`010-2XXX-8814`) — 클라이언트는 그대로 표시.

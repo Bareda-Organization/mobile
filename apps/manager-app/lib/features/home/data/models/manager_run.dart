@@ -54,7 +54,7 @@ class ManagerRun {
         final String wire => UserRole.fromWireValueOrNull(wire),
         _ => null,
       },
-      // R48 Ruling 822 — 서버가 아직 안 주거나 확정 전이면 `null`. 값이 없으면 화면은 그 줄을 숨긴다.
+      // Ruling 822 — 서버가 아직 안 주거나 확정 전이면 `null`. 값이 없으면 화면은 그 줄을 숨긴다.
       plateNo: json['plate_no'] as String?,
       riderCount: json['rider_count'] as int?,
       absentCount: json['absent_count'] as int?,
@@ -62,7 +62,7 @@ class ManagerRun {
     );
   }
 
-  /// 기기에 남기는 회차 요약(R52 H2) — `fromJson` 이 그대로 읽는 §4.1 항목 모양이다.
+  /// 기기에 남기는 회차 요약 — `fromJson` 이 그대로 읽는 §4.1 항목 모양이다.
   /// 학생 · 보호자 정보는 이 항목에 없다.
   Map<String, dynamic> toJson() => {
     'run_id': runId,

@@ -37,8 +37,8 @@ void main() {
       expect(policy.delayFor(20), const Duration(seconds: 30));
     });
 
-    // R46-FIXRT S-5 — 터널·음영이 1분을 넘기거나 백엔드 재기동이 길어지면
-    // (`start_period 90s`) 6회(약 1분) 뒤 포기하던 연결이 끊긴 채 방치됐다.
+    // 터널·음영이 1분을 넘기거나 백엔드 재기동이 길어지면
+    // (`start_period 90s`) 6회(약 1분) 뒤 포기하면 연결이 끊긴 채 방치된다.
     // 기본 정책은 포기 없이 30초 간격으로 계속 시도한다.
     test('기본 정책은 몇 번째 시도에서도 포기하지 않는다', () {
       expect(policy.shouldGiveUp(7), isFalse);

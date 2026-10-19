@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:parent_app/core/runs/domain/bus_position.dart';
 import 'package:parent_app/core/ui/delay_band.dart';
 
-/// R49 F2 — 지연 띠의 사유 줄은 서버 코드(`traffic`)가 아니라 한글이다. 모르는 값이면 줄을 숨긴다.
+/// 지연 띠의 사유 줄은 서버 코드(`traffic`)가 아니라 한글이다. 모르는 값이면 줄을 숨긴다.
 void main() {
   Future<void> pump(WidgetTester tester, {String? reason, bool short = false}) {
     return tester.pumpWidget(

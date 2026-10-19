@@ -9,7 +9,7 @@ import 'package:manager_app/features/offline_queue/domain/send_outcome.dart';
 /// 때만 `payload` 를 큐에 쌓는다.
 /// `payload` 에는 이미 `client_key` 가 필드로 들어 있어야 한다(즉시 전송과
 /// 재생이 같은 멱등키를 쓰기 위함 — 지시서의 명시적 경고 사항). 이 값이
-/// 멱등성의 유일한 정본이라 별도 파라미터로 다시 받지 않는다(FE-R2 목표 11).
+/// 멱등성의 유일한 정본이라 별도 파라미터로 다시 받지 않는다.
 abstract interface class OfflineQueueRepository {
   Future<SendOutcome<T>> sendOrQueue<T>({
     required String endpoint,
@@ -29,7 +29,7 @@ abstract interface class OfflineQueueRepository {
   /// 통신이 아직 두절이면 **첫 실패에서 멈춘다** — 남은 행마다 타임아웃을
   /// 되풀이할 이유가 없고, 중간 건만 성공하면 큐 안의 순서가 뒤집힌다.
   ///
-  /// 서버가 5xx 로 응답한 머리 행은 시도 횟수를 센다(R46-FIXRT S-9) — 횟수나 나이
+  /// 서버가 5xx 로 응답한 머리 행은 시도 횟수를 센다 — 횟수나 나이
   /// 상한에 닿으면 영구 실패로 재생에서 빼고(행은 큐 화면에 남는다) 같은 재생에서
   /// 뒤 행을 이어 보낸다. 큐 머리의 한 행이 뒤를 영구히 막지 않게 하는 장치다.
   Future<ReplayResult> replayPending();

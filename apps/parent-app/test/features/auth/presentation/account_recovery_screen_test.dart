@@ -68,7 +68,7 @@ class _FailingAuthRepository implements AuthRepository {
   Future<void> unregisterDevice(String token) => throw UnimplementedError();
 }
 
-/// FE-R2 목표 10 — 제출 중 표시. `recover()` 가 끝나는 시점을 이
+/// 제출 중 표시. `recover()` 가 끝나는 시점을 이
 /// `Completer` 로 직접 쥐고 있어야 "제출 중" 인 프레임을 관측할 수 있다
 /// (`pumpAndSettle` 로는 그 순간을 지나쳐 버린다). password_change_screen
 /// 과 달리 이 화면은 실패 시에도 `_submitting` 을 내리므로(§ 클래스의
@@ -455,7 +455,7 @@ void main() {
     expect(find.text('인증번호 받기'), findsOneWidget);
   });
 
-  // FE-R2 목표 10 — password_change_screen.dart 와 동일한 표시(버튼
+  // password_change_screen.dart 와 동일한 표시(버튼
   // 비활성화 + `CircularProgressIndicator`)를 이 화면에도 확인한다.
   testWidgets('제출 중에는 진행 표시기가 뜨고, 끝나면 사라진다', (tester) async {
     final repository = _StallingAuthRepository();

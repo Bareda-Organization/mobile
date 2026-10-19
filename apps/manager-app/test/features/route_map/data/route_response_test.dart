@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:manager_app/features/route_map/data/models/route_response.dart';
 
-/// R32 M1 — 서버가 `road_path`·`fallback_used` 를 얹기 전 응답과 얹은 응답을 둘 다 읽는다.
+/// 서버가 `road_path`·`fallback_used` 를 얹기 전 응답과 얹은 응답을 둘 다 읽는다.
 void main() {
   const stop = {
     'stop_id': 's1',
@@ -34,7 +34,7 @@ void main() {
     expect(route.fallbackUsed, isTrue);
   });
 
-  // R39 Ruling 400 — 경유 지점은 다른 필드가 승하차지와 같아 `is_waypoint` 로만 가른다.
+  // Ruling 400 — 경유 지점은 다른 필드가 승하차지와 같아 `is_waypoint` 로만 가른다.
   test('is_waypoint 가 있으면 읽고 없으면 승하차지(false)로 읽는다', () {
     final route = RouteResponse.fromJson({
       'stops': [

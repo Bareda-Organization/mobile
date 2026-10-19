@@ -3,7 +3,7 @@ import 'package:baraeda_app/map/naver/naver_map_adapter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-// F4 이월 3번 / F5 목표 19 — `NaverMapAdapter` 가 화면에서 사라질 때
+// `NaverMapAdapter` 가 화면에서 사라질 때
 // (dispose) 마커 보간 프레임 타이머(`_frameTicker`)가 실제로 멈추는지
 // 확인한다.
 //

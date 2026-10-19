@@ -19,7 +19,7 @@ enum RouteStopChange {
 ///
 /// 서버가 이미 "승차지 이전 2개 · 승차지 · 하차지" 로 창을 좁혀 보낸다
 /// (P-08, `StudentRouteQueryService.window()`) — 화면은 이 목록(`stops`)을
-/// 그대로 그린다(`RouteDetailScreen` 참고, Ruling 288/목표 2).
+/// 그대로 그린다(`RouteDetailScreen` 참고, Ruling 288).
 ///
 /// **`address`·`lat`·`lng` 는 `null` 일 수 있다** — 등원(TO_ACADEMY)의
 /// 하차지·하원(FROM_ACADEMY)의 승차지로 서버가 합성해 붙이는 학원 항목은
@@ -128,7 +128,7 @@ class RouteDetail {
         .cast<Map<String, dynamic>>()
         .map(RouteStop.fromJson)
         .toList(),
-    // 서버가 아직 두 필드를 안 주는 동안(R49 백엔드 갈래가 만드는 중)에도 깨지지 않게 빈 경로 · 근사 아님으로 읽는다.
+    // 서버가 두 필드를 주지 않아도 깨지지 않게 빈 경로 · 근사 아님으로 읽는다.
     roadPath: [
       for (final point in (json['road_path'] as List<dynamic>? ?? const []))
         (
@@ -155,13 +155,10 @@ class RouteDetail {
 
   /// 화면이 그릴 목록 그 자체 — 서버 응답을 그대로 쓴다.
   ///
-  /// **판단 근거(목표 2, `visibleStops` 삭제)** — 이전에는 클라이언트가
-  /// 서버와 같은 windowing 알고리즘을 여기서 한 번 더 돌려 "서버 계약이
-  /// 깨져도 방어" 하려 했다. 그런데 Ruling 288 로 서버가 학원 항목을
-  /// windowed 범위 **밖**에 별도로 붙이게 되면서(등원은 뒤·하원은 앞),
-  /// 그 옛 알고리즘은 매번 학원 항목을 창 밖으로 오판해 잘라냈다 —
-  /// "방어" 가 오히려 정상 응답을 훼손했다. 서버 알고리즘을 클라이언트가
-  /// 따로 유지하는 이중화는 한쪽이 바뀌면 반드시 어긋난다. 이 화면은
+  /// **판단 근거** — 클라이언트가 서버와 같은 windowing 알고리즘을 한 번 더 돌리지 않는다.
+  /// 서버는 Ruling 288 에 따라 학원 항목을 windowed 범위 **밖**에 붙인다(등원은 뒤·하원은 앞).
+  /// 클라이언트 복제본은 그 학원 항목을 창 밖으로 오판해 정상 응답을 잘라낸다.
+  /// 서버 알고리즘을 클라이언트가 따로 유지하는 이중화는 한쪽이 바뀌면 반드시 어긋난다. 이 화면은
   /// `GET /students/{id}/route` 전용이라(다른 소비자가 재사용하지
   /// 않는다) 서버를 신뢰하는 것이 유일한 소비자에게는 맞는 계약이다.
   final List<RouteStop> stops;

@@ -1,6 +1,6 @@
 import 'package:flutter/widgets.dart';
 
-/// 자유 입력 메모 칸 아래에 붙이는 안내(R46-LAST `Ruling 583`) — 이 칸들은 퇴원한 학생의 개인정보 파기
+/// 자유 입력 메모 칸 아래에 붙이는 안내(`Ruling 583`) — 이 칸들은 퇴원한 학생의 개인정보 파기
 /// 대상 밖이라 학생 이름·연락처가 한 번 적히면 남는다. 지울 수 없으니 입력 단계에서 줄인다.
 const freeTextPrivacyNotice = '학생 이름·연락처는 적지 마세요';
 
@@ -10,7 +10,7 @@ const freeTextPrivacyNotice = '학생 이름·연락처는 적지 마세요';
 class LimitedTextController extends TextEditingController {
   new({this.maxLength = memoMaxLength});
 
-  /// 자유 입력 메모·비고의 최대 길이(API_SPEC §1, 2026-09-30 BR-255 · BR-257).
+  /// 자유 입력 메모·비고의 최대 길이(API_SPEC §1, BR-255 · BR-257).
   static const memoMaxLength = 200;
 
   final int maxLength;

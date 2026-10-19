@@ -205,7 +205,7 @@ void main() {
     expect(find.text('등록된 문의처 없음'), findsNothing);
   });
 
-  // R48 Ruling 825 · 827 — 문의처를 기기에 남기고(차단 화면이 쓴다), 번호 모양이 있을 때만 전화 단추를 둔다.
+  // Ruling 825 · 827 — 문의처를 기기에 남기고(차단 화면이 쓴다), 번호 모양이 있을 때만 전화 단추를 둔다.
   testWidgets('문의처에 번호가 있으면 학원에 전화 단추가 있고 그 문의처를 기기에 남긴다', (tester) async {
     final storage = _RecordingContactStorage();
     await _pumpPendingApproval(
@@ -218,7 +218,7 @@ void main() {
     expect(storage.saved, '02-000-0000');
   });
 
-  // /me 경로와 같은 저장 조건 — 공백 문의처는 이미 남긴 번호를 지우지 않는다(R53 최종 대조).
+  // /me 경로와 같은 저장 조건 — 공백 문의처는 이미 남긴 번호를 지우지 않는다.
   testWidgets('문의처가 공백이면 이미 남긴 번호를 덮어쓰지 않는다', (tester) async {
     final storage = _RecordingContactStorage()..saved = '02-111-1111';
     await _pumpPendingApproval(
@@ -242,7 +242,7 @@ void main() {
     expect(storage.saved, isNull);
   });
 
-  // R32 P9 — 상태를 처음 한 번만 조회해, 관리자가 승인·거절해도 앱을 껐다 켜야 알 수 있었다.
+  // 처음 한 번만 조회하면 관리자가 승인·거절해도 앱을 껐다 켜야 알 수 있다.
   testWidgets('P9 [상태 다시 확인] 을 누르면 승인 상태를 다시 조회해 화면에 반영한다', (tester) async {
     final authRepository = _StubAuthRepository()
       ..statusFromSecondCall = AccountStatus.rejected;
@@ -272,7 +272,7 @@ void main() {
     expect(container.read(currentAccountStatusProvider), AccountStatus.active);
   });
 
-  // R46 B2 #20 — 푸시 SDK 가 없어 대기 화면이 한 번만 조회하면 승인이 나도 [상태 다시 확인] 을 눌러야 했다.
+  // 푸시 SDK 가 없어 대기 화면이 한 번만 조회하면 승인이 나도 [상태 다시 확인] 을 눌러야 한다.
   group('R46 주기 재확인', () {
     // 사양(UF-X-02)이 정한 값 — 아래 시험은 이 상수로 시간을 흘리므로 값 자체는 여기서 고정한다.
     test('재조회 간격은 30초다', () {
@@ -416,7 +416,7 @@ void main() {
     });
   });
 
-  // R48 시안 `pending*` — 상태를 칩 + 큰 제목 + 3단계 진행 막대로 먼저 보여 준다.
+  // 시안 `pending*` — 상태를 칩 + 큰 제목 + 3단계 진행 막대로 먼저 보여 준다.
   group('R48 승인 대기 · 거절 구성', () {
     testWidgets('승인 대기 — 대기 칩 · 확인 중 제목 · 단계 셋 · 30초 자동 확인 안내', (tester) async {
       await _pumpPendingApproval(tester, _StubAuthRepository());

@@ -12,7 +12,7 @@ import 'package:parent_app/core/auth/domain/auth_repository.dart';
 import 'package:parent_app/core/auth/user_role.dart';
 import 'package:parent_app/features/auth/presentation/signup_screen.dart';
 
-/// R46 B2 #20 — 가입이 접수되면 로그인 화면으로 돌려보내지 않고 바로 승인 대기로 들어간다.
+/// 가입이 접수되면 로그인 화면으로 돌려보내지 않고 바로 승인 대기로 들어간다.
 /// 서버는 가입 응답(§2.2)에 토큰을 주지 않지만, `pending` 계정도 로그인은 성공한다(§2.5) —
 /// 방금 입력한 자격으로 로그인해 라우터가 대기 화면으로 보내게 한다.
 class _Repository implements AuthRepository {
@@ -174,7 +174,7 @@ void main() {
       );
     });
 
-    // R52 낮음 A5 — 길이 오류는 입력칸 옆에만 뜨고 꺼진 단추 아래는 비어 있었다.
+    // 길이 오류는 입력칸 옆에만 뜨면 안 된다 — 꺼진 단추 아래에도 안내가 나와야 한다.
     testWidgets('아이디가 50자를 넘으면 꺼진 버튼 아래에 줄이라는 안내가 나온다', (tester) async {
       await _pump(tester, _Repository());
       await _fillAllButAcademy(tester);

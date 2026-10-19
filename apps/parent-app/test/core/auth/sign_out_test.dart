@@ -25,7 +25,7 @@ class _StubAuthRepository implements AuthRepository {
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
 }
 
-/// 로그아웃(2026-09-23 사용자 지시) — 역할이 비면 라우터가 로그인 화면으로 보낸다. 서버 호출이 실패해도
+/// 로그아웃 — 역할이 비면 라우터가 로그인 화면으로 보낸다. 서버 호출이 실패해도
 /// 이 기기에서는 로그아웃해야 한다 — 네트워크가 끊긴 기사가 다른 계정으로 바꿔 타지 못하면 안 된다.
 void main() {
   late _StubAuthRepository repository;

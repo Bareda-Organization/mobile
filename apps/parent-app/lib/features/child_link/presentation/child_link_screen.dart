@@ -26,7 +26,7 @@ import 'package:parent_app/features/child_link/presentation/widgets/student_code
 /// 없앴다. 학생이 선행 조건 없이 언제든 코드를 만들고(§3.3), 학부모는 그
 /// 코드를 입력하기만 한다(§3.4) — 2단계로 줄었다.
 ///
-/// R48 시안 `child-link*` · `link-code*` — 주 행동은 화면 맨 아래 고정 줄에 두고(엄지가 닿는 곳), 학부모는
+/// 주 행동은 화면 맨 아래 고정 줄에 두고(엄지가 닿는 곳), 학부모는
 /// 연결이
 /// 끝나면 전용 완료 화면으로 바뀐다. 보이는 부분은 `widgets/` 에 있고 이 파일은 상태와 서버 호출만 맡는다.
 class ChildLinkScreen extends ConsumerStatefulWidget {

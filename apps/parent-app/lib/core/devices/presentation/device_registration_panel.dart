@@ -12,12 +12,7 @@ import 'package:parent_app/core/ui/failure_message.dart';
 /// 푸시를 받을 수 없는 기기에 보이는 안내(UF-X-09 ④).
 const _pushUnavailableNotice = '이 기기에서는 아직 푸시 알림을 받을 수 없어요';
 
-/// NTF-12 · API_SPEC §2.11 — 이 기기의 푸시 알림 수신 등록. (이전 판은
-/// `AUTH-11` 로 잘못 표기돼 있었다 — `FEATURE_SPEC.md:269` 의 `AUTH-11` 은
-/// "계정↔레코드 연결"이라 이 기능과 무관하고, `FEATURE_SPEC.md:688` 의
-/// `NTF-12` "푸시 단말 등록·해지 — 전 역할, `pending` 포함"이 정확히
-/// 이 위젯을 가리킨다. P2 수정 라운드에서 화면×기능ID 표를 만들다 발견,
-/// 역할 분기와는 무관한 별도 결함.)
+/// NTF-12 · API_SPEC §2.11 — 이 기기의 푸시 알림 수신 등록.
 ///
 /// **`pending` 상태에서도 동작해야 한다**(§2.11 "인증된 전 역할 —
 /// `pending` 포함, 승인 결과 알림이 대상") — 그래서 이 위젯은 계정 상태를

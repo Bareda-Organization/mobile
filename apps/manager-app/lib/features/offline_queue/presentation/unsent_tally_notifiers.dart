@@ -10,7 +10,7 @@ import 'package:manager_app/features/offline_queue/data/unsent_emergency_store.d
 /// 안내(`state`)는 곧바로 바꾸고 저장소 읽기 · 쓰기만 한 줄로 이어 붙인다 — 저장소가 실패하거나 응답하지 않아도
 /// 이번 실행의 안내와 뒤따르는 작업이 막히지 않는다.
 ///
-/// 경합 규칙(R53) —
+/// 경합 규칙 —
 /// ①시작 때 저장분을 읽지 못했으면 한 번 더 읽고, 그래도 못 읽으면 앞 건수를 덮을 수 있어 쓰지 않는다
 /// ②읽기가 끝나기 전에는 쓰지 않는다(상한을 넘긴 늦은 읽기가 우리 쓰기를 담아 와 같은 건이 두 번 세지는
 /// 일을 막는다. 읽기가 끝나면 합친 값을 쓴다)
@@ -74,7 +74,7 @@ abstract class PersistedTallyNotifier extends Notifier<UnsentEmergency?> {
 
   /// [count] 건을 더한다 — 건수를 더하고 시각을 지금으로, 번호는 [contact] 를 우선한다(없으면 앞서 남긴 번호 ·
   /// [fallbackContact]). 돌려주는 Future 는 기기 저장이 끝나면 완료된다 —
-  /// 대기열을 지우기 전에 기다려야 하는 호출부가 쓴다(R53 B-6).
+  /// 대기열을 지우기 전에 기다려야 하는 호출부가 쓴다.
   Future<void> add({required int count, required String? contact}) {
     final previous = state;
     state = UnsentEmergency(

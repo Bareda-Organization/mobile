@@ -19,7 +19,7 @@ StudentRun _run(RunStatus runStatus, RiderStatus riderStatus) => StudentRun(
 
 /// 회차 카드 상태 칩 — 홈 카드와 일정 탭이 같은 말을 쓴다.
 void main() {
-  // R52 `Ruling 871` — 서버가 출발 전 미승차(`no_show`)를 `waiting` 으로 보낸다.
+  // `Ruling 871` — 서버가 출발 전 미승차(`no_show`)를 `waiting` 으로 보낸다.
   // 앱은 받은 값을 가공하지 않고 대기로 그린다 — 빨간 "미승차" 는 `no_show` 가
   // 올 때만 나온다.
   group('R52 871 출발 전에는 대기로 그린다', () {
@@ -40,7 +40,7 @@ void main() {
     });
   });
 
-  // R52 낮음 A12 — 끝난 회차에 대기 값이 남아 있으면 "운행 전" 으로 읽혔다.
+  // 끝난 회차에 대기 값이 남아 있으면 "운행 전" 으로 읽히면 안 된다.
   test('waiting + finished 는 "운행 전" 이 아니라 "종료" 다', () {
     final chip = runStatusChip(_run(RunStatus.finished, RiderStatus.waiting));
 
@@ -54,7 +54,7 @@ void main() {
     expect(chip.label, '이동 중');
   });
 
-  // R52 `Ruling 870` — 서버 `segmentOf` 와 같은 답. 출발 08:00(UTC) 기준.
+  // `Ruling 870` — 서버 `segmentOf` 와 같은 답. 출발 08:00(UTC) 기준.
   group('changeZoneOf — 서버 segmentOf 와 같은 구간', () {
     final depart = DateTime.utc(2026, 10, 10, 8);
     ChangeZone zone(RunStatus status, DateTime now) =>

@@ -1,7 +1,7 @@
 // 라우터에 등록한 화면에 **갈 길이 있는가**.
 //
-// ⚠ 2026-09-21 실측 — `liveMap`·`routeDetail`·`settings` 세 화면이 만들어져 있고 검사도
-// 있는데 **앱 어디에서도 그리로 이동하지 않았다.** 사양은 진입점을 명시한다 —
+// ⚠ `liveMap`·`routeDetail`·`settings` 같은 화면이 만들어져 있고 검사도 있어도
+// **앱 어디에서도 그리로 이동하지 않을 수 있다.** 사양은 진입점을 명시한다 —
 // `UF-D-0x`·`UF-M-0x` 가 매니저 앱 화면의 진입점을 정한다.
 // `UF-P-08` "홈 → [알림] → … → [알림 설정]".
 //
@@ -32,8 +32,8 @@ void main() {
           f.path.endsWith('app_routes.dart')) {
         continue; // 등록처·정의처는 세지 않는다
       }
-      // 주석 속 언급은 세지 않는다 — `emergency_screen.dart` 문서 주석이 "죽은 라우트"라고
-      // 적으면서 `AppRoutes.emergency` 를 언급해, 갈 길이 없는데도 이 검사가 통과했다(R32 M2).
+      // 주석 속 언급은 세지 않는다 — 주석에 `AppRoutes.emergency` 만 적혀 있고
+      // 갈 길이 없으면 이 검사가 통과하면 안 된다.
       final code = f
           .readAsStringSync()
           .split('\n')

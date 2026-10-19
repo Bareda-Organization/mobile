@@ -306,7 +306,7 @@ void main() {
     });
 
     test('재발급이 도는 중 로그아웃(clear)되면 응답이 와도 토큰을 다시 저장하지 않는다', () async {
-      // F07-06 — 예전엔 로그아웃이 지운 토큰을 재발급 완료가 되살렸다.
+      // 로그아웃이 지운 토큰을 재발급 완료가 되살리지 않는다.
       final storage = _buildTokenStorage();
       await storage.saveTokens(accessToken: 'old', refreshToken: 'r1');
       final gate = Completer<void>();

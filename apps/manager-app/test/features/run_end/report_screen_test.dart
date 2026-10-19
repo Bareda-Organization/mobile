@@ -54,7 +54,7 @@ Widget _wrap(
 }) {
   return ProviderScope(
     overrides: [
-      // R32 M3 — 도착 결과가 없으면 화면이 명단으로 대상 학생을 만든다. 실제 서버로 나가지 않게 막는다.
+      // 도착 결과가 없으면 화면이 명단으로 대상 학생을 만든다. 실제 서버로 나가지 않게 막는다.
       roster ??
           rosterProvider.overrideWith(
             (ref) async => const RosterResponse(
@@ -195,7 +195,7 @@ void main() {
     expect(find.text('보고가 접수됐어요'), findsOneWidget);
   });
 
-  // R56 · Ruling 894 ⑧ — 통신 두절이면 보고가 기기 대기열에 쌓인다. 서버에 접수된 것처럼 그리지 않고(§1.9)
+  // Ruling 894 ⑧ — 통신 두절이면 보고가 기기 대기열에 쌓인다. 서버에 접수된 것처럼 그리지 않고(§1.9)
   // 저장했다고 알리며, 같은 보고가 두 번 쌓이지 않게 제출 단추를 끈다.
   testWidgets('통신 두절로 큐에 쌓이면 접수가 아니라 저장했다고 알리고 제출 단추를 끈다', (tester) async {
     final fakeRepo = await pumpReport(tester, queued: true);
@@ -371,14 +371,13 @@ void main() {
     expect(find.byType(BaraedaListRow), findsNothing);
   });
 
-  // R32 M11
   testWidgets('상황 메모가 필수임을 라벨에 밝힌다', (tester) async {
     await pumpReport(tester);
 
     expect(find.text('상황 메모 (필수)'), findsOneWidget);
   });
 
-  // R46-LAST `Ruling 583` — 이 칸은 퇴원 파기 대상 밖이라 입력 단계에서 개인정보를 줄인다.
+  // `Ruling 583` — 이 칸은 퇴원 파기 대상 밖이라 입력 단계에서 개인정보를 줄인다.
   testWidgets('상황 메모 칸 아래에 학생 이름·연락처를 적지 말라고 안내한다', (tester) async {
     await pumpReport(tester);
 

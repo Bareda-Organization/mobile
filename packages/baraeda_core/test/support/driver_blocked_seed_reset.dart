@@ -1,19 +1,19 @@
 import 'package:dio/dio.dart';
 
-/// `real_backend_auth_test.dart` 목표 9(`driverBlocked` 는 로그인이 항상 실패해야 한다)가
-/// 첫 실행만 초록이던 문제를 되돌린다.
+/// `real_backend_auth_test.dart` 의 `driverBlocked` 로그인 검사(항상 실패해야 한다)가 성립하도록,
+/// 실행 전에 공유 시드의 차단 상태를 되돌린다.
 ///
 /// **원인 — 이 패키지 밖에서 계정을 되돌릴 수 없이 풀어 버린다.** 백엔드에는 관리자용
 /// 차단 해제 API(`AccountUnblockCommandService`)는 있지만 **재차단 API 는 없다**. 다른 앱
 /// (매니저 앱)의 실서버 계약 시험이 같은 공유 시드 DB 에서 `driverBlocked` 를 대상으로
-/// 그 해제 흐름을 돌리면, 이 패키지의 목표 9 는 그다음부터 영원히 "로그인 성공"을 받는다
+/// 그 해제 흐름을 돌리면, 이 패키지의 `driverBlocked` 검사는 그다음부터 영원히 "로그인 성공"을 받는다
 /// — 코드 결함이 아니라 크로스 패키지 상태 오염이다.
 ///
-/// **판단 근거 — `real_backend_target.dart`(parent-app)·매니저 앱의 F5 판정과 같은
+/// **판단 근거 — `real_backend_target.dart`(parent-app)·매니저 앱의 판정과 같은
 /// "조건부 `POST /dev/reset`" 형태를 따르되, 코드는 공유하지 않고 새로 둔다.** 저쪽 둘은
 /// *시각*(출발 시각까지 남은 여유)을 판정 기준으로 쓰고, 여기는 *계정 차단 여부*를 판정
 /// 기준으로 쓴다 — 판정 로직 자체가 다르고, 공유하려면 그 파일들이 있는 `parent-app`·
-/// `manager-app` 을 고쳐야 하는데 이 작업 범위는 `baraeda_core/test/**` 뿐이다. 형태(먼저
+/// `manager-app` 을 고쳐야 하므로 `baraeda_core/test/**` 안에 둔다. 형태(먼저
 /// 값싸게 확인하고, 어긋났을 때만 비싼 재구성을 돈다)만 재사용한다 — 무조건 초기화하면
 /// 이미 안전한 회차에도 Flyway clean+migrate 를 매번 돌려 실행 시간만 늘어난다.
 Future<void> ensureDriverBlockedSeedIsIntact(String baseUrl) async {

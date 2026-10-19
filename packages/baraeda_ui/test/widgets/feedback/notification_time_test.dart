@@ -1,7 +1,7 @@
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// 한국 시간(UTC+9) 기준으로 그린다 — 기기 시간대가 달라도 서버의 날짜와 같아야 한다(R26).
+/// 한국 시간(UTC+9) 기준으로 그린다 — 기기 시간대가 달라도 서버의 날짜와 같아야 한다.
 void main() {
   // 2026-09-30 10:00 KST (수요일).
   final now = DateTime.utc(2026, 9, 30, 1);
@@ -53,7 +53,7 @@ void main() {
       expect(timeLabel(DateTime.utc(2026, 9, 28, 5, 5), today), '9월 28일 14:05');
     });
 
-    // 웹 `ManagerList` 시험이 UTC 날짜로 "오늘" 을 가려 서울 자정~오전 9시에 틀렸던 사고(R48)의 앱 쪽 방어.
+    // UTC 날짜로 "오늘" 을 가리면 서울 자정~오전 9시에 틀린다 — 웹 `ManagerList` 와 같은 함정을 앱에서 막는다.
     test('서울 자정~오전 9시에도 오늘 판정이 서울 날짜를 따른다 — UTC 날짜가 달라도', () {
       // 지금 10-04 00:10 KST(= 10-03 15:10 UTC)
       // 알림 10-04 00:05 KST(= 10-03 15:05 UTC):

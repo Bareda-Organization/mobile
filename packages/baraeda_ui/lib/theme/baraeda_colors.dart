@@ -137,7 +137,7 @@ class BaraedaColors extends ThemeExtension<BaraedaColors> {
   final Color mapRoute;
   final Color mapBus;
 
-  // ── R48 시안(`mkit`) 부품용 ──
+  // ── 시안(`mkit`) 부품용 ──
   /// 대기 칩 글자(시안 `--t-wait`)
   final Color statusWait;
 
@@ -207,7 +207,7 @@ class BaraedaColors extends ThemeExtension<BaraedaColors> {
     navActiveText: BaraedaPalette.green600,
     textPrimary: BaraedaPalette.ink,
     textSecondary: Color(0xFF5C665F),
-    // 옅은 면(`bgSubtle`) 위에서도 4.5:1 이상 — 예전 stone400 은 흰 카드 위에서 2.93 이었다(F07-09).
+    // 옅은 면(`bgSubtle`) 위에서도 4.5:1 이상. stone400 은 흰 카드 위에서 2.93 이라 못 쓴다.
     textTertiary: Color(0xFF626D69),
     textInverse: BaraedaPalette.white,
     textOnInverseMuted: BaraedaPalette.green200,

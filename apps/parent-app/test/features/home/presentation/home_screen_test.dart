@@ -16,9 +16,9 @@ import 'package:parent_app/features/home/presentation/home_screen.dart';
 import '../../../support/no_bus_position.dart';
 
 void main() {
-  // R48 `Ruling 826` — 로그아웃은 설정 탭 맨 아래에만 있다. 2026-09-29 에 홈 머리말에 뒀던 것을 뺐다
+  // `Ruling 826` — 로그아웃은 설정 탭 맨 아래에만 있다. 홈 머리말에는 두지 않는다
   // (홈 머리말 시험은 `home_bus_preview_test.dart` 의 '머리줄').
-  // R32 P1~P3 — 홈에서 갈 길이 없던 화면 3곳. 진입점이 눌려서 실제 경로로 가는지까지 본다.
+  // 홈에서 갈 수 있어야 하는 화면 3곳. 진입점이 눌려서 실제 경로로 가는지까지 본다.
   Future<List<String>> pumpHome(
     WidgetTester tester, {
     required UserRole role,
@@ -83,8 +83,8 @@ void main() {
     expect(find.text('부모님과 연결하기'), findsNothing);
   });
 
-  // R48 — 일정은 아래 탭이 되고(`app_shell_test`), 자녀 추가는 설정 탭으로
-  // 옮겼다(`settings_screen_r48_test`).
+  // 일정은 아래 탭이 되고(`app_shell_test`), 자녀 추가는 설정 탭에 둔다
+  // (`settings_screen_r48_test`).
   // 홈 본문에 같은 진입이 또 남아 있으면 길이 두 개가 된다.
   testWidgets('P2 학부모 홈에는 [일정] 단추가 없다 — 일정은 아래 탭이다', (tester) async {
     final pushed = await pumpHome(

@@ -17,9 +17,9 @@ import 'package:parent_app/features/schedule/presentation/schedule_screen.dart';
 import 'package:parent_app/features/schedule/presentation/weekly_address_screen.dart';
 
 
-/// `router.dart` 의 계정 상태 게이트(docs/archive/rounds/fe-phases-f2-f5.md §5.0 목표 7항 · `API_SPEC §1.4`)를
-/// 직접 무는 시험 — 게이트 리뷰(`.claude/f3/gate-f2-flutter.md`)가 이
-/// 조건을 지워도 기존 시험 10/10 이 그대로 통과하는 것을 확인한 자리다.
+/// `router.dart` 의 계정 상태 게이트(`API_SPEC §1.4`)를
+/// 직접 무는 시험 — 기존 시험은 이 조건을 지워도 그대로 통과하므로,
+/// 이 시험이 게이트를 직접 문다.
 ///
 /// `role`·`status` provider 를 로그인 응답을 거치지 않고 직접
 /// `overrideWith` 로 주입한다 — 이 시험의 관심사는 "로그인 응답을 provider

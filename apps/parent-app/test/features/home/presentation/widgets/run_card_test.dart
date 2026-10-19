@@ -16,8 +16,7 @@ import 'package:parent_app/core/runs/domain/student_run.dart';
 import 'package:parent_app/features/home/presentation/widgets/run_card.dart';
 
 /// API_SPEC §8.3 에러 코드(`CHANGE_LIMIT_REACHED`·`CHANGE_WINDOW_CLOSED`)가
-/// §3.6 토글 실패 시 화면에 실제로 다른 문구로 갈리는지 확인한다
-/// (R1 목표 5 — "그 화면에 걸리는 에러 코드를 실제로 재현").
+/// §3.6 토글 실패 시 화면에 실제로 다른 문구로 갈리는지 확인한다.
 class _ThrowingRunRepository implements RunRepository {
   new(this.failure);
 
@@ -439,8 +438,7 @@ void main() {
     await tester.pumpAndSettle();
   });
 
-  // 승인 마감이 `2026-09-12 07:30:00.000` 그대로 나왔다. 승인 주체도 사양(UF-P-05)
-  // 대로 학원 관리자다.
+  // 승인 주체도 사양(UF-P-05) 대로 학원 관리자다.
   testWidgets('P8 승인 대기 안내의 마감 시각을 한국어 날짜로 보여준다', (tester) async {
     await pumpRecording(
       tester,

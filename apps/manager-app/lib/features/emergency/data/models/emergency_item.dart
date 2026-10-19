@@ -3,8 +3,7 @@ import 'package:manager_app/features/emergency/data/models/emergency_type.dart';
 /// `GET /runs/{runId}/emergencies` 의 `items[]` 원소 — §4.15.
 ///
 /// `acked` 는 이 화면 진입 시 조회 + 수동 새로고침으로만 갱신한다. 실시간
-/// 반영(WS `emergency_acked`)은 F4 범위 — 이 라운드는 WebSocket 클라이언트를
-/// 두지 않는다(지시서 범위 제한).
+/// 반영(WS `emergency_acked`)은 두지 않는다 — 클라이언트에 WebSocket 연결이 없다.
 class EmergencyItem {
   const new({
     required this.emergencyId,

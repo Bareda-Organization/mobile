@@ -215,7 +215,6 @@ void main() {
     expect(runOptionLabel(_fixtureRun()), '등원 · 1호차');
   });
 
-  // 승인 마감이 `2026-09-12 07:30:00.000` 그대로 나왔다.
   testWidgets('P8 승인 대기 접수 안내의 마감 시각을 한국어 날짜로 보여준다', (tester) async {
     await _pumpAndSubmitWith(
       tester,

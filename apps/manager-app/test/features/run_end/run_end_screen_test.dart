@@ -24,7 +24,7 @@ Widget _wrap(
 }) {
   return ProviderScope(
     overrides: [
-      // R32 M3 — 도착 결과가 없으면 화면이 명단으로 대상 학생을 만든다. 실제 서버로 나가지 않게 막는다.
+      // 도착 결과가 없으면 화면이 명단으로 대상 학생을 만든다. 실제 서버로 나가지 않게 막는다.
       roster ??
           rosterProvider.overrideWith(
             (ref) async => const RosterResponse(
@@ -341,8 +341,8 @@ void main() {
     expect(find.textContaining('보호자 부재'), findsNothing);
   });
 
-  // R48 1순위 결함 — 하차 합계를 `counts.boarded` 로 그리면 운행이 끝난 뒤
-  // (전원 alighted) 항상 0 이 나왔다.
+  // 하차 합계를 `counts.boarded` 로 그리면 운행이 끝난 뒤
+  // (전원 alighted) 항상 0 이 나온다.
   testWidgets('전원이 하차한 종료 명단은 하차를 alighted 학생 수로 센다(counts.boarded 는 0)', (
     tester,
   ) async {

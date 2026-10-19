@@ -27,7 +27,7 @@ String runOptionLabel(StudentRun run) =>
     '${run.direction.label} · ${run.busNo}';
 
 /// §3.8 — 일일 변경 신청. 날짜(오늘·내일, 한국 시간)를 고르면 `core/runs` 의
-/// §3.5 조회가 그날 회차를 주고, 그중 하나를 대상으로 신청한다(R48 시안 `daily-change`).
+/// §3.5 조회가 그날 회차를 주고, 그중 하나를 대상으로 신청한다.
 ///
 /// 신청 이력(§3.9)은 일정 탭 맨 아래로 옮겼다. 제출하면 신청 내용 영수증이 이 화면을
 /// 대신한다(`daily-change--done`).
@@ -72,7 +72,7 @@ class _ChangeRequestPanelState extends ConsumerState<ChangeRequestPanel> {
     _reportDirty();
   }
 
-  /// 적어 둔 주소·사유가 있는지 일정 화면에 알린다(뒤로가기 확인용, R32 P14).
+  /// 적어 둔 주소·사유가 있는지 일정 화면에 알린다(뒤로가기 확인용).
   void _reportDirty() {
     final dirty =
         _reasonController.text.trim().isNotEmpty ||
@@ -81,7 +81,7 @@ class _ChangeRequestPanelState extends ConsumerState<ChangeRequestPanel> {
     _edits.mark(this, dirty: dirty);
   }
 
-  /// 지금 제출할 수 없다면 그 이유 — 제출 가능하면 null (R32 P12).
+  /// 지금 제출할 수 없다면 그 이유 — 제출 가능하면 null.
   String? get _missingInput {
     if (_selectedRunId == null) return '대상 회차를 골라 주세요';
     if (_type == ChangeRequestType.relocate &&
@@ -277,7 +277,7 @@ class _ChangeRequestPanelState extends ConsumerState<ChangeRequestPanel> {
           child: BaraedaButton(
             label: needsApproval ? '승인 요청 보내기' : '변경 신청하기',
             block: true,
-            // 단추가 왜 꺼졌는지 단추 아래 글로 알려 준다(R32 P12).
+            // 단추가 왜 꺼졌는지 단추 아래 글로 알려 준다.
             disabledReason: canSubmit ? null : _missingInput,
             onPressed: canSubmit ? _submit : null,
           ),

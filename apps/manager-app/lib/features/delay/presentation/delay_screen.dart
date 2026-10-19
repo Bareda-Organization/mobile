@@ -86,7 +86,7 @@ class _DelayScreenState extends ConsumerState<DelayScreen> {
   @override
   void initState() {
     super.initState();
-    // 문구를 입력할 때마다 미리보기를 다시 그린다(R46).
+    // 문구를 입력할 때마다 미리보기를 다시 그린다.
     _messageController.addListener(() => setState(() {}));
   }
 
@@ -223,7 +223,7 @@ class _DelayScreenState extends ConsumerState<DelayScreen> {
     );
   }
 
-  /// 보내기 전에 학부모·학생에게 나갈 문구를 보여준다(R46). 입력한 문구는 그대로 — 사양이 정한 앞머리
+  /// 보내기 전에 학부모·학생에게 나갈 문구를 보여준다. 입력한 문구는 그대로 — 사양이 정한 앞머리
   /// "{이름} 학생이 탄 버스 — " 만 붙는다(API_SPEC §4.9). 비우면 자동 문구인데 그 문장은 서버만 만든다(사유별 문장을
   /// 앱이 따로 들고 있으면 서버가 바뀔 때 어긋난다) — 사양에 있는 것(사유·"현재 예상 지연 N분")만 알린다.
   Widget _buildPreview() {

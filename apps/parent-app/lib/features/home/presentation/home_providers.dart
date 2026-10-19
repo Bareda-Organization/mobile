@@ -6,6 +6,6 @@
 // 건수 배지"), 그 provider 는 `widgets/pending_change_badge.dart` 가
 // 직접 import 하므로 여기서는 재노출하지 않는다.
 //
-// 알림 목록 provider 는 R44 에서 `features/notifications` 로 옮겼다 — 홈은 알림을 보여주지 않는다.
+// 알림 목록 provider 는 `features/notifications` 에 둔다 — 홈은 알림을 보여주지 않는다.
 export 'package:parent_app/core/runs/presentation/run_providers.dart';
 export 'package:parent_app/core/students/presentation/student_providers.dart';

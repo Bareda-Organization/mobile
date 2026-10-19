@@ -117,7 +117,7 @@ void main() {
       expect(find.textContaining('바래다 자녀 연결 코드 123456'), findsOneWidget);
     });
 
-    // R32 P8 — 만료 시각이 `2026-09-12 00:00:00.000` 그대로 화면에 나왔다.
+    // 만료 시각이 `2026-09-12 00:00:00.000` 같은 원문 그대로 화면에 나오면 안 된다.
     testWidgets('만료 시각을 읽기 쉬운 시각으로 보여준다', (tester) async {
       await _pumpAsStudent(tester, _StubLinkRepository());
 
@@ -166,7 +166,7 @@ void main() {
       expect(find.text('연결 코드 6자리를 모두 입력하면 눌러요'), findsOneWidget);
     });
 
-    // R53 t3 확신4 — 서버 코드는 숫자 6자리다. 영문 키보드가 뜨거나 글자가 들어가면 안 된다.
+    // 서버 코드는 숫자 6자리다. 영문 키보드가 뜨거나 글자가 들어가면 안 된다.
     testWidgets('연결 코드 칸은 숫자 키패드이고 숫자만 받는다', (tester) async {
       await _pumpAsParent(tester, _StubLinkRepository());
 

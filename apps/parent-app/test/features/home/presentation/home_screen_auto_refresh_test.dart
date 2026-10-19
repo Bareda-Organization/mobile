@@ -146,7 +146,7 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
-  // R46 A — 주기 갱신이 실패해도 마지막으로 받은 회차 카드가 남고 오류는 따로 알린다.
+  // 주기 갱신이 실패해도 마지막으로 받은 회차 카드가 남고 오류는 따로 알린다.
   testWidgets('R46 갱신이 실패해도 마지막 회차 카드가 남고 오류 띠를 함께 보인다', (tester) async {
     runs = _FailingAfterFirstRuns();
     await tester.pumpWidget(

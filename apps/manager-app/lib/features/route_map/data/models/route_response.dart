@@ -107,7 +107,7 @@ class RouteResponse {
           : RouteStop.fromJson(currentStopJson),
       nextStop: nextStopJson == null ? null : RouteStop.fromJson(nextStopJson),
       skippedNotice: json['skipped_notice'] as String?,
-      // R32-M1 — 서버가 이 두 필드를 얹기 전 응답에는 없다. 없으면 빈 선·근사 아님으로 읽는다.
+      // 응답에 이 두 필드가 없으면 빈 선·근사 아님으로 읽는다.
       roadPath: [
         for (final point in json['road_path'] as List<dynamic>? ?? [])
           (

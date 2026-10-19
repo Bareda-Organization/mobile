@@ -157,7 +157,7 @@ void main() {
     expect(find.text('전송 대기'), findsOneWidget);
   });
 
-  // R46-FIXRT S-9 — 서버가 5xx 를 되풀이해 재생에서 뺀 행은 "대기 중" 이 아니다. 사용자가 보내지지 않았음을 알고
+  // 서버가 5xx 를 되풀이해 재생에서 뺀 행은 "대기 중" 이 아니다. 사용자가 보내지지 않았음을 알고
   // 직접 지우거나 다시 처리할 수 있어야 한다.
   testWidgets('영구 실패 행은 대기 중 대신 전송 실패로 보이고 삭제할 수 있다', (tester) async {
     final fakeRepo = _FakeOfflineQueueRepository(
@@ -196,8 +196,8 @@ void main() {
     expect(find.text('삭제'), findsNWidgets(2));
   });
 
-  // 화면 확인(R46-FIXRT)에서 발견 — 목록 `Column` 이 가운데 정렬이라 문구가 짧은 카드(`대기 중`)만 내용 폭으로 줄어
-  // 가운데에 떴다. 문구가 긴 `전송 실패` 카드와 폭이 달라 한 목록이 들쭉날쭉했다(`Ruling 592` 와 같은 갈래).
+  // 목록 `Column` 이 가운데 정렬이라 문구가 짧은 카드(`대기 중`)만 내용 폭으로 줄어 가운데에 뜨면,
+  // 문구가 긴 `전송 실패` 카드와 폭이 달라 한 목록이 들쭉날쭉해진다(`Ruling 592` 와 같은 갈래).
   testWidgets('대기 중 카드와 전송 실패 카드는 같은 폭으로 그려진다', (tester) async {
     final fakeRepo = _FakeOfflineQueueRepository(
       pending: [

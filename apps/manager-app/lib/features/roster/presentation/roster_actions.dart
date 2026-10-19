@@ -37,7 +37,7 @@ Future<String?> callGuardian(
 /// 낙관적으로 그리지 않는다(§1.9). 실패하면 이유를 돌려준다. 다른 사람이 미승차를 되돌렸다면
 /// (`NO_SHOW_CASE_NOT_FOUND`) 이 화면의 명단이 낡았으니 그때도 다시 받는다(Z-05).
 ///
-/// 큐에 쌓인 기록은 승하차와 같은 재생 · 거절 안내 규칙을 따른다(R56 · Ruling 894 ⑧).
+/// 큐에 쌓인 기록은 승하차와 같은 재생 · 거절 안내 규칙을 따른다(Ruling 894 ⑧).
 Future<({String? error, bool queued})> submitNoShowContact(
   ProviderContainer container, {
   required String runId,

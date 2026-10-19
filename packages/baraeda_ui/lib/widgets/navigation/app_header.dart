@@ -36,7 +36,7 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
 
   /// 뒤로가기 동작. 비우면 뒤에 화면이 있을 때만 돌아가는 버튼을 그린다
   /// (Material `AppBar` 의 `automaticallyImplyLeading` 과 같은 규칙 —
-  /// 2026-09-29, 화면마다 넘기게 두었더니 학부모 앱 5개 화면이 빠뜨렸다).
+  /// 화면마다 넘기면 빠뜨리기 쉽다).
   final VoidCallback? onBack;
 
   /// 오른쪽 아이콘 버튼 영역(예: 비상 버튼).
@@ -108,7 +108,7 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
       // `preferredSize.height + MediaQuery.padding.top` 으로 이미 잡아 두므로
       // 여기서 높이를 더하지 않고 **내용만 아래로 민다**.
       //
-      // ⚠ 없으면 제목·뒤로 버튼이 시계·배터리 위에 겹쳐 그려진다(2026-09-20 iPhone 17 Pro
+      // ⚠ 없으면 제목·뒤로 버튼이 시계·배터리 위에 겹쳐 그려진다(iPhone 17 Pro
       // 실측 — 제목이 y=7.5 에서 시작, 상태 표시줄은 59). `bottom: false` 인 것은 이 위젯이
       // 화면 맨 위에만 놓이기 때문이다 — 아래 여백까지 먹으면 본문이 밀린다.
       child: SafeArea(

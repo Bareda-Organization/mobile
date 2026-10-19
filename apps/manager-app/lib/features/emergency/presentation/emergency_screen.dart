@@ -155,8 +155,8 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
     // 무관하게 읽을 수 있지만, 위치 스트림([PositionSource.start])은
     // `Ruling 360` 이후 기사 운행 화면에서만 열린다 — 동승자 단말이나
     // 송신이 끊긴 기사 단말은 `sample()` 이 늘 `null` 이다. 그때만 1회
-    // 측정(sampleOnce)으로 보완한다(포그라운드 서비스는 켜지 않는다,
-    // BRIEF-BG2). 제한 시간 안에 못 받거나 거부되면 지금처럼 좌표 없이
+    // 측정(sampleOnce)으로 보완한다(포그라운드 서비스는 켜지 않는다).
+    // 제한 시간 안에 못 받거나 거부되면 좌표 없이
     // 그대로 진행한다 — 좌표를 지어내지 않는다.
     final positionSource = ref.read(positionSourceProvider);
     var sample = positionSource.sample();

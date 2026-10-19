@@ -225,7 +225,7 @@ void main() {
     expect(repository.calls, ['r1:boarded']);
   });
 
-  // R46-FIXRT S-9 — 서버가 5xx 를 되풀이해 재생에서 뺀 행은 "전송 대기" 가 아니다. 그 학생은 다시 눌러 새로 보낼 수
+  // 서버가 5xx 를 되풀이해 재생에서 뺀 행은 "전송 대기" 가 아니다. 그 학생은 다시 눌러 새로 보낼 수
   // 있어야 하고, 보내지 못한 처리가 있다는 것은 따로 알린다.
   testWidgets('영구 실패 행은 학생 행을 전송 대기로 바꾸지 않고 따로 알린다', (tester) async {
     await pumpRoster(

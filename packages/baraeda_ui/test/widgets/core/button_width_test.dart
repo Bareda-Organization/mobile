@@ -1,4 +1,4 @@
-// `BaraedaButton` 폭 — block 이 아니면 내용 폭, block 이면 부모 폭 전체(R43 · Ruling 406).
+// `BaraedaButton` 폭 — block 이 아니면 내용 폭, block 이면 부모 폭 전체(Ruling 406).
 // 디자인 킷 Button.jsx 는 `display: block ? 'flex' : 'inline-flex'` 이다.
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';

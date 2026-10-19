@@ -168,7 +168,7 @@ void main() {
     });
   });
 
-  // R52 낮음 A9 — 목록 번호는 지도 마커와 같이 서버가 준 실제 순번(`seq`)이다.
+  // 목록 번호는 지도 마커와 같이 서버가 준 실제 순번(`seq`)이다.
   // 표시 범위가 3~5번이면 3 · 4 · 5.
   group('A9 목록 번호는 실제 seq', () {
     testWidgets('표시 범위가 3~5번이면 번호 원에 3 · 4 · 5 가 적히고 1 · 2 는 없다', (
@@ -338,7 +338,7 @@ void main() {
     });
   });
 
-  // R48 `Ruling 824` — 타임라인의 "12:09 지남" 은 §3.10 `stops[].arrived_at` 이 그린다.
+  // `Ruling 824` — 타임라인의 "12:09 지남" 은 §3.10 `stops[].arrived_at` 이 그린다.
   group('⑤지난 시각 · 꼬리표 — 타임라인', () {
     testWidgets('도착 처리된 곳에만 "시각 지남" 이 붙고, 아직인 곳에는 없다', (tester) async {
       final route = RouteDetail.fromJson(

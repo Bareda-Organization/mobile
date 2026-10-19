@@ -173,7 +173,7 @@ void main() {
       expect(await repository.fetchPending(), isEmpty);
     });
 
-    // R53 B-6① — 지운 뒤 안내가 루프 끝으로 미뤄지면 그 사이 프로세스가 죽을 때 지운 행의 안내가 사라진다.
+    // 지운 뒤 안내를 루프 끝으로 미루면 그 사이 프로세스가 죽을 때 지운 행의 안내가 사라진다.
     test('재생이 행을 지울 때마다 그 행의 안내를 바로 올린다(다음 행을 보내기 전에)', () async {
       final seeding = repo(503);
       await queue(seeding, '/runs/run-A/riders/7');
@@ -215,8 +215,8 @@ void main() {
       expect(await repository.fetchPending(), isEmpty);
     });
 
-    // R53 d — 재생이 요청을 기다리는 사이 로그아웃이 대기열을 비워도 재생이 남은 행을 다음 계정의 토큰으로 계속 보내고,
-    // 이미 비운 행의 거절 안내를 앞 계정 몫으로 올렸다.
+    // 재생이 요청을 기다리는 사이 로그아웃이 대기열을 비우면, 재생은 남은 행을 다음 계정의 토큰으로 보내지 않고
+    // 이미 비운 행의 거절 안내도 앞 계정 몫으로 올리지 않는다.
     test('d: 재생 도중 대기열이 비워지면 남은 행을 보내지 않고 안내도 올리지 않는다', () async {
       final seeding = repo(503);
       await queue(seeding, '/runs/run-A/riders/7');
@@ -402,7 +402,7 @@ void main() {
       expect(jsonEncode(droppedStore.saved?.toJson()), isNot(contains('김하늘')));
     });
 
-    // R53 F3 — 명단이 메모리에 없거나 다른 회차면 학생 이름을 못 찾는다.
+    // 명단이 메모리에 없거나 다른 회차면 학생 이름을 못 찾는다.
     // 그래도 어느 처리인지 알아볼 수 있게 기록 시각을 붙인다.
     testWidgets('학생 이름을 명단에서 못 찾으면 기록 시각으로 대신한다', (tester) async {
       final container = await pumpHost(tester);
@@ -448,7 +448,7 @@ void main() {
       expect(find.textContaining('탑승 처리 · 10월 11일 09:30 기록'), findsOneWidget);
     });
 
-    // R53 F4 — 기기에 남은 안내의 번호가 없을 때 지금 로그인한 다른 학원의 번호로 대신하면 엉뚱한 학원에 전화하게 된다.
+    // 기기에 남은 안내의 번호가 없을 때 지금 로그인한 다른 학원의 번호로 대신하면 엉뚱한 학원에 전화하게 된다.
     testWidgets('기기 저장 안내에 저장된 번호가 없으면 지금 계정의 학원 번호로 대신하지 않는다', (tester) async {
       await pumpHost(
         tester,

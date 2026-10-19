@@ -79,7 +79,7 @@ void main() {
       ),
     );
 
-    // 예전에는 전체를 0.42 로 흐렸다 — 시안은 꺼진 면(#ECEEED) 위에 글자를 읽을 수 있게 둔다.
+    // 전체를 0.42 로 흐리지 않는다 — 시안은 꺼진 면(#ECEEED) 위에 글자를 읽을 수 있게 둔다.
     expect(find.byType(Opacity), findsNothing);
     final ink = tester.widget<Ink>(find.byType(Ink));
     expect((ink.decoration! as BoxDecoration).color, colors.disabledSurface);

@@ -7,10 +7,8 @@ import 'package:manager_app/core/auth/user_role.dart';
 /// - 버스기사(`driver`): 운행 시작(§4.4) · 승하차지 도착 처리(§4.5)
 /// - 동승자(`escort`): 개인별 승하차 상태 결정(§4.6) · 지연 알림 전송(§4.9)
 ///
-/// ⚠ F2 자리표시 코드는 `canSendDelayNotification` 을 기사=true·동승자=false
-/// 로 뒀었다 — API_SPEC §4.9·USER_FLOWS UF-E-05 는 정확히 반대다("기사는
-/// 발신 불가", 호출 시 `403 ESCORT_ONLY`). 이번 라운드에서 뒤집었다
-/// (F3 M1 보고서 § 우려·판단 근거 항목 참고).
+/// ⚠ `canSendDelayNotification` 은 기사=false·동승자=true 다 — API_SPEC §4.9·
+/// USER_FLOWS UF-E-05 기준("기사는 발신 불가", 호출 시 `403 ESCORT_ONLY`).
 ///
 /// `canSendArrivalNotification` 은 `canOperateRun` 으로 이름을 바꿨다 — §4.5
 /// 는 "이 API 는 알림을 발송하지 않음"이라고 명시한다(도착 예고는 서버가

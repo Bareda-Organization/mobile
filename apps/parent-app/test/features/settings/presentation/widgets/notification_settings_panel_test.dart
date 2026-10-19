@@ -205,7 +205,7 @@ void main() {
     });
   });
 
-  // R48 `Ruling 829` — 학생이 받는 알림은 도착 · 운행 시작뿐이라 의미 없는 스위치(미승차)를 뺀다.
+  // `Ruling 829` — 학생이 받는 알림은 도착 · 운행 시작뿐이라 의미 없는 스위치(미승차)를 뺀다.
   group('R48 역할별 스위치', () {
     const settings = NotificationSettings(
       arrive: true,
@@ -252,7 +252,7 @@ void main() {
       expect(find.text('운행 시작 알림'), findsNothing);
     });
 
-    // R53 Ruling 887⑥ — 미승차 설명은 "안 탔거나 하차가 확인되지 않을 때" 까지 포함한다.
+    // Ruling 887⑥ — 미승차 설명은 "안 탔거나 하차가 확인되지 않을 때" 까지 포함한다.
     testWidgets('미승차 스위치 설명은 하차 미확인까지 포함한다', (tester) async {
       await pump(tester, isParent: true);
 

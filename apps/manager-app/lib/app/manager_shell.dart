@@ -21,7 +21,7 @@ import 'package:manager_app/features/notifications/presentation/notification_pro
 /// 운행 중 화면 · 운행 준비 · 비상 같은 화면은 이 틀 밖에서 위에 덮여 열린다 — 탭 막대가 없다.
 ///
 /// 열려 있는 동안 [todayRunsRefreshInterval] 마다, 앱이 백그라운드에서 돌아올 때 오늘 회차 목록 · 알림을 다시
-/// 받는다 — 확정은 서버 배치가 시각에 맞춰 바꾸므로(F06-13) 한 번 받은 목록은 곧 낡는다(R53 A1: 홈 탭에서 옮김).
+/// 받는다 — 확정은 서버 배치가 시각에 맞춰 바꾸므로(F06-13) 한 번 받은 목록은 곧 낡는다.
 class ManagerShell extends ConsumerStatefulWidget {
   const new({required this.navigationShell, super.key});
 
@@ -50,13 +50,13 @@ class ManagerShell extends ConsumerStatefulWidget {
 
 class _ManagerShellState extends ConsumerState<ManagerShell>
     with WidgetsBindingObserver {
-  /// 오늘 회차 목록 · 알림을 [todayRunsRefreshInterval] 마다 다시 받는 타이머 —
-  /// 홈 탭이 아니라 쉘이 맡는다(R53 A1). 탭은 처음 갈 때 만들어지므로(`indexedStack` 지연 생성)
+  /// 오늘 회차 목록 · 알림을 [todayRunsRefreshInterval] 마다 다시 받는 타이머 — 쉘이 맡는다.
+  /// 탭은 처음 갈 때 만들어지므로(`indexedStack` 지연 생성)
   /// 동승자가 첫 화면인 명단 탭에 머물면 홈은 존재하지 않는다.
   Timer? _refreshTimer;
 
   /// 쉘이 다른 화면에 덮여 있는 동안에도 선택 · 회차 목록의 변화를 보는 구독 — 위젯 구독(`ref.watch`)은 덮이면
-  /// 멈추므로, 그 사이 선택이 바뀌고 끝난 회차를 쉘이 살아 있던 것으로 본 적이 없게 된다(R56 M-a).
+  /// 멈추므로, 그 사이 선택이 바뀌고 끝난 회차를 쉘이 살아 있던 것으로 본 적이 없게 된다.
   final List<ProviderSubscription<Object?>> _selectionSubscriptions = [];
 
   @override
@@ -95,7 +95,7 @@ class _ManagerShellState extends ConsumerState<ManagerShell>
     if (state != AppLifecycleState.resumed) return;
     _reloadQuietly();
     // 실시간 연결도 다시 붙게 한다 — REST 만 다시 읽으면 끊긴 소켓이 다음 재연결 타이머(최대 30초)를 기다린다.
-    // 운행 화면이 열려 있지 않으면 듣는 컨트롤러가 없어 아무 일도 일어나지 않는다(R46-FIXRT S-5).
+    // 운행 화면이 열려 있지 않으면 듣는 컨트롤러가 없어 아무 일도 일어나지 않는다.
     ref.read(appResumedProvider.notifier).state++;
   }
 
@@ -133,7 +133,7 @@ class _ManagerShellState extends ConsumerState<ManagerShell>
 
     // 회차를 아직 고르지 않았거나 고른 회차가 오늘 목록에서 사라졌으면 자동 선택을 담는다(진행 중 > 확정된 가장
     // 이른) — 동승자의 첫 화면 명단이 홈을 거치지 않고도 회차를 안다. 고른 회차가 **끝났고** 큰 카드(focus)가 다른
-    // 회차를 가리키면 그 회차로 갈아탄다(R52 H1) — 앞 회차가 끝난 뒤에도 명단 탭 · 지연 알림 · 예외 보고가 끝난 회차에
+    // 회차를 가리키면 그 회차로 갈아탄다 — 앞 회차가 끝난 뒤에도 명단 탭 · 지연 알림 · 예외 보고가 끝난 회차에
     // 머물지 않게 한다. 갈아타기는 쉘이 맨 위 화면일 때만 한다: 운행 종료 · 보고 화면이 위에 떠 있는 동안
     // 방금 끝낸 운행의 화면이 다음 회차로 바뀌어 보이면 안 된다(그 화면을 닫으면 그때 갈아탄다).
     // 이미 끝난 회차를 사용자가 일부러 고른 경우(끝난 회차를 가리키는 알림을 누른 때)는 덮지 않는다 — 갈아타기는

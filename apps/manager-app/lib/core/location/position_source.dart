@@ -33,7 +33,7 @@ abstract interface class PositionSource {
   void start();
 
   /// 권한·위치 서비스 상태만 다시 확인해 [availability] 를 갱신한다 — 스트림(포그라운드 서비스 알림)은
-  /// 켜지 않고 권한 창도 다시 띄우지 않는다. 운행 시작 전 화면이 설정을 바꾼 것을 알아채는 용도다(M2-02).
+  /// 켜지 않고 권한 창도 다시 띄우지 않는다. 운행 시작 전 화면이 설정을 바꾼 것을 알아채는 용도다.
   Future<void> recheck();
 
   /// 위치 스트림 구독을 멈춘다 — 운행 종료·로그아웃 등 송신기가 멎을 때 부른다.
@@ -41,7 +41,7 @@ abstract interface class PositionSource {
   /// 이 호출로 함께 멎는다. 이미 멈췄으면 아무 것도 하지 않는다(멱등).
   void stop();
 
-  /// 지금 좌표를 한 번만 측정한다(`Ruling 360` 회귀 보완, BRIEF-BG2) —
+  /// 지금 좌표를 한 번만 측정한다(`Ruling 360`) —
   /// [start] 를 부르지 않으므로 Android 포그라운드 서비스 알림·iOS
   /// 백그라운드 갱신을 켜지 않는다. 비상 발신처럼 [sample] 이 `null`(스트림
   /// 미시작 — 동승자 단말, 또는 송신이 끊긴 기사 단말)일 때만 쓴다. [timeout]
@@ -312,7 +312,7 @@ class GeolocatorPositionSource implements PositionSource {
   Future<PositionSample?> sampleOnce({
     Duration timeout = const Duration(seconds: 5),
   }) async {
-    // 권한 창이 응답 없이 떠 있어도 [timeout] 을 넘겨 기다리지 않는다 — 비상 신고는 위치 없이 보낸다(R53 A10).
+    // 권한 창이 응답 없이 떠 있어도 [timeout] 을 넘겨 기다리지 않는다 — 비상 신고는 위치 없이 보낸다.
     // 권한 대기와 측정을 합쳐 [timeout] 안이어야 하므로 측정에는 남은 시간만 준다.
     final waited = Stopwatch()..start();
     try {

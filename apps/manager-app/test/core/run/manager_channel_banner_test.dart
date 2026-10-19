@@ -76,7 +76,7 @@ void main() {
       expect(content!.tone, AlertTone.missed);
     });
 
-    // R46-FIXCONN C-12 — 같은 끊김을 웹·학부모 앱과 같은 제목으로 알린다.
+    // 같은 끊김을 웹·학부모 앱과 같은 제목으로 알린다.
     // 권한 거부(forbidden)도 제목은 공용 문구다(Ruling 666) — "배정되지 않음" 이라는 업무 의미는 본문이 맡는다.
     test('끊김 제목이 웹·학부모 앱과 같은 공용 문구다', () {
       expect(

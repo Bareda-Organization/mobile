@@ -104,7 +104,7 @@ const _roster = RosterResponse(
 
 const _rejection = '{"error":{"code":"VALIDATION_FAILED","message":"서버 문구"}}';
 
-/// R56 · Ruling 894 ⑧ — 예외 보고와 미승차 연락 기록은 통신 두절 때 승하차와 같은 대기열에 쌓이고,
+/// Ruling 894 ⑧ — 예외 보고와 미승차 연락 기록은 통신 두절 때 승하차와 같은 대기열에 쌓이고,
 /// 같은 재생 · 같은 거절 안내 규칙을 따른다. 요청마다 한 번 만든 `client_key` 를 재전송에 그대로 쓴다(§1.7).
 void main() {
   late OfflineQueueDatabase database;
@@ -169,7 +169,7 @@ void main() {
       ]);
     });
 
-    // R56 후속 1 — 메모에는 학생 이름 · 사정이 들어갈 수 있어 기기 DB 에 평문으로 두지 않는다(명단 저장본과 같은 암호화).
+    // 메모에는 학생 이름 · 사정이 들어갈 수 있어 기기 DB 에 평문으로 두지 않는다(명단 저장본과 같은 암호화).
     test('F1-1: 대기열 DB 원본 행에는 메모 글자가 없고, 재생 요청 본문에는 원문 메모가 실린다', () async {
       await submitReport(report(memo: '홍길동 보호자 부재'));
 
