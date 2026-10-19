@@ -16,9 +16,9 @@ import 'package:manager_app/features/route_map/presentation/route_providers.dart
 /// 동승자 플로우엔 지도 화면이 없다(USER_FLOWS.md, 확인됨).
 ///
 /// 지도는 운행 화면 가운데 패널과 같은 [RouteMapView] 를 쓴다 — 도로 경로선 · 승하차지 핀 · 기사 단말이
-/// 잰 버스 위치(동승자는 없음) · 근사 경로 안내가 두 화면에서 같다(F06-11). 지도 SDK 는 그 뒤의
+/// 잰 버스 위치(동승자는 없음) · 근사 경로 안내가 두 화면에서 같다. 지도 SDK 는 그 뒤의
 /// `MapSurface` 에 있어 이 화면은 `flutter_naver_map` 의 타입을 하나도
-/// 모른다(F4-B 1단계 공통 규칙 §2).
+/// 모른다.
 class RouteMapScreen extends ConsumerStatefulWidget {
   const new({super.key});
 

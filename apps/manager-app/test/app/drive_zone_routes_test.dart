@@ -12,7 +12,7 @@ import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/core/auth/user_role.dart';
 
 
-/// L8(`Ruling 830`) — 매니저 앱은 라이트 기본이고 **운행 중 흐름의 화면만** 다크
+/// `Ruling 830` — 매니저 앱은 라이트 기본이고 **운행 중 흐름의 화면만** 다크
 /// 구역(`BaraedaDriveZone`)으로 감싼다: 운행 중 · 운행 종료 · 조회 전용 명단 ·
 /// 노선 지도. 같은 앱의 다른 화면(홈 · 보고)은 라이트 그대로다.
 void main() {

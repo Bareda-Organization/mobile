@@ -23,7 +23,7 @@ final StateProvider<String?> transmissionEndedRunIdProvider =
 
 /// 지금 위치를 보내야 하는 회차 id — 없으면 `null`. 오늘 회차 목록에서 **내가 기사이고 운행 중**
 /// (`moving`)인 회차를 직접 고르고, 종점 도착 응답을 받은 회차는 뺀다. 화면에서 고른 회차
-/// (`selectedRunIdProvider`)와 무관하다 — 홈에서 다른 회차 카드를 눌러도 송신은 멈추지 않는다(F06-12).
+/// (`selectedRunIdProvider`)와 무관하다 — 홈에서 다른 회차 카드를 눌러도 송신은 멈추지 않는다.
 /// 회차 목록을 다시 불러와도 같은 값이면 알리지 않으므로 송신기가 다시 만들어지지 않는다.
 final Provider<String?> transmittingRunIdProvider = Provider<String?>((ref) {
   final canTransmit =
@@ -47,7 +47,7 @@ final Provider<String?> transmittingRunIdProvider = Provider<String?>((ref) {
 class PositionTransmission {
   const new({this.availability, this.busPosition});
 
-  // 값이 같으면 같은 상태다 — 2초마다 같은 좌표로 상태를 다시 넣어도 화면을 다시 그리지 않게 한다(F06-17).
+  // 값이 같으면 같은 상태다 — 2초마다 같은 좌표로 상태를 다시 넣어도 화면을 다시 그리지 않게 한다.
   @override
   bool operator ==(Object other) =>
       other is PositionTransmission &&
@@ -110,11 +110,11 @@ class PositionTransmitter extends Notifier<PositionTransmission> {
   /// 다음 주기 전송이 실패를 대신 만회하고, 매번 배너를 띄우면 운전 중 방해만 된다.
   Future<void> _tick(String runId, PositionSource source) async {
     // 앞 요청이 아직 끝나지 않았으면(음영 구간) 이번 주기는 건너뛴다 — 요청이 쌓였다가 복구 순간
-    // 오래된 좌표까지 한꺼번에 도착하지 않게 한다(F06-07 (3)).
+    // 오래된 좌표까지 한꺼번에 도착하지 않게 한다.
     if (_sending) return;
     // 서버가 이 회차를 운행 중이 아니라고 답했다면 더 보내지 않는다(아래 catch).
     if (runId == _haltedRunId) return;
-    // 권한·위치 서비스를 나중에 켜도 되살아나게 다시 확인시킨다(F06-03) — 정상이면 아무 일도 없다.
+    // 권한·위치 서비스를 나중에 켜도 되살아나게 다시 확인시킨다 — 정상이면 아무 일도 없다.
     if (source.availability != PositionAvailability.available) source.start();
     final sample = source.sample();
     state = PositionTransmission(

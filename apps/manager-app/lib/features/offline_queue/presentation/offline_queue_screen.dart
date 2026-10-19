@@ -40,7 +40,7 @@ class _OfflineQueueScreenState extends ConsumerState<OfflineQueueScreen> {
       _replaying = true;
       _resultMessage = null;
     });
-    // 예외로 끝나도 버튼이 영구히 잠기지 않게 한다(F06-15).
+    // 예외로 끝나도 버튼이 영구히 잠기지 않게 한다.
     String message;
     try {
       final result = await ref

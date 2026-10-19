@@ -92,7 +92,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (loggedIn && role == UserRole.driver && location == AppRoutes.roster) {
         return AppRoutes.home;
       }
-      // 역할 전용 화면(L5) — 다른 역할이 닿으면 서버 403 에만 기대지 않고 그 역할의 첫 화면으로 돌려보낸다.
+      // 역할 전용 화면 — 다른 역할이 닿으면 서버 403 에만 기대지 않고 그 역할의 첫 화면으로 돌려보낸다.
       if (loggedIn) {
         final landing = role == UserRole.escort
             ? AppRoutes.roster

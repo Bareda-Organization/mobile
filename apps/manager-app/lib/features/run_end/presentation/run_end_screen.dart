@@ -46,7 +46,7 @@ class _RunEndScreenState extends ConsumerState<RunEndScreen> {
     final runId = ref.watch(selectedRunIdProvider);
     // 도착 응답 스냅샷은 그 회차의 것일 때만 쓴다 — 마지막 도착 처리가 스냅샷과 함께
     // [transmissionEndedRunIdProvider] 를 같은 회차로 채운다. 다른 회차의 종료 화면을 열면 앞 회차의
-    // 도착 시각·하차 대기가 그대로 나오던 것을 막는다(F06-14).
+    // 도착 시각·하차 대기가 그대로 나오지 않도록 막는다.
     final snapshot = ref.watch(lastArriveResultProvider);
     final termination =
         snapshot != null && ref.watch(transmissionEndedRunIdProvider) == runId

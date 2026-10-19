@@ -72,7 +72,7 @@ class PendingRequestSummary {
     return endpoint.split('/riders/').last.split('/').first;
   }
 
-  /// 사람이 알아볼 수 있는 이름 — `PATCH /runs/…/riders/…` 같은 내부 표기를 화면에 내지 않는다(F06-15).
+  /// 사람이 알아볼 수 있는 이름 — `PATCH /runs/…/riders/…` 같은 내부 표기를 화면에 내지 않는다.
   String get description {
     final body = _decodeBody();
     if (isEmergency) {

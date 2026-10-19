@@ -46,7 +46,7 @@ class _ChangeAckBannerState extends ConsumerState<ChangeAckBanner> {
   void didUpdateWidget(ChangeAckBanner oldWidget) {
     super.didUpdateWidget(oldWidget);
     // 서버 값(`ack_required`)이 바뀌면 이 화면이 기억한 "확인했음" 은 그 변경에 대한 것이었다 —
-    // 다음 노선 변경으로 다시 켜질 때 띠가 뜨도록 지운다(F06-08).
+    // 다음 노선 변경으로 다시 켜질 때 띠가 뜨도록 지운다.
     // 확인한 뒤 서버가 `ack_required=false` 로 돌려줘도 "확인했어요" 는 화면이 떠 있는 동안 남긴다 —
     // 새 변경으로 다시 켜질 때(false → true)만 지운다.
     if (!oldWidget.ackRequired && widget.ackRequired) _acked = false;

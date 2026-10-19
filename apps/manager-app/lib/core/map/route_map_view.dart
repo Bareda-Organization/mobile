@@ -38,7 +38,7 @@ List<MapMarker> _stopMarkersOf(List<RouteStop> stops) {
 
 /// 확정 노선(§4.3)을 그리는 지도 면 — 도로 경로선 · 승하차지 핀 · (있으면) 기사 단말이 잰 버스 위치
 /// · 근사 경로 안내. 운행 화면 가운데 패널(`DriveMapPanel`)과 노선 지도 화면(`RouteMapScreen`)이
-/// **같은 지도를 두 벌 두지 않고** 이 위젯 하나를 쓴다(F06-11).
+/// **같은 지도를 두 벌 두지 않고** 이 위젯 하나를 쓴다.
 class RouteMapView extends StatelessWidget {
   const new({
     required this.route,

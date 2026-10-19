@@ -285,7 +285,7 @@ final notificationPermissionPortProvider = Provider<NotificationPermissionPort>(
   (ref) => PermissionHandlerNotificationPort(),
 );
 
-/// F2 — 운행 화면이 켜져 있는 동안 화면 꺼짐을 막는다(백그라운드 GPS
+/// 운행 화면이 켜져 있는 동안 화면 꺼짐을 막는다(백그라운드 GPS
 /// 송신이 범위 밖이라 화면이 켜진 상태가 지금 송신을 지키는 유일한
 /// 수단, M-B 2항). 시험은 이 provider 를 가짜 [WakelockPort] 로 덮는다.
 final wakelockPortProvider = Provider<WakelockPort>(
