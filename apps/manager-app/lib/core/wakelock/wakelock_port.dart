@@ -1,6 +1,6 @@
 import 'package:wakelock_plus/wakelock_plus.dart';
 
-/// 화면 꺼짐 방지 포트. 백그라운드 위치 송신은 범위 밖이라(M-B 2항),
+/// 화면 꺼짐 방지 포트. 백그라운드 위치 송신은 범위 밖이라,
 /// 운행 화면이 켜져 있는 것이 지금 GPS 송신을 지키는 유일한 수단이다.
 ///
 /// 기본 구현은 [WakelockPlusPort](`wakelock_plus` 플러그인, `di.dart` 조립

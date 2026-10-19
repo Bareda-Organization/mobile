@@ -102,7 +102,7 @@ class _DriveModeScreenState extends ConsumerState<DriveModeScreen> {
   void initState() {
     super.initState();
     // 백그라운드 위치 송신은 범위 밖이라, 운행 화면이 켜져 있는
-    // 것이 지금 GPS 송신을 지키는 유일한 수단이다(M-B 2항).
+    // 것이 지금 GPS 송신을 지키는 유일한 수단이다.
     _wakelockPort = ref.read(wakelockPortProvider);
     unawaited(_wakelockPort.enable());
     _cachedRetryTimer = Timer.periodic(_cachedRetryInterval, (_) {
