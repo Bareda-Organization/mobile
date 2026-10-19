@@ -118,7 +118,7 @@ Future<void> _submit(WidgetTester tester) async {
 }
 
 void main() {
-  group('B2 #20 가입 → 승인 대기', () {
+  group('가입 → 승인 대기', () {
     testWidgets('가입이 접수되면 방금 입력한 아이디·비밀번호로 로그인해 대기 계정이 된다', (tester) async {
       final repository = _Repository();
       final container = await _pump(tester, repository);
@@ -151,7 +151,7 @@ void main() {
     });
   });
 
-  group('B2 #20 [가입 신청하기] 비활성 이유', () {
+  group('[가입 신청하기] 비활성 이유', () {
     testWidgets('빈 칸이 있으면 어느 항목이 비었는지 버튼 아래에 알린다', (tester) async {
       await _pump(tester, _Repository());
       await tester.enterText(find.byType(TextField).at(0), 'parent01');

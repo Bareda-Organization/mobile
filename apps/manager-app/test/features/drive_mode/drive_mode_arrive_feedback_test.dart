@@ -215,7 +215,7 @@ void main() {
     );
   }
 
-  group('B2 #15 중간 승하차지 도착 처리 피드백', () {
+  group('중간 승하차지 도착 처리 피드백', () {
     // 같은 자리 단추의 이름만 바뀌면 처리된 줄 모른다. 서버가 적은 도착 시각
     // (§4.5 `arrived_at`)을 토스트로 알린다.
     testWidgets('도착 처리에 성공하면 "<이름> 도착 처리했어요 · 시각" 토스트가 뜬다', (tester) async {
@@ -257,7 +257,7 @@ void main() {
     expect(find.text('3호차 · 등원 · 08:00 출발'), findsOneWidget);
   });
 
-  group('A #5 외부 내비(RUN-08)', () {
+  group('외부 내비(RUN-08)', () {
     testWidgets('카카오 앱 키가 없으면 길안내 버튼을 그리지 않는다', (tester) async {
       await pumpDrive(tester);
 
@@ -336,7 +336,7 @@ void main() {
     });
   });
 
-  group('B2 #19 위치 권한 배너 [설정 열기]', () {
+  group('위치 권한 배너 [설정 열기]', () {
     testWidgets('권한이 없으면 [설정 열기] 가 앱 설정을 연다', (tester) async {
       final harness = await pumpDrive(
         tester,

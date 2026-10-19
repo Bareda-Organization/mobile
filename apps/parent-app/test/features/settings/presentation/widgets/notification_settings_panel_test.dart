@@ -130,7 +130,7 @@ void main() {
   });
 
   // C-10: 서버가 처리한 뒤에야 화면이 바뀐다. 응답 전에 먼저 바뀌어 있으면 실패 때 거짓 상태가 잠깐 보인다.
-  group('M-P4 스위치는 서버 응답 뒤에 바뀐다', () {
+  group('스위치는 서버 응답 뒤에 바뀐다', () {
     const initial = NotificationSettings(
       arrive: false,
       boarding: true,

@@ -100,7 +100,7 @@ Future<void> _pumpSchedule(
 }
 
 void main() {
-  testWidgets('P14 입력한 것이 없으면 뒤로가기는 확인 없이 나간다', (tester) async {
+  testWidgets('입력한 것이 없으면 뒤로가기는 확인 없이 나간다', (tester) async {
     await _pumpSchedule(tester);
 
     await tester.binding.handlePopRoute();
@@ -110,7 +110,7 @@ void main() {
     expect(find.text('나가기'), findsNothing);
   });
 
-  testWidgets('P14 주소를 고치다 뒤로가면 확인 창이 뜨고 [계속 입력] 이면 그대로 남는다', (tester) async {
+  testWidgets('주소를 고치다 뒤로가면 확인 창이 뜨고 [계속 입력] 이면 그대로 남는다', (tester) async {
     await _pumpSchedule(tester);
     await tester.enterText(
       find.widgetWithText(TextField, '서울시 강남구 1'),
@@ -129,7 +129,7 @@ void main() {
     expect(find.text('서울시 강남구 9'), findsOneWidget);
   });
 
-  testWidgets('P14 확인 창에서 [나가기] 를 누르면 일정 화면을 떠난다', (tester) async {
+  testWidgets('확인 창에서 [나가기] 를 누르면 일정 화면을 떠난다', (tester) async {
     await _pumpSchedule(tester);
     await tester.enterText(
       find.widgetWithText(TextField, '서울시 강남구 1'),
@@ -145,7 +145,7 @@ void main() {
     expect(find.text('일정 열기'), findsOneWidget);
   });
 
-  testWidgets('P14 고친 주소를 원래대로 되돌리면 확인 없이 나간다', (tester) async {
+  testWidgets('고친 주소를 원래대로 되돌리면 확인 없이 나간다', (tester) async {
     await _pumpSchedule(tester);
     final field = find.widgetWithText(TextField, '서울시 강남구 1');
     await tester.enterText(field, '서울시 강남구 9');
@@ -158,7 +158,7 @@ void main() {
     expect(find.text('일정 열기'), findsOneWidget);
   });
 
-  testWidgets('P14 변경 신청 사유를 적다 뒤로가도 확인 창이 뜬다(일일 변경 화면)', (tester) async {
+  testWidgets('변경 신청 사유를 적다 뒤로가도 확인 창이 뜬다(일일 변경 화면)', (tester) async {
     await _pumpSchedule(tester, path: AppRoutes.dailyChange);
     await tester.tap(find.text('등원 · 08:00 출발'));
     await tester.pumpAndSettle();
@@ -180,7 +180,7 @@ void main() {
     expect(find.text('저장하지 않은 내용은 사라져요.'), findsOneWidget);
   });
 
-  testWidgets('P14 고친 주소를 저장한 뒤에는 뒤로가도 확인 없이 나간다', (tester) async {
+  testWidgets('고친 주소를 저장한 뒤에는 뒤로가도 확인 없이 나간다', (tester) async {
     await _pumpSchedule(tester);
     await tester.enterText(
       find.widgetWithText(TextField, '서울시 강남구 1'),

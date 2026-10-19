@@ -921,7 +921,7 @@ void main() {
     });
   });
 
-  group('연결·이벤트 반영 — P1(Ruling 208·349) 표시 중인 좌표의 신호 유실', () {
+  group('연결·이벤트 반영 — Ruling 208·349 표시 중인 좌표의 신호 유실', () {
     final t0 = DateTime.utc(2026, 9, 13, 8);
 
     Future<void> pumpConnectedWithPosition(

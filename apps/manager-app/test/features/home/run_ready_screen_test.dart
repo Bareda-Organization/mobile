@@ -289,7 +289,7 @@ void main() {
     expect(find.text('운행 시작 가능 시간(출발 ±10분)이 지났어요'), findsOneWidget);
   });
 
-  testWidgets('노선을 못 받으면 [운행 시작] 이 꺼지고 이유와 다시 시도가 보인다(M20)', (tester) async {
+  testWidgets('노선을 못 받으면 [운행 시작] 이 꺼지고 이유와 다시 시도가 보인다', (tester) async {
     final repo = _CountingDriveRepository();
     await tester.pumpWidget(
       wrap(DateTime(2026, 10, 3, 12, 14), repo, routeFails: true),

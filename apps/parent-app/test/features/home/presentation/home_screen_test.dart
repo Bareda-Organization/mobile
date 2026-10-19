@@ -68,7 +68,7 @@ void main() {
     Student(studentId: 's-1', name: '첫째', linkedAt: DateTime(2026, 9)),
   ];
 
-  testWidgets('P1 학생 홈에 [부모님과 연결하기] 진입이 있고 누르면 연결 화면으로 간다', (tester) async {
+  testWidgets('학생 홈에 [부모님과 연결하기] 진입이 있고 누르면 연결 화면으로 간다', (tester) async {
     final pushed = await pumpHome(tester, role: UserRole.student);
 
     await tester.tap(find.text('부모님과 연결하기'));
@@ -77,7 +77,7 @@ void main() {
     expect(pushed, [AppRoutes.childLink]);
   });
 
-  testWidgets('P1 학부모 홈에는 [부모님과 연결하기] 가 없다', (tester) async {
+  testWidgets('학부모 홈에는 [부모님과 연결하기] 가 없다', (tester) async {
     await pumpHome(tester, role: UserRole.parent, students: children);
 
     expect(find.text('부모님과 연결하기'), findsNothing);
@@ -86,7 +86,7 @@ void main() {
   // 일정은 아래 탭이 되고(`app_shell_test`), 자녀 추가는 설정 탭에 둔다
   // (`settings_screen_r48_test`).
   // 홈 본문에 같은 진입이 또 남아 있으면 길이 두 개가 된다.
-  testWidgets('P2 학부모 홈에는 [일정] 단추가 없다 — 일정은 아래 탭이다', (tester) async {
+  testWidgets('학부모 홈에는 [일정] 단추가 없다 — 일정은 아래 탭이다', (tester) async {
     final pushed = await pumpHome(
       tester,
       role: UserRole.parent,
@@ -97,19 +97,19 @@ void main() {
     expect(pushed, isEmpty);
   });
 
-  testWidgets('P2 학생 홈에는 [일정] 진입이 없다 — 조회 전용', (tester) async {
+  testWidgets('학생 홈에는 [일정] 진입이 없다 — 조회 전용', (tester) async {
     await pumpHome(tester, role: UserRole.student);
 
     expect(find.text('일정'), findsNothing);
   });
 
-  testWidgets('P3 학부모 홈에는 [자녀 추가] 가 없다 — 설정 탭으로 옮겼다', (tester) async {
+  testWidgets('학부모 홈에는 [자녀 추가] 가 없다 — 설정 탭으로 옮겼다', (tester) async {
     await pumpHome(tester, role: UserRole.parent, students: children);
 
     expect(find.text('자녀 추가'), findsNothing);
   });
 
-  testWidgets('P3 학생 홈에는 [자녀 추가] 가 없다', (tester) async {
+  testWidgets('학생 홈에는 [자녀 추가] 가 없다', (tester) async {
     await pumpHome(tester, role: UserRole.student);
 
     expect(find.text('자녀 추가'), findsNothing);

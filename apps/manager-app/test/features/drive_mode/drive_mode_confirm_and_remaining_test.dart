@@ -200,7 +200,7 @@ void main() {
     return repository;
   }
 
-  group('M6 확인 창', () {
+  group('확인 창', () {
     // 운행 시작 확인 창은 운행 준비 화면으로 옮겼다 — `run_ready_screen_test.dart` 가 문다.
 
     testWidgets('마지막 승하차지 도착 — 취소하면 요청이 나가지 않고, 확인해야 나간다', (tester) async {
@@ -581,7 +581,7 @@ void main() {
     });
   });
 
-  group('M5 남은 승하차지', () {
+  group('남은 승하차지', () {
     testWidgets('도착한 곳은 빼고 남은 곳을 순서대로, 미경유는 건너뜀 표시와 함께 보인다', (tester) async {
       await pumpDrive(
         tester,

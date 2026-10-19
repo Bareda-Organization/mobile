@@ -155,7 +155,7 @@ void main() {
     );
 
     test(
-      '결함 수정 확인(F5 M2 목표 A-1, `Ruling 275`) — 프로덕션 '
+      '결함 수정 확인(`Ruling 275`) — 프로덕션 '
       'RouteApi.fetchRoute 는 이제 route_response.dart 의 asIdString 으로 '
       'stop_id 를 흡수한다. 이 백엔드는 §4.3 의 stop_id 를 int(또는 null, '
       '추가된 임시 집결지)로 내려보내지만, 더는 TypeError 를 던지지 않고 '
@@ -335,7 +335,7 @@ void main() {
     );
 
     test(
-      '결함 수정 확인(F5 M2 목표 A-3, `Ruling 275`) — 위 시험이 실제로 받은 '
+      '결함 수정 확인(`Ruling 275`) — 위 시험이 실제로 받은 '
       '응답을 그대로 RiderUpdateResult.fromJson 에 먹이면(추가 네트워크 '
       '호출 없이) asIdString 이 rider_id 를 흡수해 캐스팅이 성공하고 값도 '
       '옳게 읽힌다',
@@ -397,8 +397,7 @@ void main() {
     test(
       '동승자(escortA2)가 run3/rider 3 의 방금 바뀐 상태를 되돌린다 — '
       '위 §4.6 시험이 만든 boarded 를 waiting 으로 되돌리고, 시드 값 '
-      '(boarded)으로 다시 승차 처리해 DB 잔여 영향을 줄인다(이력 행은 남는다, '
-      '보고서 2항)',
+      '(boarded)으로 다시 승차 처리해 DB 잔여 영향을 줄인다(이력 행은 남는다)',
       () async {
         if (!backendReachable) {
           markTestSkipped('환경 문제: 백엔드 미기동($baseUrl)');
@@ -483,7 +482,7 @@ void main() {
 
   group('§4.5 POST /runs/{runId}/stops/{stopId}/arrive', () {
     test(
-      '결함 수정 확인(F5 M2 목표 A-2·A-5, `Ruling 275` + 널 허용성) — '
+      '결함 수정 확인(`Ruling 275` + 널 허용성) — '
       '기사(driverA2, run3 배치)가 아직 미도착인 정류장에 도착 처리하면 '
       '성공하고, 같은 정류장에 다시 도착 처리를 호출하면 403 '
       'DUPLICATE_ARRIVE 를 받는다. '
@@ -492,19 +491,19 @@ void main() {
       '프로덕션 RosterApi.fetchRoster 로 그 시점의 실제 미도착 정류장을 '
       '골라 쓴다. photo_url 널 허용 수정 전에는 이 호출 자체가 크래시해 '
       '원재료 dio 로 우회해야 했다 — 지금은 정류장 선택 경로 자체가 그 '
-      '수정의 재현 검사를 겸한다(보고서 1항). '
-      '(고정 stopId 를 썼던 이전 버전은 두 번째 전체 실행에서 이미 소모된 '
+      '수정의 재현 검사를 겸한다. '
+      '(stopId 를 고정하면 두 번째 전체 실행에서 이미 소모된 '
       '정류장을 다시 호출해 "첫 도착"이 아니라 곧바로 403 을 받는 형태로 '
-      '깨졌다 — 보고서 1항). 이어서 그 첫 성공 응답을 추가 네트워크 호출 '
+      '깨진다). 이어서 그 첫 성공 응답을 추가 네트워크 호출 '
       '없이 그대로 ArriveStopResult.fromJson 에 먹여, next_stop.stop_id 가 '
       'int 로 와도 asIdString 이 흡수해 캐스팅이 성공하고 값도 옳게 읽히는지 '
       '확인한다(수정 전에는 NextStopRef.fromJson 의 직접 캐스팅이 여기서 '
       'TypeError 를 던졌다). ⚠ 이 시험은 고른 정류장 하나를 영구히 '
       '"도착 처리됨" 으로 만든다 — 그 뒤 회차가 같은 DB 를 재사용한다면 이 '
-      '상태를 그대로 물려받는다(보고서 2항). run3 은 정류장 4개(2·3·1·4 순) '
+      '상태를 그대로 물려받는다. run3 은 정류장 4개(2·3·1·4 순) '
       '뿐이라 이 시험을 4번 넘게 돌리면 미도착 정류장이 바닥나 "환경 문제"로 '
-      '건너뛴다 — F5 M2 목표 B 가 이 소모를 매 실행 전 `/dev/reset` 으로 '
-      '되돌려 막는다(보고서 1항)',
+      '건너뛴다 — 매 실행 전 `/dev/reset` 으로 되돌려 '
+      '이 소모를 막는다',
       () async {
         if (!backendReachable) {
           markTestSkipped('환경 문제: 백엔드 미기동($baseUrl)');
@@ -619,13 +618,12 @@ void main() {
 
   group('§4.13 POST /runs/{runId}/reports', () {
     test(
-      '결함 수정 확인(F5 M2 목표 A-4, `Ruling 275`) — 동승자(escortA2, '
+      '결함 수정 확인(`Ruling 275`) — 동승자(escortA2, '
       'run3 배치)가 기타 사유 보고서를 제출하면 프로덕션 '
       'ReportResult.fromJson 이 report_id 를 asIdString 으로 흡수해 캐스팅이 '
       '성공하고 값도 옳게 읽혀야 한다(수정 전에는 이 백엔드가 report_id 를 '
       "int 로 내려 `json['report_id'] as String` 이 TypeError 를 던졌다). "
-      '⚠ 이 호출은 run3 에 보고서 레코드를 영구히 남긴다(삭제 API 부재, '
-      '보고서 2항)',
+      '⚠ 이 호출은 run3 에 보고서 레코드를 영구히 남긴다(삭제 API 부재)',
       () async {
         if (!backendReachable) {
           markTestSkipped('환경 문제: 백엔드 미기동($baseUrl)');

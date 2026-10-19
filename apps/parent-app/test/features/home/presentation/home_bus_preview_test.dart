@@ -432,7 +432,7 @@ void main() {
     expect(find.text('12:14 기준'), findsOneWidget);
   });
 
-  testWidgets('받은 위치가 없으면 "기준" 시각을 숨긴다 — 없는 값을 보이면 거짓 정보(P8)', (tester) async {
+  testWidgets('받은 위치가 없으면 "기준" 시각을 숨긴다 — 없는 값을 보이면 거짓 정보', (tester) async {
     await _pumpHome(tester, position: () async => _position());
 
     expect(find.textContaining('기준'), findsNothing);

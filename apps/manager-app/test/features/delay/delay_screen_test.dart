@@ -165,7 +165,7 @@ void main() {
       ]),
     );
 
-    testWidgets('+ 를 누르면 5분씩 늘고 보내기 단추 이름에 지금 분이 보인다(M4)', (tester) async {
+    testWidgets('+ 를 누르면 5분씩 늘고 보내기 단추 이름에 지금 분이 보인다', (tester) async {
       await pumpEscort(tester);
 
       await tester.tap(find.bySemanticsLabel('5분 늘리기'));

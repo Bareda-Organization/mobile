@@ -243,7 +243,7 @@ void main() {
   });
 
   // 처음 한 번만 조회하면 관리자가 승인·거절해도 앱을 껐다 켜야 알 수 있다.
-  testWidgets('P9 [상태 다시 확인] 을 누르면 승인 상태를 다시 조회해 화면에 반영한다', (tester) async {
+  testWidgets('[상태 다시 확인] 을 누르면 승인 상태를 다시 조회해 화면에 반영한다', (tester) async {
     final authRepository = _StubAuthRepository()
       ..statusFromSecondCall = AccountStatus.rejected;
     await _pumpPendingApproval(tester, authRepository);
@@ -257,7 +257,7 @@ void main() {
   });
 
   // 승인이 났는데 대기 화면에 남아 있으면 안 된다 — 계정 상태를 갱신해 라우터가 홈으로 보내게 한다.
-  testWidgets('P9 다시 확인했더니 승인됐으면 계정 상태를 active 로 바꾼다', (tester) async {
+  testWidgets('다시 확인했더니 승인됐으면 계정 상태를 active 로 바꾼다', (tester) async {
     final authRepository = _StubAuthRepository()
       ..statusFromSecondCall = AccountStatus.active;
     await _pumpPendingApproval(tester, authRepository);
@@ -362,7 +362,7 @@ void main() {
   // 지금 코드는 확인 대화 없이 바로 logout() 을 부른다 — 버튼 라벨
   // 대화의 확정 버튼 라벨('로그아웃하기')은 `find.descendant` 로
   // `BaraedaDialog` 안쪽만 짚는다.
-  group('F2 — 로그아웃 확인 대화(P 의 확인 대화 재사용)', () {
+  group('로그아웃 확인 대화(기존 확인 대화 재사용)', () {
     // 로그아웃 버튼은 스크롤 목록 맨 아래라 기본 시험 화면(800x600) 밖에
     // 있다 — `ensureVisible` 로 먼저 스크롤한다.
     Future<void> tapLogoutButton(WidgetTester tester) async {

@@ -132,7 +132,7 @@ void main() {
     expect(find.text('도착 처리'), findsNothing);
   });
 
-  testWidgets('M5 긴 승하차지 이름·큰 글자에도 도착 처리 단추의 동사는 잘리지 않는다', (tester) async {
+  testWidgets('긴 승하차지 이름·큰 글자에도 도착 처리 단추의 동사는 잘리지 않는다', (tester) async {
     tester.view.physicalSize = const Size(375 * 3, 812 * 3);
     tester.view.devicePixelRatio = 3;
     addTearDown(tester.view.reset);

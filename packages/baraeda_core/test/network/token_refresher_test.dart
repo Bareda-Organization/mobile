@@ -193,7 +193,7 @@ void main() {
     test(
       '동시에 여러 번 부르면 HTTP 호출은 1회만 나가고 전부 같은 결과를 받는다 — '
       'REST·WS 가 같은 refresh 토큰으로 경합해도 회전이 두 번 일어나지 않는다 '
-      '(백엔드 RefreshCommandService 의 1회용 회전, 보고서 §1)',
+      '(백엔드 RefreshCommandService 의 1회용 회전)',
       () async {
         final storage = _buildTokenStorage();
         await storage.saveTokens(

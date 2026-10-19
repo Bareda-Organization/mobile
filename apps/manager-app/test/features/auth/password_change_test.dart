@@ -147,9 +147,7 @@ void main() {
     handle.dispose();
   });
 
-  testWidgets('새 비밀번호가 비어 있으면 [변경하기] 가 꺼지고 이유가 단추 아래에 보인다(M15)', (
-    tester,
-  ) async {
+  testWidgets('새 비밀번호가 비어 있으면 [변경하기] 가 꺼지고 이유가 단추 아래에 보인다', (tester) async {
     await pumpScreen(tester, _RecordingAuthRepository());
 
     await tester.enterText(find.byType(TextField).at(0), 'old-pass');
@@ -181,7 +179,7 @@ void main() {
   });
 
   // 서버는 UTF-8 72바이트(한글 24자)를 넘으면 422 로 거절한다. 입력할 때 미리 알린다.
-  testWidgets('새 비밀번호 칸에 한도 안내가 있고 넘으면 이유를 보이며 단추가 꺼진다(M14)', (tester) async {
+  testWidgets('새 비밀번호 칸에 한도 안내가 있고 넘으면 이유를 보이며 단추가 꺼진다', (tester) async {
     final repository = _RecordingAuthRepository();
     await pumpScreen(tester, repository);
     expect(find.text('영문 72자 · 한글 24자까지'), findsOneWidget);

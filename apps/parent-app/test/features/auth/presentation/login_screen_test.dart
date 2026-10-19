@@ -115,7 +115,7 @@ void main() {
     expect(find.textContaining('개발용'), findsNothing);
   });
 
-  testWidgets('브랜드 줄에 이 앱을 쓰는 사람이 적혀 있다 — 학부모 · 학생(P4)', (tester) async {
+  testWidgets('브랜드 줄에 이 앱을 쓰는 사람이 적혀 있다 — 학부모 · 학생', (tester) async {
     await _pump(tester);
 
     expect(find.text('바래다'), findsOneWidget);

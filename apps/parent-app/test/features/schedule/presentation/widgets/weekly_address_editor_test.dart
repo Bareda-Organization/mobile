@@ -429,7 +429,7 @@ void main() {
   });
 
   // 등록된 주소가 없어도 [추가] 단계 없이 14칸이 바로 열린다.
-  group('P11 빈 목록', () {
+  group('빈 목록', () {
     Future<_RecordingWeeklyAddressRepository> pumpEmpty(
       WidgetTester tester,
     ) async {

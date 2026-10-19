@@ -138,7 +138,7 @@ void main() {
   });
 
   // 지나간 곳 표시 · "다음 곳" 강조 핀은 번호와 함께 "몇 곳 전" 을 유추하게 한다(C-08).
-  test('M-P1 도착 시각(arrived_at)이 있어도 없어도 승하차지 핀 모양이 같다', () {
+  test('도착 시각(arrived_at)이 있어도 없어도 승하차지 핀 모양이 같다', () {
     final arrived = overlay(
       route(
         stops: [stop(3, arrivedAt: DateTime.utc(2026, 10, 5, 3, 9)), stop(4)],
@@ -153,7 +153,7 @@ void main() {
     );
   });
 
-  test('M-P1 운행 중이어도 "다음 곳" 만 다른 핀으로 강조하지 않는다', () {
+  test('운행 중이어도 "다음 곳" 만 다른 핀으로 강조하지 않는다', () {
     final running = overlay(
       route(
         stops: [

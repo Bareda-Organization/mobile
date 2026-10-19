@@ -109,7 +109,7 @@ Future<(ProviderContainer, _RecordingChangeRequestRepository)> _pump(
 }
 
 void main() {
-  testWidgets('P5 자녀를 바꾸면 주소 입력칸이 새 자녀의 주소로 바뀐다', (tester) async {
+  testWidgets('자녀를 바꾸면 주소 입력칸이 새 자녀의 주소로 바뀐다', (tester) async {
     final (container, _) = await _pump(
       tester,
       screen: const WeeklyAddressScreen(),
@@ -126,7 +126,7 @@ void main() {
     expect(find.text('첫째 집 고치는 중'), findsNothing);
   });
 
-  testWidgets('P5 자녀를 바꾸면 고른 회차가 비워져 다른 자녀의 회차로 신청되지 않는다', (tester) async {
+  testWidgets('자녀를 바꾸면 고른 회차가 비워져 다른 자녀의 회차로 신청되지 않는다', (tester) async {
     final (container, repository) = await _pump(
       tester,
       screen: const DailyChangeScreen(),

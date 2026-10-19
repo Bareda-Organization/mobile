@@ -91,7 +91,7 @@ Future<void> _pump(
 }
 
 void main() {
-  group('B2 #11 지도 진입 표시', () {
+  group('지도 진입 표시', () {
     testWidgets('운행 중인 오늘 카드에 [실시간 위치 보기 ›] 가 있고 누르면 지도로 간다', (tester) async {
       final pushed = <String>[];
       await _pump(
@@ -308,7 +308,7 @@ void main() {
     );
   });
 
-  group('B2 #25 용어 — 탑승 취소', () {
+  group('용어 — 탑승 취소', () {
     testWidgets('스위치를 끄면 확인 창 제목과 버튼이 사양 용어 "탑승 취소" 다', (tester) async {
       await _pump(tester, run: _run());
 

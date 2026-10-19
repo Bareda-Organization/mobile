@@ -215,7 +215,7 @@ void main() {
     expect(runOptionLabel(_fixtureRun()), '등원 · 1호차');
   });
 
-  testWidgets('P8 승인 대기 접수 안내의 마감 시각을 한국어 날짜로 보여준다', (tester) async {
+  testWidgets('승인 대기 접수 안내의 마감 시각을 한국어 날짜로 보여준다', (tester) async {
     await _pumpAndSubmitWith(
       tester,
       _AcceptingChangeRequestRepository(
@@ -235,7 +235,7 @@ void main() {
 
   // 날짜 선택은 넣지 않았다: 서버가 회차를 그날 하루치만 만들어(DailyRunGenerator)
   // 다른 날짜에는 고를 회차가 없다. 대신 버튼이 왜 눌리지 않는지 말해 준다.
-  group('P12 제출할 수 없는 이유 안내', () {
+  group('제출할 수 없는 이유 안내', () {
     Future<void> pumpPanel(WidgetTester tester) async {
       tester.view.physicalSize = const Size(800, 2400);
       tester.view.devicePixelRatio = 1;
@@ -311,7 +311,7 @@ void main() {
   });
 
   // 변경 신청 날짜는 오늘·내일 중에서 고른다(한국 시간 기준).
-  group('P1 날짜 선택 — 오늘 · 내일', () {
+  group('날짜 선택 — 오늘 · 내일', () {
     // 세계 표준시 9월 30일 16:00 = 한국 시간 10월 1일 01:00 — 기기가 어느 시간대여도 한국 날짜로 센다.
     final now = DateTime.utc(2026, 9, 30, 16);
     final tomorrowRun = StudentRun(

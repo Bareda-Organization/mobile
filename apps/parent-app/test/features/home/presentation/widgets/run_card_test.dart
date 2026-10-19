@@ -336,7 +336,7 @@ void main() {
     return repository;
   }
 
-  testWidgets('P4 끄려고 스위치를 누르면 확인 창이 뜨고 취소하면 요청이 나가지 않는다', (tester) async {
+  testWidgets('끄려고 스위치를 누르면 확인 창이 뜨고 취소하면 요청이 나가지 않는다', (tester) async {
     final repository = await pumpRecording(tester);
 
     await tester.tap(find.byType(BaraedaSwitch));
@@ -349,7 +349,7 @@ void main() {
     expect(repository.calls, isEmpty);
   });
 
-  testWidgets('P4 확인 창에서 [탑승 취소] 를 누르면 그때 요청이 나간다', (tester) async {
+  testWidgets('확인 창에서 [탑승 취소] 를 누르면 그때 요청이 나간다', (tester) async {
     final repository = await pumpRecording(tester);
 
     await tester.tap(find.byType(BaraedaSwitch));
@@ -360,7 +360,7 @@ void main() {
     expect(repository.calls, [false]);
   });
 
-  testWidgets('P4 켜기는 확인 창 없이 바로 요청이 나간다', (tester) async {
+  testWidgets('켜기는 확인 창 없이 바로 요청이 나간다', (tester) async {
     final repository = await pumpRecording(tester, riding: false);
 
     await tester.tap(find.byType(BaraedaSwitch));
@@ -370,7 +370,7 @@ void main() {
     expect(repository.calls, [true]);
   });
 
-  testWidgets('P4 확정 전(①구간) 확인 문구는 즉시 반영을 알린다', (tester) async {
+  testWidgets('확정 전(①구간) 확인 문구는 즉시 반영을 알린다', (tester) async {
     await pumpRecording(tester);
 
     await tester.tap(find.byType(BaraedaSwitch));
@@ -380,7 +380,7 @@ void main() {
     expect(find.textContaining('승인'), findsNothing);
   });
 
-  testWidgets('P4 확정 뒤(②구간) 확인 문구는 승인 요청과 회차당 1회를 알린다', (tester) async {
+  testWidgets('확정 뒤(②구간) 확인 문구는 승인 요청과 회차당 1회를 알린다', (tester) async {
     await pumpRecording(
       tester,
       runStatus: RunStatus.confirmed,
@@ -395,7 +395,7 @@ void main() {
     expect(find.textContaining('바로 반영'), findsNothing);
   });
 
-  testWidgets('P4 스위치 줄을 눌러도 지도 화면으로 이동하지 않는다 — 카드 윗부분은 이동한다', (tester) async {
+  testWidgets('스위치 줄을 눌러도 지도 화면으로 이동하지 않는다 — 카드 윗부분은 이동한다', (tester) async {
     final pushed = <String>[];
     await pumpRecording(tester, pushed: pushed);
 
@@ -411,7 +411,7 @@ void main() {
   });
 
   // 전송 중에는 스위치가 비활성이 되어 눌림이 바깥 카드로 새면 지도 화면이 열렸다.
-  testWidgets('P4 전송 중에 스위치 줄을 눌러도 지도 화면이 열리지 않는다', (tester) async {
+  testWidgets('전송 중에 스위치 줄을 눌러도 지도 화면이 열리지 않는다', (tester) async {
     final pushed = <String>[];
     final pending = Completer<RunIntentResult>();
     await pumpRecording(
@@ -439,7 +439,7 @@ void main() {
   });
 
   // 승인 주체도 사양(UF-P-05) 대로 학원 관리자다.
-  testWidgets('P8 승인 대기 안내의 마감 시각을 한국어 날짜로 보여준다', (tester) async {
+  testWidgets('승인 대기 안내의 마감 시각을 한국어 날짜로 보여준다', (tester) async {
     await pumpRecording(
       tester,
       runStatus: RunStatus.confirmed,
@@ -492,7 +492,7 @@ void main() {
     );
   });
 
-  testWidgets('P4 확정 전이면 확정까지 남은 시간을 보여준다', (tester) async {
+  testWidgets('확정 전이면 확정까지 남은 시간을 보여준다', (tester) async {
     // 출발 08:00 → 확정은 07:30. 지금 06:10 이면 1시간 20분 남았다.
     await pumpRecording(
       tester,
@@ -503,7 +503,7 @@ void main() {
     expect(find.text('확정까지 1시간 20분'), findsOneWidget);
   });
 
-  testWidgets('P4 확정된 회차에는 남은 시간을 보여주지 않는다', (tester) async {
+  testWidgets('확정된 회차에는 남은 시간을 보여주지 않는다', (tester) async {
     await pumpRecording(
       tester,
       runStatus: RunStatus.confirmed,

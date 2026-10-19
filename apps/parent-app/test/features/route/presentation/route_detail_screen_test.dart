@@ -450,7 +450,7 @@ void main() {
   });
 
   // 지도는 회차 기준인데 상세는 학생 기준만 보내 다른 회차(다음 회차)가 보였다.
-  group('M-P2 지도에서 넘긴 회차로 노선을 받는다', () {
+  group('지도에서 넘긴 회차로 노선을 받는다', () {
     RouteDetail sample() => RouteDetail.fromJson(
       _routeJson(
         stops: [_stopJson(stopId: 's-stop-1', seq: 1, name: '정류장1')],

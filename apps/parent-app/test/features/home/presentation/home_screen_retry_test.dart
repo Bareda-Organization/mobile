@@ -74,7 +74,7 @@ Future<_Calls> _pump(
 }
 
 void main() {
-  testWidgets('P7 자녀 목록 오류 띠의 [다시 시도] 가 다시 불러온다', (tester) async {
+  testWidgets('자녀 목록 오류 띠의 [다시 시도] 가 다시 불러온다', (tester) async {
     final calls = await _pump(
       tester,
       role: UserRole.parent,
@@ -89,7 +89,7 @@ void main() {
     expect(find.text('버스 정보를 불러오지 못했어요'), findsNothing);
   });
 
-  testWidgets('P7 내 정보 오류 띠의 [다시 시도] 가 다시 불러온다', (tester) async {
+  testWidgets('내 정보 오류 띠의 [다시 시도] 가 다시 불러온다', (tester) async {
     final calls = await _pump(
       tester,
       role: UserRole.student,
@@ -104,7 +104,7 @@ void main() {
     expect(find.text('버스 정보를 불러오지 못했어요'), findsNothing);
   });
 
-  testWidgets('P7 오늘 회차 오류 띠의 [다시 시도] 가 다시 불러온다', (tester) async {
+  testWidgets('오늘 회차 오류 띠의 [다시 시도] 가 다시 불러온다', (tester) async {
     final calls = await _pump(tester, role: UserRole.parent, failRuns: true);
     expect(find.text('오늘 회차를 불러오지 못했어요'), findsOneWidget);
 
@@ -115,7 +115,7 @@ void main() {
     expect(find.text('오늘 회차를 불러오지 못했어요'), findsNothing);
   });
 
-  testWidgets('P7 화면을 아래로 당기면 회차를 다시 불러온다', (tester) async {
+  testWidgets('화면을 아래로 당기면 회차를 다시 불러온다', (tester) async {
     final calls = await _pump(tester, role: UserRole.parent);
     expect(calls.runs, 1);
 
