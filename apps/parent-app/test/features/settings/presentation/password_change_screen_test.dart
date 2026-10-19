@@ -231,7 +231,7 @@ void main() {
   });
 
   // 꺼진 단추에는 왜 꺼졌는지가 단추 바로 아래에 있다(막다른 길을 만들지 않는다).
-  group('R48 꺼진 [변경하기] 의 이유', () {
+  group('꺼진 [변경하기] 의 이유', () {
     test('이유는 무엇이 비었는지에 따라 달라진다 — 다 채웠으면 이유가 없다', () {
       expect(
         passwordChangeBlockedReason(current: '', next: ''),
@@ -304,7 +304,7 @@ void main() {
     });
   });
 
-  group('R48 비밀번호 변경 구성', () {
+  group('비밀번호 변경 구성', () {
     Future<void> pump(WidgetTester tester, {bool forced = false}) async {
       await tester.pumpWidget(
         ProviderScope(

@@ -14,7 +14,7 @@ void main() {
         () => endSessionAsExpired(ref),
   );
 
-  group('endSessionAsExpired (R46)', () {
+  group('endSessionAsExpired', () {
     test('로그인이 풀리면 역할을 비우고 "로그인이 만료됐어요" 안내를 남긴다', () {
       final container = ProviderContainer(
         overrides: [

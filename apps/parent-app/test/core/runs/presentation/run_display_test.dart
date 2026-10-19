@@ -22,7 +22,7 @@ void main() {
   // `Ruling 871` — 서버가 출발 전 미승차(`no_show`)를 `waiting` 으로 보낸다.
   // 앱은 받은 값을 가공하지 않고 대기로 그린다 — 빨간 "미승차" 는 `no_show` 가
   // 올 때만 나온다.
-  group('R52 871 출발 전에는 대기로 그린다', () {
+  group('출발 전에는 대기로 그린다', () {
     for (final runStatus in [RunStatus.idle, RunStatus.confirmed]) {
       test('waiting + ${runStatus.name} 는 "운행 전" 이고 빨간 표시가 아니다', () {
         final chip = runStatusChip(_run(runStatus, RiderStatus.waiting));

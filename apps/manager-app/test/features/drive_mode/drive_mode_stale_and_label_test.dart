@@ -92,7 +92,7 @@ Future<void> _pumpDrive(
 }
 
 void main() {
-  testWidgets('R46 명단 갱신이 실패해도 마지막 명단의 [도착 처리] 가 남고 오류를 따로 알린다', (
+  testWidgets('명단 갱신이 실패해도 마지막 명단의 [도착 처리] 가 남고 오류를 따로 알린다', (
     tester,
   ) async {
     await _pumpDrive(
@@ -117,7 +117,7 @@ void main() {
     expect(find.text('다시 시도'), findsOneWidget);
   });
 
-  testWidgets('R46 처음부터 명단을 못 받으면 오류와 [다시 시도] 를 보인다', (tester) async {
+  testWidgets('처음부터 명단을 못 받으면 오류와 [다시 시도] 를 보인다', (tester) async {
     await _pumpDrive(
       tester,
       roster: (call) {

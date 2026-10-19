@@ -104,7 +104,7 @@ void main() {
       );
     });
 
-    test('이름이 없으면 R48 문구 "시각 에 운행을 마쳤어요." 로 떨어진다', () {
+    test('이름이 없으면 문구 "시각 에 운행을 마쳤어요." 로 떨어진다', () {
       expect(
         endedBody(finishedAt: finishedAt, destination: null),
         '12:52 에 운행을 마쳤어요.',

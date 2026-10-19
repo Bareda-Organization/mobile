@@ -596,7 +596,7 @@ void main() {
   });
   // 머리 아래 "최근 14일 · 자녀 이름들"
   // (학생은 "최근 14일"), 안 읽음 알약에는 서버가 센 수.
-  group('R48 구성', () {
+  group('구성', () {
     Future<void> pumpAs(
       WidgetTester tester,
       FakeNotificationRepository repository, {

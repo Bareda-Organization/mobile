@@ -65,7 +65,7 @@ void main() {
 
   // 서버는 검증에 실패한 주소 글자를 `details.failed_entries` 로 준다(API_SPEC §3.7).
   // 한 줄 "주소를 확인할 수 없습니다" 뿐이면 14칸 중 어느 칸을 고쳐야 하는지 알 수 없다.
-  testWidgets('R51 failed_entries 가 가리키는 칸의 요일 · 방향을 안내하고 그 요일로 옮긴다', (
+  testWidgets('failed_entries 가 가리키는 칸의 요일 · 방향을 안내하고 그 요일로 옮긴다', (
     tester,
   ) async {
     await pumpEditor(
@@ -163,7 +163,7 @@ void main() {
   });
 
   // 비운 칸이 지금 보는 요일이 아니면 그 요일로 옮겨 가야 바로 채울 수 있다.
-  testWidgets('R51 비운 칸이 다른 요일이면 안내에 그 요일 · 방향을 쓰고 그 요일로 옮긴다', (tester) async {
+  testWidgets('비운 칸이 다른 요일이면 안내에 그 요일 · 방향을 쓰고 그 요일로 옮긴다', (tester) async {
     final repository = _RecordingWeeklyAddressRepository();
     await pumpEditor(tester, repository, const [
       WeeklyAddressEntry(
@@ -201,7 +201,7 @@ void main() {
   });
 
   // 검사 경고 뒤에 칸을 다시 채우면 화면을 나갔다 들어오지 않아도 저장 버튼이 열려야 한다.
-  testWidgets('R46 칸을 비워 경고가 뜬 뒤 다시 채우면 저장할 수 있다', (tester) async {
+  testWidgets('칸을 비워 경고가 뜬 뒤 다시 채우면 저장할 수 있다', (tester) async {
     final repository = _RecordingWeeklyAddressRepository();
     await tester.pumpWidget(
       ProviderScope(
@@ -227,7 +227,7 @@ void main() {
   });
 
   // 요일 알약 하나를 고르면 그 요일의 등원 · 하원 두 칸이 나오고, 저장하지 않은 요일에는 점이 붙는다.
-  group('R48 요일 알약', () {
+  group('요일 알약', () {
     const monTo = WeeklyAddressEntry(
       weekday: Weekday.mon,
       direction: RunDirection.toAcademy,

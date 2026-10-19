@@ -130,7 +130,7 @@ void main() {
   }
 
   test(
-    '목표 7 — pending 계정은 허용 목록 밖 호출에서 403 AUTH_PENDING 을 받는다 '
+    'pending 계정은 허용 목록 밖 호출에서 403 AUTH_PENDING 을 받는다 '
     '(실제 호출 1회)',
     () async {
       if (!backendReachable) {
@@ -169,7 +169,7 @@ void main() {
   );
 
   test(
-    '목표 8 — rejected 계정은 signup-status 응답에 거절 사유를 담아 온다',
+    'rejected 계정은 signup-status 응답에 거절 사유를 담아 온다',
     () async {
       if (!backendReachable) {
         markTestSkipped('환경 문제: $baseUrl 백엔드 미기동');
@@ -204,7 +204,7 @@ void main() {
   );
 
   test(
-    '목표 9 — blocked 계정은 로그인 자체가 실패하고 사유가 담겨 온다',
+    'blocked 계정은 로그인 자체가 실패하고 사유가 담겨 온다',
     () async {
       if (!backendReachable) {
         markTestSkipped('환경 문제: $baseUrl 백엔드 미기동');
@@ -233,7 +233,7 @@ void main() {
   );
 
   test(
-    'R11 신규 — 로그아웃(§2.7)은 서버의 refresh 토큰을 무효화하고 로컬 '
+    '로그아웃(§2.7)은 서버의 refresh 토큰을 무효화하고 로컬 '
     '토큰도 지운다 (실제 호출)',
     () async {
       if (!backendReachable) {
@@ -290,7 +290,7 @@ void main() {
   );
 
   test(
-    '목표 11 — 학원 검색은 비활성 학원(운영정지)을 제외한다 (실제 호출)',
+    '학원 검색은 비활성 학원(운영정지)을 제외한다 (실제 호출)',
     () async {
       if (!backendReachable) {
         markTestSkipped('환경 문제: $baseUrl 백엔드 미기동');

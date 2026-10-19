@@ -273,7 +273,7 @@ void main() {
   });
 
   // 푸시 SDK 가 없어 대기 화면이 한 번만 조회하면 승인이 나도 [상태 다시 확인] 을 눌러야 한다.
-  group('R46 주기 재확인', () {
+  group('주기 재확인', () {
     // 사양(UF-X-02)이 정한 값 — 아래 시험은 이 상수로 시간을 흘리므로 값 자체는 여기서 고정한다.
     test('재조회 간격은 30초다', () {
       expect(pendingStatusPollInterval, const Duration(seconds: 30));
@@ -417,7 +417,7 @@ void main() {
   });
 
   // 시안 `pending*` — 상태를 칩 + 큰 제목 + 3단계 진행 막대로 먼저 보여 준다.
-  group('R48 승인 대기 · 거절 구성', () {
+  group('승인 대기 · 거절 구성', () {
     testWidgets('승인 대기 — 대기 칩 · 확인 중 제목 · 단계 셋 · 30초 자동 확인 안내', (tester) async {
       await _pumpPendingApproval(tester, _StubAuthRepository());
 

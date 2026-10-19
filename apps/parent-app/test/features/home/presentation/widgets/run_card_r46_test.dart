@@ -128,7 +128,7 @@ void main() {
 
   // `Ruling 870` — 마감은 출발 시각이 아니라 서버가 준 `deadline_at`
   // (운행 시작 또는 출발 + 10분 중 먼저)이다.
-  group('A #15 승인 대기 카운트다운(P-03) · R52 870 마감 = deadline_at', () {
+  group('승인 대기 카운트다운(P-03) · 마감 = deadline_at', () {
     final departTime = DateTime(2026, 9, 12, 8);
     // 서버 마감 = 출발 + 10분.
     final deadline = DateTime(2026, 9, 12, 8, 10);
@@ -264,7 +264,7 @@ void main() {
 
   // `Ruling 874`② — "잔여 변경 N회" 는 ②구간(승인 필요 · 회차당 1번)에서만 뜻이 있다.
   // ①은 횟수 제한이 없고 ③은 신청할 수 없다.
-  group('R52 874② 잔여 변경 횟수는 ②구간에서만', () {
+  group('잔여 변경 횟수는 ②구간에서만', () {
     testWidgets('②구간(확정 뒤 · 운행 전)이면 보인다', (tester) async {
       await _pump(
         tester,
@@ -325,7 +325,7 @@ void main() {
   // 시안 `cancel-ride` · `--approval` · `--moving` — 구간마다 확인 단추의 글자와 색이
   // 다르다(P2).
   // ② 구간의 단추는 취소가 아니라 "요청" 이다 — 위험색(빨강)이 아니라 주 단추(초록)여야 취소가 즉시 되는 줄 아는 오해가 없다.
-  group('R48 탑승 취소 확인 창 — 구간별 단추', () {
+  group('탑승 취소 확인 창 — 구간별 단추', () {
     BaraedaButton confirmButton(WidgetTester tester, String label) =>
         tester.widget<BaraedaButton>(find.widgetWithText(BaraedaButton, label));
 

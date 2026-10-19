@@ -484,7 +484,7 @@ void main() {
   });
 
   // 회차 라디오 칸 · 구간 안내 · 영수증(시안 `daily-change` · `--approval` · `--done`).
-  group('R48 일일 변경 화면', () {
+  group('일일 변경 화면', () {
     StudentRun run(
       String id, {
       RunStatus status = RunStatus.idle,

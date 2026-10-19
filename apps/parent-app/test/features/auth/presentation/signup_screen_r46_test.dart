@@ -139,7 +139,7 @@ void main() {
       expect(find.text('로그인 화면'), findsNothing);
     });
 
-    testWidgets('자동 로그인이 실패하면 예전처럼 로그인 화면으로 돌려보낸다', (tester) async {
+    testWidgets('자동 로그인이 실패하면 로그인 화면으로 돌려보낸다', (tester) async {
       final repository = _Repository(loginFails: true);
       await _pump(tester, repository);
       await _fillAllButAcademy(tester);

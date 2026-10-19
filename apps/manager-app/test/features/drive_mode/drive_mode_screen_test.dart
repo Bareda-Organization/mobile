@@ -109,7 +109,7 @@ void main() {
     expect(find.text('노선 지도 화면'), findsOneWidget);
   });
 
-  group('목표 9 — 연결 배너가 명단 상태와 무관하게 뜬다', () {
+  group('연결 배너가 명단 상태와 무관하게 뜬다', () {
     const bannerTitle = '실시간 연결 중';
 
     testWidgets('명단이 로딩 중이어도 배너가 뜬다', (tester) async {

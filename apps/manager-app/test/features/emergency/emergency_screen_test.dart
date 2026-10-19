@@ -568,7 +568,7 @@ void main() {
     expect(find.text('비상 알림 보내기'), findsNothing);
   });
 
-  testWidgets('비상이 큐에 쌓이면 학원에 전화하라고 알리고 [학원에 전화]가 학원 번호를 tel: 로 연다 (R46)', (
+  testWidgets('비상이 큐에 쌓이면 학원에 전화하라고 알리고 [학원에 전화]가 학원 번호를 tel: 로 연다', (
     tester,
   ) async {
     final fakeRepo = _FakeEmergencyRepository(
@@ -598,7 +598,7 @@ void main() {
     expect(opened, [Uri(scheme: 'tel', path: '02-555-0101')]);
   });
 
-  testWidgets('학원 번호를 모르면 전화 안내 문구만 보이고 전화 버튼은 없다 (R46)', (tester) async {
+  testWidgets('학원 번호를 모르면 전화 안내 문구만 보이고 전화 버튼은 없다', (tester) async {
     final fakeRepo = _FakeEmergencyRepository(
       raiseOutcome: const Queued<EmergencyRaiseResult>(),
       list: const EmergencyListResponse(items: []),
@@ -618,7 +618,7 @@ void main() {
     expect(find.textContaining('학원에 전화'), findsNothing);
   });
 
-  testWidgets('학원 번호가 공백뿐이어도 전화 버튼은 없다 — 걸리지 않는 버튼을 그리지 않는다 (R46)', (
+  testWidgets('학원 번호가 공백뿐이어도 전화 버튼은 없다 — 걸리지 않는 버튼을 그리지 않는다', (
     tester,
   ) async {
     final fakeRepo = _FakeEmergencyRepository(
@@ -878,7 +878,7 @@ void main() {
     expect(find.text('확인 대기 중'), findsNWidgets(2));
   });
 
-  testWidgets('발신 이력 카드는 내용 폭으로 줄어 가운데에 뜨지 않고 화면 폭을 채운다 (R46-SCREEN)', (
+  testWidgets('발신 이력 카드는 내용 폭으로 줄어 가운데에 뜨지 않고 화면 폭을 채운다', (
     tester,
   ) async {
     final fakeRepo = _FakeEmergencyRepository(

@@ -127,7 +127,7 @@ void main() {
 
   // 시안 `home-parent--error` — 못 불러왔을 때는 큰 그림 + 안내 + 채워진 [다시 시도],
   // 그 아래에 급할 때 거는 전화.
-  group('R48 홈 오류 화면', () {
+  group('홈 오류 화면', () {
     BaraedaButton retryButton(WidgetTester tester) => tester
         .widget<BaraedaButton>(find.widgetWithText(BaraedaButton, '다시 시도'));
 

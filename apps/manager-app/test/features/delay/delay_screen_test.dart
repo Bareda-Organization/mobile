@@ -191,7 +191,7 @@ void main() {
     });
   });
 
-  group('보내기 전 문구 미리보기 (R46, B2 #26)', () {
+  group('보내기 전 문구 미리보기', () {
     Future<void> pumpEscort(WidgetTester tester) => tester.pumpWidget(
       _wrap(const DelayScreen(), [
         selectedRunIdProvider.overrideWith((ref) => runId),

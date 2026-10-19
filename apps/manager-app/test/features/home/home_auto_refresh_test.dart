@@ -75,7 +75,7 @@ void main() {
   });
 
   // 갱신이 실패해도 마지막으로 받은 목록이 남고, 오류는 목록 위에 따로 알린다.
-  testWidgets('R46 주기 갱신이 실패해도 마지막 목록이 남고 오류를 알린다', (tester) async {
+  testWidgets('주기 갱신이 실패해도 마지막 목록이 남고 오류를 알린다', (tester) async {
     var calls = 0;
     await tester.pumpWidget(
       ProviderScope(

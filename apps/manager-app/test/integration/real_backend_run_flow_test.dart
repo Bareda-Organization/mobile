@@ -172,8 +172,8 @@ void main() {
     'run_id 는 이 시험 안에서 GET /manager/runs 로 매번 새로 찾는다. 이 회차의 '
     'confirmed 여부는 시드의 상대 시각(출발 30분 전 확정)이 실제 시계 경과에 따라 '
     '바뀌므로 고정값을 박으면 시간이 지나면서 idle 로 넘어가 깨진다. '
-    'FE-R2 목표 12 — 이 시험은 §4.1 이 일부러 보지 않는 run_status 를 전담해서 '
-    '검사한다: confirmed 상태인 회차가 하나도 없으면(= BE-R1 이 고친 결함이 다시 '
+    '이 시험은 §4.1 이 일부러 보지 않는 run_status 를 전담해서 '
+    '검사한다: confirmed 상태인 회차가 하나도 없으면(= 고쳐 둔 결함이 다시 '
     '나면) 아래 expect 가 그 자리에서 실패해야 한다',
     () async {
       if (!backendReachable) {

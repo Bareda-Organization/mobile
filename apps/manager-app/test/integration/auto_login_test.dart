@@ -58,7 +58,7 @@ void main() {
   });
 
   testWidgets(
-    '목표 5 — 저장된 refresh 토큰이 있으면 재실행 시 로그인 화면을 건너뛰고 '
+    '저장된 refresh 토큰이 있으면 재실행 시 로그인 화면을 건너뛰고 '
     '홈 화면으로 간다 (실제 로그인 1회로 진짜 토큰을 발급받아 시드)',
     (tester) async {
       if (!backendReachable) {

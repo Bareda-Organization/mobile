@@ -222,7 +222,7 @@ Finder _inPreview(String text) =>
 
 void main() {
   // 칩은 전체 지도(`LiveMapView.resolve`)와 같은 판정을 따른다.
-  group('R52 M2 칩 — 신호 유실 · 미등원', () {
+  group('신호 유실 · 미등원 칩', () {
     final now = DateTime.utc(2026, 10, 3, 3, 30);
 
     testWidgets('좌표 없이 last_seen_at 만 오고 2분이 넘었으면 "신호 없음" 이다 — "이동 중" 이 아니다', (
@@ -541,7 +541,7 @@ void main() {
   });
 
   // 홈 지도 미리보기에도 표시 범위 승하차지의 번호 마커와 경로선을 그린다.
-  group('R49 지도 미리보기 — 노선선 · 번호', () {
+  group('지도 미리보기 — 노선선 · 번호', () {
     MapSurface previewMap(WidgetTester tester) =>
         tester.widget<MapSurface>(find.byType(MapSurface));
 

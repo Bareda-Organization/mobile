@@ -110,7 +110,7 @@ void main() {
   }
 
   test(
-    '목표 6 — 기사(driverA1)가 배치된 회차(1)의 매니저 채널을 구독하면 '
+    '기사(driverA1)가 배치된 회차(1)의 매니저 채널을 구독하면 '
     '거부되지 않는다',
     () async {
       if (!backendReachable) {
@@ -140,7 +140,7 @@ void main() {
   );
 
   test(
-    '목표 6 — 기사(driverA1)가 배치되지 않은 회차(3)의 매니저 채널을 '
+    '기사(driverA1)가 배치되지 않은 회차(3)의 매니저 채널을 '
     '구독하면 forbiddenSubscriptions 에 그 목적지가 실린다 (위 시험과 짝을 '
     '이루는 부정 확인 — "붙는다"만 보여서는 아무 회차나 보이는 것과 '
     '구별되지 않는다)',
@@ -169,7 +169,7 @@ void main() {
   );
 
   test(
-    '목표 6 — 동승자(escortA1)가 배치된 회차(1)의 매니저 채널을 구독하면 '
+    '동승자(escortA1)가 배치된 회차(1)의 매니저 채널을 구독하면 '
     '거부되지 않는다',
     () async {
       if (!backendReachable) {
@@ -199,7 +199,7 @@ void main() {
   );
 
   test(
-    '목표 6 — 동승자(escortA1)가 배치되지 않은 회차(3)의 매니저 채널을 '
+    '동승자(escortA1)가 배치되지 않은 회차(3)의 매니저 채널을 '
     '구독하면 거부된다',
     () async {
       if (!backendReachable) {

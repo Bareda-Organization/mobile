@@ -206,7 +206,7 @@ void main() {
   });
 
   // `Ruling 829` — 학생이 받는 알림은 도착 · 운행 시작뿐이라 의미 없는 스위치(미승차)를 뺀다.
-  group('R48 역할별 스위치', () {
+  group('역할별 스위치', () {
     const settings = NotificationSettings(
       arrive: true,
       boarding: true,

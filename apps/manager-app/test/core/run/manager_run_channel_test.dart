@@ -95,7 +95,7 @@ void main() {
       expect(calls, {'emergencyAcked': 1});
     });
 
-    test('routeChanged → onRouteChanged 만 호출 (R36-FE FE6)', () {
+    test('routeChanged → onRouteChanged 만 호출', () {
       dispatch(WsEventType.routeChanged);
       expect(calls, {'routeChanged': 1});
     });

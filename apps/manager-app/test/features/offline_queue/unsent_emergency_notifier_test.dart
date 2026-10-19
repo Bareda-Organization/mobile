@@ -124,7 +124,7 @@ void main() {
     expect(store.saved?.count, 3);
   });
 
-  group('R53 경합', () {
+  group('경합', () {
     // a — 읽기가 실패한 채 새 건을 쓰면 기기에 있던 앞 건수가 새 건 하나로 덮였다.
     test('a: 저장소 읽기가 한 번 실패해도 앞 건수 위에 새 건을 더해 쓴다', () async {
       final store = _FlakyStore(

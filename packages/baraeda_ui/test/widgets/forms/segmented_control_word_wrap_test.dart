@@ -48,7 +48,7 @@ void main() {
     }
   });
 
-  testWidgets('기본값은 예전 그대로 라벨 하나를 한 덩어리로 그린다', (tester) async {
+  testWidgets('기본값은 라벨 하나를 한 덩어리로 그린다', (tester) async {
     await pump(tester, wrapByWord: false);
 
     expect(find.text('차량 고장'), findsOneWidget);

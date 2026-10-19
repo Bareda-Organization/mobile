@@ -339,7 +339,7 @@ void main() {
     expect(repository.calls, hasLength(1));
   });
 
-  testWidgets('전송이 성공하면 마지막 성공 시각을 기록하고, 실패하면 그 시각을 그대로 둔다 (R46)', (
+  testWidgets('전송이 성공하면 마지막 성공 시각을 기록하고, 실패하면 그 시각을 그대로 둔다', (
     tester,
   ) async {
     final container = await pumpApp(tester);

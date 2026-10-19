@@ -747,7 +747,7 @@ void main() {
     expect(find.widgetWithText(BaraedaButton, '미승차'), findsNothing);
   });
 
-  group('목표 9 — 연결 배너가 명단 상태와 무관하게 뜬다', () {
+  group('연결 배너가 명단 상태와 무관하게 뜬다', () {
     // 실제 ManagerRunChannelController 를 그대로 쓰고 tokenStorageProvider
     // 만 영원히 응답하지 않는 대역으로 바꿔 connecting 상태에 고정한다 —
     // 클래스 주석 참고. 어느 상태로 고정하든 "배너가 rosterAsync.when()
@@ -817,7 +817,7 @@ void main() {
   });
 
   // 갱신이 실패해도 마지막 명단을 지우지 않는다. 오류는 목록 위에 따로 알린다.
-  testWidgets('R46 명단 갱신이 실패해도 마지막 명단이 남고 오류와 [다시 시도] 를 알린다', (tester) async {
+  testWidgets('명단 갱신이 실패해도 마지막 명단이 남고 오류와 [다시 시도] 를 알린다', (tester) async {
     final fakeRepo = _FakeRosterRepository(
       roster: _roster(),
       failFetchFromCall: 2,
@@ -845,7 +845,7 @@ void main() {
   });
 
   // 글자 버튼 4개가 제목을 밀어내 제목이 사라졌다. 앱바에는 비상만 남긴다.
-  testWidgets('R46 머리줄에는 제목과 비상만 있고 나머지 단추는 본문 위 줄에 있다', (tester) async {
+  testWidgets('머리줄에는 제목과 비상만 있고 나머지 단추는 본문 위 줄에 있다', (tester) async {
     tester.view.physicalSize = const Size(375 * 3, 812 * 3);
     tester.view.devicePixelRatio = 3;
     addTearDown(tester.view.reset);

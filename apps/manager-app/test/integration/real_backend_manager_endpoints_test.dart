@@ -187,7 +187,7 @@ void main() {
     );
   });
 
-  group('§4.4 POST /runs/{runId}/start — 목표 8 예외 경로', () {
+  group('§4.4 POST /runs/{runId}/start — 예외 경로', () {
     test(
       'DRIVER_ONLY — 동승자(escortA1)가 run2 의 운행 시작을 호출하면 '
       '403 DRIVER_ONLY 를 받는다',
@@ -249,7 +249,7 @@ void main() {
     );
   });
 
-  group('§4.6 PATCH /runs/{runId}/riders/{riderId} — 목표 9 멱등성', () {
+  group('§4.6 PATCH /runs/{runId}/riders/{riderId} — 멱등성', () {
     // 아래 두 번째 시험이 새 네트워크 호출 없이 이 응답 본문을 재사용한다
     // (같은 상태로의 재요청이 지금은 409 라, 세 번째 호출로 성공 응답을
     // 다시 받을 수 없다 — Ruling 345 아래 주석 참고).
@@ -264,8 +264,8 @@ void main() {
       '백엔드는 int 로 내려 캐스팅이 실패한다(§4.3 과 같은 종류의 결함, '
       '아래 두 번째 시험이 그 실패를 실제 응답 값으로 재현한다) — 그래서 '
       '이 시험은 원재료 dio 로 직접 멱등성을 검증한다. ⚠ run3 은 등원 '
-      '회차라 boarded→alighted 가 막혀 있다(409 RIDER_TRANSITION_NOT_ALLOWED, '
-      'R51 C3) — 쓸 수 있는 전이는 waiting→boarded 뿐인데 시드의 rider 3 은 '
+      '회차라 boarded→alighted 가 막혀 있다(409 RIDER_TRANSITION_NOT_ALLOWED). '
+      '쓸 수 있는 전이는 waiting→boarded 뿐인데 시드의 rider 3 은 '
       '이미 boarded 라서, 먼저 되돌리기(§4.7)로 waiting 으로 돌린 뒤 처리한다. '
       '끝나면 rider 3 은 시드와 같은 boarded 이고 이력 행만 늘어난다',
       () async {
@@ -411,7 +411,7 @@ void main() {
         final result = await api.revertRiderStatus(
           runId: '3',
           riderId: '3',
-          reason: '실백엔드 계약 시험 — F5 M 목표 9 원복',
+          reason: '실백엔드 계약 시험 — 원복',
         );
 
         expect(result.revertedAt, isNotNull);
@@ -481,7 +481,7 @@ void main() {
     );
   });
 
-  group('§4.5 POST /runs/{runId}/stops/{stopId}/arrive — 목표 8', () {
+  group('§4.5 POST /runs/{runId}/stops/{stopId}/arrive', () {
     test(
       '결함 수정 확인(F5 M2 목표 A-2·A-5, `Ruling 275` + 널 허용성) — '
       '기사(driverA2, run3 배치)가 아직 미도착인 정류장에 도착 처리하면 '
@@ -658,10 +658,10 @@ void main() {
   group('§4.16 GET /runs/{runId}/navigation — 클라이언트 미구현', () {
     test(
       '⚠ manager-app 코드베이스 전체에 NavigationApi 도, 이 경로를 부르는 '
-      '화면도 없다(grep -rn "navigation" lib/ 매칭 0건, 보고서 확인). '
+      '화면도 없다(grep -rn "navigation" lib/ 매칭 0건). '
       '건너뜀 0 을 지키기 위해 원재료 dio 로만 호출해 서버가 실제로 '
       '응답하는지 확인한다 — 이 호출을 검증하는 프로덕션 코드 경로는 '
-      '이 라운드 기준 존재하지 않는다(가짜 응답 대체가 아니라 미구현)',
+      '현재 존재하지 않는다(가짜 응답 대체가 아니라 미구현)',
       () async {
         if (!backendReachable) {
           markTestSkipped('환경 문제: 백엔드 미기동($baseUrl)');

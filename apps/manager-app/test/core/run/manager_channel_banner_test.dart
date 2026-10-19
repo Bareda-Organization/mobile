@@ -56,7 +56,7 @@ void main() {
       expect(
         managerChannelBannerContentFor(ManagerChannelStatus.reconnecting),
         isNotNull,
-        reason: '고르지 않으면 예전처럼 보인다',
+        reason: '고르지 않으면 재연결 배너가 보인다',
       );
     });
 
