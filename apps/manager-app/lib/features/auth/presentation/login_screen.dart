@@ -146,7 +146,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.colors;
     // 로그인이 만료돼 돌아왔다면 이유를 알린다 — 이유 없이 로그인 화면만 나오면 오류인 줄 안다.
     final expiredNotice = ref.watch(sessionExpiredNoticeProvider);
     final remaining = _remainingAttempts;
@@ -160,45 +159,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Row(
-                      children: [
-                        Container(
-                          width: 56,
-                          height: 56,
-                          decoration: BoxDecoration(
-                            color: colors.accentPrimary,
-                            borderRadius: BorderRadius.circular(
-                              BaraedaRadius.card,
-                            ),
-                          ),
-                          child: BaraedaIcon(
-                            'bus',
-                            size: 28,
-                            color: colors.textInverse,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '바래다 매니저',
-                                style: BaraedaTypography.h3.copyWith(
-                                  color: colors.textPrimary,
-                                ),
-                              ),
-                              Text(
-                                '기사 · 동승자',
-                                style: BaraedaTypography.body.copyWith(
-                                  color: colors.textSecondary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
+                    const _LoginHeader(),
                     const SizedBox(height: 24),
                     if (expiredNotice != null) ...[
                       AlertBanner(tone: AlertTone.moving, body: expiredNotice),
@@ -241,37 +202,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             ref.watch(academyContactProvider),
                       ),
                     ],
-                    const SizedBox(height: 12),
-                    Text(
-                      '한 번 로그인하면 이 기기에서 자동으로 로그인돼요. 다른 사람과 같이 쓰는 '
-                      '폰이면 사용 후 로그아웃해 주세요.',
-                      style: BaraedaTypography.caption.copyWith(
-                        color: colors.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    // Ruling 329 · UF-X-04 — 매니저(기사·동승자)도 학부모·학생과 같은 "학원
-                    // 관계자 경유"
-                    // 복구만 연다. 전화번호 복구 화면(SMS 연동 전 503, §5.22)은 만들지 않고 안내만 둔다.
-                    Text.rich(
-                      const TextSpan(
-                        children: [
-                          TextSpan(
-                            text: '비밀번호를 잊으셨나요? ',
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          TextSpan(text: '다니는 학원에 초기화를 요청해 주세요. '),
-                          TextSpan(
-                            text: '임시 비밀번호',
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          TextSpan(text: '를 받아 로그인할 수 있어요.'),
-                        ],
-                      ),
-                      style: BaraedaTypography.caption.copyWith(
-                        color: colors.textSecondary,
-                      ),
-                    ),
+                    const _LoginGuide(),
                     // 배포 시험 빌드에서만(값이 없으면 아무것도 그리지 않는다) — Ruling 877.
                     QuickLogin(
                       password: widget.quickLoginPassword,
@@ -289,33 +220,133 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
               ),
             ),
-            DecoratedBox(
-              decoration: BoxDecoration(
-                color: colors.bgBase,
-                border: Border(top: BorderSide(color: colors.borderSubtle)),
+            _LoginActionBar(submitting: _submitting, onSubmit: _submit),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// 앱 로고 칩과 `바래다 매니저` 제목 줄.
+class _LoginHeader extends StatelessWidget {
+  const new();
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return Row(
+      children: [
+        Container(
+          width: 56,
+          height: 56,
+          decoration: BoxDecoration(
+            color: colors.accentPrimary,
+            borderRadius: BorderRadius.circular(BaraedaRadius.card),
+          ),
+          child: BaraedaIcon('bus', size: 28, color: colors.textInverse),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '바래다 매니저',
+                style: BaraedaTypography.h3.copyWith(color: colors.textPrimary),
               ),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    BaraedaButton(
-                      label: '로그인',
-                      size: BaraedaButtonSize.xl,
-                      block: true,
-                      onPressed: _submitting ? null : _submit,
-                    ),
-                    const SizedBox(height: 8),
-                    BaraedaButton(
-                      label: '처음이세요? 회원가입',
-                      variant: BaraedaButtonVariant.secondary,
-                      block: true,
-                      onPressed: () => context.push(AppRoutes.signup),
-                    ),
-                  ],
+              Text(
+                '기사 · 동승자',
+                style: BaraedaTypography.body.copyWith(
+                  color: colors.textSecondary,
                 ),
               ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// 자동 로그인 안내와 비밀번호 분실 시 학원 경유 초기화 안내.
+class _LoginGuide extends StatelessWidget {
+  const new();
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SizedBox(height: 12),
+        Text(
+          '한 번 로그인하면 이 기기에서 자동으로 로그인돼요. 다른 사람과 같이 쓰는 '
+          '폰이면 사용 후 로그아웃해 주세요.',
+          style: BaraedaTypography.caption.copyWith(
+            color: colors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 12),
+        // Ruling 329 · UF-X-04 — 매니저(기사·동승자)도 학부모·학생과 같은 "학원 관계자 경유"
+        // 복구만 연다. 전화번호 복구 화면(SMS 연동 전 503, §5.22)은 만들지 않고 안내만 둔다.
+        Text.rich(
+          const TextSpan(
+            children: [
+              TextSpan(
+                text: '비밀번호를 잊으셨나요? ',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              TextSpan(text: '다니는 학원에 초기화를 요청해 주세요. '),
+              TextSpan(
+                text: '임시 비밀번호',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              TextSpan(text: '를 받아 로그인할 수 있어요.'),
+            ],
+          ),
+          style: BaraedaTypography.caption.copyWith(
+            color: colors.textSecondary,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// 하단 고정 `로그인` · `회원가입` 단추 띠.
+class _LoginActionBar extends StatelessWidget {
+  const new({required this.submitting, required this.onSubmit});
+
+  final bool submitting;
+  final Future<void> Function() onSubmit;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colors.bgBase,
+        border: Border(top: BorderSide(color: colors.borderSubtle)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            BaraedaButton(
+              label: '로그인',
+              size: BaraedaButtonSize.xl,
+              block: true,
+              onPressed: submitting ? null : onSubmit,
+            ),
+            const SizedBox(height: 8),
+            BaraedaButton(
+              label: '처음이세요? 회원가입',
+              variant: BaraedaButtonVariant.secondary,
+              block: true,
+              onPressed: () => context.push(AppRoutes.signup),
             ),
           ],
         ),

@@ -3,13 +3,12 @@
 // 사용자 지시로 행으로 바꿨다(IMPLEMENTATION_PLAN §4).
 
 import 'package:baraeda_ui/theme/baraeda_colors.dart';
-import 'package:baraeda_ui/tokens/shape.dart';
 import 'package:baraeda_ui/tokens/spacing.dart';
 import 'package:baraeda_ui/tokens/typography.dart';
 import 'package:baraeda_ui/widgets/core/baraeda_status.dart';
 import 'package:baraeda_ui/widgets/core/icon.dart';
-import 'package:baraeda_ui/widgets/core/status_pill.dart';
 import 'package:baraeda_ui/widgets/core/word_wrap_text.dart';
+import 'package:baraeda_ui/widgets/feedback/notification_card_row.dart';
 import 'package:flutter/material.dart';
 
 /// 학부모·학생 앱 알림 목록 행.
@@ -84,8 +83,8 @@ class NotificationTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
+    if (style == NotificationTileStyle.card) return NotificationCardRow(this);
     final (solid, soft) = _tone(colors, status);
-    if (style == NotificationTileStyle.card) return _buildCard(colors);
 
     return Semantics(
       button: onTap != null,
@@ -146,131 +145,6 @@ class NotificationTile extends StatelessWidget {
                   child: ColoredBox(key: importantBarKey, color: solid),
                 ),
             ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// 카드형 한 줄(시안) — 안 읽은 행은 연두 면이고, 누를 수 있는 읽은 행은 오른쪽에 쉐브론이 있다.
-  Widget _buildCard(BaraedaColors colors) {
-    final name = who;
-
-    return Semantics(
-      button: onTap != null,
-      onTap: onTap,
-      label: [
-        if (unread) '안 읽음',
-        if (important) '중요',
-        kindLabel,
-        title,
-        body,
-        timeSpoken,
-        name,
-      ].whereType<String>().join(', '),
-      excludeSemantics: true,
-      child: Material(
-        color: unread ? colors.accentPrimarySoft : Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          focusColor: colors.focusRing.withValues(alpha: 0.32),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 64),
-            child: Padding(
-              padding: const EdgeInsets.all(BaraedaSpacing.space3),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    key: NotificationTile.glyphKey,
-                    width: 40,
-                    height: 40,
-                    alignment: Alignment.center,
-                    // 종류 색은 알약이 맡는다 — 아이콘 칸은 종류 · 읽음과 상관없이 옅은 면 + 진한 아이콘(시안).
-                    decoration: BoxDecoration(
-                      color: colors.statusIdleSoft,
-                      borderRadius: BorderRadius.circular(BaraedaRadius.md),
-                    ),
-                    child: BaraedaIcon(icon, color: colors.textPrimary),
-                  ),
-                  const SizedBox(width: BaraedaSpacing.space3),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        WordWrapText(
-                          title,
-                          style: BaraedaTypography.body.copyWith(
-                            height: 1.35,
-                            fontWeight: unread
-                                ? BaraedaFontWeight.bold
-                                : BaraedaFontWeight.regular,
-                          ),
-                        ),
-                        if (body != null)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 2),
-                            child: WordWrapText(
-                              body!,
-                              style: BaraedaTypography.bodySm.copyWith(
-                                height: 1.4,
-                                color: colors.textSecondary,
-                              ),
-                            ),
-                          ),
-                        const SizedBox(height: BaraedaSpacing.space2),
-                        Wrap(
-                          crossAxisAlignment: WrapCrossAlignment.center,
-                          spacing: BaraedaSpacing.space2,
-                          runSpacing: BaraedaSpacing.space1,
-                          children: [
-                            BaraedaStatusPill(status: status, label: kindLabel),
-                            Text(
-                              time,
-                              style: BaraedaTypography.caption.copyWith(
-                                color: colors.textSecondary,
-                                fontFeatures: const [
-                                  FontFeature.tabularFigures(),
-                                ],
-                              ),
-                            ),
-                            if (name != null)
-                              Text(
-                                '· $name',
-                                style: BaraedaTypography.caption.copyWith(
-                                  color: colors.textSecondary,
-                                ),
-                              ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: BaraedaSpacing.space2),
-                  if (unread)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 6),
-                      child: Container(
-                        key: NotificationTile.unreadDotKey,
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: colors.accentPrimary,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                    )
-                  else if (onTap != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: BaraedaIcon(
-                        'chevron-right',
-                        color: colors.textTertiary,
-                      ),
-                    ),
-                ],
-              ),
-            ),
           ),
         ),
       ),

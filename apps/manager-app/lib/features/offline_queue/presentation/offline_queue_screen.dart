@@ -162,7 +162,11 @@ class _OfflineQueueScreenState extends ConsumerState<OfflineQueueScreen> {
                       error: (error, _) => WordWrapText(
                         '대기열을 불러오지 못했어요: ${describeError(error)}',
                       ),
-                      data: _buildList,
+                      data: (items) => _QueueList(
+                        items: items,
+                        titleOf: _titleOf,
+                        onCancel: (item) => unawaited(_cancel(item)),
+                      ),
                     ),
                   ],
                 ),
@@ -186,30 +190,6 @@ class _OfflineQueueScreenState extends ConsumerState<OfflineQueueScreen> {
     );
   }
 
-  Widget _buildList(List<PendingRequestSummary> items) {
-    if (items.isEmpty) {
-      return const EmptyState(
-        icon: 'check',
-        title: '대기 중인 처리가 없어요',
-        body: '인터넷이 끊겨서 못 보낸 처리는 여기에 쌓여요. 연결되면 자동으로 보내요.',
-      );
-    }
-    final colors = context.colors;
-    // 행 전체가 한 카드 안에 있고 선으로 나뉜다(시안). 카드는 전체 폭이다(`Ruling 592` 와 같은 처리).
-    return BaraedaCard(
-      padding: EdgeInsets.zero,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          for (var i = 0; i < items.length; i++) ...[
-            if (i > 0) Divider(height: 1, color: colors.borderSubtle),
-            _buildRow(items[i]),
-          ],
-        ],
-      ),
-    );
-  }
-
   /// 처리 이름에 학생 이름을 덧붙인다 — 페이로드에 이름이 없어, 이미 받아 둔 명단(홈·명단 화면이 채운
   /// 캐시)에서 같은 회차·같은 승차 기록을 찾는다. 명단을 새로 받지 않고(오프라인일 수 있다), 못 찾으면 `null`.
   String? _studentNameOf(PendingRequestSummary item) => rosterNameOf(
@@ -221,8 +201,60 @@ class _OfflineQueueScreenState extends ConsumerState<OfflineQueueScreen> {
     final name = _studentNameOf(item);
     return name == null ? item.description : '${item.description} · $name';
   }
+}
 
-  Widget _buildRow(PendingRequestSummary item) {
+/// 대기 중인 처리 목록 — 행 전체가 한 카드 안에 있고 선으로 나뉜다(시안). 비면 안내 문구를 보인다.
+class _QueueList extends StatelessWidget {
+  const new({
+    required this.items,
+    required this.titleOf,
+    required this.onCancel,
+  });
+
+  final List<PendingRequestSummary> items;
+  final String Function(PendingRequestSummary item) titleOf;
+  final void Function(PendingRequestSummary item) onCancel;
+
+  @override
+  Widget build(BuildContext context) {
+    if (items.isEmpty) {
+      return const EmptyState(
+        icon: 'check',
+        title: '대기 중인 처리가 없어요',
+        body: '인터넷이 끊겨서 못 보낸 처리는 여기에 쌓여요. 연결되면 자동으로 보내요.',
+      );
+    }
+    final colors = context.colors;
+    // 카드는 전체 폭이다(`Ruling 592` 와 같은 처리).
+    return BaraedaCard(
+      padding: EdgeInsets.zero,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (var i = 0; i < items.length; i++) ...[
+            if (i > 0) Divider(height: 1, color: colors.borderSubtle),
+            _QueueRow(
+              item: items[i],
+              title: titleOf(items[i]),
+              onCancel: () => onCancel(items[i]),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// 대기열 한 행 — 처리 이름 · 상태 꼬리표 · 시각과 상태 문구 · 삭제 단추.
+class _QueueRow extends StatelessWidget {
+  const new({required this.item, required this.title, required this.onCancel});
+
+  final PendingRequestSummary item;
+  final String title;
+  final VoidCallback onCancel;
+
+  @override
+  Widget build(BuildContext context) {
     final colors = context.colors;
     final time = DateFormat('HH:mm:ss').format(item.createdAt.toLocal());
     // 서버가 5xx 를 되풀이해 재생에서 뺀 행은 더 기다리지 않는다 — 보내지 못했음을 알리고 사용자가 정리한다.
@@ -239,7 +271,7 @@ class _OfflineQueueScreenState extends ConsumerState<OfflineQueueScreen> {
             children: [
               Expanded(
                 child: Text(
-                  _titleOf(item),
+                  title,
                   style: BaraedaTypography.body.copyWith(
                     color: colors.textPrimary,
                     fontWeight: BaraedaFontWeight.bold,
@@ -269,7 +301,7 @@ class _OfflineQueueScreenState extends ConsumerState<OfflineQueueScreen> {
                 label: '삭제',
                 size: BaraedaButtonSize.sm,
                 variant: BaraedaButtonVariant.ghost,
-                onPressed: () => unawaited(_cancel(item)),
+                onPressed: onCancel,
               ),
             ],
           ),

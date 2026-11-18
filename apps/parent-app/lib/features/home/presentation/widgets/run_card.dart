@@ -150,7 +150,6 @@ class _RunCardState extends ConsumerState<RunCard> {
   @override
   Widget build(BuildContext context) {
     final run = widget.run;
-    final status = runStatusChip(run);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: BaraedaSpacing.cardGap),
@@ -162,75 +161,11 @@ class _RunCardState extends ConsumerState<RunCard> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // UF-P-07 — "홈 · 실시간 운행 정보 → [지도 진입]". 이 배선이 없어서 지도 화면이
-            // 만들어져 있는데도 도달할 수 없었다. 지도로 가는 눌림은 카드 윗부분만
-            // 받는다 — 스위치 줄까지 감싸면 전송 중(스위치 비활성)에 누른 손이 지도를 연다.
-            InkWell(
-              onTap: widget.date == null
-                  ? () => context.push(AppRoutes.liveMap)
-                  : null,
-              borderRadius: BorderRadius.circular(BaraedaRadius.md),
-              child: Padding(
-                padding: const EdgeInsets.all(BaraedaSpacing.cardPadding),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          '${run.direction.label} · ${run.busNo}',
-                          style: BaraedaTypography.bodyLg,
-                        ),
-                        BaraedaStatusPill(
-                          status: status.status,
-                          label: status.label,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: BaraedaSpacing.space1),
-                    Text(
-                      '${formatClock(run.departTime)} 출발 · ${run.stop.name}',
-                    ),
-                    if (widget.date == null)
-                      MinuteTicker(
-                        builder: (context, now) => Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            if (untilConfirm(run, now) case final left?)
-                              WordWrapText(
-                                '확정까지 $left',
-                                style: BaraedaTypography.bodySm,
-                              ),
-                          ],
-                        ),
-                      ),
-                    if (widget.isApprovalPending)
-                      MinuteTicker(
-                        builder: (context, now) => WordWrapText(
-                          _approvalWaitText(widget.approvalDeadlineAt, now),
-                          style: BaraedaTypography.bodySm,
-                        ),
-                      ),
-                    // UF-P-07 진입 표시 — 카드 전체가 눌리는데 그 표시가 없어
-                    // 지도로 가는 길을 못 찾았다.
-                    // 지도에 볼 것이 있는 운행 중 오늘 카드에만 붙인다.
-                    if (widget.date == null &&
-                        run.runStatus == RunStatus.moving)
-                      Padding(
-                        padding: const EdgeInsets.only(
-                          top: BaraedaSpacing.space2,
-                        ),
-                        child: Text(
-                          '실시간 위치 보기 ›',
-                          style: BaraedaTypography.bodySm.copyWith(
-                            color: context.colors.accentPrimary,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
+            _RunSummary(
+              run: run,
+              date: widget.date,
+              isApprovalPending: widget.isApprovalPending,
+              approvalDeadlineAt: widget.approvalDeadlineAt,
             ),
             if (widget.canToggle || _banner != null)
               Padding(
@@ -262,6 +197,87 @@ class _RunCardState extends ConsumerState<RunCard> {
                       AlertBanner(tone: _bannerTone, body: _banner),
                     ],
                   ],
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// 회차 카드 윗부분 — 방향 · 호차 · 상태 알약, 출발 시각과 정류장, 확정까지 남은 시간,
+/// 승인 대기 안내. 오늘 카드면 누르면 지도로 간다.
+class _RunSummary extends StatelessWidget {
+  const new({
+    required this.run,
+    required this.date,
+    required this.isApprovalPending,
+    required this.approvalDeadlineAt,
+  });
+
+  final StudentRun run;
+  final DateTime? date;
+  final bool isApprovalPending;
+  final DateTime? approvalDeadlineAt;
+
+  @override
+  Widget build(BuildContext context) {
+    final status = runStatusChip(run);
+    // UF-P-07 — "홈 · 실시간 운행 정보 → [지도 진입]". 이 배선이 없어서 지도 화면이
+    // 만들어져 있는데도 도달할 수 없었다. 지도로 가는 눌림은 카드 윗부분만
+    // 받는다 — 스위치 줄까지 감싸면 전송 중(스위치 비활성)에 누른 손이 지도를 연다.
+    return InkWell(
+      onTap: date == null ? () => context.push(AppRoutes.liveMap) : null,
+      borderRadius: BorderRadius.circular(BaraedaRadius.md),
+      child: Padding(
+        padding: const EdgeInsets.all(BaraedaSpacing.cardPadding),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '${run.direction.label} · ${run.busNo}',
+                  style: BaraedaTypography.bodyLg,
+                ),
+                BaraedaStatusPill(status: status.status, label: status.label),
+              ],
+            ),
+            const SizedBox(height: BaraedaSpacing.space1),
+            Text('${formatClock(run.departTime)} 출발 · ${run.stop.name}'),
+            if (date == null)
+              MinuteTicker(
+                builder: (context, now) => Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (untilConfirm(run, now) case final left?)
+                      WordWrapText(
+                        '확정까지 $left',
+                        style: BaraedaTypography.bodySm,
+                      ),
+                  ],
+                ),
+              ),
+            if (isApprovalPending)
+              MinuteTicker(
+                builder: (context, now) => WordWrapText(
+                  _approvalWaitText(approvalDeadlineAt, now),
+                  style: BaraedaTypography.bodySm,
+                ),
+              ),
+            // UF-P-07 진입 표시 — 카드 전체가 눌리는데 그 표시가 없어
+            // 지도로 가는 길을 못 찾았다.
+            // 지도에 볼 것이 있는 운행 중 오늘 카드에만 붙인다.
+            if (date == null && run.runStatus == RunStatus.moving)
+              Padding(
+                padding: const EdgeInsets.only(top: BaraedaSpacing.space2),
+                child: Text(
+                  '실시간 위치 보기 ›',
+                  style: BaraedaTypography.bodySm.copyWith(
+                    color: context.colors.accentPrimary,
+                  ),
                 ),
               ),
           ],

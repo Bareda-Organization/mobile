@@ -152,39 +152,11 @@ class _NotificationListViewState<T> extends State<NotificationListView<T>> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-            BaraedaSpacing.gutterMobile,
-            BaraedaSpacing.space3,
-            BaraedaSpacing.gutterMobile,
-            BaraedaSpacing.space3,
-          ),
-          child: w.style == NotificationListStyle.pills
-              ? Row(
-                  children: [
-                    BaraedaFilterPill(
-                      label: '전체',
-                      selected: !w.unreadOnly,
-                      onTap: () => w.onUnreadOnlyChanged(false),
-                    ),
-                    const SizedBox(width: BaraedaSpacing.space2),
-                    BaraedaFilterPill(
-                      label: '안 읽음 ${w.unreadCount}',
-                      selected: w.unreadOnly,
-                      onTap: () => w.onUnreadOnlyChanged(true),
-                    ),
-                  ],
-                )
-              : BaraedaSegmentedControl(
-                  block: true,
-                  options: const [
-                    BaraedaSegmentedOption('all', label: '전체'),
-                    BaraedaSegmentedOption('unread', label: '안 읽음'),
-                  ],
-                  value: w.unreadOnly ? 'unread' : 'all',
-                  onChanged: (value) =>
-                      w.onUnreadOnlyChanged(value == 'unread'),
-                ),
+        _FilterBar(
+          style: w.style,
+          unreadOnly: w.unreadOnly,
+          unreadCount: w.unreadCount,
+          onChanged: w.onUnreadOnlyChanged,
         ),
         Expanded(child: _body(context)),
       ],
@@ -200,37 +172,11 @@ class _NotificationListViewState<T> extends State<NotificationListView<T>> {
           : const Center(child: CircularProgressIndicator());
     }
     final onRetry = w.onRetry;
-    if (onRetry != null && pills) {
-      return ListView(
-        children: [
-          EmptyState(
-            icon: 'wifi-off',
-            title: '알림을 불러오지 못했어요',
-            body: w.pushAvailable
-                ? '인터넷 연결을 확인하고 다시 시도해 주세요. 새 알림은 푸시로는 계속 와요.'
-                : '인터넷 연결을 확인하고 다시 시도해 주세요.',
-            action: BaraedaButton(
-              label: '다시 시도',
-              icon: 'refresh',
-              onPressed: onRetry,
-            ),
-          ),
-        ],
-      );
-    }
     if (onRetry != null) {
-      return Padding(
-        padding: const EdgeInsets.all(BaraedaSpacing.gutterMobile),
-        child: AlertBanner(
-          tone: AlertTone.missed,
-          body: '알림을 불러오지 못했어요',
-          action: BaraedaButton(
-            label: '다시 시도',
-            size: BaraedaButtonSize.sm,
-            variant: BaraedaButtonVariant.secondary,
-            onPressed: onRetry,
-          ),
-        ),
+      return _LoadError(
+        pills: pills,
+        pushAvailable: w.pushAvailable,
+        onRetry: onRetry,
       );
     }
 
@@ -241,39 +187,22 @@ class _NotificationListViewState<T> extends State<NotificationListView<T>> {
     return RefreshIndicator(
       onRefresh: w.onRefresh,
       child: rows.isEmpty
-          ? ListView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              children: [
-                if (pills)
-                  EmptyState(
-                    icon: w.unreadOnly ? 'circle-check' : 'bell',
-                    title: w.unreadOnly ? '안 읽은 알림이 없어요' : '새 알림이 없어요',
-                    body: w.unreadOnly
-                        ? (w.pushAvailable
-                              ? '모두 확인했어요. 새 알림은 푸시로도 알려 드려요.'
-                              : '모두 확인했어요.')
-                        : '최근 14일 동안 받은 알림이 여기에 모여요.',
-                    action: w.unreadOnly
-                        ? BaraedaButton(
-                            label: '전체 알림 보기',
-                            variant: BaraedaButtonVariant.secondary,
-                            onPressed: () => w.onUnreadOnlyChanged(false),
-                          )
-                        : null,
-                  )
-                else
-                  EmptyState(
-                    icon: 'bell',
-                    title: w.unreadOnly ? '안 읽은 알림이 없어요' : '새 알림이 없어요',
-                  ),
-              ],
+          ? _EmptyList(
+              pills: pills,
+              unreadOnly: w.unreadOnly,
+              pushAvailable: w.pushAvailable,
+              onUnreadOnlyChanged: w.onUnreadOnlyChanged,
             )
           : ListView.builder(
               controller: _controller,
               physics: const AlwaysScrollableScrollPhysics(),
               itemCount: rows.length + (_hasFooter ? 1 : 0),
-              itemBuilder: (context, index) =>
-                  index == rows.length ? _footer(context) : rows[index](),
+              itemBuilder: (context, index) => index == rows.length
+                  ? _ListFooter(
+                      loadMoreFailed: w.loadMoreFailed,
+                      onLoadMore: w.onLoadMore,
+                    )
+                  : rows[index](),
             ),
     );
   }
@@ -315,10 +244,164 @@ class _NotificationListViewState<T> extends State<NotificationListView<T>> {
     flushGroup();
     return rows;
   }
+}
 
-  /// 목록 맨 아래 — 다음 쪽을 받는 중이거나, 받기에 실패했을 때.
-  Widget _footer(BuildContext context) {
-    if (widget.loadMoreFailed) {
+/// 걸러 보기 줄 — 알약 모양은 `[전체]` `[안 읽음 N]`, 아니면 두 칸 전환.
+class _FilterBar extends StatelessWidget {
+  const new({
+    required this.style,
+    required this.unreadOnly,
+    required this.unreadCount,
+    required this.onChanged,
+  });
+
+  final NotificationListStyle style;
+  final bool unreadOnly;
+  final int unreadCount;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        BaraedaSpacing.gutterMobile,
+        BaraedaSpacing.space3,
+        BaraedaSpacing.gutterMobile,
+        BaraedaSpacing.space3,
+      ),
+      child: style == NotificationListStyle.pills
+          ? Row(
+              children: [
+                BaraedaFilterPill(
+                  label: '전체',
+                  selected: !unreadOnly,
+                  onTap: () => onChanged(false),
+                ),
+                const SizedBox(width: BaraedaSpacing.space2),
+                BaraedaFilterPill(
+                  label: '안 읽음 $unreadCount',
+                  selected: unreadOnly,
+                  onTap: () => onChanged(true),
+                ),
+              ],
+            )
+          : BaraedaSegmentedControl(
+              block: true,
+              options: const [
+                BaraedaSegmentedOption('all', label: '전체'),
+                BaraedaSegmentedOption('unread', label: '안 읽음'),
+              ],
+              value: unreadOnly ? 'unread' : 'all',
+              onChanged: (value) => onChanged(value == 'unread'),
+            ),
+    );
+  }
+}
+
+/// 첫 쪽 받기가 실패했을 때 — 알약 모양은 큰 오류 화면, 아니면 오류 띠.
+class _LoadError extends StatelessWidget {
+  const new({
+    required this.pills,
+    required this.pushAvailable,
+    required this.onRetry,
+  });
+
+  final bool pills;
+  final bool pushAvailable;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    if (pills) {
+      return ListView(
+        children: [
+          EmptyState(
+            icon: 'wifi-off',
+            title: '알림을 불러오지 못했어요',
+            body: pushAvailable
+                ? '인터넷 연결을 확인하고 다시 시도해 주세요. 새 알림은 푸시로는 계속 와요.'
+                : '인터넷 연결을 확인하고 다시 시도해 주세요.',
+            action: BaraedaButton(
+              label: '다시 시도',
+              icon: 'refresh',
+              onPressed: onRetry,
+            ),
+          ),
+        ],
+      );
+    }
+    return Padding(
+      padding: const EdgeInsets.all(BaraedaSpacing.gutterMobile),
+      child: AlertBanner(
+        tone: AlertTone.missed,
+        body: '알림을 불러오지 못했어요',
+        action: BaraedaButton(
+          label: '다시 시도',
+          size: BaraedaButtonSize.sm,
+          variant: BaraedaButtonVariant.secondary,
+          onPressed: onRetry,
+        ),
+      ),
+    );
+  }
+}
+
+/// 받은 알림이 하나도 없을 때의 빈 화면.
+class _EmptyList extends StatelessWidget {
+  const new({
+    required this.pills,
+    required this.unreadOnly,
+    required this.pushAvailable,
+    required this.onUnreadOnlyChanged,
+  });
+
+  final bool pills;
+  final bool unreadOnly;
+  final bool pushAvailable;
+  final ValueChanged<bool> onUnreadOnlyChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      children: [
+        if (pills)
+          EmptyState(
+            icon: unreadOnly ? 'circle-check' : 'bell',
+            title: unreadOnly ? '안 읽은 알림이 없어요' : '새 알림이 없어요',
+            body: unreadOnly
+                ? (pushAvailable
+                      ? '모두 확인했어요. 새 알림은 푸시로도 알려 드려요.'
+                      : '모두 확인했어요.')
+                : '최근 14일 동안 받은 알림이 여기에 모여요.',
+            action: unreadOnly
+                ? BaraedaButton(
+                    label: '전체 알림 보기',
+                    variant: BaraedaButtonVariant.secondary,
+                    onPressed: () => onUnreadOnlyChanged(false),
+                  )
+                : null,
+          )
+        else
+          EmptyState(
+            icon: 'bell',
+            title: unreadOnly ? '안 읽은 알림이 없어요' : '새 알림이 없어요',
+          ),
+      ],
+    );
+  }
+}
+
+/// 목록 맨 아래 — 다음 쪽을 받는 중이거나, 받기에 실패했을 때.
+class _ListFooter extends StatelessWidget {
+  const new({required this.loadMoreFailed, required this.onLoadMore});
+
+  final bool loadMoreFailed;
+  final VoidCallback onLoadMore;
+
+  @override
+  Widget build(BuildContext context) {
+    if (loadMoreFailed) {
       return Padding(
         padding: const EdgeInsets.all(BaraedaSpacing.space4),
         child: Column(
@@ -334,7 +417,7 @@ class _NotificationListViewState<T> extends State<NotificationListView<T>> {
               label: '다시 시도',
               size: BaraedaButtonSize.sm,
               variant: BaraedaButtonVariant.secondary,
-              onPressed: () => unawaited(Future<void>.sync(widget.onLoadMore)),
+              onPressed: () => unawaited(Future<void>.sync(onLoadMore)),
             ),
           ],
         ),

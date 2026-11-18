@@ -296,7 +296,16 @@ class _StatusBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (_isRejected && reapplying) return _buildReapply(context);
+    if (_isRejected && reapplying) {
+      return _ReapplyView(
+        reason: _reason,
+        newAcademy: newAcademy,
+        reapplyError: reapplyError,
+        onAcademySelected: onAcademySelected,
+        onSearch: onSearch,
+        onLogout: onLogout,
+      );
+    }
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(BaraedaSpacing.gutterMobile),
@@ -326,43 +335,6 @@ class _StatusBody extends StatelessWidget {
           const SizedBox(height: BaraedaSpacing.space3),
           const _DeviceCard(),
           const SizedBox(height: BaraedaSpacing.space4),
-          BaraedaButton(
-            label: '로그아웃',
-            variant: BaraedaButtonVariant.ghost,
-            block: true,
-            onPressed: onLogout,
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// 학원을 다시 고르는 중 — 거절 띠 + 안내 + 학원 검색.
-  Widget _buildReapply(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(BaraedaSpacing.gutterMobile),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          AlertBanner(
-            tone: AlertTone.missed,
-            title: '가입이 거절되었어요',
-            body: _reason,
-          ),
-          const SizedBox(height: BaraedaSpacing.space5),
-          const Text('다니는 학원을 다시 골라 주세요', style: BaraedaTypography.h3),
-          const SizedBox(height: BaraedaSpacing.space3),
-          AcademyPicker(
-            style: AcademyPickerStyle.radioList,
-            onSearch: onSearch,
-            selected: newAcademy,
-            onSelected: onAcademySelected,
-          ),
-          if (reapplyError != null) ...[
-            const SizedBox(height: BaraedaSpacing.space3),
-            AlertBanner(tone: AlertTone.missed, body: reapplyError),
-          ],
-          const SizedBox(height: BaraedaSpacing.space6),
           BaraedaButton(
             label: '로그아웃',
             variant: BaraedaButtonVariant.ghost,
@@ -566,9 +538,63 @@ class _DeviceCard extends StatelessWidget {
           horizontal: BaraedaSpacing.space4,
           vertical: BaraedaSpacing.space2,
         ),
-        child: DeviceRegistrationPanel(
-          sublabel: '승인 · 거절 결과를 바로 알려 드려요',
-        ),
+        child: DeviceRegistrationPanel(sublabel: '승인 · 거절 결과를 바로 알려 드려요'),
+      ),
+    );
+  }
+}
+
+/// 학원을 다시 고르는 중 — 거절 띠 + 안내 + 학원 검색.
+class _ReapplyView extends StatelessWidget {
+  const new({
+    required this.reason,
+    required this.newAcademy,
+    required this.reapplyError,
+    required this.onAcademySelected,
+    required this.onSearch,
+    required this.onLogout,
+  });
+
+  final String reason;
+  final AcademySummary? newAcademy;
+  final String? reapplyError;
+  final ValueChanged<AcademySummary> onAcademySelected;
+  final Future<List<AcademySummary>> Function(String query) onSearch;
+  final VoidCallback onLogout;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(BaraedaSpacing.gutterMobile),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AlertBanner(
+            tone: AlertTone.missed,
+            title: '가입이 거절되었어요',
+            body: reason,
+          ),
+          const SizedBox(height: BaraedaSpacing.space5),
+          const Text('다니는 학원을 다시 골라 주세요', style: BaraedaTypography.h3),
+          const SizedBox(height: BaraedaSpacing.space3),
+          AcademyPicker(
+            style: AcademyPickerStyle.radioList,
+            onSearch: onSearch,
+            selected: newAcademy,
+            onSelected: onAcademySelected,
+          ),
+          if (reapplyError != null) ...[
+            const SizedBox(height: BaraedaSpacing.space3),
+            AlertBanner(tone: AlertTone.missed, body: reapplyError),
+          ],
+          const SizedBox(height: BaraedaSpacing.space6),
+          BaraedaButton(
+            label: '로그아웃',
+            variant: BaraedaButtonVariant.ghost,
+            block: true,
+            onPressed: onLogout,
+          ),
+        ],
       ),
     );
   }

@@ -47,11 +47,29 @@ class _RouteMapScreenState extends ConsumerState<RouteMapScreen> {
       ),
       body: runId == null
           ? const Center(child: WordWrapText('선택된 운행이 없어요 — 홈에서 운행을 선택하세요'))
-          : _buildBody(context, runId),
+          : _RouteMapBody(
+              runId: runId,
+              mapErrorMessage: _mapErrorMessage,
+              onAuthFailed: _handleMapAuthFailed,
+            ),
     );
   }
+}
 
-  Widget _buildBody(BuildContext context, String runId) {
+/// 지도 · 머리줄 아래 알림 · 아래 범례 카드를 겹쳐 놓는 본문.
+class _RouteMapBody extends ConsumerWidget {
+  const new({
+    required this.runId,
+    required this.mapErrorMessage,
+    required this.onAuthFailed,
+  });
+
+  final String runId;
+  final String? mapErrorMessage;
+  final void Function(Object exception) onAuthFailed;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     final routeAsync = ref.watch(routeProvider);
     final route = routeAsync.value;
     final padding = MediaQuery.paddingOf(context);
@@ -63,7 +81,8 @@ class _RouteMapScreenState extends ConsumerState<RouteMapScreen> {
             error: (error, _) => Center(
               child: WordWrapText('노선을 불러오지 못했어요: ${describeError(error)}'),
             ),
-            data: _buildMap,
+            data: (route) =>
+                _RouteMapSurface(route: route, onAuthFailed: onAuthFailed),
           ),
         ),
         // 머리줄 아래에 겹쳐 뜨는 알림 — routeAsync.when(...) 의 모든 분기 바깥에 둔다. "노선 없음"(정상,
@@ -75,8 +94,8 @@ class _RouteMapScreenState extends ConsumerState<RouteMapScreen> {
           child: Column(
             children: [
               ManagerChannelBanner(runId: runId),
-              if (_mapErrorMessage != null)
-                AlertBanner(tone: AlertTone.missed, body: _mapErrorMessage),
+              if (mapErrorMessage != null)
+                AlertBanner(tone: AlertTone.missed, body: mapErrorMessage),
             ],
           ),
         ),
@@ -90,8 +109,17 @@ class _RouteMapScreenState extends ConsumerState<RouteMapScreen> {
       ],
     );
   }
+}
 
-  Widget _buildMap(RouteResponse route) {
+/// 노선을 받은 뒤의 지도 — 승하차지가 없으면 안내 문구를 띄운다.
+class _RouteMapSurface extends ConsumerWidget {
+  const new({required this.route, required this.onAuthFailed});
+
+  final RouteResponse route;
+  final void Function(Object exception) onAuthFailed;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     if (route.stops.isEmpty) {
       // §4.3 은 "노선 없음" 을 별도 상태로 정의하지 않는다 — stops[] 가
       // 빈 배열인 것도 정상 응답이다(연결 끊김과는 다른 경우 — 그쪽은
@@ -104,7 +132,7 @@ class _RouteMapScreenState extends ConsumerState<RouteMapScreen> {
       busPosition: ref.watch(
         positionTransmitterProvider.select((s) => s.busPosition),
       ),
-      onAuthFailed: _handleMapAuthFailed,
+      onAuthFailed: onAuthFailed,
       // 근사 경로 안내는 아래 범례 카드 안에 있다.
       showFallbackNotice: false,
     );

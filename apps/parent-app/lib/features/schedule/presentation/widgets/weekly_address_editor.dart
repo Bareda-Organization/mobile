@@ -148,52 +148,10 @@ class _WeeklyAddressEditorState extends ConsumerState<WeeklyAddressEditor> {
     if (day != null) _selectedDay = day;
   });
 
-  /// 보낼 칸을 모은다 — 잘못된 입력이면 안내 문구와 고칠 칸의 요일을 돌려주고 `null` 목록을 준다.
-  ({List<WeeklyAddressEntry>? entries, String? error, Weekday? day})
-  _collect() {
-    final entries = <WeeklyAddressEntry>[];
-    for (final slot in _slots) {
-      final address = slot.address.text.trim();
-      final detail = slot.detail.text.trim();
-      if (address.isEmpty) {
-        // 한 칸만 비어도 서버가 전체(최대 14건)를 거절해
-        // 다른 요일 수정분까지 잃는다. 보내기 전에 막는다.
-        final label = '${slot.weekday.longLabel} ${slot.direction.label}';
-        if (slot.isRegistered) {
-          return (
-            entries: null,
-            error: '$label: 비어 있는 주소가 있어요. 주소를 입력해 주세요',
-            day: slot.weekday,
-          );
-        }
-        if (detail.isNotEmpty) {
-          return (
-            entries: null,
-            error: '$label: 주소를 먼저 입력해 주세요',
-            day: slot.weekday,
-          );
-        }
-        continue;
-      }
-      entries.add(
-        WeeklyAddressEntry(
-          weekday: slot.weekday,
-          direction: slot.direction,
-          address: address,
-          addressDetail: detail.isEmpty ? null : detail,
-        ),
-      );
-    }
-    if (entries.isEmpty) {
-      return (entries: null, error: '주소를 입력해 주세요', day: null);
-    }
-    return (entries: entries, error: null, day: null);
-  }
-
   Future<void> _save() async {
     if (_submitting) return;
     // 잠금(`_submitting`)은 이 검사 뒤에 건다 — 앞에서 걸면 경고 뒤 저장 버튼이 영구히 잠긴다.
-    final collected = _collect();
+    final collected = _collectEntries(_slots);
     final entries = collected.entries;
     if (entries == null) {
       _showError(collected.error ?? '주소를 입력해 주세요', day: collected.day);
@@ -240,25 +198,6 @@ class _WeeklyAddressEditorState extends ConsumerState<WeeklyAddressEditor> {
     }
   }
 
-  /// 서버가 `details.failed_entries`(검증에 실패한 주소 글자 목록, API_SPEC §3.7)로 돌려준 주소를
-  /// 보낸 칸에 맞춰 본다 — 서버는 요일 · 방향 없이 주소 글자만 주므로 보낸 목록에서 같은 글자의 칸을 찾는다.
-  List<WeeklyAddressEntry> _failedEntriesOf(
-    Failure failure,
-    List<WeeklyAddressEntry> sent,
-  ) {
-    if (failure is! ApiFailure) return const [];
-    final raw = failure.details?['failed_entries'];
-    if (raw is! List) return const [];
-    final failedAddresses = raw.whereType<String>().toSet();
-    return [
-      for (final entry in sent)
-        if (failedAddresses.contains(entry.address)) entry,
-    ];
-  }
-
-  String _slotLabel(WeeklyAddressEntry entry) =>
-      '${entry.weekday.longLabel} ${entry.direction.label}';
-
   @override
   Widget build(BuildContext context) {
     final selected = _selectedDay ?? _initialDay();
@@ -269,100 +208,18 @@ class _WeeklyAddressEditorState extends ConsumerState<WeeklyAddressEditor> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Expanded(
-          child: ListView(
-            padding: const EdgeInsets.symmetric(
-              horizontal: BaraedaSpacing.gutterMobile,
-            ),
-            children: [
-              const Text('요일별 등하원 주소', style: BaraedaTypography.h2),
-              const SizedBox(height: BaraedaSpacing.space1),
-              Text(
-                '매주 같은 요일에는 이 주소로 버스가 와요. 요일마다 등원 · 하원 주소를 따로 적을 수 있어요.',
-                style: BaraedaTypography.body.copyWith(
-                  color: context.colors.textSecondary,
-                ),
-              ),
-              const SizedBox(height: BaraedaSpacing.space4),
-              BaraedaSegmentedControl(
-                block: true,
-                options: [
-                  for (final day in Weekday.values)
-                    BaraedaSegmentedOption(
-                      day.wireValue,
-                      // 저장하지 않은 요일은 점으로 알린다 — 색만으로 뜻을 싣지 않도록 글자(●)로 단다.
-                      label: dirtyDays.contains(day)
-                          ? '${day.label}●'
-                          : day.label,
-                    ),
-                ],
-                value: selected.wireValue,
-                onChanged: (value) =>
-                    setState(() => _selectedDay = Weekday.fromWireValue(value)),
-              ),
-              const SizedBox(height: BaraedaSpacing.space4),
-              if (dirtyDays.isNotEmpty) ...[
-                const AlertBanner(
-                  tone: AlertTone.moving,
-                  title: '저장하지 않은 변경이 있어요',
-                  body: '저장해야 노선에 반영돼요.',
-                ),
-                const SizedBox(height: BaraedaSpacing.space4),
-              ],
-              for (final slot in slotsOfDay) ...[
-                BaraedaInput(
-                  // 고정 키 — 첫 글자를 치면 위에 "저장하지 않은 변경" 띠가 끼어드는데, 키가 없으면 입력칸이
-                  // 새로 만들어져 포커스를 잃고 키보드가 닫힌다.
-                  key: ValueKey('weekly-input-${slot.key}'),
-                  label: '${selected.longLabel} · ${slot.direction.label}',
-                  controller: slot.address,
-                ),
-                const SizedBox(height: BaraedaSpacing.space2),
-                BaraedaInput(
-                  key: ValueKey('weekly-detail-${slot.key}'),
-                  label: '상세 주소 (동 · 출입구)',
-                  controller: slot.detail,
-                ),
-                const SizedBox(height: BaraedaSpacing.space4),
-              ],
-              Text(
-                '저장하면 주소를 확인한 뒤 노선에 반영해요. 이미 저장한 주소는 비울 수 없고 다른 주소로만 바꿀 수 있어요.',
-                style: BaraedaTypography.bodySm.copyWith(
-                  color: context.colors.textSecondary,
-                ),
-              ),
-              const SizedBox(height: BaraedaSpacing.space4),
-              BaraedaListGroup(
-                children: [
-                  BaraedaListRow(
-                    leadingIcon: 'pencil',
-                    title: '하루만 바꾸고 싶어요',
-                    subtitle: '일일 변경을 쓰면 그날만 바뀌어요',
-                    trailing: const BaraedaIcon('chevron-right'),
-                    onTap: () => context.push(AppRoutes.dailyChange),
-                  ),
-                ],
-              ),
-              const SizedBox(height: BaraedaSpacing.space4),
-            ],
+          child: _WeekdayAddressList(
+            selected: selected,
+            dirtyDays: dirtyDays,
+            slotsOfDay: slotsOfDay,
+            onDayChanged: (day) => setState(() => _selectedDay = day),
           ),
         ),
-        StickyActionBar(
-          // 결과 안내는 고정 영역에 둔다 — 14칸이라 목록이 길어 스크롤 아래에 두면 저장 결과가 안 보인다.
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (_banner != null) ...[
-                AlertBanner(tone: _bannerTone, body: _banner),
-                const SizedBox(height: BaraedaSpacing.space2),
-              ],
-              BaraedaButton(
-                label: '저장하기',
-                block: true,
-                onPressed: _submitting ? null : _save,
-              ),
-            ],
-          ),
+        _SaveBar(
+          banner: _banner,
+          bannerTone: _bannerTone,
+          submitting: _submitting,
+          onSave: _save,
         ),
       ],
     );
@@ -375,4 +232,194 @@ class _WeeklyAddressEditorState extends ConsumerState<WeeklyAddressEditor> {
           .map((slot) => slot.weekday)
           .firstOrNull ??
       Weekday.mon;
+}
+
+/// 선택한 요일의 주소 입력 목록 — 안내문 · 요일 알약 · 저장 안 됨 띠 · 등원/하원 입력칸 · 일일 변경 진입 줄.
+class _WeekdayAddressList extends StatelessWidget {
+  const new({
+    required this.selected,
+    required this.dirtyDays,
+    required this.slotsOfDay,
+    required this.onDayChanged,
+  });
+
+  final Weekday selected;
+  final Set<Weekday> dirtyDays;
+  final Iterable<_Slot> slotsOfDay;
+  final ValueChanged<Weekday> onDayChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.symmetric(
+        horizontal: BaraedaSpacing.gutterMobile,
+      ),
+      children: [
+        const Text('요일별 등하원 주소', style: BaraedaTypography.h2),
+        const SizedBox(height: BaraedaSpacing.space1),
+        Text(
+          '매주 같은 요일에는 이 주소로 버스가 와요. 요일마다 등원 · 하원 주소를 따로 적을 수 있어요.',
+          style: BaraedaTypography.body.copyWith(
+            color: context.colors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: BaraedaSpacing.space4),
+        BaraedaSegmentedControl(
+          block: true,
+          options: [
+            for (final day in Weekday.values)
+              BaraedaSegmentedOption(
+                day.wireValue,
+                // 저장하지 않은 요일은 점으로 알린다 — 색만으로 뜻을 싣지 않도록 글자(●)로 단다.
+                label: dirtyDays.contains(day) ? '${day.label}●' : day.label,
+              ),
+          ],
+          value: selected.wireValue,
+          onChanged: (value) => onDayChanged(Weekday.fromWireValue(value)),
+        ),
+        const SizedBox(height: BaraedaSpacing.space4),
+        if (dirtyDays.isNotEmpty) ...[
+          const AlertBanner(
+            tone: AlertTone.moving,
+            title: '저장하지 않은 변경이 있어요',
+            body: '저장해야 노선에 반영돼요.',
+          ),
+          const SizedBox(height: BaraedaSpacing.space4),
+        ],
+        for (final slot in slotsOfDay) ...[
+          BaraedaInput(
+            // 고정 키 — 첫 글자를 치면 위에 "저장하지 않은 변경" 띠가 끼어드는데, 키가 없으면 입력칸이
+            // 새로 만들어져 포커스를 잃고 키보드가 닫힌다.
+            key: ValueKey('weekly-input-${slot.key}'),
+            label: '${selected.longLabel} · ${slot.direction.label}',
+            controller: slot.address,
+          ),
+          const SizedBox(height: BaraedaSpacing.space2),
+          BaraedaInput(
+            key: ValueKey('weekly-detail-${slot.key}'),
+            label: '상세 주소 (동 · 출입구)',
+            controller: slot.detail,
+          ),
+          const SizedBox(height: BaraedaSpacing.space4),
+        ],
+        Text(
+          '저장하면 주소를 확인한 뒤 노선에 반영해요. 이미 저장한 주소는 비울 수 없고 다른 주소로만 바꿀 수 있어요.',
+          style: BaraedaTypography.bodySm.copyWith(
+            color: context.colors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: BaraedaSpacing.space4),
+        BaraedaListGroup(
+          children: [
+            BaraedaListRow(
+              leadingIcon: 'pencil',
+              title: '하루만 바꾸고 싶어요',
+              subtitle: '일일 변경을 쓰면 그날만 바뀌어요',
+              trailing: const BaraedaIcon('chevron-right'),
+              onTap: () => context.push(AppRoutes.dailyChange),
+            ),
+          ],
+        ),
+        const SizedBox(height: BaraedaSpacing.space4),
+      ],
+    );
+  }
+}
+
+/// 아래 고정 영역 — 저장 결과 안내와 저장 단추.
+class _SaveBar extends StatelessWidget {
+  const new({
+    required this.banner,
+    required this.bannerTone,
+    required this.submitting,
+    required this.onSave,
+  });
+
+  final String? banner;
+  final AlertTone bannerTone;
+  final bool submitting;
+  final VoidCallback onSave;
+
+  @override
+  Widget build(BuildContext context) {
+    return StickyActionBar(
+      // 결과 안내는 고정 영역에 둔다 — 14칸이라 목록이 길어 스크롤 아래에 두면 저장 결과가 안 보인다.
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (banner != null) ...[
+            AlertBanner(tone: bannerTone, body: banner),
+            const SizedBox(height: BaraedaSpacing.space2),
+          ],
+          BaraedaButton(
+            label: '저장하기',
+            block: true,
+            onPressed: submitting ? null : onSave,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 서버가 `details.failed_entries`(검증에 실패한 주소 글자 목록, API_SPEC §3.7)로 돌려준 주소를
+/// 보낸 칸에 맞춰 본다 — 서버는 요일 · 방향 없이 주소 글자만 주므로 보낸 목록에서 같은 글자의 칸을 찾는다.
+List<WeeklyAddressEntry> _failedEntriesOf(
+  Failure failure,
+  List<WeeklyAddressEntry> sent,
+) {
+  if (failure is! ApiFailure) return const [];
+  final raw = failure.details?['failed_entries'];
+  if (raw is! List) return const [];
+  final failedAddresses = raw.whereType<String>().toSet();
+  return [
+    for (final entry in sent)
+      if (failedAddresses.contains(entry.address)) entry,
+  ];
+}
+
+String _slotLabel(WeeklyAddressEntry entry) =>
+    '${entry.weekday.longLabel} ${entry.direction.label}';
+
+/// 보낼 칸을 모은다 — 잘못된 입력이면 안내 문구와 고칠 칸의 요일을 돌려주고 `null` 목록을 준다.
+({List<WeeklyAddressEntry>? entries, String? error, Weekday? day})
+_collectEntries(List<_Slot> slots) {
+  final entries = <WeeklyAddressEntry>[];
+  for (final slot in slots) {
+    final address = slot.address.text.trim();
+    final detail = slot.detail.text.trim();
+    if (address.isEmpty) {
+      // 한 칸만 비어도 서버가 전체(최대 14건)를 거절해
+      // 다른 요일 수정분까지 잃는다. 보내기 전에 막는다.
+      final label = '${slot.weekday.longLabel} ${slot.direction.label}';
+      if (slot.isRegistered) {
+        return (
+          entries: null,
+          error: '$label: 비어 있는 주소가 있어요. 주소를 입력해 주세요',
+          day: slot.weekday,
+        );
+      }
+      if (detail.isNotEmpty) {
+        return (
+          entries: null,
+          error: '$label: 주소를 먼저 입력해 주세요',
+          day: slot.weekday,
+        );
+      }
+      continue;
+    }
+    entries.add(
+      WeeklyAddressEntry(
+        weekday: slot.weekday,
+        direction: slot.direction,
+        address: address,
+        addressDetail: detail.isEmpty ? null : detail,
+      ),
+    );
+  }
+  if (entries.isEmpty) {
+    return (entries: null, error: '주소를 입력해 주세요', day: null);
+  }
+  return (entries: entries, error: null, day: null);
 }

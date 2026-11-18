@@ -152,12 +152,59 @@ class _DelayScreenState extends ConsumerState<DelayScreen> {
           : !canSend
           ? const Center(child: WordWrapText('동승자만 지연 알림을 보낼 수 있어요'))
           : _receipt != null
-          ? _buildReceipt(_receipt!)
-          : _buildForm(runId),
+          ? _DelayReceipt(
+              receipt: _receipt!,
+              reasonLabel: _reasonLabel(_receipt!.reason),
+              onResend: () => setState(() => _receipt = null),
+            )
+          : _DelayForm(
+              errorMessage: _errorMessage,
+              minutes: _minutes,
+              reason: _reason,
+              reasonOptions: _reasonOptions,
+              reasonLabel: _reasonLabel(_reason),
+              submitting: _submitting,
+              messageController: _messageController,
+              onMinutesChanged: _submitting
+                  ? null
+                  : (value) => setState(() => _minutes = value),
+              onReasonChanged: _submitting
+                  ? null
+                  : (value) => setState(() => _reason = value),
+              onSubmit: _submitting ? null : () => _submit(runId),
+            ),
     );
   }
+}
 
-  Widget _buildForm(String runId) {
+/// 보내기 전 폼 — 분 스텝퍼 · 사유 카드 · 안내 문구 · 미리보기 · 보내기 단추.
+class _DelayForm extends StatelessWidget {
+  const new({
+    required this.errorMessage,
+    required this.minutes,
+    required this.reason,
+    required this.reasonOptions,
+    required this.reasonLabel,
+    required this.submitting,
+    required this.messageController,
+    required this.onMinutesChanged,
+    required this.onReasonChanged,
+    required this.onSubmit,
+  });
+
+  final String? errorMessage;
+  final int minutes;
+  final DelayReason reason;
+  final List<ChoiceTileOption<DelayReason>> reasonOptions;
+  final String reasonLabel;
+  final bool submitting;
+  final TextEditingController messageController;
+  final ValueChanged<int>? onMinutesChanged;
+  final ValueChanged<DelayReason>? onReasonChanged;
+  final VoidCallback? onSubmit;
+
+  @override
+  Widget build(BuildContext context) {
     final colors = context.colors;
     Widget label(String text) => Text(
       text,
@@ -172,38 +219,35 @@ class _DelayScreenState extends ConsumerState<DelayScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                if (_errorMessage != null) ...[
-                  AlertBanner(tone: AlertTone.missed, body: _errorMessage),
+                if (errorMessage != null) ...[
+                  AlertBanner(tone: AlertTone.missed, body: errorMessage),
                   const SizedBox(height: 12),
                 ],
                 label('얼마나 늦어요?'),
                 const SizedBox(height: 8),
-                _MinuteStepper(
-                  minutes: _minutes,
-                  onChanged: _submitting
-                      ? null
-                      : (value) => setState(() => _minutes = value),
-                ),
+                _MinuteStepper(minutes: minutes, onChanged: onMinutesChanged),
                 const SizedBox(height: 16),
                 label('왜 늦어요?'),
                 const SizedBox(height: 8),
                 ChoiceTileGrid<DelayReason>(
-                  options: _reasonOptions,
-                  value: _reason,
-                  onChanged: _submitting
-                      ? null
-                      : (value) => setState(() => _reason = value),
+                  options: reasonOptions,
+                  value: reason,
+                  onChanged: onReasonChanged,
                 ),
                 const SizedBox(height: 16),
                 BaraedaTextarea(
                   label: '안내 문구 (선택)',
                   hint: '비워두면 사유로 자동 문구가 만들어져요 · $freeTextPrivacyNotice',
                   rows: 2,
-                  enabled: !_submitting,
-                  controller: _messageController,
+                  enabled: !submitting,
+                  controller: messageController,
                 ),
                 const SizedBox(height: 16),
-                _buildPreview(),
+                _DelayPreview(
+                  messageController: messageController,
+                  reasonLabel: reasonLabel,
+                  minutes: minutes,
+                ),
               ],
             ),
           ),
@@ -211,32 +255,45 @@ class _DelayScreenState extends ConsumerState<DelayScreen> {
         BottomActionBar(
           children: [
             BaraedaButton(
-              label: '$_minutes분 지연 알림 보내기',
+              label: '$minutes분 지연 알림 보내기',
               icon: 'clock',
               size: BaraedaButtonSize.xl,
               block: true,
-              onPressed: _submitting ? null : () => _submit(runId),
+              onPressed: onSubmit,
             ),
           ],
         ),
       ],
     );
   }
+}
 
-  /// 보내기 전에 학부모·학생에게 나갈 문구를 보여준다. 입력한 문구는 그대로 — 사양이 정한 앞머리
-  /// "{이름} 학생이 탄 버스 — " 만 붙는다(API_SPEC §4.9). 비우면 자동 문구인데 그 문장은 서버만 만든다(사유별 문장을
-  /// 앱이 따로 들고 있으면 서버가 바뀔 때 어긋난다) — 사양에 있는 것(사유·"현재 예상 지연 N분")만 알린다.
-  Widget _buildPreview() {
+/// 보내기 전에 학부모·학생에게 나갈 문구를 보여준다. 입력한 문구는 그대로 — 사양이 정한 앞머리
+/// "{이름} 학생이 탄 버스 — " 만 붙는다(API_SPEC §4.9). 비우면 자동 문구인데 그 문장은 서버만 만든다(사유별 문장을
+/// 앱이 따로 들고 있으면 서버가 바뀔 때 어긋난다) — 사양에 있는 것(사유·"현재 예상 지연 N분")만 알린다.
+class _DelayPreview extends ConsumerWidget {
+  const new({
+    required this.messageController,
+    required this.reasonLabel,
+    required this.minutes,
+  });
+
+  final TextEditingController messageController;
+  final String reasonLabel;
+  final int minutes;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     final colors = context.colors;
-    final message = _messageController.text.trim();
+    final message = messageController.text.trim();
     final style = BaraedaTypography.caption.copyWith(
       color: colors.textSecondary,
       height: 1.5,
     );
     final first = message.isNotEmpty
         ? '학부모·학생에게 이렇게 나가요 — "○○ 학생이 탄 버스 — $message"'
-        : '문구를 비우면 자동 문구가 나가요. "${_reasonLabel(_reason)}" 사유와 '
-              '"현재 예상 지연 $_minutes분" 이 들어가요.';
+        : '문구를 비우면 자동 문구가 나가요. "$reasonLabel" 사유와 '
+              '"현재 예상 지연 $minutes분" 이 들어가요.';
     return BaraedaCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -248,7 +305,7 @@ class _DelayScreenState extends ConsumerState<DelayScreen> {
           const SizedBox(height: 6),
           WordWrapText(first, style: style),
           const SizedBox(height: 8),
-          WordWrapText(_receiversLine(), style: style),
+          WordWrapText(_receiversLine(ref), style: style),
         ],
       ),
     );
@@ -257,7 +314,7 @@ class _DelayScreenState extends ConsumerState<DelayScreen> {
   /// 미리보기의 "받는 사람" 줄 — 서버의 실제 수신자 규칙과 같다(`Ruling 856`): 현재 승하차지 이후 중 등원은 아직
   /// 탑승하지 않은 학생, 하원은 아직 하차하지 않은(탑승 중) 학생이고 학부모는 보호자 전원이다. 회차를 모르면 방향을
   /// 가르지 않는다.
-  String _receiversLine() {
+  String _receiversLine(WidgetRef ref) {
     final direction = ref.watch(selectedManagerRunProvider)?.direction;
     final who = switch (direction) {
       RunDirection.toAcademy => '아직 탑승하지 않은 학생',
@@ -266,8 +323,22 @@ class _DelayScreenState extends ConsumerState<DelayScreen> {
     };
     return '받는 사람 · 학원 관계자 + 현재 승하차지 이후의 $who · 학부모(보호자 전원)';
   }
+}
 
-  Widget _buildReceipt(_Receipt receipt) {
+/// 보낸 뒤의 영수증 — 지연 시간 · 사유 · 보낸 시각 · 받은 사람과 `다시 보내기`.
+class _DelayReceipt extends StatelessWidget {
+  const new({
+    required this.receipt,
+    required this.reasonLabel,
+    required this.onResend,
+  });
+
+  final _Receipt receipt;
+  final String reasonLabel;
+  final VoidCallback onResend;
+
+  @override
+  Widget build(BuildContext context) {
     final colors = context.colors;
     final receivers = <String>[
       if (receipt.result.notifiedStaff) '관계자',
@@ -291,7 +362,7 @@ class _DelayScreenState extends ConsumerState<DelayScreen> {
               InfoRowsCard(
                 rows: [
                   InfoRow('지연 시간', value: '${receipt.minutes}분'),
-                  InfoRow('사유', value: _reasonLabel(receipt.reason)),
+                  InfoRow('사유', value: reasonLabel),
                   InfoRow(
                     '보낸 시각',
                     value: DateFormat('HH:mm:ss').format(receipt.sentAt),
@@ -322,7 +393,7 @@ class _DelayScreenState extends ConsumerState<DelayScreen> {
               label: '다시 보내기',
               variant: BaraedaButtonVariant.ghost,
               block: true,
-              onPressed: () => setState(() => _receipt = null),
+              onPressed: onResend,
             ),
           ],
         ),

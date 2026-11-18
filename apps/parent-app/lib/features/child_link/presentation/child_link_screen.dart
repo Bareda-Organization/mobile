@@ -132,11 +132,6 @@ class _ChildLinkScreenState extends ConsumerState<ChildLinkScreen> {
       ..showSnackBar(SnackBar(content: WordWrapText(doneMessage)));
   }
 
-  /// 학부모에게 메신저로 붙여 넣을 문장 — 코드만 보내면 어디에 입력하는지 모른다.
-  String _shareMessage(String code, DateTime expiresAt) =>
-      '바래다 자녀 연결 코드 $code · 학부모 앱의 [설정] › [자녀 추가] 에서 입력해 주세요 · '
-      '${DateFormat('H:mm').format(expiresAt.toLocal())} 까지 쓸 수 있어요';
-
   String _messageFor(Failure failure) => switch (failure) {
     ApiFailure(code: 'ALREADY_LINKED') => '이미 연결된 자녀예요',
     ApiFailure(code: 'LINK_CODE_INVALID') => linkCodeInvalidTitle,
@@ -154,130 +149,33 @@ class _ChildLinkScreenState extends ConsumerState<ChildLinkScreen> {
 
     // 학생 화면은 만료 시각이 지나는 순간 모양이 바뀌므로 분 단위 시계를 물고 그린다.
     return MinuteTicker(
-      builder: (context, now) =>
-          isStudent ? _buildStudent(context, now) : _buildParent(context),
-    );
-  }
-
-  Widget _buildParent(BuildContext context) {
-    final connected = _connected;
-    if (connected != null) return _buildDone(context, connected);
-
-    final complete = _code.length == _codeLength;
-    return _Page(
-      title: '자녀 연결',
-      body: ParentLinkView(
-        code: _code,
-        onCodeChanged: (value) => setState(() => _code = value),
-        invalid: _formErrorIsCodeInvalid,
-        error: _formError,
-      ),
-      bar: BaraedaButton(
-        label: '연결 완료하기',
-        size: BaraedaButtonSize.xl,
-        block: true,
-        // 꺼진 단추에는 이유가 붙는다 — 무엇을 하면 눌리는지.
-        disabledReason: complete || _submitting
-            ? null
-            : '연결 코드 $_codeLength자리를 모두 입력하면 눌러요',
-        onPressed: _submitting || !complete ? null : _submitConfirmLink,
-      ),
-    );
-  }
-
-  Widget _buildDone(BuildContext context, LinkConfirmResult connected) {
-    // 목록을 받는 동안·실패했을 때는 방금 연결한 자녀 하나만 보인다 — 연결은 이미 끝난 일이다.
-    final students = ref.watch(myStudentsProvider).value ?? const [];
-    return _Page(
-      title: '자녀 연결',
-      body: LinkDoneView(
-        justLinkedId: connected.studentId,
-        justLinkedName: connected.name,
-        students: students,
-      ),
-      bar: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          BaraedaButton(
-            label: '홈으로 가기',
-            size: BaraedaButtonSize.xl,
-            block: true,
-            onPressed: () => context.go(AppRoutes.home),
-          ),
-          const SizedBox(height: BaraedaSpacing.space2),
-          BaraedaButton(
-            label: '다른 자녀도 연결하기',
-            variant: BaraedaButtonVariant.secondary,
-            block: true,
-            onPressed: _connectAnother,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStudent(BuildContext context, DateTime now) {
-    final generated = _generated;
-    final expiresAt = generated?.expiresAt;
-    final expired =
-        expiresAt != null && StudentCodeView.isExpired(expiresAt, now);
-
-    final Widget bar;
-    if (generated == null) {
-      bar = BaraedaButton(
-        label: '코드 만들기',
-        size: BaraedaButtonSize.xl,
-        block: true,
-        onPressed: _submitting ? null : _submitGenerateCode,
-      );
-    } else if (expired) {
-      // 만료되면 새 코드가 주 행동이다.
-      bar = BaraedaButton(
-        label: '새 코드 만들기',
-        size: BaraedaButtonSize.xl,
-        block: true,
-        onPressed: _submitting ? null : _submitGenerateCode,
-      );
-    } else {
-      // 안내 문구가 코드만 보내는 것보다 실제로 유용하다 — 어디에 입력하는지가 함께 간다.
-      bar = Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          BaraedaButton(
-            label: '안내 문구 복사',
-            size: BaraedaButtonSize.xl,
-            block: true,
-            onPressed: () => _copy(
-              _shareMessage(generated.code, generated.expiresAt),
-              '안내 문구를 복사했어요',
-            ),
-          ),
-          const SizedBox(height: BaraedaSpacing.space2),
-          BaraedaButton(
-            label: '새 코드 만들기',
-            variant: BaraedaButtonVariant.ghost,
-            block: true,
-            onPressed: _submitting ? null : _submitGenerateCode,
-          ),
-        ],
-      );
-    }
-
-    return _Page(
-      title: '부모님과 연결하기',
-      body: StudentCodeView(
-        code: generated?.code,
-        expiresAt: expiresAt,
-        now: now,
-        shareMessage: generated == null
-            ? null
-            : _shareMessage(generated.code, generated.expiresAt),
-        onCopyCode: () => _copy(generated?.code ?? '', '코드를 복사했어요'),
-        error: _formError,
-      ),
-      bar: bar,
+      builder: (context, now) {
+        if (isStudent) {
+          return _StudentPage(
+            generated: _generated,
+            now: now,
+            submitting: _submitting,
+            formError: _formError,
+            onGenerate: _submitGenerateCode,
+            onCopy: _copy,
+          );
+        }
+        final connected = _connected;
+        if (connected != null) {
+          return _DonePage(
+            connected: connected,
+            onConnectAnother: _connectAnother,
+          );
+        }
+        return _ParentPage(
+          code: _code,
+          onCodeChanged: (value) => setState(() => _code = value),
+          invalid: _formErrorIsCodeInvalid,
+          error: _formError,
+          submitting: _submitting,
+          onSubmit: _submitConfirmLink,
+        );
+      },
     );
   }
 }
@@ -310,3 +208,176 @@ class _Page extends StatelessWidget {
     );
   }
 }
+
+/// 학부모 입력 단계 — 코드 입력 칸 + `연결 완료하기` 단추.
+class _ParentPage extends StatelessWidget {
+  const new({
+    required this.code,
+    required this.onCodeChanged,
+    required this.invalid,
+    required this.error,
+    required this.submitting,
+    required this.onSubmit,
+  });
+
+  final String code;
+  final ValueChanged<String> onCodeChanged;
+  final bool invalid;
+  final String? error;
+  final bool submitting;
+  final Future<void> Function() onSubmit;
+
+  @override
+  Widget build(BuildContext context) {
+    final complete = code.length == _codeLength;
+    return _Page(
+      title: '자녀 연결',
+      body: ParentLinkView(
+        code: code,
+        onCodeChanged: onCodeChanged,
+        invalid: invalid,
+        error: error,
+      ),
+      bar: BaraedaButton(
+        label: '연결 완료하기',
+        size: BaraedaButtonSize.xl,
+        block: true,
+        // 꺼진 단추에는 이유가 붙는다 — 무엇을 하면 눌리는지.
+        disabledReason: complete || submitting
+            ? null
+            : '연결 코드 $_codeLength자리를 모두 입력하면 눌러요',
+        onPressed: submitting || !complete ? null : onSubmit,
+      ),
+    );
+  }
+}
+
+/// 학부모 연결 완료 단계 — 연결된 자녀 목록 + 홈 · 이어서 연결 단추.
+class _DonePage extends ConsumerWidget {
+  const new({required this.connected, required this.onConnectAnother});
+
+  final LinkConfirmResult connected;
+  final VoidCallback onConnectAnother;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // 목록을 받는 동안·실패했을 때는 방금 연결한 자녀 하나만 보인다 — 연결은 이미 끝난 일이다.
+    final students = ref.watch(myStudentsProvider).value ?? const [];
+    return _Page(
+      title: '자녀 연결',
+      body: LinkDoneView(
+        justLinkedId: connected.studentId,
+        justLinkedName: connected.name,
+        students: students,
+      ),
+      bar: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          BaraedaButton(
+            label: '홈으로 가기',
+            size: BaraedaButtonSize.xl,
+            block: true,
+            onPressed: () => context.go(AppRoutes.home),
+          ),
+          const SizedBox(height: BaraedaSpacing.space2),
+          BaraedaButton(
+            label: '다른 자녀도 연결하기',
+            variant: BaraedaButtonVariant.secondary,
+            block: true,
+            onPressed: onConnectAnother,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 학생 단계 — 코드 만들기 · 복사 단추와 만든 코드 보기.
+class _StudentPage extends StatelessWidget {
+  const new({
+    required this.generated,
+    required this.now,
+    required this.submitting,
+    required this.formError,
+    required this.onGenerate,
+    required this.onCopy,
+  });
+
+  final LinkCodeResult? generated;
+  final DateTime now;
+  final bool submitting;
+  final String? formError;
+  final Future<void> Function() onGenerate;
+  final Future<void> Function(String text, String doneMessage) onCopy;
+
+  @override
+  Widget build(BuildContext context) {
+    final generated = this.generated;
+    final expiresAt = generated?.expiresAt;
+    final expired =
+        expiresAt != null && StudentCodeView.isExpired(expiresAt, now);
+
+    final Widget bar;
+    if (generated == null) {
+      bar = BaraedaButton(
+        label: '코드 만들기',
+        size: BaraedaButtonSize.xl,
+        block: true,
+        onPressed: submitting ? null : onGenerate,
+      );
+    } else if (expired) {
+      // 만료되면 새 코드가 주 행동이다.
+      bar = BaraedaButton(
+        label: '새 코드 만들기',
+        size: BaraedaButtonSize.xl,
+        block: true,
+        onPressed: submitting ? null : onGenerate,
+      );
+    } else {
+      // 안내 문구가 코드만 보내는 것보다 실제로 유용하다 — 어디에 입력하는지가 함께 간다.
+      bar = Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          BaraedaButton(
+            label: '안내 문구 복사',
+            size: BaraedaButtonSize.xl,
+            block: true,
+            onPressed: () => onCopy(
+              _shareMessage(generated.code, generated.expiresAt),
+              '안내 문구를 복사했어요',
+            ),
+          ),
+          const SizedBox(height: BaraedaSpacing.space2),
+          BaraedaButton(
+            label: '새 코드 만들기',
+            variant: BaraedaButtonVariant.ghost,
+            block: true,
+            onPressed: submitting ? null : onGenerate,
+          ),
+        ],
+      );
+    }
+
+    return _Page(
+      title: '부모님과 연결하기',
+      body: StudentCodeView(
+        code: generated?.code,
+        expiresAt: expiresAt,
+        now: now,
+        shareMessage: generated == null
+            ? null
+            : _shareMessage(generated.code, generated.expiresAt),
+        onCopyCode: () => onCopy(generated?.code ?? '', '코드를 복사했어요'),
+        error: formError,
+      ),
+      bar: bar,
+    );
+  }
+}
+
+/// 학부모에게 메신저로 붙여 넣을 문장 — 코드만 보내면 어디에 입력하는지 모른다.
+String _shareMessage(String code, DateTime expiresAt) =>
+    '바래다 자녀 연결 코드 $code · 학부모 앱의 [설정] › [자녀 추가] 에서 입력해 주세요 · '
+    '${DateFormat('H:mm').format(expiresAt.toLocal())} 까지 쓸 수 있어요';

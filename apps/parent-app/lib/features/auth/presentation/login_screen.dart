@@ -145,7 +145,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     // 로그인이 만료돼 돌아왔다면 알린다 — 안내 없이 로그인 화면만 나오면 오류인 줄 안다.
     // 재발급 거절은 다른 기기의 비밀번호 변경 · 차단으로도 생기므로 원인은 단정하지 않는다.
     final expiredNotice = ref.watch(sessionExpiredNoticeProvider);
-    final colors = context.colors;
     final remaining = _remainingAttempts;
     return Scaffold(
       body: SafeArea(
@@ -158,25 +157,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const SizedBox(height: BaraedaSpacing.space12),
-                    // 브랜드 줄 — 한 앱을 학부모 · 학생이 같이 쓰고 로그인 결과의 역할로 갈리므로 입구에서 누구를 위한
-                    // 앱인지 적는다.
-                    const Text('바래다', style: BaraedaTypography.h1),
-                    Text(
-                      '학부모 · 학생',
-                      style: BaraedaTypography.body.copyWith(
-                        color: colors.textSecondary,
-                        fontWeight: BaraedaFontWeight.medium,
-                      ),
-                    ),
-                    const SizedBox(height: BaraedaSpacing.space2),
-                    Text(
-                      '우리 아이 통학버스,\n지금 어디쯤인지 한눈에 봐요',
-                      style: BaraedaTypography.body.copyWith(
-                        color: colors.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: BaraedaSpacing.space8),
+                    const _LoginBrand(),
                     if (expiredNotice != null) ...[
                       AlertBanner(tone: AlertTone.moving, body: expiredNotice),
                       const SizedBox(height: BaraedaSpacing.space4),
@@ -207,16 +188,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       const SizedBox(height: BaraedaSpacing.space4),
                       AlertBanner(tone: AlertTone.missed, body: _formError),
                     ],
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: BaraedaButton(
-                        label: '아이디 · 비밀번호를 잊으셨나요?',
-                        size: BaraedaButtonSize.sm,
-                        variant: BaraedaButtonVariant.ghost,
-                        onPressed: () =>
-                            context.push(AppRoutes.accountRecovery),
-                      ),
-                    ),
+                    const _ForgotCredentialsButton(),
                     // 배포 시험 빌드에서만(값이 없으면 아무것도 그리지 않는다) — Ruling 877.
                     QuickLogin(
                       password: widget.quickLoginPassword,
@@ -234,34 +206,97 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
               ),
             ),
-            // 아래 고정 단추 — 엄지가 닿는 곳에 주 행동, 회원가입은 같은 영역의 보조 단추(시안 `.m-sticky`).
-            DecoratedBox(
-              decoration: BoxDecoration(
-                color: colors.surfaceChrome,
-                border: Border(top: BorderSide(color: colors.borderChrome)),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(BaraedaSpacing.gutterMobile),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    BaraedaButton(
-                      label: '로그인',
-                      size: BaraedaButtonSize.xl,
-                      block: true,
-                      onPressed: _submitting ? null : _submit,
-                    ),
-                    const SizedBox(height: BaraedaSpacing.space2),
-                    BaraedaButton(
-                      label: '처음이세요? 회원가입',
-                      variant: BaraedaButtonVariant.secondary,
-                      block: true,
-                      onPressed: () => context.push(AppRoutes.signup),
-                    ),
-                  ],
-                ),
-              ),
+            _LoginActionBar(submitting: _submitting, onSubmit: _submit),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// 입구 브랜드 줄 — 앱 이름 · 대상 · 한 줄 소개.
+class _LoginBrand extends StatelessWidget {
+  const new();
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SizedBox(height: BaraedaSpacing.space12),
+        // 브랜드 줄 — 한 앱을 학부모 · 학생이 같이 쓰고 로그인 결과의 역할로 갈리므로 입구에서 누구를 위한
+        // 앱인지 적는다.
+        const Text('바래다', style: BaraedaTypography.h1),
+        Text(
+          '학부모 · 학생',
+          style: BaraedaTypography.body.copyWith(
+            color: colors.textSecondary,
+            fontWeight: BaraedaFontWeight.medium,
+          ),
+        ),
+        const SizedBox(height: BaraedaSpacing.space2),
+        Text(
+          '우리 아이 통학버스,\n지금 어디쯤인지 한눈에 봐요',
+          style: BaraedaTypography.body.copyWith(color: colors.textSecondary),
+        ),
+        const SizedBox(height: BaraedaSpacing.space8),
+      ],
+    );
+  }
+}
+
+/// 아이디 · 비밀번호 찾기 화면으로 가는 보조 단추.
+class _ForgotCredentialsButton extends StatelessWidget {
+  const new();
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerRight,
+      child: BaraedaButton(
+        label: '아이디 · 비밀번호를 잊으셨나요?',
+        size: BaraedaButtonSize.sm,
+        variant: BaraedaButtonVariant.ghost,
+        onPressed: () => context.push(AppRoutes.accountRecovery),
+      ),
+    );
+  }
+}
+
+/// 아래 고정 단추 — 엄지가 닿는 곳에 주 행동, 회원가입은 같은 영역의 보조 단추(시안 `.m-sticky`).
+class _LoginActionBar extends StatelessWidget {
+  const new({required this.submitting, required this.onSubmit});
+
+  final bool submitting;
+  final Future<void> Function() onSubmit;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colors.surfaceChrome,
+        border: Border(top: BorderSide(color: colors.borderChrome)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(BaraedaSpacing.gutterMobile),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            BaraedaButton(
+              label: '로그인',
+              size: BaraedaButtonSize.xl,
+              block: true,
+              onPressed: submitting ? null : onSubmit,
+            ),
+            const SizedBox(height: BaraedaSpacing.space2),
+            BaraedaButton(
+              label: '처음이세요? 회원가입',
+              variant: BaraedaButtonVariant.secondary,
+              block: true,
+              onPressed: () => context.push(AppRoutes.signup),
             ),
           ],
         ),

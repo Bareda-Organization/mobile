@@ -26,7 +26,7 @@ void main() {
     final block = body.substring(start, body.indexOf('},', start));
     expect(block, contains('NCameraUpdateReason.gesture'));
     expect(block, contains('NCameraUpdateReason.control'));
-    expect(block, contains('widget.onUserGesture?.call()'));
+    expect(block, contains('onUserGesture?.call()'));
     expect(
       block,
       isNot(contains('NCameraUpdateReason.developer')),

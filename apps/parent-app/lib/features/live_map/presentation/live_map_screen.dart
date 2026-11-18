@@ -273,22 +273,13 @@ class _MapPageState extends ConsumerState<_MapPage> {
       )
       .value;
 
-  /// 내 승하차지 — [route] 가 준 정류장.
-  RouteStop? _myStop(RouteDetail? route) {
-    if (route == null) return null;
-    for (final stop in route.stops) {
-      if (stop.stopId == route.myStopId) return stop;
-    }
-    return null;
-  }
-
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     final loading = _view.phase == LiveMapPhase.loading;
     final ended = _view.phase == LiveMapPhase.ended;
     final route = loading ? null : _route();
-    final myStop = _myStop(route);
+    final myStop = _myStopOf(route);
     final myStopPoint = myStop?.lat != null && myStop?.lng != null
         ? myStop
         : null;
@@ -342,7 +333,7 @@ class _MapPageState extends ConsumerState<_MapPage> {
                     polylines: overlay?.polylines ?? const [],
                     fitToContent: fitRoute,
                     options: parentMapOptions,
-                    fitPadding: _fitPadding(context),
+                    fitPadding: _fitPaddingOf(context),
                     onUserGesture: () {
                       if (!_following) return;
                       setState(() {
@@ -363,7 +354,7 @@ class _MapPageState extends ConsumerState<_MapPage> {
             right: 0,
             child: _FloatingTop(
               switcher: widget.switcher,
-              tag: _topTag(),
+              tag: _topTagOf(_view),
               notice: _authFailed
                   ? const AlertBanner(
                       tone: AlertTone.missed,
@@ -376,42 +367,35 @@ class _MapPageState extends ConsumerState<_MapPage> {
             left: 0,
             right: 0,
             bottom: 0,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _AboveSheetRow(
-                  staleTag: _staleTag(),
-                  fabs: showFabs
-                      ? _MapFabs(
-                          onBus: () => setState(() {
-                            _following = true;
-                            _pinned = null;
-                          }),
-                          onMyStop: myStopPoint == null
-                              ? null
-                              : () => setState(() {
-                                  _following = false;
-                                  _pinned = MapCamera(
-                                    lat: myStopPoint.lat!,
-                                    lng: myStopPoint.lng!,
-                                  );
-                                }),
-                        )
-                      : null,
-                ),
-                if (loading)
-                  const MapSheetSkeleton()
-                else
-                  _Sheet(
-                    studentId: widget.studentId,
-                    view: _view,
-                    studentName: widget.studentName,
-                    myStopName: myStop?.name ?? _view.run?.stop.name,
-                    destination: destination,
-                    onRetry: widget.onRetry,
-                  ),
-              ],
+            child: _BottomPanel(
+              staleTag: _staleTagOf(_view),
+              fabs: showFabs
+                  ? _MapFabs(
+                      onBus: () => setState(() {
+                        _following = true;
+                        _pinned = null;
+                      }),
+                      onMyStop: myStopPoint == null
+                          ? null
+                          : () => setState(() {
+                              _following = false;
+                              _pinned = MapCamera(
+                                lat: myStopPoint.lat!,
+                                lng: myStopPoint.lng!,
+                              );
+                            }),
+                    )
+                  : null,
+              sheet: loading
+                  ? const MapSheetSkeleton()
+                  : _Sheet(
+                      studentId: widget.studentId,
+                      view: _view,
+                      studentName: widget.studentName,
+                      myStopName: myStop?.name ?? _view.run?.stop.name,
+                      destination: destination,
+                      onRetry: widget.onRetry,
+                    ),
             ),
           ),
         ],
@@ -419,41 +403,26 @@ class _MapPageState extends ConsumerState<_MapPage> {
     );
   }
 
-  /// 종료 화면이 노선에 맞출 때 비울 여백 — 위는 머리줄, 아래는 시트(화면의 약 4할), 왼쪽은 "내 승하차지" 이름표
-  /// 폭이다. 이만큼 비우지 않으면 시트가 노선의 끝(학원)을 가린다.
-  EdgeInsets _fitPadding(BuildContext context) => EdgeInsets.fromLTRB(
-    120,
-    140,
-    48,
-    MediaQuery.sizeOf(context).height * 0.42,
-  );
+}
 
-  /// 지도 위 오른쪽 이름표 — 달리는 중 "12:14 기준" · 종료 "운행 종료".
-  Widget? _topTag() {
-    final at = _view.positionAt;
-    return switch (_view.phase) {
-      LiveMapPhase.tracking when at != null => BaraedaMapTag(
-        label: '${formatClock(at)} 기준',
-      ),
-      LiveMapPhase.ended => const BaraedaMapTag(label: '운행 종료', live: false),
-      _ => null,
-    };
-  }
+/// 지도 아래에 쌓이는 것들 — 시트 위 한 줄(앰버 이름표 · 지도 단추)과 시트.
+class _BottomPanel extends StatelessWidget {
+  const new({required this.staleTag, required this.fabs, required this.sheet});
 
-  /// 시트 위 왼쪽 앰버 이름표 — 신호 없음 "마지막 확인 위치 · 4분 전" · 연결 끊김 "마지막 갱신 12:11".
-  Widget? _staleTag() {
-    final at = _view.positionAt;
-    return switch (_view.phase) {
-      LiveMapPhase.noSignal when _view.staleMinutes != null => BaraedaMapTag(
-        label: '마지막 확인 위치 · ${_view.staleMinutes}분 전',
-        stale: true,
-      ),
-      LiveMapPhase.disconnected when at != null => BaraedaMapTag(
-        label: '마지막 갱신 ${formatClock(at)}',
-        stale: true,
-      ),
-      _ => null,
-    };
+  final Widget? staleTag;
+  final Widget? fabs;
+  final Widget sheet;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _AboveSheetRow(staleTag: staleTag, fabs: fabs),
+        sheet,
+      ],
+    );
   }
 }
 
@@ -696,4 +665,50 @@ class _Sheet extends StatelessWidget {
       ],
     ];
   }
+}
+
+/// 내 승하차지 — [route] 가 준 정류장.
+RouteStop? _myStopOf(RouteDetail? route) {
+  if (route == null) return null;
+  for (final stop in route.stops) {
+    if (stop.stopId == route.myStopId) return stop;
+  }
+  return null;
+}
+
+/// 종료 화면이 노선에 맞출 때 비울 여백 — 위는 머리줄, 아래는 시트(화면의 약 4할), 왼쪽은 "내 승하차지" 이름표
+/// 폭이다. 이만큼 비우지 않으면 시트가 노선의 끝(학원)을 가린다.
+EdgeInsets _fitPaddingOf(BuildContext context) => EdgeInsets.fromLTRB(
+  120,
+  140,
+  48,
+  MediaQuery.sizeOf(context).height * 0.42,
+);
+
+/// 지도 위 오른쪽 이름표 — 달리는 중 "12:14 기준" · 종료 "운행 종료".
+Widget? _topTagOf(LiveMapView view) {
+  final at = view.positionAt;
+  return switch (view.phase) {
+    LiveMapPhase.tracking when at != null => BaraedaMapTag(
+      label: '${formatClock(at)} 기준',
+    ),
+    LiveMapPhase.ended => const BaraedaMapTag(label: '운행 종료', live: false),
+    _ => null,
+  };
+}
+
+/// 시트 위 왼쪽 앰버 이름표 — 신호 없음 "마지막 확인 위치 · 4분 전" · 연결 끊김 "마지막 갱신 12:11".
+Widget? _staleTagOf(LiveMapView view) {
+  final at = view.positionAt;
+  return switch (view.phase) {
+    LiveMapPhase.noSignal when view.staleMinutes != null => BaraedaMapTag(
+      label: '마지막 확인 위치 · ${view.staleMinutes}분 전',
+      stale: true,
+    ),
+    LiveMapPhase.disconnected when at != null => BaraedaMapTag(
+      label: '마지막 갱신 ${formatClock(at)}',
+      stale: true,
+    ),
+    _ => null,
+  };
 }

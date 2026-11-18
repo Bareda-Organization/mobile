@@ -178,11 +178,54 @@ class _RunReadyScreenState extends ConsumerState<RunReadyScreen> {
       appBar: ManagerHeader(title: '운행 준비', subtitle: subtitle),
       body: runId == null || run == null
           ? const EmptyState(title: '선택된 운행이 없어요', body: '오늘 운행에서 회차를 골라 주세요.')
-          : _buildBody(context, runId, run),
+          : _ReadyBody(
+              runId: runId,
+              run: run,
+              availability: _availability,
+              navigating: _navigating,
+              naviNotInstalled: _naviNotInstalled,
+              navNotice: _navNotice,
+              starting: _starting,
+              startError: _startError,
+              onStart: () => unawaited(_start(runId)),
+              onOpenNavigation: () => unawaited(_openNavigation(runId)),
+              onRetry: _retry,
+            ),
     );
   }
+}
 
-  Widget _buildBody(BuildContext context, String runId, ManagerRun run) {
+/// 운행 준비 본문 — 저장본 안내 · 노선 변경 확인 띠 · 위치 안내 · 지도 · 내비 단추 · 승하차지 목록과
+/// 맨 아래 시작 줄. 노선·명단은 여기서 직접 읽는다.
+class _ReadyBody extends ConsumerWidget {
+  const new({
+    required this.runId,
+    required this.run,
+    required this.availability,
+    required this.navigating,
+    required this.naviNotInstalled,
+    required this.navNotice,
+    required this.starting,
+    required this.startError,
+    required this.onStart,
+    required this.onOpenNavigation,
+    required this.onRetry,
+  });
+
+  final String runId;
+  final ManagerRun run;
+  final PositionAvailability? availability;
+  final bool navigating;
+  final bool naviNotInstalled;
+  final String? navNotice;
+  final bool starting;
+  final String? startError;
+  final VoidCallback onStart;
+  final VoidCallback onOpenNavigation;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     final routeAsync = ref.watch(routeProvider);
     final rosterAsync = ref.watch(driveModeRosterProvider);
     final route = routeAsync.value;
@@ -191,7 +234,6 @@ class _RunReadyScreenState extends ConsumerState<RunReadyScreen> {
         (routeAsync.hasError && route == null) ||
         (rosterAsync.hasError && roster == null);
     final loading = !failed && (route == null || roster == null);
-    final colors = context.colors;
 
     return Column(
       children: [
@@ -208,7 +250,7 @@ class _RunReadyScreenState extends ConsumerState<RunReadyScreen> {
                 removedCount: run.removedCount,
                 bottomGap: 12,
               ),
-              if (_positionGuidance(_availability) case final guidance?) ...[
+              if (_positionGuidance(availability) case final guidance?) ...[
                 AlertBanner(
                   tone: AlertTone.missed,
                   body: guidance,
@@ -218,7 +260,7 @@ class _RunReadyScreenState extends ConsumerState<RunReadyScreen> {
                     variant: BaraedaButtonVariant.secondary,
                     onPressed: () => unawaited(
                       ref.read(settingsOpenerProvider)(
-                        _availability == PositionAvailability.permissionDenied
+                        availability == PositionAvailability.permissionDenied
                             ? DeviceSettingsPage.app
                             : DeviceSettingsPage.location,
                       ),
@@ -228,11 +270,14 @@ class _RunReadyScreenState extends ConsumerState<RunReadyScreen> {
                 const SizedBox(height: 12),
               ],
               if (failed)
-                ..._failure(colors)
+                _ReadyFailure(onRetry: onRetry)
               else if (loading)
                 const _ReadySkeleton()
               else ...[
-                _MapCard(route: route!, onExpand: () => _openRouteMap(context)),
+                _MapCard(
+                  route: route!,
+                  onExpand: () => unawaited(context.push(AppRoutes.routeMap)),
+                ),
                 const SizedBox(height: 12),
                 BaraedaButton(
                   label: '카카오내비로 길 확인',
@@ -240,11 +285,11 @@ class _RunReadyScreenState extends ConsumerState<RunReadyScreen> {
                   variant: BaraedaButtonVariant.secondary,
                   block: true,
                   onPressed:
-                      _navigating || ref.watch(kakaoNaviAppKeyProvider).isEmpty
+                      navigating || ref.watch(kakaoNaviAppKeyProvider).isEmpty
                       ? null
-                      : () => unawaited(_openNavigation(runId)),
+                      : onOpenNavigation,
                 ),
-                if (_naviNotInstalled) ...[
+                if (naviNotInstalled) ...[
                   const SizedBox(height: 8),
                   AlertBanner(
                     tone: AlertTone.missed,
@@ -261,12 +306,12 @@ class _RunReadyScreenState extends ConsumerState<RunReadyScreen> {
                     ),
                   ),
                 ],
-                if (_navNotice != null) ...[
+                if (navNotice != null) ...[
                   const SizedBox(height: 8),
-                  AlertBanner(tone: AlertTone.info, body: _navNotice),
+                  AlertBanner(tone: AlertTone.info, body: navNotice),
                 ],
                 const SizedBox(height: 8),
-                _rosterViewButton(),
+                const _RosterViewButton(),
                 const SizedBox(height: 24),
                 _StopsSection(run: run, roster: roster!),
               ],
@@ -277,47 +322,14 @@ class _RunReadyScreenState extends ConsumerState<RunReadyScreen> {
           run: run,
           now: ref.watch(clockProvider).now(),
           routeReady: !failed && !loading,
-          starting: _starting,
-          error: _startError,
-          onStart: () => unawaited(_start(runId)),
+          starting: starting,
+          error: startError,
+          onStart: onStart,
           onResume: () => context.pushReplacement(AppRoutes.driveMode),
         ),
       ],
     );
   }
-
-  List<Widget> _failure(BaraedaColors colors) => [
-    const AlertBanner(
-      tone: AlertTone.missed,
-      icon: 'wifi-off',
-      title: '확정 노선을 불러오지 못했어요',
-      body: '인터넷 연결을 확인해 주세요. 노선을 받아야 운행을 시작할 수 있어요.',
-    ),
-    const SizedBox(height: 12),
-    BaraedaButton(
-      label: '다시 시도',
-      icon: 'refresh',
-      block: true,
-      onPressed: _retry,
-    ),
-    const SizedBox(height: 12),
-    // 통신이 끊겨 노선을 못 받아도 저장해 둔 명단은 열린다.
-    _rosterViewButton(),
-    const SizedBox(height: 12),
-    const AcademyCallCard(lead: '출발 시각이 가까우면'),
-  ];
-
-  /// 운행을 시작하기 전에도 승하차지 명단을 볼 수 있다(UF-D-02 · 조회 전용).
-  Widget _rosterViewButton() => BaraedaButton(
-    label: '명단 보기',
-    icon: 'list',
-    variant: BaraedaButtonVariant.secondary,
-    block: true,
-    onPressed: () => unawaited(context.push(AppRoutes.rosterView)),
-  );
-
-  void _openRouteMap(BuildContext context) =>
-      unawaited(context.push(AppRoutes.routeMap));
 
   String? _positionGuidance(PositionAvailability? availability) =>
       switch (availability) {
@@ -327,6 +339,53 @@ class _RunReadyScreenState extends ConsumerState<RunReadyScreen> {
           '기기 위치 서비스가 꺼져 있어 위치를 보낼 수 없어요. 설정에서 위치 서비스를 켜 주세요.',
         PositionAvailability.available || null => null,
       };
+}
+
+/// 노선·명단을 못 받았을 때 — 안내 · 다시 시도 · 저장해 둔 명단 · 학원 전화.
+class _ReadyFailure extends StatelessWidget {
+  const new({required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    mainAxisSize: MainAxisSize.min,
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      const AlertBanner(
+        tone: AlertTone.missed,
+        icon: 'wifi-off',
+        title: '확정 노선을 불러오지 못했어요',
+        body: '인터넷 연결을 확인해 주세요. 노선을 받아야 운행을 시작할 수 있어요.',
+      ),
+      const SizedBox(height: 12),
+      BaraedaButton(
+        label: '다시 시도',
+        icon: 'refresh',
+        block: true,
+        onPressed: onRetry,
+      ),
+      const SizedBox(height: 12),
+      // 통신이 끊겨 노선을 못 받아도 저장해 둔 명단은 열린다.
+      const _RosterViewButton(),
+      const SizedBox(height: 12),
+      const AcademyCallCard(lead: '출발 시각이 가까우면'),
+    ],
+  );
+}
+
+/// 운행을 시작하기 전에도 승하차지 명단을 볼 수 있다(UF-D-02 · 조회 전용).
+class _RosterViewButton extends StatelessWidget {
+  const new();
+
+  @override
+  Widget build(BuildContext context) => BaraedaButton(
+    label: '명단 보기',
+    icon: 'list',
+    variant: BaraedaButtonVariant.secondary,
+    block: true,
+    onPressed: () => unawaited(context.push(AppRoutes.rosterView)),
+  );
 }
 
 /// 지도 카드 — `확정 노선` 꼬리표 · 크게 보기 단추 · 아래 범례. 지도 위 글자는 늘 잉크색(다크 구역 밖에서도 같다).

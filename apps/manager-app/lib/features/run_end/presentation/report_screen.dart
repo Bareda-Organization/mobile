@@ -32,6 +32,9 @@ class ReportScreen extends ConsumerStatefulWidget {
   ConsumerState<ReportScreen> createState() => _ReportScreenState();
 }
 
+/// 보호자 부재로 보고할 수 있는 학생 한 명 — 이름 · 반과 승하차지 이름.
+typedef _ReportTarget = ({String riderId, String name, String meta});
+
 class _ReportScreenState extends ConsumerState<ReportScreen> {
   ReportType _type = ReportType.roadBlock;
   final _memoController = LimitedTextController();
@@ -43,18 +46,6 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
 
   /// 보고가 통신 두절로 기기에 쌓였는가 — 서버에 아직 접수되지 않았다. 같은 보고가 두 번 쌓이지 않게 제출 단추를 끈다.
   bool _queued = false;
-
-  static const _typeOptions = [
-    BaraedaSegmentedOption('road_block', label: '도로 통제'),
-    BaraedaSegmentedOption('vehicle_issue', label: '차량 문제'),
-    BaraedaSegmentedOption('etc', label: '기타'),
-  ];
-
-  /// 하원 회차에서만 더해지는 종류 — 보호자 부재는 하원 승하차지의 일이다(EXC-02).
-  static const _guardianAbsentOption = BaraedaSegmentedOption(
-    'guardian_absent',
-    label: '보호자 부재',
-  );
 
   /// 보호자 부재 보고인가 — 바로 연 화면이거나, 예외 보고 화면에서 그 종류를 골랐다.
   bool get _isGuardianAbsent =>
@@ -115,7 +106,7 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
   /// 보호자 부재로 보고할 수 있는 학생 — 버스에 타고 있고 혼자 귀가할 수 없는 학생(EXC-02). 종료 보류 뒤에 열어도
   /// 같다(`Ruling 866`). 도착 응답의 남은 탑승자(`remaining[]`)에는 혼자 귀가 여부가 없어, 명단을 못 받았으면
   /// 대상을 내놓지 않는다.
-  List<({String riderId, String name, String meta})> _targets() {
+  List<_ReportTarget> _targets() {
     final roster = ref.watch(rosterProvider).value;
     if (roster == null) return const [];
     return [
@@ -137,10 +128,7 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
   Widget build(BuildContext context) {
     final runId = ref.watch(selectedRunIdProvider);
     final roster = ref.watch(rosterProvider).value;
-    final colors = context.colors;
-    final targets = _isGuardianAbsent
-        ? _targets()
-        : const <({String riderId, String name, String meta})>[];
+    final targets = _isGuardianAbsent ? _targets() : const <_ReportTarget>[];
 
     return Scaffold(
       appBar: ManagerHeader(
@@ -183,73 +171,26 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
                         ),
                         const SizedBox(height: 12),
                       ],
-                      if (!widget.guardianAbsent) ...[
-                        const Text('어떤 상황이에요?', style: BaraedaTypography.label),
-                        const SizedBox(height: 8),
-                        BaraedaSegmentedControl(
-                          options: [
-                            ..._typeOptions,
-                            if (roster?.direction == RunDirection.fromAcademy)
-                              _guardianAbsentOption,
-                          ],
-                          value: _type.wireValue,
-                          block: true,
-                          wrapByWord: true,
+                      if (!widget.guardianAbsent)
+                        _ReportTypeSelector(
+                          includeGuardianAbsent:
+                              roster?.direction == RunDirection.fromAcademy,
+                          value: _type,
                           onChanged: _submitting
                               ? null
-                              : (value) => setState(
-                                  () => _type = ReportType.values.firstWhere(
-                                    (type) => type.wireValue == value,
-                                  ),
-                                ),
+                              : (type) => setState(() => _type = type),
                         ),
-                      ],
-                      if (_isGuardianAbsent) ...[
-                        if (!widget.guardianAbsent) const SizedBox(height: 16),
-                        const Text('어느 학생이에요?', style: BaraedaTypography.label),
-                        const SizedBox(height: 8),
-                        if (targets.isEmpty)
-                          WordWrapText(
-                            roster == null
-                                ? '명단을 불러온 뒤에 학생을 고를 수 있어요.'
-                                : '보호자 부재로 보고할 학생이 없어요. 혼자 귀가할 수 없는 학생이 '
-                                      '탑승 중일 때만 고를 수 있어요.',
-                          )
-                        else
-                          BaraedaListGroup(
-                            children: [
-                              for (final target in targets)
-                                BaraedaListRow(
-                                  title: target.name,
-                                  titleIsPersonName: true,
-                                  subtitle: target.meta.isEmpty
-                                      ? null
-                                      : target.meta,
-                                  trailing: BaraedaIcon(
-                                    _selectedRiderId == target.riderId
-                                        ? 'circle-check'
-                                        : 'check',
-                                    color: _selectedRiderId == target.riderId
-                                        ? colors.accentPrimary
-                                        : colors.borderControl,
-                                  ),
-                                  onTap: _submitting
-                                      ? null
-                                      : () => setState(
-                                          () =>
-                                              _selectedRiderId = target.riderId,
-                                        ),
-                                ),
-                            ],
-                          ),
-                        const SizedBox(height: 8),
-                        Text(
-                          '버스에 타고 있고 혼자 귀가할 수 없는 학생만 나와요.',
-                          style: BaraedaTypography.caption.copyWith(
-                            color: colors.textSecondary,
-                          ),
+                      if (_isGuardianAbsent)
+                        _GuardianPicker(
+                          leadingGap: !widget.guardianAbsent,
+                          rosterLoaded: roster != null,
+                          targets: targets,
+                          selectedRiderId: _selectedRiderId,
+                          onSelect: _submitting
+                              ? null
+                              : (riderId) =>
+                                    setState(() => _selectedRiderId = riderId),
                         ),
-                      ],
                       const SizedBox(height: 16),
                       BaraedaTextarea(
                         label: '상황 메모 (필수)',
@@ -268,29 +209,165 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
                     ],
                   ),
                 ),
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: colors.bgBase,
-                    border: Border(top: BorderSide(color: colors.borderSubtle)),
-                  ),
-                  child: SafeArea(
-                    top: false,
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                      child: BaraedaButton(
-                        label: '보고 제출',
-                        size: BaraedaButtonSize.xl,
-                        block: true,
-                        // 접수된 뒤에는 끈다 — 다시 누르면 같은 보고가 한 번 더 관계자에게 통지된다.
-                        onPressed: (_submitting || _result != null || _queued)
-                            ? null
-                            : () => _submit(runId),
-                      ),
-                    ),
-                  ),
+                _ReportSubmitBar(
+                  // 접수된 뒤에는 끈다 — 다시 누르면 같은 보고가 한 번 더 관계자에게 통지된다.
+                  onSubmit: (_submitting || _result != null || _queued)
+                      ? null
+                      : () => _submit(runId),
                 ),
               ],
             ),
+    );
+  }
+}
+
+/// `어떤 상황이에요?` 라벨과 보고 종류 선택 — 하원 회차에서만 `보호자 부재` 가 더해진다(EXC-02).
+class _ReportTypeSelector extends StatelessWidget {
+  const new({
+    required this.includeGuardianAbsent,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final bool includeGuardianAbsent;
+  final ReportType value;
+  final ValueChanged<ReportType>? onChanged;
+
+  static const _typeOptions = [
+    BaraedaSegmentedOption('road_block', label: '도로 통제'),
+    BaraedaSegmentedOption('vehicle_issue', label: '차량 문제'),
+    BaraedaSegmentedOption('etc', label: '기타'),
+  ];
+
+  /// 하원 회차에서만 더해지는 종류 — 보호자 부재는 하원 승하차지의 일이다(EXC-02).
+  static const _guardianAbsentOption = BaraedaSegmentedOption(
+    'guardian_absent',
+    label: '보호자 부재',
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Text('어떤 상황이에요?', style: BaraedaTypography.label),
+        const SizedBox(height: 8),
+        BaraedaSegmentedControl(
+          options: [
+            ..._typeOptions,
+            if (includeGuardianAbsent) _guardianAbsentOption,
+          ],
+          value: value.wireValue,
+          block: true,
+          wrapByWord: true,
+          onChanged: onChanged == null
+              ? null
+              : (wire) => onChanged!(
+                  ReportType.values.firstWhere(
+                    (type) => type.wireValue == wire,
+                  ),
+                ),
+        ),
+      ],
+    );
+  }
+}
+
+/// `어느 학생이에요?` 라벨과 보호자 부재 대상 학생 고르기 — 대상이 없으면 이유를 글로 보인다.
+class _GuardianPicker extends StatelessWidget {
+  const new({
+    required this.leadingGap,
+    required this.rosterLoaded,
+    required this.targets,
+    required this.selectedRiderId,
+    required this.onSelect,
+  });
+
+  /// 위 종류 선택이 있을 때 그 사이를 띄운다.
+  final bool leadingGap;
+  final bool rosterLoaded;
+  final List<_ReportTarget> targets;
+  final String? selectedRiderId;
+  final ValueChanged<String>? onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (leadingGap) const SizedBox(height: 16),
+        const Text('어느 학생이에요?', style: BaraedaTypography.label),
+        const SizedBox(height: 8),
+        if (targets.isEmpty)
+          WordWrapText(
+            !rosterLoaded
+                ? '명단을 불러온 뒤에 학생을 고를 수 있어요.'
+                : '보호자 부재로 보고할 학생이 없어요. 혼자 귀가할 수 없는 학생이 '
+                      '탑승 중일 때만 고를 수 있어요.',
+          )
+        else
+          BaraedaListGroup(
+            children: [
+              for (final target in targets)
+                BaraedaListRow(
+                  title: target.name,
+                  titleIsPersonName: true,
+                  subtitle: target.meta.isEmpty ? null : target.meta,
+                  trailing: BaraedaIcon(
+                    selectedRiderId == target.riderId
+                        ? 'circle-check'
+                        : 'check',
+                    color: selectedRiderId == target.riderId
+                        ? colors.accentPrimary
+                        : colors.borderControl,
+                  ),
+                  onTap: onSelect == null
+                      ? null
+                      : () => onSelect!(target.riderId),
+                ),
+            ],
+          ),
+        const SizedBox(height: 8),
+        Text(
+          '버스에 타고 있고 혼자 귀가할 수 없는 학생만 나와요.',
+          style: BaraedaTypography.caption.copyWith(
+            color: colors.textSecondary,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// 맨 아래 고정 줄 — `보고 제출` 단추.
+class _ReportSubmitBar extends StatelessWidget {
+  const new({required this.onSubmit});
+
+  final VoidCallback? onSubmit;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colors.bgBase,
+        border: Border(top: BorderSide(color: colors.borderSubtle)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+          child: BaraedaButton(
+            label: '보고 제출',
+            size: BaraedaButtonSize.xl,
+            block: true,
+            onPressed: onSubmit,
+          ),
+        ),
+      ),
     );
   }
 }

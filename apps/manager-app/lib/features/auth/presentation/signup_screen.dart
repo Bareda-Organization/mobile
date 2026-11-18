@@ -157,7 +157,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   @override
   Widget build(BuildContext context) {
     final repository = ref.watch(authRepositoryProvider);
-    final colors = context.colors;
     final academy = _academy;
     final reason = _disabledReason;
 
@@ -171,67 +170,24 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text(
-                    '역할',
-                    style: BaraedaTypography.label.copyWith(
-                      color: colors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: BaraedaSpacing.space2),
-                  BaraedaSegmentedControl(
-                    options: const [
-                      BaraedaSegmentedOption('driver', label: '버스기사'),
-                      BaraedaSegmentedOption('escort', label: '동승자'),
-                    ],
-                    value: _role,
-                    block: true,
+                  _RoleSection(
+                    role: _role,
                     onChanged: (value) => setState(() => _role = value),
                   ),
-                  const SizedBox(height: BaraedaSpacing.space2),
-                  WordWrapText(
-                    '버스기사 — 운행 시작 · 승하차지 도착 처리. 동승자 — 학생 승차 · 하차 처리.',
-                    style: BaraedaTypography.caption.copyWith(
-                      color: colors.textSecondary,
-                    ),
-                  ),
                   const SizedBox(height: BaraedaSpacing.space4),
-                  BaraedaInput(
-                    label: '아이디',
-                    hint: '50자 이하',
-                    kind: BaraedaInputKind.username,
-                    controller: _loginIdController,
-                    error:
-                        _loginIdError ??
-                        loginIdLengthError(_loginIdController.text),
-                    onChanged: (_) {
+                  _AccountFields(
+                    loginIdController: _loginIdController,
+                    passwordController: _passwordController,
+                    nameController: _nameController,
+                    phoneController: _phoneController,
+                    loginIdError: _loginIdError,
+                    onLoginIdChanged: () {
                       if (_loginIdError != null) {
                         setState(() => _loginIdError = null);
                       }
                       setState(() {});
                     },
-                  ),
-                  const SizedBox(height: BaraedaSpacing.space4),
-                  BaraedaInput(
-                    label: '비밀번호',
-                    hint: '영문 72자 · 한글 24자까지',
-                    obscureText: true,
-                    kind: BaraedaInputKind.newPassword,
-                    controller: _passwordController,
-                    error: passwordLengthError(_passwordController.text),
-                    onChanged: (_) => setState(() {}),
-                  ),
-                  const SizedBox(height: BaraedaSpacing.space4),
-                  BaraedaInput(
-                    label: '이름',
-                    controller: _nameController,
-                    onChanged: (_) => setState(() {}),
-                  ),
-                  const SizedBox(height: BaraedaSpacing.space4),
-                  BaraedaInput(
-                    label: '연락처',
-                    kind: BaraedaInputKind.phone,
-                    controller: _phoneController,
-                    onChanged: (_) => setState(() {}),
+                    onChanged: () => setState(() {}),
                   ),
                   const SizedBox(height: BaraedaSpacing.space4),
                   if (academy == null)
@@ -254,29 +210,152 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
               ),
             ),
           ),
-          BottomActionBar(
-            children: [
-              BaraedaButton(
-                label: '가입 신청하기',
-                size: BaraedaButtonSize.xl,
-                block: true,
-                onPressed: _canSubmit ? _submit : null,
-                disabledReason: _submitting ? null : reason,
-              ),
-              if (reason == null && !_submitting) ...[
-                const SizedBox(height: BaraedaSpacing.space2),
-                Text(
-                  '신청하면 학원 관계자가 확인한 뒤 승인해요.',
-                  textAlign: TextAlign.center,
-                  style: BaraedaTypography.caption.copyWith(
-                    color: colors.textSecondary,
-                  ),
-                ),
-              ],
-            ],
+          _SignupActionBar(
+            onSubmit: _canSubmit ? _submit : null,
+            disabledReason: _submitting ? null : reason,
+            showGuide: reason == null && !_submitting,
           ),
         ],
       ),
+    );
+  }
+}
+
+/// 역할 선택(버스기사 · 동승자) 과 역할별 한 줄 설명.
+class _RoleSection extends StatelessWidget {
+  const new({required this.role, required this.onChanged});
+
+  final String role;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          '역할',
+          style: BaraedaTypography.label.copyWith(color: colors.textPrimary),
+        ),
+        const SizedBox(height: BaraedaSpacing.space2),
+        BaraedaSegmentedControl(
+          options: const [
+            BaraedaSegmentedOption('driver', label: '버스기사'),
+            BaraedaSegmentedOption('escort', label: '동승자'),
+          ],
+          value: role,
+          block: true,
+          onChanged: onChanged,
+        ),
+        const SizedBox(height: BaraedaSpacing.space2),
+        WordWrapText(
+          '버스기사 — 운행 시작 · 승하차지 도착 처리. 동승자 — 학생 승차 · 하차 처리.',
+          style: BaraedaTypography.caption.copyWith(
+            color: colors.textSecondary,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// 아이디 · 비밀번호 · 이름 · 연락처 입력 4칸.
+class _AccountFields extends StatelessWidget {
+  const new({
+    required this.loginIdController,
+    required this.passwordController,
+    required this.nameController,
+    required this.phoneController,
+    required this.loginIdError,
+    required this.onLoginIdChanged,
+    required this.onChanged,
+  });
+
+  final TextEditingController loginIdController;
+  final TextEditingController passwordController;
+  final TextEditingController nameController;
+  final TextEditingController phoneController;
+  final String? loginIdError;
+  final VoidCallback onLoginIdChanged;
+  final VoidCallback onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        BaraedaInput(
+          label: '아이디',
+          hint: '50자 이하',
+          kind: BaraedaInputKind.username,
+          controller: loginIdController,
+          error: loginIdError ?? loginIdLengthError(loginIdController.text),
+          onChanged: (_) => onLoginIdChanged(),
+        ),
+        const SizedBox(height: BaraedaSpacing.space4),
+        BaraedaInput(
+          label: '비밀번호',
+          hint: '영문 72자 · 한글 24자까지',
+          obscureText: true,
+          kind: BaraedaInputKind.newPassword,
+          controller: passwordController,
+          error: passwordLengthError(passwordController.text),
+          onChanged: (_) => onChanged(),
+        ),
+        const SizedBox(height: BaraedaSpacing.space4),
+        BaraedaInput(
+          label: '이름',
+          controller: nameController,
+          onChanged: (_) => onChanged(),
+        ),
+        const SizedBox(height: BaraedaSpacing.space4),
+        BaraedaInput(
+          label: '연락처',
+          kind: BaraedaInputKind.phone,
+          controller: phoneController,
+          onChanged: (_) => onChanged(),
+        ),
+      ],
+    );
+  }
+}
+
+/// 하단 고정 `가입 신청하기` 단추와 승인 안내 문구.
+class _SignupActionBar extends StatelessWidget {
+  const new({
+    required this.onSubmit,
+    required this.disabledReason,
+    required this.showGuide,
+  });
+
+  final VoidCallback? onSubmit;
+  final String? disabledReason;
+  final bool showGuide;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return BottomActionBar(
+      children: [
+        BaraedaButton(
+          label: '가입 신청하기',
+          size: BaraedaButtonSize.xl,
+          block: true,
+          onPressed: onSubmit,
+          disabledReason: disabledReason,
+        ),
+        if (showGuide) ...[
+          const SizedBox(height: BaraedaSpacing.space2),
+          Text(
+            '신청하면 학원 관계자가 확인한 뒤 승인해요.',
+            textAlign: TextAlign.center,
+            style: BaraedaTypography.caption.copyWith(
+              color: colors.textSecondary,
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

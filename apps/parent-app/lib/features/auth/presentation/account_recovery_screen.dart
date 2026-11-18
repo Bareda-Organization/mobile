@@ -78,9 +78,7 @@ class _AccountRecoveryScreenState extends ConsumerState<AccountRecoveryScreen> {
 
   /// 대조 실패는 이유를 가르지 않는 한 문구다(클래스 문서의 열거 위험 참고).
   String _messageFor(Failure failure) => switch (failure) {
-    ApiFailure(
-      code: 'VERIFICATION_CODE_INVALID',
-    ) =>
+    ApiFailure(code: 'VERIFICATION_CODE_INVALID') =>
       '휴대폰 번호 또는 인증번호를 확인할 수 없어요',
     ApiFailure(code: 'RECOVERY_UNAVAILABLE') => _unavailableNotice,
     ApiFailure(code: 'RECOVERY_RATE_LIMITED') =>
@@ -168,6 +166,12 @@ class _AccountRecoveryScreenState extends ConsumerState<AccountRecoveryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final form = _PhoneForm(
+      type: _type,
+      codeRequested: _codeRequested,
+      phoneController: _phoneController,
+      onTypeChanged: (value) => setState(() => _type = value),
+    );
     return Scaffold(
       appBar: AppHeader(title: '아이디·비밀번호 찾기', onBack: () => context.pop()),
       body: SafeArea(
@@ -176,148 +180,40 @@ class _AccountRecoveryScreenState extends ConsumerState<AccountRecoveryScreen> {
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(BaraedaSpacing.gutterMobile),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: _codeRequested ? _codeStep() : _guideStep(),
-                ),
+                child: _codeRequested
+                    ? _CodeStep(
+                        banner: _banner,
+                        bannerTone: _bannerTone,
+                        form: form,
+                        code: _code,
+                        onCodeChanged: (value) => setState(() => _code = value),
+                        resendLocked: _resendLocked,
+                        submitting: _submitting,
+                        onRequest: _requestCode,
+                      )
+                    : _GuideStep(
+                        unavailable: _unavailable,
+                        formOpen: _formOpen,
+                        onSmsTap: () => setState(() => _formOpen = !_formOpen),
+                        banner: _banner,
+                        bannerTone: _bannerTone,
+                        form: form,
+                        submitting: _submitting,
+                        onRequest: _requestCode,
+                      ),
               ),
             ),
-            StickyActionBar(child: _bottomBar()),
+            StickyActionBar(
+              child: _BottomBar(
+                codeRequested: _codeRequested,
+                code: _code,
+                submitting: _submitting,
+                onVerify: _verifyCode,
+              ),
+            ),
           ],
         ),
       ),
-    );
-  }
-
-  /// 처음 화면 — 학원에 요청하는 방법이 먼저, 문자로 찾기는 그 아래 한 줄(시안 `recovery`).
-  /// 문자 발송 수단이 없는 동안 서버가 `503` 을 주므로(Ruling 329) 폼을 먼저 보여 주면 늘 실패한다.
-  List<Widget> _guideStep() => [
-    const AlertBanner(
-      tone: AlertTone.info,
-      title: '지금은 학원을 통해 찾아요',
-      body: '전화번호로 찾기는 준비 중이에요.',
-    ),
-    const SizedBox(height: BaraedaSpacing.space4),
-    const _AcademySteps(),
-    const SizedBox(height: BaraedaSpacing.space3),
-    _SmsRow(
-      unavailable: _unavailable,
-      open: _formOpen,
-      onTap: () => setState(() => _formOpen = !_formOpen),
-    ),
-    if (_banner != null) ...[
-      const SizedBox(height: BaraedaSpacing.space3),
-      AlertBanner(tone: _bannerTone, body: _banner),
-    ],
-    if (_formOpen && !_unavailable) ...[
-      const SizedBox(height: BaraedaSpacing.space4),
-      ..._phoneForm(),
-      const SizedBox(height: BaraedaSpacing.space4),
-      // 버튼 비활성화만으로는 제출이 진행 중임이 드러나지 않는다 — password_change_screen.dart 와 같은 표시.
-      if (_submitting) ...[
-        const Center(child: CircularProgressIndicator()),
-        const SizedBox(height: BaraedaSpacing.space4),
-      ],
-      BaraedaButton(
-        label: '인증번호 받기',
-        size: BaraedaButtonSize.lg,
-        block: true,
-        onPressed: _submitting ? null : _requestCode,
-      ),
-    ],
-  ];
-
-  /// 인증번호 입력 단계 — 안내 띠 + 찾을 항목 · 번호(잠금) + 6칸(시안 `recovery--code`).
-  List<Widget> _codeStep() => [
-    if (_banner != null) ...[
-      AlertBanner(tone: _bannerTone, body: _banner),
-      const SizedBox(height: BaraedaSpacing.space4),
-    ],
-    ..._phoneForm(),
-    const SizedBox(height: BaraedaSpacing.space4),
-    BaraedaCodeInput(
-      label: '인증번호',
-      value: _code,
-      numeric: true,
-      hint: '문자가 안 오면 1분 뒤에 다시 받을 수 있어요',
-      onChanged: (value) => setState(() => _code = value),
-    ),
-    const SizedBox(height: BaraedaSpacing.space3),
-    BaraedaButton(
-      label: '인증번호 다시 받기',
-      variant: BaraedaButtonVariant.secondary,
-      block: true,
-      onPressed: _resendLocked || _submitting ? null : _requestCode,
-    ),
-    if (_submitting) ...[
-      const SizedBox(height: BaraedaSpacing.space4),
-      const Center(child: CircularProgressIndicator()),
-    ],
-  ];
-
-  /// 찾을 항목 + 가입 시 등록한 휴대폰 번호 — 인증번호를 받은 뒤에는 바꿀 수 없다.
-  List<Widget> _phoneForm() => [
-    Padding(
-      padding: const EdgeInsets.only(bottom: BaraedaSpacing.space2),
-      child: Text(
-        '찾을 항목',
-        style: BaraedaTypography.caption.copyWith(
-          color: context.colors.textSecondary,
-          fontWeight: BaraedaFontWeight.bold,
-        ),
-      ),
-    ),
-    BaraedaSegmentedControl(
-      options: const [
-        BaraedaSegmentedOption('login_id', label: '아이디'),
-        BaraedaSegmentedOption('password', label: '비밀번호'),
-      ],
-      value: _type,
-      block: true,
-      onChanged: _codeRequested
-          ? null
-          : (value) => setState(() => _type = value),
-    ),
-    const SizedBox(height: BaraedaSpacing.space4),
-    BaraedaInput(
-      label: '가입 시 등록한 휴대폰 번호',
-      announceRequired: true,
-      enabled: !_codeRequested,
-      keyboardType: TextInputType.phone,
-      controller: _phoneController,
-    ),
-  ];
-
-  /// 맨 아래 고정 줄 — 처음에는 [로그인 화면으로], 인증번호 단계에서는 [확인하기](6자리를 채워야 켜진다).
-  Widget _bottomBar() {
-    if (!_codeRequested) {
-      return BaraedaButton(
-        label: '로그인 화면으로',
-        size: BaraedaButtonSize.xl,
-        block: true,
-        onPressed: () => context.pop(),
-      );
-    }
-    final complete = _code.length == _codeLength;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        BaraedaButton(
-          label: '확인하기',
-          size: BaraedaButtonSize.xl,
-          block: true,
-          onPressed: complete && !_submitting ? _verifyCode : null,
-        ),
-        if (!complete) ...[
-          const SizedBox(height: BaraedaSpacing.space2),
-          const WordWrapText(
-            '인증번호 $_codeLength자리를 모두 입력해 주세요',
-            textAlign: TextAlign.center,
-            style: BaraedaTypography.bodySm,
-          ),
-        ],
-      ],
     );
   }
 }
@@ -337,15 +233,9 @@ class _AcademySteps extends StatelessWidget {
           SizedBox(height: BaraedaSpacing.space3),
           NumberedSteps(
             steps: [
-              (
-                title: '다니는 학원에 연락해요',
-                caption: '비밀번호 초기화를 요청하면 아이디도 알려 줘요',
-              ),
+              (title: '다니는 학원에 연락해요', caption: '비밀번호 초기화를 요청하면 아이디도 알려 줘요'),
               (title: '임시 비밀번호를 받아요', caption: '학원 관계자가 초기화해 줘요'),
-              (
-                title: '로그인하고 새 비밀번호로 바꿔요',
-                caption: '바꾸기 전에는 다른 화면을 쓸 수 없어요',
-              ),
+              (title: '로그인하고 새 비밀번호로 바꿔요', caption: '바꾸기 전에는 다른 화면을 쓸 수 없어요'),
             ],
           ),
         ],
@@ -446,6 +336,224 @@ class _SmsRow extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// 처음 화면 — 학원에 요청하는 방법이 먼저, 문자로 찾기는 그 아래 한 줄(시안 `recovery`).
+/// 문자 발송 수단이 없는 동안 서버가 `503` 을 주므로(Ruling 329) 폼을 먼저 보여 주면 늘 실패한다.
+class _GuideStep extends StatelessWidget {
+  const new({
+    required this.unavailable,
+    required this.formOpen,
+    required this.onSmsTap,
+    required this.banner,
+    required this.bannerTone,
+    required this.form,
+    required this.submitting,
+    required this.onRequest,
+  });
+
+  final bool unavailable;
+  final bool formOpen;
+  final VoidCallback onSmsTap;
+  final String? banner;
+  final AlertTone bannerTone;
+  final Widget form;
+  final bool submitting;
+  final VoidCallback onRequest;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const AlertBanner(
+          tone: AlertTone.info,
+          title: '지금은 학원을 통해 찾아요',
+          body: '전화번호로 찾기는 준비 중이에요.',
+        ),
+        const SizedBox(height: BaraedaSpacing.space4),
+        const _AcademySteps(),
+        const SizedBox(height: BaraedaSpacing.space3),
+        _SmsRow(unavailable: unavailable, open: formOpen, onTap: onSmsTap),
+        if (banner != null) ...[
+          const SizedBox(height: BaraedaSpacing.space3),
+          AlertBanner(tone: bannerTone, body: banner),
+        ],
+        if (formOpen && !unavailable) ...[
+          const SizedBox(height: BaraedaSpacing.space4),
+          form,
+          const SizedBox(height: BaraedaSpacing.space4),
+          // 버튼 비활성화만으로는 제출이 진행 중임이 드러나지 않는다 —
+          // password_change_screen.dart 와 같은 표시.
+          if (submitting) ...[
+            const Center(child: CircularProgressIndicator()),
+            const SizedBox(height: BaraedaSpacing.space4),
+          ],
+          BaraedaButton(
+            label: '인증번호 받기',
+            size: BaraedaButtonSize.lg,
+            block: true,
+            onPressed: submitting ? null : onRequest,
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+/// 인증번호 입력 단계 — 안내 띠 + 찾을 항목 · 번호(잠금) + 6칸(시안 `recovery--code`).
+class _CodeStep extends StatelessWidget {
+  const new({
+    required this.banner,
+    required this.bannerTone,
+    required this.form,
+    required this.code,
+    required this.onCodeChanged,
+    required this.resendLocked,
+    required this.submitting,
+    required this.onRequest,
+  });
+
+  final String? banner;
+  final AlertTone bannerTone;
+  final Widget form;
+  final String code;
+  final ValueChanged<String> onCodeChanged;
+  final bool resendLocked;
+  final bool submitting;
+  final VoidCallback onRequest;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (banner != null) ...[
+          AlertBanner(tone: bannerTone, body: banner),
+          const SizedBox(height: BaraedaSpacing.space4),
+        ],
+        form,
+        const SizedBox(height: BaraedaSpacing.space4),
+        BaraedaCodeInput(
+          label: '인증번호',
+          value: code,
+          numeric: true,
+          hint: '문자가 안 오면 1분 뒤에 다시 받을 수 있어요',
+          onChanged: onCodeChanged,
+        ),
+        const SizedBox(height: BaraedaSpacing.space3),
+        BaraedaButton(
+          label: '인증번호 다시 받기',
+          variant: BaraedaButtonVariant.secondary,
+          block: true,
+          onPressed: resendLocked || submitting ? null : onRequest,
+        ),
+        if (submitting) ...[
+          const SizedBox(height: BaraedaSpacing.space4),
+          const Center(child: CircularProgressIndicator()),
+        ],
+      ],
+    );
+  }
+}
+
+/// 찾을 항목 + 가입 시 등록한 휴대폰 번호 — 인증번호를 받은 뒤에는 바꿀 수 없다.
+class _PhoneForm extends StatelessWidget {
+  const new({
+    required this.type,
+    required this.codeRequested,
+    required this.phoneController,
+    required this.onTypeChanged,
+  });
+
+  final String type;
+  final bool codeRequested;
+  final TextEditingController phoneController;
+  final ValueChanged<String> onTypeChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: BaraedaSpacing.space2),
+          child: Text(
+            '찾을 항목',
+            style: BaraedaTypography.caption.copyWith(
+              color: context.colors.textSecondary,
+              fontWeight: BaraedaFontWeight.bold,
+            ),
+          ),
+        ),
+        BaraedaSegmentedControl(
+          options: const [
+            BaraedaSegmentedOption('login_id', label: '아이디'),
+            BaraedaSegmentedOption('password', label: '비밀번호'),
+          ],
+          value: type,
+          block: true,
+          onChanged: codeRequested ? null : onTypeChanged,
+        ),
+        const SizedBox(height: BaraedaSpacing.space4),
+        BaraedaInput(
+          label: '가입 시 등록한 휴대폰 번호',
+          announceRequired: true,
+          enabled: !codeRequested,
+          keyboardType: TextInputType.phone,
+          controller: phoneController,
+        ),
+      ],
+    );
+  }
+}
+
+/// 맨 아래 고정 줄 — 처음에는 [로그인 화면으로], 인증번호 단계에서는 [확인하기](6자리를 채워야 켜진다).
+class _BottomBar extends StatelessWidget {
+  const new({
+    required this.codeRequested,
+    required this.code,
+    required this.submitting,
+    required this.onVerify,
+  });
+
+  final bool codeRequested;
+  final String code;
+  final bool submitting;
+  final Future<void> Function() onVerify;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!codeRequested) {
+      return BaraedaButton(
+        label: '로그인 화면으로',
+        size: BaraedaButtonSize.xl,
+        block: true,
+        onPressed: () => context.pop(),
+      );
+    }
+    final complete = code.length == _codeLength;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        BaraedaButton(
+          label: '확인하기',
+          size: BaraedaButtonSize.xl,
+          block: true,
+          onPressed: complete && !submitting ? onVerify : null,
+        ),
+        if (!complete) ...[
+          const SizedBox(height: BaraedaSpacing.space2),
+          const WordWrapText(
+            '인증번호 $_codeLength자리를 모두 입력해 주세요',
+            textAlign: TextAlign.center,
+            style: BaraedaTypography.bodySm,
+          ),
+        ],
+      ],
     );
   }
 }
