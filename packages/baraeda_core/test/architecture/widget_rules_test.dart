@@ -63,4 +63,25 @@ void main() {
 
     expect(check(), isEmpty);
   });
+
+  test('두 줄에 걸쳐 선언한 위젯도 잡는다', () {
+    write(
+      'wrapped.dart',
+      'class _VeryLongWidgetNameState<T>\n'
+      '    extends ConsumerState<VeryLongWidgetName<T>> {\n'
+      '${'  // line\n' * 250}}\n',
+    );
+
+    expect(check().single, contains('wrapped.dart:1'));
+    expect(check().single, contains('_VeryLongWidgetNameState'));
+  });
+
+  test('두 줄에 걸쳐 선언한 위젯이 200줄 이하면 통과한다', () {
+    write(
+      'wrapped_ok.dart',
+      'class Small\n    extends StatelessWidget {\n${'  // line\n' * 100}}\n',
+    );
+
+    expect(check(), isEmpty);
+  });
 }
