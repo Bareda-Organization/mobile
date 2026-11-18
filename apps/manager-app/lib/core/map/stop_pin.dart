@@ -1,3 +1,4 @@
+import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 
 /// 정차지 핀 — 끝이 좌표를 가리키는 물방울 모양, 머리 안에 순번.
@@ -18,11 +19,11 @@ class StopPin extends StatelessWidget {
   /// 폭 22 · 높이 29 — 웹 핀과 같다(윤곽 좌표계 26×34 를 폭 22 에 맞춘 값).
   static const size = Size(22, 29);
 
-  /// 웹의 정차지 색(`MARKER_COLOR.stop`)과 같은 값.
-  static const color = Color(0xFF16A34A);
+  /// 정차지 핀의 색 — 디자인 토큰. 지도 어댑터는 `BuildContext` 없이 핀을 이미지로 굳혀 테마를 못 읽는다.
+  static const Color color = BaraedaPalette.green600;
 
-  /// 미경유 핀의 색 — 웹(`SKIPPED_PIN_COLOR`)과 같은 값.
-  static const skippedColor = Color(0xFF9CA3AF);
+  /// 미경유 핀의 색 — 디자인 토큰.
+  static const Color skippedColor = BaraedaPalette.stone400;
 
   /// 미경유 핀의 불투명도 — 웹과 같은 값.
   static const skippedOpacity = 0.55;

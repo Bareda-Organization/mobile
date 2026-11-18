@@ -1,8 +1,10 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 /// 기기 보안 저장소(Keychain · EncryptedSharedPreferences)의 칸 하나 — 키 하나를 읽고 쓰고 지운다.
 ///
-/// 이 칸에 두는 값은 부가 기능이다. 그래서 기본은 저장소 오류를 삼킨다 — 읽기는 `null`("저장된 값 없음"),
+/// 이 칸에 두는 값은 부가 기능이다. 그래서 기본은 저장소 오류(`PlatformException`)만 삼킨다 —
+/// 코드 결함은 삼키지 않는다. 읽기는 `null`("저장된 값 없음"),
 /// 쓰기 · 지우기는 없던 일로 한다. 읽지 못한 것과 값이 없는 것을 구분해야 하면 `strict: true` 로 부른다.
 /// 앱의 `*Store` / `*Storage` 는 이 칸 위의 얇은 접근자다(값 해석만 맡는다).
 class SecureSlot {
@@ -18,7 +20,7 @@ class SecureSlot {
   Future<String?> read({bool strict = false}) async {
     try {
       return await _storage.read(key: key);
-    } on Object {
+    } on PlatformException {
       if (strict) rethrow;
       return null;
     }
@@ -28,7 +30,7 @@ class SecureSlot {
   Future<void> write(String value, {bool strict = false}) async {
     try {
       await _storage.write(key: key, value: value);
-    } on Object {
+    } on PlatformException {
       if (strict) rethrow;
     }
   }
@@ -37,7 +39,7 @@ class SecureSlot {
   Future<void> delete() async {
     try {
       await _storage.delete(key: key);
-    } on Object {
+    } on PlatformException {
       // 지우지 못해도 호출한 쪽은 계속된다.
     }
   }

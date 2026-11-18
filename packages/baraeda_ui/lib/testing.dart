@@ -2,6 +2,9 @@
 /// 제품 코드는 가져오지 않는다(`baraeda_ui.dart` 배럴에 넣지 않는다).
 library;
 
+// flutter_test 는 dev 의존이다 — 이 파일은 시험에서만 가져오므로 제품 빌드에는 들어가지 않는다.
+// ignore_for_file: depend_on_referenced_packages
+
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';

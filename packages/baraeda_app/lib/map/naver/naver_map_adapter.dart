@@ -4,6 +4,7 @@ import 'package:baraeda_app/map/map_surface.dart';
 import 'package:baraeda_app/map/marker_motion_controller.dart';
 import 'package:baraeda_app/map/naver/naver_map_init.dart';
 import 'package:baraeda_core/baraeda_core.dart';
+import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
@@ -51,8 +52,8 @@ class _NaverMapAdapterState extends State<NaverMapAdapter>
   static const _cameraFollowDuration = Duration(milliseconds: 1800);
 
   /// 아이콘이 없는 승하차지 핀의 색 — 디자인 시스템의 `statusMoving`(앰버)과 같은 계열로, 버스 핀(기본 초록)과 갈린다.
-  /// 지도 어댑터는 `BuildContext` 없이 마커를 만들어 토큰을 직접 읽지 못해 값을 한 곳에 둔다.
-  static const _stopMarkerTint = Color(0xFFE08A00);
+  /// 지도 어댑터는 `BuildContext` 없이 마커를 만들어 의미 색을 못 읽어 원시 팔레트를 가리킨다.
+  static const Color _stopMarkerTint = BaraedaPalette.amber600;
 
   /// 빌드 · 실행 시점에 `--dart-define=NAVER_MAP_CLIENT_ID=<값>` 으로 주입한다. 실제 키 값은 어디에도
   /// 커밋하지 않는다.
@@ -179,7 +180,7 @@ class _NaverMapAdapterState extends State<NaverMapAdapter>
             snapshot.hasError) {
           final placeholder = widget.options.placeholderBuilder;
           return placeholder == null
-              ? const ColoredBox(color: Color(0xFFE0E0E0))
+              ? const ColoredBox(color: BaraedaPalette.stone200)
               : placeholder(context, snapshot.error);
         }
 
