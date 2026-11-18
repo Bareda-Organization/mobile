@@ -12,6 +12,8 @@ dependencies:
     sdk: flutter
 
 dev_dependencies:
+  baraeda_core:
+    path: ../baraeda_core # 시험 전용 — 위젯 규칙 검사기(widget_rules.dart)
   flutter_test:
     sdk: flutter # lib/testing.dart(시험 전용 도우미)가 쓴다 — 앱 시험은 자기 dev 의존으로 받는다
   very_good_analysis: ^11.0.0
