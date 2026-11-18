@@ -7,6 +7,7 @@ import 'package:baraeda_core/baraeda_core.dart';
 import 'package:baraeda_core/testing.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:manager_app/app/app.dart';
 import 'package:manager_app/app/di.dart';
@@ -33,6 +34,10 @@ void main() {
   // 토큰을 B 서버에 들고 가는 셈이 되어 항상 실패한다(원인 확정 — gate-m1.md).
   final baseUrl = requireRealBackendBaseUrl();
   late bool backendReachable;
+
+  // 보안 저장소 플러그인이 없는 시험 환경이라 메모리 대역을 깐다 — 저장소 슬롯은 플랫폼 예외만
+  // 삼키므로, 대역이 없으면 로그인 뒤 저장이 플러그인 부재 예외로 시험을 실패시킨다.
+  setUp(() => FlutterSecureStorage.setMockInitialValues({}));
 
   setUpAll(() async {
     // `flutter test` 는 `TestWidgetsFlutterBinding` 초기화 시점에
