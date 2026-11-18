@@ -1,5 +1,5 @@
-import 'package:manager_app/features/delay/data/models/delay_request.dart';
-import 'package:manager_app/features/delay/data/models/delay_result.dart';
+import 'package:manager_app/features/delay/domain/models/delay_request.dart';
+import 'package:manager_app/features/delay/domain/models/delay_result.dart';
 
 /// §4.9 지연 알림 — 동승자 전용(role_policy.dart `canSendDelayNotification`).
 // 메서드가 하나뿐이지만 `di.dart` 의 Provider<XRepository> 조립 지점과

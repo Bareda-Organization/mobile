@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:manager_app/features/offline_queue/data/models/pending_request_summary.dart';
+import 'package:manager_app/features/offline_queue/domain/models/pending_request_summary.dart';
 
 /// 859 — 도착 처리 요청이 큐 화면에서 사람이 읽는 이름을 갖고, 운행 화면이 승하차지를 가릴 수 있다.
 void main() {

@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import 'package:manager_app/features/home/data/models/manager_run.dart';
+import 'package:manager_app/features/home/domain/models/manager_run.dart';
 
 /// API_SPEC §4.1 — `GET /manager/runs`.
 class ManagerRunApi {

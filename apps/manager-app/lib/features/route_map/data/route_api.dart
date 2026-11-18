@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import 'package:manager_app/features/route_map/data/models/route_response.dart';
+import 'package:manager_app/features/route_map/domain/models/route_response.dart';
 
 /// API_SPEC §4.3.
 class RouteApi {

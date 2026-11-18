@@ -13,13 +13,13 @@ import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/core/auth/user_role.dart';
 import 'package:manager_app/core/launcher/device_launchers.dart';
 import 'package:manager_app/core/run/run_enums.dart';
-import 'package:manager_app/features/offline_queue/data/models/pending_request_summary.dart';
 import 'package:manager_app/features/offline_queue/data/offline_queue_database.dart';
 import 'package:manager_app/features/offline_queue/data/offline_queue_repository_impl.dart';
-import 'package:manager_app/features/offline_queue/data/unsent_emergency_store.dart';
+import 'package:manager_app/features/offline_queue/domain/models/pending_request_summary.dart';
+import 'package:manager_app/features/offline_queue/domain/unsent_emergency_store.dart';
 import 'package:manager_app/features/offline_queue/presentation/offline_queue_auto_sync.dart';
 import 'package:manager_app/features/offline_queue/presentation/request_notices.dart';
-import 'package:manager_app/features/roster/data/models/roster_response.dart';
+import 'package:manager_app/features/roster/domain/models/roster_response.dart';
 import 'package:manager_app/features/roster/presentation/roster_providers.dart';
 
 import '../../support/fake_unsent_emergency_store.dart';

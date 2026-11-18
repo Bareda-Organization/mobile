@@ -1,4 +1,4 @@
-import 'package:manager_app/features/offline_queue/data/models/pending_request_summary.dart';
+import 'package:manager_app/features/offline_queue/domain/models/pending_request_summary.dart';
 import 'package:manager_app/features/offline_queue/domain/send_outcome.dart';
 
 /// 오프라인 큐 (M-06, API_SPEC §1.7 대상 ①승하차 처리 ②비상 발신).

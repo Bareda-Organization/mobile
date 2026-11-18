@@ -1,4 +1,4 @@
-import 'package:manager_app/features/route_map/data/models/route_response.dart';
+import 'package:manager_app/features/route_map/domain/models/route_response.dart';
 
 /// §4.3 실시간 노선 조회(기사·동승자 둘 다 호출 가능). 조회 전용이라
 /// `RosterRepository` 와 달리 쓰기 메서드가 없다.

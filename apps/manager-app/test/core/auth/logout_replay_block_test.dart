@@ -17,7 +17,6 @@ import 'package:manager_app/core/auth/user_role.dart';
 import 'package:manager_app/features/auth/domain/auth_repository.dart';
 import 'package:manager_app/features/home/data/run_summary_store.dart';
 import 'package:manager_app/features/offline_queue/data/offline_queue_database.dart';
-import 'package:manager_app/features/offline_queue/data/unsent_emergency_store.dart';
 
 import '../../support/fake_academy_contact_store.dart';
 import '../../support/fake_last_session_store.dart';

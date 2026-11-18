@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:manager_app/core/run/run_enums.dart';
-import 'package:manager_app/features/roster/data/models/roster_response.dart';
+import 'package:manager_app/features/roster/domain/models/roster_response.dart';
 import 'package:manager_app/features/roster/presentation/widgets/revert_confirm_sheet.dart';
 
 /// Ruling 308 — 승차·하차 취소 알림은 폐지됐다. 되돌리기 확인 창이 "알림이 새로 나가요" 라고 말하지 않는다.

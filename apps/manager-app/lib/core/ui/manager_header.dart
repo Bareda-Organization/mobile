@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:manager_app/core/auth/me_provider.dart';
 import 'package:manager_app/features/emergency/presentation/widgets/emergency_button.dart';
-import 'package:manager_app/features/home/data/models/manager_run.dart';
+import 'package:manager_app/features/home/domain/models/manager_run.dart';
 
 /// 매니저 앱 머리줄 — 제목 + 부제 한 줄 + 오른쪽 비상 단추(시안 `.m-appbar`).
 ///

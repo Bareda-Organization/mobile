@@ -1,4 +1,4 @@
-import 'package:manager_app/features/position/data/models/position_request.dart';
+import 'package:manager_app/features/position/domain/models/position_request.dart';
 
 /// §4.12 위치 업로드(LOC-01) — 기사 전용, `run_status=moving` 에서만.
 ///

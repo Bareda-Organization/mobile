@@ -1,4 +1,4 @@
-import 'package:manager_app/features/emergency/data/models/emergency_type.dart';
+import 'package:manager_app/features/emergency/domain/models/emergency_type.dart';
 
 /// `GET /runs/{runId}/emergencies` 의 `items[]` 원소 — §4.15.
 ///

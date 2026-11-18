@@ -1,6 +1,7 @@
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:baraeda_core/testing.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/auth/account_session.dart';
@@ -8,8 +9,8 @@ import 'package:manager_app/core/auth/user_role.dart';
 import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/features/auth/domain/auth_repository.dart';
-import 'package:manager_app/features/home/data/models/manager_run.dart';
 import 'package:manager_app/features/home/domain/manager_run_repository.dart';
+import 'package:manager_app/features/home/domain/models/manager_run.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
 import 'package:manager_app/features/position/presentation/position_transmitter.dart';
 
@@ -46,6 +47,10 @@ class _RunsRepository implements ManagerRunRepository {
 /// 앱을 완전히 껐다 켜면 메모리 값인 선택 회차가 사라져 운행 중이어도 위치 송신이 멎는다 —
 /// 로그인 복구 직후 오늘 운행 중(`moving`)이고 내가 기사로 배치된 회차를 다시 골라 송신기를 잇는다.
 void main() {
+  // 로그인 복구가 기기 보안 저장소에 쓴다 — 시험에서는 메모리 대역을 쓴다.
+  TestWidgetsFlutterBinding.ensureInitialized();
+  setUp(() => FlutterSecureStorage.setMockInitialValues({}));
+
   Future<ProviderContainer> recover({
     required List<ManagerRun> runs,
     AccountRole role = AccountRole.driver,

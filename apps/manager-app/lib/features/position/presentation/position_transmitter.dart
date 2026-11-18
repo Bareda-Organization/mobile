@@ -10,7 +10,7 @@ import 'package:manager_app/core/location/position_source.dart';
 import 'package:manager_app/core/run/manager_run_channel.dart';
 import 'package:manager_app/core/run/run_termination_provider.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
-import 'package:manager_app/features/position/data/models/position_request.dart';
+import 'package:manager_app/features/position/domain/models/position_request.dart';
 import 'package:manager_app/features/position/presentation/position_link.dart';
 import 'package:meta/meta.dart';
 

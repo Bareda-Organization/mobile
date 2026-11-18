@@ -10,9 +10,9 @@ import 'package:manager_app/core/auth/user_role.dart';
 import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/core/time/run_time_labels.dart';
-import 'package:manager_app/features/delay/data/models/delay_request.dart';
-import 'package:manager_app/features/delay/data/models/delay_result.dart';
 import 'package:manager_app/features/delay/domain/delay_repository.dart';
+import 'package:manager_app/features/delay/domain/models/delay_request.dart';
+import 'package:manager_app/features/delay/domain/models/delay_result.dart';
 import 'package:manager_app/features/delay/presentation/delay_screen.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
 

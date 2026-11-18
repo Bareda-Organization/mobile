@@ -28,11 +28,14 @@ import 'package:manager_app/features/home/domain/manager_run_repository.dart';
 import 'package:manager_app/features/navigation/data/kakao_navi_launcher.dart';
 import 'package:manager_app/features/navigation/data/navigation_api.dart';
 import 'package:manager_app/features/navigation/data/navigation_repository_impl.dart';
+import 'package:manager_app/features/navigation/domain/kakao_navi_launcher.dart';
 import 'package:manager_app/features/navigation/domain/navigation_repository.dart';
 import 'package:manager_app/features/offline_queue/data/offline_queue_database.dart';
 import 'package:manager_app/features/offline_queue/data/offline_queue_repository_impl.dart';
+import 'package:manager_app/features/offline_queue/data/secure_unsent_emergency_store.dart';
 import 'package:manager_app/features/offline_queue/domain/offline_queue_repository.dart';
 import 'package:manager_app/features/offline_queue/domain/replay_gate.dart';
+import 'package:manager_app/features/offline_queue/domain/unsent_emergency_store.dart';
 import 'package:manager_app/features/offline_queue/presentation/request_notices.dart';
 import 'package:manager_app/features/position/data/position_api.dart';
 import 'package:manager_app/features/position/data/position_repository_impl.dart';
@@ -333,3 +336,15 @@ final notificationRepositoryProvider = Provider<NotificationRepository>((ref) {
     notificationApi: ref.watch(notificationApiProvider),
   );
 });
+
+/// 시험은 이 provider 를 메모리 대역으로 바꾼다(플랫폼 채널이 없다).
+final Provider<UnsentEmergencyStore> unsentEmergencyStoreProvider =
+    Provider<UnsentEmergencyStore>((ref) => const SecureUnsentEmergencyStore());
+
+/// 승하차·도착 거절 안내의 저장소(Ruling 892) — 시험은 이 provider 도 메모리 대역으로 바꾼다.
+final Provider<UnsentEmergencyStore> droppedTallyStoreProvider =
+    Provider<UnsentEmergencyStore>(
+      (ref) => const SecureUnsentEmergencyStore(
+        key: SecureUnsentEmergencyStore.droppedKey,
+      ),
+    );

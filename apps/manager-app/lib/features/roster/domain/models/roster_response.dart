@@ -1,6 +1,6 @@
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:manager_app/core/run/run_enums.dart';
-import 'package:manager_app/features/roster/data/models/no_show_contact_request.dart';
+import 'package:manager_app/features/roster/domain/models/no_show_contact_request.dart';
 
 /// 승하차지 정류장 `change` 표시 — §4.2. `added`(초록) · `skipped`(빨강
 /// 취소선, 순번 유지). 값이 없으면 변경 없음.

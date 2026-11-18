@@ -1,5 +1,5 @@
 import 'package:manager_app/core/time/wire_time.dart';
-import 'package:manager_app/features/emergency/data/models/emergency_type.dart';
+import 'package:manager_app/features/emergency/domain/models/emergency_type.dart';
 
 /// `POST /runs/{runId}/emergency` 요청 본문 — §4.14.
 ///

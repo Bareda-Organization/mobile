@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
-import 'package:manager_app/features/run_end/data/models/report_request.dart';
-import 'package:manager_app/features/run_end/data/models/report_result.dart';
+import 'package:manager_app/features/run_end/domain/models/report_request.dart';
+import 'package:manager_app/features/run_end/domain/models/report_result.dart';
 
 /// API_SPEC §4.13.
 class ReportsApi {

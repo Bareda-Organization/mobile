@@ -1,7 +1,7 @@
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:manager_app/features/home/data/manager_run_api.dart';
-import 'package:manager_app/features/home/data/models/manager_run.dart';
 import 'package:manager_app/features/home/domain/manager_run_repository.dart';
+import 'package:manager_app/features/home/domain/models/manager_run.dart';
 
 /// [ManagerRunRepository] 구현 — `ManagerRunApi` 를 감싸 `DioException` 을
 /// `Failure` 로 옮긴다(`guardDio`, `AuthRepositoryImpl` 과 같은 패턴).

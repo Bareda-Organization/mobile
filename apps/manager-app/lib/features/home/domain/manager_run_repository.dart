@@ -1,4 +1,4 @@
-import 'package:manager_app/features/home/data/models/manager_run.dart';
+import 'package:manager_app/features/home/domain/models/manager_run.dart';
 
 /// ManagerHome 화면이 보는 계약 — `presentation` 은 `ManagerRunApi`(data)를
 /// 직접 보지 않는다(CONVENTIONS_FLUTTER.md §2).

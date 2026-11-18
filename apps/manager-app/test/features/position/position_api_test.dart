@@ -3,8 +3,8 @@ import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:manager_app/core/constants/position_constants.dart';
-import 'package:manager_app/features/position/data/models/position_request.dart';
 import 'package:manager_app/features/position/data/position_api.dart';
+import 'package:manager_app/features/position/domain/models/position_request.dart';
 
 /// 나간 요청의 옵션을 기록하는 어댑터 — 요청별 시간 제한이 실제로 실렸는지 본다.
 class _RecordingAdapter implements HttpClientAdapter {

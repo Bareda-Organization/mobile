@@ -2,8 +2,8 @@ import 'package:baraeda_core/baraeda_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/network/failure_messages.dart';
-import 'package:manager_app/features/navigation/data/kakao_navi_launcher.dart';
-import 'package:manager_app/features/navigation/data/models/navigation_scope.dart';
+import 'package:manager_app/features/navigation/domain/kakao_navi_launcher.dart';
+import 'package:manager_app/features/navigation/domain/models/navigation_scope.dart';
 
 /// 외부 내비를 연 결과 — 화면이 문구로 옮긴다. 셋 다 비어 있으면 잘 열렸다.
 class NavigationOpenResult {

@@ -11,7 +11,7 @@ import 'package:manager_app/core/launcher/device_launchers.dart';
 import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/core/ui/academy_call_card.dart';
-import 'package:manager_app/features/home/data/models/manager_run.dart';
+import 'package:manager_app/features/home/domain/models/manager_run.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
 
 /// 머리말 비상 버튼(M-15 · UF-X-08) — 기사·동승자 모두, 홈·운행·명단 세 화면 머리말에

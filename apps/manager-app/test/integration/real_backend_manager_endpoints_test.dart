@@ -12,22 +12,23 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/features/drive_mode/data/drive_mode_api.dart';
 import 'package:manager_app/features/drive_mode/data/drive_mode_repository_impl.dart';
-import 'package:manager_app/features/drive_mode/data/models/arrive_stop_result.dart';
+import 'package:manager_app/features/drive_mode/domain/models/arrive_stop_result.dart';
 import 'package:manager_app/features/offline_queue/data/offline_queue_database.dart';
 import 'package:manager_app/features/offline_queue/data/offline_queue_repository_impl.dart';
 import 'package:manager_app/features/offline_queue/domain/offline_queue_repository.dart';
-import 'package:manager_app/features/position/data/models/position_request.dart';
 import 'package:manager_app/features/position/data/position_api.dart';
 import 'package:manager_app/features/position/data/position_repository_impl.dart';
-import 'package:manager_app/features/roster/data/models/boarding_update_request.dart';
-import 'package:manager_app/features/roster/data/models/no_show_contact_request.dart';
-import 'package:manager_app/features/roster/data/models/rider_update_result.dart';
-import 'package:manager_app/features/roster/data/models/roster_response.dart';
+import 'package:manager_app/features/position/domain/models/position_request.dart';
 import 'package:manager_app/features/roster/data/roster_api.dart';
+import 'package:manager_app/features/roster/domain/models/boarding_update_request.dart';
+import 'package:manager_app/features/roster/domain/models/no_show_contact_request.dart';
+import 'package:manager_app/features/roster/domain/models/rider_update_result.dart';
+import 'package:manager_app/features/roster/domain/models/roster_response.dart';
 import 'package:manager_app/features/route_map/data/route_api.dart';
-import 'package:manager_app/features/run_end/data/models/report_request.dart';
-import 'package:manager_app/features/run_end/data/models/report_result.dart';
+import 'package:manager_app/features/run_end/domain/models/report_request.dart';
+import 'package:manager_app/features/run_end/domain/models/report_result.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
+
 import '../support/real_backend_target.dart';
 
 /// `real_backend_run_flow_test.dart` 와 같은 가짜 보안 저장소 — 이 파일은

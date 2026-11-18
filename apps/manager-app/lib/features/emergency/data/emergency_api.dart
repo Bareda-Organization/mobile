@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
-import 'package:manager_app/features/emergency/data/models/emergency_item.dart';
-import 'package:manager_app/features/emergency/data/models/emergency_raise_request.dart';
-import 'package:manager_app/features/emergency/data/models/emergency_raise_result.dart';
+import 'package:manager_app/features/emergency/domain/models/emergency_item.dart';
+import 'package:manager_app/features/emergency/domain/models/emergency_raise_request.dart';
+import 'package:manager_app/features/emergency/domain/models/emergency_raise_result.dart';
 
 /// API_SPEC §4.14(발신·취소)·§4.15(목록).
 class EmergencyApi {

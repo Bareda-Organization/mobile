@@ -13,12 +13,12 @@ import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/features/drive_mode/presentation/drive_mode_providers.dart';
 import 'package:manager_app/features/drive_mode/presentation/drive_mode_screen.dart';
-import 'package:manager_app/features/home/data/models/manager_run.dart';
+import 'package:manager_app/features/home/domain/models/manager_run.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
-import 'package:manager_app/features/position/data/models/position_request.dart';
+import 'package:manager_app/features/position/domain/models/position_request.dart';
 import 'package:manager_app/features/position/domain/position_repository.dart';
-import 'package:manager_app/features/roster/data/models/roster_response.dart';
-import 'package:manager_app/features/route_map/data/models/route_response.dart';
+import 'package:manager_app/features/roster/domain/models/roster_response.dart';
+import 'package:manager_app/features/route_map/domain/models/route_response.dart';
 import 'package:manager_app/features/route_map/presentation/route_providers.dart';
 
 /// 운행 화면 가운데 지도. 실제 네이버 SDK 는 위젯 시험에서 그려지지 않으므로

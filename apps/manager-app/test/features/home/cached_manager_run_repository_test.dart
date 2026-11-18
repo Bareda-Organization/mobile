@@ -4,8 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:manager_app/core/auth/user_role.dart';
 import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/features/home/data/cached_manager_run_repository.dart';
-import 'package:manager_app/features/home/data/models/manager_run.dart';
 import 'package:manager_app/features/home/domain/manager_run_repository.dart';
+import 'package:manager_app/features/home/domain/models/manager_run.dart';
 
 import '../../support/fake_run_summary_store.dart';
 import '../../support/manager_run_fixture.dart';

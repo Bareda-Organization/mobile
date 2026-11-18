@@ -2,7 +2,7 @@ import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/core/time/run_time_labels.dart';
-import 'package:manager_app/features/roster/data/models/roster_response.dart';
+import 'package:manager_app/features/roster/domain/models/roster_response.dart';
 
 /// 다음 승하차지 큰 카드 — `다음 승하차지 · 3번` + 이름(나눔명조 큰 글자) + 부제 + `명단 ›`(조회 전용 명단).
 class NextStopCard extends StatelessWidget {

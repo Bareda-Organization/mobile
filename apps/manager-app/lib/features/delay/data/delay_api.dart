@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
-import 'package:manager_app/features/delay/data/models/delay_request.dart';
-import 'package:manager_app/features/delay/data/models/delay_result.dart';
+import 'package:manager_app/features/delay/domain/models/delay_request.dart';
+import 'package:manager_app/features/delay/domain/models/delay_result.dart';
 
 /// API_SPEC §4.9.
 class DelayApi {

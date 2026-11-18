@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/features/drive_mode/presentation/drive_mode_providers.dart';
-import 'package:manager_app/features/roster/data/models/roster_response.dart';
+import 'package:manager_app/features/roster/domain/models/roster_response.dart';
 
 /// BR-002 · Ruling 327 — 서버가 §4.2 명단 맨 뒤에 학원 항목(`is_destination`,
 /// 학생 없음)을 싣기 시작해도 앱은 코드 수정 없이 그 항목을 "다음 도착 처리"

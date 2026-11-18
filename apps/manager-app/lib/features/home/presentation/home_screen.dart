@@ -15,7 +15,7 @@ import 'package:manager_app/core/time/run_time_labels.dart';
 import 'package:manager_app/core/ui/academy_call_card.dart';
 import 'package:manager_app/core/ui/manager_header.dart';
 import 'package:manager_app/core/ui/saved_runs_notice.dart';
-import 'package:manager_app/features/home/data/models/manager_run.dart';
+import 'package:manager_app/features/home/domain/models/manager_run.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
 import 'package:manager_app/features/home/presentation/widgets/focus_run_card.dart';
 import 'package:manager_app/features/roster/presentation/widgets/change_ack_banner.dart';

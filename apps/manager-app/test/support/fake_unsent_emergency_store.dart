@@ -1,4 +1,4 @@
-import 'package:manager_app/features/offline_queue/data/unsent_emergency_store.dart';
+import 'package:manager_app/features/offline_queue/domain/unsent_emergency_store.dart';
 
 /// [UnsentEmergencyStore] 의 메모리 대역 — 시험에는 `flutter_secure_storage` 플랫폼 채널이 없다.
 /// 컨테이너를 새로 만들어도(앱 재시작) 같은 대역을 넘기면 값이 남는다.

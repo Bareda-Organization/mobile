@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
-import 'package:manager_app/features/route_map/data/models/route_response.dart';
+import 'package:manager_app/features/route_map/domain/models/route_response.dart';
 
 /// §4.3 실시간 노선 조회 — RouteMapScreen 전용 provider. `runId` 가 없으면
 /// (진입 전) 곧바로 실패시켜 "선택된 운행 없음"과 "서버 응답 없음"을

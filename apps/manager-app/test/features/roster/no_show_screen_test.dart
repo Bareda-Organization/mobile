@@ -6,8 +6,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
-import 'package:manager_app/features/roster/data/models/no_show_contact_request.dart';
-import 'package:manager_app/features/roster/data/models/roster_response.dart';
+import 'package:manager_app/features/roster/domain/models/no_show_contact_request.dart';
+import 'package:manager_app/features/roster/domain/models/roster_response.dart';
 import 'package:manager_app/features/roster/presentation/no_show_screen.dart';
 import 'package:manager_app/features/roster/presentation/roster_providers.dart';
 

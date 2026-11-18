@@ -8,13 +8,14 @@ import 'package:dio/dio.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/auth/account_session.dart';
 import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/core/auth/user_role.dart';
-import 'package:manager_app/features/offline_queue/data/models/pending_request_summary.dart';
 import 'package:manager_app/features/offline_queue/data/offline_queue_database.dart';
+import 'package:manager_app/features/offline_queue/domain/models/pending_request_summary.dart';
 import 'package:manager_app/features/offline_queue/domain/offline_queue_repository.dart';
 import 'package:manager_app/features/offline_queue/domain/send_outcome.dart';
 import 'package:manager_app/features/roster/data/roster_api.dart';
@@ -118,6 +119,10 @@ class _GatedRosterAdapter implements HttpClientAdapter {
 
 /// 기기에 남긴 개인정보(명단 · 특이사항)는 로그아웃·세션 만료에 **빠짐없이 먼저** 지운다.
 void main() {
+  // 로그인 복구가 기기 보안 저장소에 쓴다 — 시험에서는 메모리 대역을 쓴다.
+  TestWidgetsFlutterBinding.ensureInitialized();
+  setUp(() => FlutterSecureStorage.setMockInitialValues({}));
+
   late OfflineQueueDatabase database;
   late ProviderContainer container;
 

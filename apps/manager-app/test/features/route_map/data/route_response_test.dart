@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:manager_app/features/route_map/data/models/route_response.dart';
+import 'package:manager_app/features/route_map/domain/models/route_response.dart';
 
 /// 서버가 `road_path`·`fallback_used` 를 얹기 전 응답과 얹은 응답을 둘 다 읽는다.
 void main() {

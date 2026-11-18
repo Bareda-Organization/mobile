@@ -3,7 +3,7 @@ import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/auth/user_role.dart';
 import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
-import 'package:manager_app/features/home/data/models/manager_run.dart';
+import 'package:manager_app/features/home/domain/models/manager_run.dart';
 
 /// §4.1 오늘의 담당 회차 목록 — `date` 미전달로 서버 기본값(`today`)을 쓴다.
 /// `.autoDispose` 를 쓰지 않는다 — 화면을 떠났다 돌아와도(예: DriveMode →

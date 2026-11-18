@@ -12,8 +12,8 @@ import 'package:manager_app/core/ui/manager_header.dart';
 import 'package:manager_app/features/offline_queue/domain/send_outcome.dart';
 import 'package:manager_app/features/offline_queue/presentation/offline_queue_providers.dart';
 import 'package:manager_app/features/roster/presentation/roster_providers.dart';
-import 'package:manager_app/features/run_end/data/models/report_request.dart';
-import 'package:manager_app/features/run_end/data/models/report_result.dart';
+import 'package:manager_app/features/run_end/domain/models/report_request.dart';
+import 'package:manager_app/features/run_end/domain/models/report_result.dart';
 
 /// 현장 상황 보고(§4.13, M-14) — 도로 통제 · 차량 문제 · 기타([guardianAbsent] 가 아닐 때, 시안
 /// `report`) 또는

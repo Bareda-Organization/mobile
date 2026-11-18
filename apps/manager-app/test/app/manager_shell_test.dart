@@ -13,7 +13,7 @@ import 'package:manager_app/core/auth/user_role.dart';
 import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
-import 'package:manager_app/features/roster/data/models/roster_response.dart';
+import 'package:manager_app/features/roster/domain/models/roster_response.dart';
 import 'package:manager_app/features/roster/presentation/roster_providers.dart';
 
 import '../support/manager_run_fixture.dart';

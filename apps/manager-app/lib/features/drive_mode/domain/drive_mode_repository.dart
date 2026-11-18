@@ -1,5 +1,5 @@
-import 'package:manager_app/features/drive_mode/data/models/arrive_stop_result.dart';
-import 'package:manager_app/features/drive_mode/data/models/start_run_result.dart';
+import 'package:manager_app/features/drive_mode/domain/models/arrive_stop_result.dart';
+import 'package:manager_app/features/drive_mode/domain/models/start_run_result.dart';
 import 'package:manager_app/features/offline_queue/domain/send_outcome.dart';
 
 /// §4.4 운행 시작 · §4.5 승하차지 도착 처리 — 기사 전용(role_policy.dart

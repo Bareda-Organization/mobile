@@ -3,7 +3,7 @@ import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:manager_app/core/time/run_time_labels.dart';
-import 'package:manager_app/features/roster/data/models/roster_response.dart';
+import 'package:manager_app/features/roster/domain/models/roster_response.dart';
 import 'package:manager_app/features/roster/presentation/roster_photo.dart';
 
 /// 탑승 · 대기 · 미승차 · 미등원 — 나눔명조 큰 숫자 4칸(시안 `.m-stats`).

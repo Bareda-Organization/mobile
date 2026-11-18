@@ -24,15 +24,15 @@ import 'package:manager_app/features/drive_mode/presentation/drive_mode_provider
 import 'package:manager_app/features/drive_mode/presentation/widgets/bottom_notice_stack.dart';
 import 'package:manager_app/features/drive_mode/presentation/widgets/drive_map_panel.dart';
 import 'package:manager_app/features/drive_mode/presentation/widgets/stop_cards.dart';
-import 'package:manager_app/features/home/data/models/manager_run.dart';
+import 'package:manager_app/features/home/domain/models/manager_run.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
-import 'package:manager_app/features/navigation/data/models/navigation_scope.dart';
+import 'package:manager_app/features/navigation/domain/models/navigation_scope.dart';
 import 'package:manager_app/features/navigation/presentation/open_navigation.dart';
 import 'package:manager_app/features/offline_queue/domain/send_outcome.dart';
 import 'package:manager_app/features/offline_queue/presentation/offline_queue_providers.dart';
 import 'package:manager_app/features/position/presentation/position_link.dart';
 import 'package:manager_app/features/position/presentation/position_transmitter.dart';
-import 'package:manager_app/features/roster/data/models/roster_response.dart';
+import 'package:manager_app/features/roster/domain/models/roster_response.dart';
 import 'package:manager_app/features/roster/presentation/widgets/change_ack_banner.dart';
 
 /// DriveMode — 운행 시작(§4.4) · 승하차지 도착 처리(§4.5), 기사 전용

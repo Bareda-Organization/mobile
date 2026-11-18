@@ -1,10 +1,10 @@
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:manager_app/core/network/guard.dart';
 import 'package:manager_app/features/emergency/data/emergency_api.dart';
-import 'package:manager_app/features/emergency/data/models/emergency_item.dart';
-import 'package:manager_app/features/emergency/data/models/emergency_raise_request.dart';
-import 'package:manager_app/features/emergency/data/models/emergency_raise_result.dart';
 import 'package:manager_app/features/emergency/domain/emergency_repository.dart';
+import 'package:manager_app/features/emergency/domain/models/emergency_item.dart';
+import 'package:manager_app/features/emergency/domain/models/emergency_raise_request.dart';
+import 'package:manager_app/features/emergency/domain/models/emergency_raise_result.dart';
 import 'package:manager_app/features/offline_queue/domain/offline_queue_repository.dart';
 import 'package:manager_app/features/offline_queue/domain/send_outcome.dart';
 

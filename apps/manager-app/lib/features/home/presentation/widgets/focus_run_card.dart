@@ -2,7 +2,7 @@ import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/core/time/run_time_labels.dart';
-import 'package:manager_app/features/home/data/models/manager_run.dart';
+import 'package:manager_app/features/home/domain/models/manager_run.dart';
 
 /// 홈 맨 위 큰 카드 — 지금 다룰 회차 하나(시안 `home-driver` · `home-escort`).
 ///

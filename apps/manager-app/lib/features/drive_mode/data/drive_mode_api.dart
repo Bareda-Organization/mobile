@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
-import 'package:manager_app/features/drive_mode/data/models/arrive_stop_result.dart';
-import 'package:manager_app/features/drive_mode/data/models/start_run_result.dart';
+import 'package:manager_app/features/drive_mode/domain/models/arrive_stop_result.dart';
+import 'package:manager_app/features/drive_mode/domain/models/start_run_result.dart';
 
 /// API_SPEC §4.4·§4.5 — 두 호출 모두 본문이 없다.
 class DriveModeApi {

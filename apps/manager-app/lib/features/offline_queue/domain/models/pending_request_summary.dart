@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:manager_app/core/run/run_enums.dart';
-import 'package:manager_app/features/emergency/data/models/emergency_type.dart';
+import 'package:manager_app/features/emergency/domain/models/emergency_type.dart';
 
 /// 큐 화면(`offline_queue_screen.dart`)이 보여줄 대기 요청 한 건 — drift
 /// 가 생성한 행 타입(`PendingRequest`)을 그대로 노출하지 않고 옮겨,

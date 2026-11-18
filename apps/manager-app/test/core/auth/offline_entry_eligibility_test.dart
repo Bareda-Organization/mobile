@@ -13,9 +13,9 @@ import 'package:manager_app/core/auth/account_session.dart';
 import 'package:manager_app/core/auth/last_session_store.dart';
 import 'package:manager_app/features/auth/domain/auth_repository.dart';
 import 'package:manager_app/features/auth/presentation/login_screen.dart';
-import 'package:manager_app/features/home/data/models/manager_run.dart';
 import 'package:manager_app/features/home/data/run_summary_store.dart';
 import 'package:manager_app/features/home/domain/manager_run_repository.dart';
+import 'package:manager_app/features/home/domain/models/manager_run.dart';
 import 'package:manager_app/features/offline_queue/data/offline_queue_database.dart';
 
 import '../../support/fake_academy_contact_store.dart';

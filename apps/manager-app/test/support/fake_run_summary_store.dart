@@ -1,5 +1,5 @@
-import 'package:manager_app/features/home/data/models/manager_run.dart';
 import 'package:manager_app/features/home/data/run_summary_store.dart';
+import 'package:manager_app/features/home/domain/models/manager_run.dart';
 
 /// [RunSummaryStore] 의 메모리 대역 — 시험에는 `flutter_secure_storage` 플랫폼 채널이 없다.
 class FakeRunSummaryStore implements RunSummaryStore {

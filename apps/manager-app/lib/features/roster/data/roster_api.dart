@@ -1,10 +1,10 @@
 import 'package:dio/dio.dart';
-import 'package:manager_app/features/roster/data/models/ack_changes_result.dart';
-import 'package:manager_app/features/roster/data/models/boarding_update_request.dart';
-import 'package:manager_app/features/roster/data/models/no_show_contact_request.dart';
-import 'package:manager_app/features/roster/data/models/revert_result.dart';
-import 'package:manager_app/features/roster/data/models/rider_update_result.dart';
-import 'package:manager_app/features/roster/data/models/roster_response.dart';
+import 'package:manager_app/features/roster/domain/models/ack_changes_result.dart';
+import 'package:manager_app/features/roster/domain/models/boarding_update_request.dart';
+import 'package:manager_app/features/roster/domain/models/no_show_contact_request.dart';
+import 'package:manager_app/features/roster/domain/models/revert_result.dart';
+import 'package:manager_app/features/roster/domain/models/rider_update_result.dart';
+import 'package:manager_app/features/roster/domain/models/roster_response.dart';
 
 /// API_SPEC §4.2·§4.2.1·§4.6·§4.7·§4.8·§4.11.
 class RosterApi {

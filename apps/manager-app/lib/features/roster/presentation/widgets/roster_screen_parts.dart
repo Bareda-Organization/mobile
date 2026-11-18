@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/run/run_enums.dart';
-import 'package:manager_app/features/roster/data/models/roster_response.dart';
+import 'package:manager_app/features/roster/domain/models/roster_response.dart';
 
 // 명단 화면(`roster_screen.dart`)에서 떼어 낸 조각 — 연락 대기 띠 · 지난 승하차지 접힘 · 로딩 자리.
 

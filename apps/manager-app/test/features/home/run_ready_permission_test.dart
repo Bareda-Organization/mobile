@@ -11,11 +11,11 @@ import 'package:manager_app/core/location/position_source.dart';
 import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/features/drive_mode/presentation/drive_mode_providers.dart';
-import 'package:manager_app/features/home/data/models/manager_run.dart';
+import 'package:manager_app/features/home/domain/models/manager_run.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
 import 'package:manager_app/features/home/presentation/run_ready_screen.dart';
-import 'package:manager_app/features/roster/data/models/roster_response.dart';
-import 'package:manager_app/features/route_map/data/models/route_response.dart';
+import 'package:manager_app/features/roster/domain/models/roster_response.dart';
+import 'package:manager_app/features/route_map/domain/models/route_response.dart';
 import 'package:manager_app/features/route_map/presentation/route_providers.dart';
 
 /// 권한·서비스 상태를 시험이 바꿀 수 있는 가짜 위치 소스. [recheck] 를 불러야만 새 값을 반영한다 —

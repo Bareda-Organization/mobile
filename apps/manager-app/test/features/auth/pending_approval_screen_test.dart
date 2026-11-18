@@ -14,8 +14,8 @@ import 'package:manager_app/core/auth/last_session_store.dart';
 import 'package:manager_app/core/auth/user_role.dart';
 import 'package:manager_app/features/auth/domain/auth_repository.dart';
 import 'package:manager_app/features/auth/presentation/pending_approval_screen.dart';
-import 'package:manager_app/features/home/data/models/manager_run.dart';
 import 'package:manager_app/features/home/domain/manager_run_repository.dart';
+import 'package:manager_app/features/home/domain/models/manager_run.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
 import 'package:manager_app/features/home/presentation/home_screen.dart';
 

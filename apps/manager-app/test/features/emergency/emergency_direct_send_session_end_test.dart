@@ -9,10 +9,9 @@ import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/auth/academy_contact_store.dart';
 import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/features/emergency/data/emergency_api.dart';
-import 'package:manager_app/features/emergency/data/models/emergency_raise_request.dart';
-import 'package:manager_app/features/emergency/data/models/emergency_type.dart';
+import 'package:manager_app/features/emergency/domain/models/emergency_raise_request.dart';
+import 'package:manager_app/features/emergency/domain/models/emergency_type.dart';
 import 'package:manager_app/features/offline_queue/data/offline_queue_database.dart';
-import 'package:manager_app/features/offline_queue/data/unsent_emergency_store.dart';
 import 'package:manager_app/features/offline_queue/presentation/request_notices.dart';
 
 import '../../support/fake_academy_contact_store.dart';

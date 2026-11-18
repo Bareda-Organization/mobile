@@ -14,8 +14,8 @@ import 'package:manager_app/core/ui/choice_tile_grid.dart';
 import 'package:manager_app/core/ui/info_rows_card.dart';
 import 'package:manager_app/core/ui/limited_text_controller.dart';
 import 'package:manager_app/core/ui/manager_header.dart';
-import 'package:manager_app/features/delay/data/models/delay_request.dart';
-import 'package:manager_app/features/delay/data/models/delay_result.dart';
+import 'package:manager_app/features/delay/domain/models/delay_request.dart';
+import 'package:manager_app/features/delay/domain/models/delay_result.dart';
 import 'package:manager_app/features/roster/presentation/roster_providers.dart';
 
 /// DelayScreen — 지연 알림 전송 (API_SPEC §4.9, M-05), 동승자 전용

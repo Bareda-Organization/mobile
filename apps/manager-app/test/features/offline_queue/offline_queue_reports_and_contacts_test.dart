@@ -8,22 +8,22 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/run/run_enums.dart';
-import 'package:manager_app/features/offline_queue/data/models/pending_request_summary.dart';
 import 'package:manager_app/features/offline_queue/data/offline_queue_database.dart';
 import 'package:manager_app/features/offline_queue/data/offline_queue_repository_impl.dart';
+import 'package:manager_app/features/offline_queue/domain/models/pending_request_summary.dart';
 import 'package:manager_app/features/offline_queue/domain/send_outcome.dart';
 import 'package:manager_app/features/offline_queue/presentation/request_notices.dart';
-import 'package:manager_app/features/roster/data/models/no_show_contact_request.dart';
-import 'package:manager_app/features/roster/data/models/roster_response.dart';
 import 'package:manager_app/features/roster/data/roster_api.dart';
 import 'package:manager_app/features/roster/data/roster_cipher.dart';
 import 'package:manager_app/features/roster/data/roster_repository_impl.dart';
+import 'package:manager_app/features/roster/domain/models/no_show_contact_request.dart';
+import 'package:manager_app/features/roster/domain/models/roster_response.dart';
 import 'package:manager_app/features/roster/domain/roster_cache.dart';
 import 'package:manager_app/features/roster/presentation/roster_actions.dart';
 import 'package:manager_app/features/roster/presentation/roster_providers.dart';
-import 'package:manager_app/features/run_end/data/models/report_request.dart';
 import 'package:manager_app/features/run_end/data/reports_api.dart';
 import 'package:manager_app/features/run_end/data/reports_repository_impl.dart';
+import 'package:manager_app/features/run_end/domain/models/report_request.dart';
 
 import '../../support/fake_roster_key_store.dart';
 

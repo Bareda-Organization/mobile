@@ -10,7 +10,7 @@ import 'package:flutter_secure_storage_platform_interface/flutter_secure_storage
 import 'package:flutter_test/flutter_test.dart';
 import 'package:manager_app/features/delay/data/delay_api.dart';
 import 'package:manager_app/features/delay/data/delay_repository_impl.dart';
-import 'package:manager_app/features/delay/data/models/delay_request.dart';
+import 'package:manager_app/features/delay/domain/models/delay_request.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import '../support/real_backend_target.dart';
 

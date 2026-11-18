@@ -1,13 +1,13 @@
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:manager_app/features/offline_queue/domain/offline_queue_repository.dart';
 import 'package:manager_app/features/offline_queue/domain/send_outcome.dart';
-import 'package:manager_app/features/roster/data/models/ack_changes_result.dart';
-import 'package:manager_app/features/roster/data/models/boarding_update_request.dart';
-import 'package:manager_app/features/roster/data/models/no_show_contact_request.dart';
-import 'package:manager_app/features/roster/data/models/revert_result.dart';
-import 'package:manager_app/features/roster/data/models/rider_update_result.dart';
-import 'package:manager_app/features/roster/data/models/roster_response.dart';
 import 'package:manager_app/features/roster/data/roster_api.dart';
+import 'package:manager_app/features/roster/domain/models/ack_changes_result.dart';
+import 'package:manager_app/features/roster/domain/models/boarding_update_request.dart';
+import 'package:manager_app/features/roster/domain/models/no_show_contact_request.dart';
+import 'package:manager_app/features/roster/domain/models/revert_result.dart';
+import 'package:manager_app/features/roster/domain/models/rider_update_result.dart';
+import 'package:manager_app/features/roster/domain/models/roster_response.dart';
 import 'package:manager_app/features/roster/domain/roster_cache.dart';
 import 'package:manager_app/features/roster/domain/roster_repository.dart';
 

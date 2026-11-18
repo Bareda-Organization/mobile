@@ -1,8 +1,8 @@
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:manager_app/features/delay/data/delay_api.dart';
-import 'package:manager_app/features/delay/data/models/delay_request.dart';
-import 'package:manager_app/features/delay/data/models/delay_result.dart';
 import 'package:manager_app/features/delay/domain/delay_repository.dart';
+import 'package:manager_app/features/delay/domain/models/delay_request.dart';
+import 'package:manager_app/features/delay/domain/models/delay_result.dart';
 
 /// [DelayRepository] 구현 — `guardDio` 로 `DioException` 을 `Failure` 로
 /// 옮긴다.

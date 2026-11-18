@@ -8,10 +8,10 @@ import 'package:intl/intl.dart';
 import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/core/network/failure_messages.dart';
 import 'package:manager_app/core/ui/academy_call_card.dart';
-import 'package:manager_app/features/offline_queue/data/models/pending_request_summary.dart';
-import 'package:manager_app/features/offline_queue/data/unsent_emergency_store.dart';
+import 'package:manager_app/features/offline_queue/domain/models/pending_request_summary.dart';
+import 'package:manager_app/features/offline_queue/domain/unsent_emergency_store.dart';
 import 'package:manager_app/features/offline_queue/presentation/unsent_tally_notifiers.dart';
-import 'package:manager_app/features/roster/data/models/roster_response.dart';
+import 'package:manager_app/features/roster/domain/models/roster_response.dart';
 import 'package:manager_app/features/roster/presentation/roster_providers.dart';
 
 export 'package:manager_app/features/offline_queue/presentation/unsent_tally_notifiers.dart';

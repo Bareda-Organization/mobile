@@ -2,7 +2,7 @@ import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:manager_app/core/run/run_enums.dart';
-import 'package:manager_app/features/roster/data/models/roster_response.dart';
+import 'package:manager_app/features/roster/domain/models/roster_response.dart';
 import 'package:manager_app/features/roster/presentation/widgets/roster_widgets.dart';
 
 /// RST-02 · M-03 — 명단의 학생 행은 이름 · 반 · 연락처 · 혼자 귀가 여부 · 상태와 함께

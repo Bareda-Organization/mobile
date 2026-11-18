@@ -3,8 +3,8 @@ import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:manager_app/features/navigation/data/models/navigation_scope.dart';
 import 'package:manager_app/features/navigation/data/navigation_api.dart';
+import 'package:manager_app/features/navigation/domain/models/navigation_scope.dart';
 
 /// 서버처럼 `scope` 에 따라 다르게 답하는 가짜 어댑터 — 받은 요청을 기록한다.
 /// `next` 는 경유지 없이 다음 목적지 1곳, `remaining` 은 경유지 1곳 + 최종 목적지(API_SPEC §4.16).

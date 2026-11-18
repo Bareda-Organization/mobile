@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/core/time/wire_time.dart';
-import 'package:manager_app/features/emergency/data/models/emergency_raise_request.dart';
-import 'package:manager_app/features/emergency/data/models/emergency_type.dart';
-import 'package:manager_app/features/position/data/models/position_request.dart';
-import 'package:manager_app/features/roster/data/models/boarding_update_request.dart';
+import 'package:manager_app/features/emergency/domain/models/emergency_raise_request.dart';
+import 'package:manager_app/features/emergency/domain/models/emergency_type.dart';
+import 'package:manager_app/features/position/domain/models/position_request.dart';
+import 'package:manager_app/features/roster/domain/models/boarding_update_request.dart';
 
 /// API_SPEC §1.1 은 시각을 "ISO-8601 + 오프셋" 으로 규정한다.
 /// `DateTime.now()`(기기 로컬)를 그대로 `toIso8601String()` 하면 오프셋 없는

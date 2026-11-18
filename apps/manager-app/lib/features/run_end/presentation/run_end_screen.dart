@@ -11,10 +11,10 @@ import 'package:manager_app/core/run/run_termination_provider.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/core/time/run_time_labels.dart';
 import 'package:manager_app/core/ui/manager_header.dart';
-import 'package:manager_app/features/drive_mode/data/models/arrive_stop_result.dart';
-import 'package:manager_app/features/home/data/models/manager_run.dart';
+import 'package:manager_app/features/drive_mode/domain/models/arrive_stop_result.dart';
+import 'package:manager_app/features/home/domain/models/manager_run.dart';
 import 'package:manager_app/features/position/presentation/position_transmitter.dart';
-import 'package:manager_app/features/roster/data/models/roster_response.dart';
+import 'package:manager_app/features/roster/domain/models/roster_response.dart';
 import 'package:manager_app/features/roster/presentation/roster_providers.dart';
 
 /// 운행 종료(C-15, 시안 `run-end` · `run-end--pending`) — 마지막 승하차지 도착 처리 직후에 열린다.

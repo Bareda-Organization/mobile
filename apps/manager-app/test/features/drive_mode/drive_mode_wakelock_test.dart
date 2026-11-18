@@ -12,12 +12,12 @@ import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/core/wakelock/wakelock_port.dart';
 import 'package:manager_app/features/drive_mode/presentation/drive_mode_providers.dart';
 import 'package:manager_app/features/drive_mode/presentation/drive_mode_screen.dart';
-import 'package:manager_app/features/home/data/models/manager_run.dart';
+import 'package:manager_app/features/home/domain/models/manager_run.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
-import 'package:manager_app/features/position/data/models/position_request.dart';
+import 'package:manager_app/features/position/domain/models/position_request.dart';
 import 'package:manager_app/features/position/domain/position_repository.dart';
-import 'package:manager_app/features/roster/data/models/roster_response.dart';
-import 'package:manager_app/features/route_map/data/models/route_response.dart';
+import 'package:manager_app/features/roster/domain/models/roster_response.dart';
+import 'package:manager_app/features/route_map/domain/models/route_response.dart';
 import 'package:manager_app/features/route_map/presentation/route_providers.dart';
 
 /// 호출 여부·횟수만 기록하는 가짜 포트 — `PositionSource` 가짜와 같은

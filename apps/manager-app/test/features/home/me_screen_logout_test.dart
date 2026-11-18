@@ -11,10 +11,10 @@ import 'package:manager_app/core/auth/user_role.dart';
 import 'package:manager_app/core/run/run_enums.dart';
 import 'package:manager_app/features/auth/domain/auth_repository.dart';
 import 'package:manager_app/features/auth/presentation/login_screen.dart';
-import 'package:manager_app/features/home/data/models/manager_run.dart';
+import 'package:manager_app/features/home/domain/models/manager_run.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
 import 'package:manager_app/features/home/presentation/me_screen.dart';
-import 'package:manager_app/features/offline_queue/data/models/pending_request_summary.dart';
+import 'package:manager_app/features/offline_queue/domain/models/pending_request_summary.dart';
 import 'package:manager_app/features/offline_queue/domain/offline_queue_repository.dart';
 
 

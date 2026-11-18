@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/auth/academy_contact_store.dart';
-import 'package:manager_app/features/offline_queue/data/unsent_emergency_store.dart';
+import 'package:manager_app/features/offline_queue/domain/unsent_emergency_store.dart';
 import 'package:manager_app/features/offline_queue/presentation/request_notices.dart';
 
 import '../../support/fake_academy_contact_store.dart';

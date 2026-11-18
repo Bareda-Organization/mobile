@@ -8,7 +8,7 @@ import 'package:manager_app/core/run/selected_run_provider.dart';
 import 'package:manager_app/core/ui/map_legend.dart';
 import 'package:manager_app/features/emergency/presentation/widgets/emergency_button.dart';
 import 'package:manager_app/features/position/presentation/position_transmitter.dart';
-import 'package:manager_app/features/route_map/data/models/route_response.dart';
+import 'package:manager_app/features/route_map/domain/models/route_response.dart';
 import 'package:manager_app/features/route_map/presentation/route_providers.dart';
 
 /// RouteMapScreen — 실시간 노선 지도(§4.3, M-04·M-09). 버스기사·동승자

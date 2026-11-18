@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kakao_flutter_sdk_navi/kakao_flutter_sdk_navi.dart';
 import 'package:manager_app/features/navigation/data/kakao_navi_launcher.dart';
-import 'package:manager_app/features/navigation/data/models/navigation_route.dart';
+import 'package:manager_app/features/navigation/domain/models/navigation_route.dart';
 
 /// API_SPEC §4.16 응답 — 경유지 2개 + 목적지, 상한 때문에 잘린 경우.
 const _json = <String, dynamic>{

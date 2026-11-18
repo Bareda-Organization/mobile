@@ -1,10 +1,10 @@
 import 'package:manager_app/features/offline_queue/domain/send_outcome.dart';
-import 'package:manager_app/features/roster/data/models/ack_changes_result.dart';
-import 'package:manager_app/features/roster/data/models/boarding_update_request.dart';
-import 'package:manager_app/features/roster/data/models/no_show_contact_request.dart';
-import 'package:manager_app/features/roster/data/models/revert_result.dart';
-import 'package:manager_app/features/roster/data/models/rider_update_result.dart';
-import 'package:manager_app/features/roster/data/models/roster_response.dart';
+import 'package:manager_app/features/roster/domain/models/ack_changes_result.dart';
+import 'package:manager_app/features/roster/domain/models/boarding_update_request.dart';
+import 'package:manager_app/features/roster/domain/models/no_show_contact_request.dart';
+import 'package:manager_app/features/roster/domain/models/revert_result.dart';
+import 'package:manager_app/features/roster/domain/models/rider_update_result.dart';
+import 'package:manager_app/features/roster/domain/models/roster_response.dart';
 
 /// §4.2 명단 조회(기사·동승자) + §4.6·§4.7·§4.8 개인별 처리(동승자 전용,
 /// role_policy.dart `canDecideBoardingStatus`) + §4.11 변경 확인(기사·동승자

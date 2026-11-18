@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:manager_app/features/home/data/models/manager_run.dart';
+import 'package:manager_app/features/home/domain/models/manager_run.dart';
 
 /// 마지막으로 받은 **오늘 회차 목록의 요약**을 이 기기에 남겨 둔다.
 ///

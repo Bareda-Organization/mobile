@@ -1,6 +1,6 @@
 import 'package:manager_app/core/auth/user_role.dart';
 import 'package:manager_app/core/run/run_enums.dart';
-import 'package:manager_app/features/home/data/models/manager_run.dart';
+import 'package:manager_app/features/home/domain/models/manager_run.dart';
 
 /// 화면 시험이 쓰는 회차 한 건 — 필요한 값만 바꾸고 나머지는 같은 기본값을 쓴다.
 ManagerRun managerRunFixture({

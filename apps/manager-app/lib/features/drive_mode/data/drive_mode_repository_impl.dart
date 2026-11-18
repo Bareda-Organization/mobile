@@ -1,8 +1,8 @@
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:manager_app/features/drive_mode/data/drive_mode_api.dart';
-import 'package:manager_app/features/drive_mode/data/models/arrive_stop_result.dart';
-import 'package:manager_app/features/drive_mode/data/models/start_run_result.dart';
 import 'package:manager_app/features/drive_mode/domain/drive_mode_repository.dart';
+import 'package:manager_app/features/drive_mode/domain/models/arrive_stop_result.dart';
+import 'package:manager_app/features/drive_mode/domain/models/start_run_result.dart';
 import 'package:manager_app/features/offline_queue/domain/offline_queue_repository.dart';
 import 'package:manager_app/features/offline_queue/domain/send_outcome.dart';
 

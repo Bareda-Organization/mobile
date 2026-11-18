@@ -16,10 +16,11 @@ import 'package:manager_app/features/drive_mode/presentation/drive_mode_provider
 import 'package:manager_app/features/drive_mode/presentation/drive_mode_screen.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
 import 'package:manager_app/features/navigation/data/kakao_navi_launcher.dart';
-import 'package:manager_app/features/navigation/data/models/navigation_route.dart';
 import 'package:manager_app/features/navigation/data/navigation_api.dart';
-import 'package:manager_app/features/roster/data/models/roster_response.dart';
-import 'package:manager_app/features/route_map/data/models/route_response.dart';
+import 'package:manager_app/features/navigation/domain/kakao_navi_launcher.dart';
+import 'package:manager_app/features/navigation/domain/models/navigation_route.dart';
+import 'package:manager_app/features/roster/domain/models/roster_response.dart';
+import 'package:manager_app/features/route_map/domain/models/route_response.dart';
 import 'package:manager_app/features/route_map/presentation/route_providers.dart';
 
 import '../../support/manager_run_fixture.dart';

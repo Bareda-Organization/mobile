@@ -1,9 +1,9 @@
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:manager_app/features/offline_queue/domain/offline_queue_repository.dart';
 import 'package:manager_app/features/offline_queue/domain/send_outcome.dart';
-import 'package:manager_app/features/run_end/data/models/report_request.dart';
-import 'package:manager_app/features/run_end/data/models/report_result.dart';
 import 'package:manager_app/features/run_end/data/reports_api.dart';
+import 'package:manager_app/features/run_end/domain/models/report_request.dart';
+import 'package:manager_app/features/run_end/domain/models/report_result.dart';
 import 'package:manager_app/features/run_end/domain/reports_repository.dart';
 
 /// [ReportsRepository] 구현 — `guardDio` 로 `DioException` 을 `Failure` 로

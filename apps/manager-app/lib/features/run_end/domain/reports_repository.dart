@@ -1,6 +1,6 @@
 import 'package:manager_app/features/offline_queue/domain/send_outcome.dart';
-import 'package:manager_app/features/run_end/data/models/report_request.dart';
-import 'package:manager_app/features/run_end/data/models/report_result.dart';
+import 'package:manager_app/features/run_end/domain/models/report_request.dart';
+import 'package:manager_app/features/run_end/domain/models/report_result.dart';
 
 /// §4.13 현장 상황 보고 — 기사·동승자 둘 다 가능(§4.6·§4.9 처럼 역할이
 /// 갈리지 않는다. role_policy.dart 에 별도 capability 를 두지 않은 이유).

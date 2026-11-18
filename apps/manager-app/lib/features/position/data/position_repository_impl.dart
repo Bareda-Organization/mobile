@@ -1,6 +1,6 @@
 import 'package:baraeda_core/baraeda_core.dart';
-import 'package:manager_app/features/position/data/models/position_request.dart';
 import 'package:manager_app/features/position/data/position_api.dart';
+import 'package:manager_app/features/position/domain/models/position_request.dart';
 import 'package:manager_app/features/position/domain/position_repository.dart';
 
 /// [PositionRepository] 구현 — `guardDio` 로 `DioException` 을 `Failure` 로

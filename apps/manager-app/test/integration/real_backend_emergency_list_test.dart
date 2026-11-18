@@ -9,8 +9,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage_platform_interface/flutter_secure_storage_platform_interface.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:manager_app/features/emergency/data/emergency_api.dart';
-import 'package:manager_app/features/emergency/data/models/emergency_raise_request.dart';
-import 'package:manager_app/features/emergency/data/models/emergency_type.dart';
+import 'package:manager_app/features/emergency/domain/models/emergency_raise_request.dart';
+import 'package:manager_app/features/emergency/domain/models/emergency_type.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
 // `real_backend_emergency_test.dart` 와 같은 대역 — 진짜 소켓 스토리지 대신

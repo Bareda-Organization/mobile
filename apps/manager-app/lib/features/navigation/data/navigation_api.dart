@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
-import 'package:manager_app/features/navigation/data/models/navigation_route.dart';
-import 'package:manager_app/features/navigation/data/models/navigation_scope.dart';
+import 'package:manager_app/features/navigation/domain/models/navigation_route.dart';
+import 'package:manager_app/features/navigation/domain/models/navigation_scope.dart';
 
 /// API_SPEC §4.16.
 class NavigationApi {

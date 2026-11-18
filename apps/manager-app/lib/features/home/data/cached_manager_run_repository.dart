@@ -1,8 +1,8 @@
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:manager_app/core/network/guard.dart';
-import 'package:manager_app/features/home/data/models/manager_run.dart';
 import 'package:manager_app/features/home/data/run_summary_store.dart';
 import 'package:manager_app/features/home/domain/manager_run_repository.dart';
+import 'package:manager_app/features/home/domain/models/manager_run.dart';
 
 /// [ManagerRunRepository] 에 기기 저장본을 덧댄다 — 오늘 목록을 받으면
 /// 요약을 남기고, 서버에 닿지 못하면(연결 두절 · 5xx) **오늘 저장한** 요약으로

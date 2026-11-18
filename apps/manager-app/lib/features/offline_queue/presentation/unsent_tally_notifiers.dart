@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/auth/academy_contact_store.dart';
-import 'package:manager_app/features/offline_queue/data/unsent_emergency_store.dart';
+import 'package:manager_app/features/offline_queue/domain/unsent_emergency_store.dart';
 
 /// 건수와 마지막 시각을 기기에 남기고 사용자가 [dismiss] 할 때만 지우는 안내의 공통 뼈대(Ruling 886 · 892).
 /// 안내(`state`)는 곧바로 바꾸고 저장소 읽기 · 쓰기만 한 줄로 이어 붙인다 — 저장소가 실패하거나 응답하지 않아도

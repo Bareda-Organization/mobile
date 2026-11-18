@@ -5,14 +5,15 @@ import 'package:baraeda_core/testing.dart';
 import 'package:dio/dio.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/auth/account_session.dart';
 import 'package:manager_app/core/auth/auth_providers.dart';
 import 'package:manager_app/core/auth/user_role.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
-import 'package:manager_app/features/home/data/models/manager_run.dart';
 import 'package:manager_app/features/home/domain/manager_run_repository.dart';
+import 'package:manager_app/features/home/domain/models/manager_run.dart';
 import 'package:manager_app/features/home/presentation/home_providers.dart';
 import 'package:manager_app/features/offline_queue/data/offline_queue_database.dart';
 import 'package:manager_app/features/position/presentation/position_transmitter.dart';
@@ -52,6 +53,10 @@ class _RejectRefreshAdapter implements HttpClientAdapter {
 /// 함께 비운다. 다음 계정이 이전 계정의 대기 요청을 자기 토큰으로 재생하거나 이전 목록을 보면 안 된다.
 /// REST 재발급 실패(`ApiClient.sessionExpired`)도 같은 경로로 역할을 비운다.
 void main() {
+  // 로그인 복구가 기기 보안 저장소에 쓴다 — 시험에서는 메모리 대역을 쓴다.
+  TestWidgetsFlutterBinding.ensureInitialized();
+  setUp(() => FlutterSecureStorage.setMockInitialValues({}));
+
   late OfflineQueueDatabase database;
   late _CountingRunsRepository runs;
   late ProviderContainer container;

@@ -1,7 +1,7 @@
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:manager_app/core/run/run_enums.dart';
-import 'package:manager_app/features/roster/data/models/roster_response.dart';
+import 'package:manager_app/features/roster/domain/models/roster_response.dart';
 
 /// 승하차 처리를 되돌리기 전 확인 창(시안 `undo`) — 학생 · 상태 변화 · 남는 일을 보여 주고 `되돌리기` 를 눌러야만
 /// `true` 를 돌려준다. `닫기` · 창 밖을 눌러 닫으면 `false` 다.

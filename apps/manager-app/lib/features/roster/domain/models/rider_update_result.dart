@@ -1,6 +1,6 @@
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:manager_app/core/run/run_enums.dart';
-import 'package:manager_app/features/roster/data/models/roster_response.dart';
+import 'package:manager_app/features/roster/domain/models/roster_response.dart';
 
 /// `PATCH /runs/{runId}/riders/{riderId}` 응답 — §4.6.
 class RiderUpdateResult {

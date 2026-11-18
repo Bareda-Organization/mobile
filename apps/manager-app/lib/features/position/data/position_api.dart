@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:manager_app/core/constants/position_constants.dart';
-import 'package:manager_app/features/position/data/models/position_request.dart';
+import 'package:manager_app/features/position/domain/models/position_request.dart';
 
 /// API_SPEC §4.12.
 class PositionApi {

@@ -1,7 +1,7 @@
 import 'package:baraeda_core/baraeda_core.dart';
-import 'package:manager_app/features/navigation/data/models/navigation_route.dart';
-import 'package:manager_app/features/navigation/data/models/navigation_scope.dart';
 import 'package:manager_app/features/navigation/data/navigation_api.dart';
+import 'package:manager_app/features/navigation/domain/models/navigation_route.dart';
+import 'package:manager_app/features/navigation/domain/models/navigation_scope.dart';
 import 'package:manager_app/features/navigation/domain/navigation_repository.dart';
 
 class NavigationRepositoryImpl implements NavigationRepository {

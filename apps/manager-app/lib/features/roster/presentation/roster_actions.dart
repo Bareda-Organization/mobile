@@ -5,7 +5,7 @@ import 'package:manager_app/core/launcher/device_launchers.dart';
 import 'package:manager_app/core/network/failure_messages.dart';
 import 'package:manager_app/features/offline_queue/domain/send_outcome.dart';
 import 'package:manager_app/features/offline_queue/presentation/offline_queue_providers.dart';
-import 'package:manager_app/features/roster/data/models/no_show_contact_request.dart';
+import 'package:manager_app/features/roster/domain/models/no_show_contact_request.dart';
 import 'package:manager_app/features/roster/presentation/roster_providers.dart';
 
 /// 명단의 보호자 번호는 마스킹이라 걸 수 없다 — [전화] 를 누른 순간 그 학생 1명의 원번호를

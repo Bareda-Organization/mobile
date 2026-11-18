@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:manager_app/app/di.dart';
 import 'package:manager_app/core/run/selected_run_provider.dart';
-import 'package:manager_app/features/emergency/data/models/emergency_item.dart';
+import 'package:manager_app/features/emergency/domain/models/emergency_item.dart';
 
 /// §4.15 비상 알림 이력 조회 — EmergencyScreen 전용 provider.
 /// `roster_providers.dart` 의 `rosterProvider` 와 같은 패턴(선택된 회차가

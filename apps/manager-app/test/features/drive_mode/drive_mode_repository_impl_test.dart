@@ -5,7 +5,7 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:manager_app/features/drive_mode/data/drive_mode_api.dart';
 import 'package:manager_app/features/drive_mode/data/drive_mode_repository_impl.dart';
-import 'package:manager_app/features/drive_mode/data/models/arrive_stop_result.dart';
+import 'package:manager_app/features/drive_mode/domain/models/arrive_stop_result.dart';
 import 'package:manager_app/features/offline_queue/data/offline_queue_database.dart';
 import 'package:manager_app/features/offline_queue/data/offline_queue_repository_impl.dart';
 import 'package:manager_app/features/offline_queue/domain/send_outcome.dart';

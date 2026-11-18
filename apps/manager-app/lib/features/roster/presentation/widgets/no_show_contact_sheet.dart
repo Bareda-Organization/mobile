@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:baraeda_core/baraeda_core.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:manager_app/features/roster/data/models/no_show_contact_request.dart';
+import 'package:manager_app/features/roster/domain/models/no_show_contact_request.dart';
 
 /// §4.8 연락 시도 기록 입력 시트 — 연락 수단 · 결과 · (선택)최종 판단(시안 `no-show--record`).
 ///

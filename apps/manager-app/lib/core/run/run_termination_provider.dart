@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/legacy.dart';
-import 'package:manager_app/features/drive_mode/data/models/arrive_stop_result.dart';
+import 'package:manager_app/features/drive_mode/domain/models/arrive_stop_result.dart';
 
 /// DriveMode 의 §4.5 도착 처리 응답 중 종료 신호(`is_final`·
 /// `finish_pending`·`remaining[]`)를 RunEndScreen 으로 넘기는 자리 —
