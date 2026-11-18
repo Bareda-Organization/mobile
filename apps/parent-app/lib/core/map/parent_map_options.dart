@@ -1,4 +1,5 @@
 import 'package:baraeda_app/baraeda_app.dart';
+import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:parent_app/core/map/stop_number_pin.dart';
 
@@ -9,8 +10,8 @@ import 'package:parent_app/core/map/stop_number_pin.dart';
 const parentMapOptions = MapSurfaceOptions(
   markerIcon: _markerIcon,
   polylineStyle: MapPolylineStyle(
-    color: Color(0xFF1F5C4D),
-    passedColor: Color(0xFF8F9995),
+    color: BaraedaMapColors.routeAhead,
+    passedColor: BaraedaMapColors.routePassed,
     haloColor: Colors.white,
   ),
   smoothMarkerMotion: true,

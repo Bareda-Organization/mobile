@@ -262,7 +262,7 @@ class _NaverMapView extends StatelessWidget {
             snapshot.hasError) {
           final placeholder = placeholderBuilder;
           return placeholder == null
-              ? const ColoredBox(color: BaraedaPalette.stone200)
+              ? const ColoredBox(color: BaraedaMapColors.mapPlaceholder)
               : placeholder(context, snapshot.error);
         }
 

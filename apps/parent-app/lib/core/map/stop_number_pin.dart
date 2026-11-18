@@ -13,16 +13,16 @@ import 'package:flutter/material.dart';
 ///
 /// **내 승하차지**는 그 위에 초록 옅은 원과 점선 고리를 더해 더 크게 보인다.
 ///
-/// 색은 디자인 토큰(`BaraedaPalette`)이다. 지도 어댑터는 `BuildContext` 의 테마를 못 읽는
-/// 자리(이미지로 굳히는 시점)라 의미 색 대신 원시 팔레트를 직접 가리킨다 — 같은 사정의 `_stopMarkerTint` 와 같다.
+/// 색은 지도 색 토큰(`BaraedaMapColors`)이다. 지도 어댑터는 `BuildContext` 의 테마를 못 읽는
+/// 자리(이미지로 굳히는 시점)라 의미 색 대신 정적 토큰을 가리킨다.
 class StopNumberPin extends StatelessWidget {
   const new({required this.seq, this.mine = false, super.key});
 
   final int seq;
   final bool mine;
 
-  static const Color _green = BaraedaPalette.green600;
-  static const Color _ink = BaraedaPalette.stone700;
+  static const Color _green = BaraedaMapColors.numberPinAccent;
+  static const Color _ink = BaraedaMapColors.numberPinInk;
 
   /// 이미지 크기(논리 픽셀) — 안의 동그라미와 둘레(고리)가 잘리지 않는 크기.
   static Size sizeOf({required bool mine}) =>

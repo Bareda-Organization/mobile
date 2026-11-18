@@ -6,7 +6,7 @@ import 'package:flutter_naver_map/flutter_naver_map.dart';
 /// 아이콘이 없는 승하차지 핀의 색 — 디자인 시스템의 `statusMoving`(앰버)과 같은 계열로,
 /// 버스 핀(기본 초록)과 갈린다. 지도 어댑터는 `BuildContext` 없이 마커를 만들어
 /// 의미 색을 못 읽어 원시 팔레트를 가리킨다.
-const Color _stopMarkerTint = BaraedaPalette.amber600;
+const Color _stopMarkerTint = BaraedaMapColors.stopMarkerTint;
 
 /// 지도 계약의 마커 · 선을 SDK 오버레이로 바꾸는 공장 —
 /// 앱이 정한 [MapSurfaceOptions] 의 아이콘 · 선 모양을 쓴다.
