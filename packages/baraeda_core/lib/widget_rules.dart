@@ -7,11 +7,11 @@ import 'dart:io';
 /// 위젯 한 개의 최대 줄 수 — 선언 줄부터 닫는 중괄호까지(주석 · 빈 줄 포함).
 const widgetMaxLines = 200;
 
-final _widgetClass = RegExp(
-  r'^(?:abstract\s+|final\s+|base\s+)?class\s+(\w+)(?:<[^>]*>)?\s+'
-  r'extends\s+(?:Stateless|Stateful|Consumer|ConsumerStateful)Widget\b'
-  r'|^(?:abstract\s+|final\s+|base\s+)?class\s+(\w+)(?:<[^>]*>)?\s+'
-  r'extends\s+(?:Consumer)?State<',
+final _classStart = RegExp(r'^(?:abstract\s+|final\s+|base\s+)?class\s+(\w+)');
+
+final _widgetBase = RegExp(
+  r'\bextends\s+(?:(?:Stateless|Stateful|Consumer|ConsumerStateful)Widget\b'
+  r'|(?:Consumer)?State\s*<)',
 );
 
 final _buildHelper = RegExp(r'\b(?:List<)?Widget\??>?\s+_build[A-Z]\w*\s*[(<]');
@@ -45,18 +45,30 @@ List<String> widgetRuleViolations(Directory libDirectory) {
       if (_buildHelper.hasMatch(lines[i])) {
         violations.add('$name:${i + 1} — Widget _build…() 도우미 메서드');
       }
-      final match = _widgetClass.firstMatch(lines[i]);
-      if (match == null) continue;
+      final match = _classStart.firstMatch(lines[i]);
+      if (match == null || !_widgetBase.hasMatch(_declaration(lines, i))) {
+        continue;
+      }
       final length = _classLength(lines, i);
       if (length > widgetMaxLines) {
         violations.add(
-          '$name:${i + 1} — ${match.group(1) ?? match.group(2)} $length줄 '
+          '$name:${i + 1} — ${match.group(1)} $length줄 '
           '(최대 $widgetMaxLines)',
         );
       }
     }
   }
   return violations;
+}
+
+/// [start] 줄에서 시작한 클래스의 선언부 — 여는 중괄호가 나오는 줄까지(두 줄 이상에 걸쳐 쓴 선언 포함).
+String _declaration(List<String> lines, int start) {
+  final buffer = StringBuffer();
+  for (var i = start; i < lines.length; i++) {
+    buffer.write('${lines[i]} ');
+    if (lines[i].contains('{')) break;
+  }
+  return buffer.toString();
 }
 
 /// [start] 줄에서 시작한 클래스가 닫히는 줄까지의 줄 수 — 문자열 속 중괄호는 세지 않는다.
