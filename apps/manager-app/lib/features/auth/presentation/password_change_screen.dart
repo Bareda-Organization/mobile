@@ -92,7 +92,8 @@ class _PasswordChangeScreenState extends ConsumerState<PasswordChangeScreen> {
     }
     final next = _newPasswordController.text;
     if (next.isEmpty) return '새 비밀번호를 입력하면 눌러요';
-    if (isPasswordTooShort(next)) return passwordTooShortMessage;
+    final tooShort = passwordTooShortError(next);
+    if (tooShort != null) return tooShort;
     if (passwordLengthError(next) != null) return '새 비밀번호를 줄이면 눌러요';
     return null;
   }

@@ -149,9 +149,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
   /// 한도를 넘어 [가입 신청하기] 가 꺼진 이유 — 단추 바로 아래에 적는다. 넘지 않았으면 `null`.
   String? get _overLimitReason {
-    if (isPasswordTooShort(_passwordController.text)) {
-      return passwordTooShortMessage;
-    }
+    final tooShort = passwordTooShortError(_passwordController.text);
+    if (tooShort != null) return tooShort;
     final over = [
       if (loginIdLengthError(_loginIdController.text) != null) '아이디',
       if (passwordLengthError(_passwordController.text) != null) '비밀번호',
