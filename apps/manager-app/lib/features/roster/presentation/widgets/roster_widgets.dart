@@ -290,11 +290,6 @@ class RosterStudentTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final photo = resolveRosterPhoto(
-      student.photoUrl,
-      baseUrl: ApiConstants.baseUrl,
-      authHeaders: photoHeaders,
-    );
     final meta = [
       if (student.change == RiderChange.added) '신규',
       student.className,
@@ -303,9 +298,6 @@ class RosterStudentTile extends StatelessWidget {
     ].whereType<String>().join(' · ');
     final note = student.note?.trim();
     final hasNote = note != null && note.isNotEmpty;
-    final initials = student.name.length >= 2
-        ? student.name.substring(student.name.length - 2)
-        : student.name;
 
     return Semantics(
       container: true,
@@ -317,48 +309,7 @@ class RosterStudentTile extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 52,
-                  height: 52,
-                  alignment: Alignment.center,
-                  clipBehavior: Clip.antiAlias,
-                  decoration: BoxDecoration(
-                    color: colors.statusIdleSoft,
-                    borderRadius: BorderRadius.circular(BaraedaRadius.control),
-                  ),
-                  child: ExcludeSemantics(
-                    child: photo == null
-                        ? Text(
-                            initials,
-                            style: BaraedaTypography.title.copyWith(
-                              color: colors.textBrand,
-                            ),
-                          )
-                        : CachedNetworkImage(
-                            imageUrl: photo.url,
-                            httpHeaders: photo.headers,
-                            cacheManager: studentPhotoCacheManager,
-                            width: 52,
-                            height: 52,
-                            fit: BoxFit.cover,
-                            fadeInDuration: Duration.zero,
-                            fadeOutDuration: Duration.zero,
-                            // 로딩 중이거나 실패해도 이니셜 자리를 그대로 둔다 — 깨진 이미지를 보이지 않는다.
-                            placeholder: (_, _) => Text(
-                              initials,
-                              style: BaraedaTypography.title.copyWith(
-                                color: colors.textBrand,
-                              ),
-                            ),
-                            errorWidget: (_, _, _) => Text(
-                              initials,
-                              style: BaraedaTypography.title.copyWith(
-                                color: colors.textBrand,
-                              ),
-                            ),
-                          ),
-                  ),
-                ),
+                _StudentAvatar(student: student, photoHeaders: photoHeaders),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -415,7 +366,7 @@ class RosterStudentTile extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
-                badge ?? _chip(ride),
+                badge ?? _RideChip(ride),
               ],
             ),
             if (actions != null) ...[
@@ -441,29 +392,6 @@ class RosterStudentTile extends StatelessWidget {
       ),
     );
   }
-
-  Widget _chip(RideStatus ride) => switch (ride) {
-    RideStatus.waiting => const BaraedaStatusPill(
-      status: BaraedaStatus.waiting,
-      label: '대기',
-    ),
-    RideStatus.boarded => const BaraedaStatusPill(
-      status: BaraedaStatus.boarded,
-      label: '탑승',
-    ),
-    RideStatus.alighted => const BaraedaStatusPill(
-      status: BaraedaStatus.idle,
-      label: '하차',
-    ),
-    RideStatus.missed => const BaraedaStatusPill(
-      status: BaraedaStatus.missed,
-      label: '미승차',
-    ),
-    RideStatus.absent => const BaraedaStatusPill(
-      status: BaraedaStatus.idle,
-      label: '미등원',
-    ),
-  };
 }
 
 /// 전화 단추 — 이름 아래 줄 맨 왼쪽 48 정사각(시안 `.m-btn--icon`).
@@ -502,4 +430,98 @@ class RosterCallButton extends StatelessWidget {
       ),
     );
   }
+}
+
+/// 학생 사진 — 사진이 없거나 불러오는 중이거나 실패하면 이름 끝 두 글자를 보인다.
+class _StudentAvatar extends StatelessWidget {
+  const new({required this.student, required this.photoHeaders});
+
+  final RosterStudent student;
+  final Map<String, String>? photoHeaders;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final photo = resolveRosterPhoto(
+      student.photoUrl,
+      baseUrl: ApiConstants.baseUrl,
+      authHeaders: photoHeaders,
+    );
+    final initials = student.name.length >= 2
+        ? student.name.substring(student.name.length - 2)
+        : student.name;
+    return Container(
+      width: 52,
+      height: 52,
+      alignment: Alignment.center,
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: colors.statusIdleSoft,
+        borderRadius: BorderRadius.circular(BaraedaRadius.control),
+      ),
+      child: ExcludeSemantics(
+        child: photo == null
+            ? Text(
+                initials,
+                style: BaraedaTypography.title.copyWith(
+                  color: colors.textBrand,
+                ),
+              )
+            : CachedNetworkImage(
+                imageUrl: photo.url,
+                httpHeaders: photo.headers,
+                cacheManager: studentPhotoCacheManager,
+                width: 52,
+                height: 52,
+                fit: BoxFit.cover,
+                fadeInDuration: Duration.zero,
+                fadeOutDuration: Duration.zero,
+                // 로딩 중이거나 실패해도 이니셜 자리를 그대로 둔다 — 깨진 이미지를 보이지 않는다.
+                placeholder: (_, _) => Text(
+                  initials,
+                  style: BaraedaTypography.title.copyWith(
+                    color: colors.textBrand,
+                  ),
+                ),
+                errorWidget: (_, _, _) => Text(
+                  initials,
+                  style: BaraedaTypography.title.copyWith(
+                    color: colors.textBrand,
+                  ),
+                ),
+              ),
+      ),
+    );
+  }
+}
+
+/// 승하차 상태 칩 — 대기 · 탑승 · 하차 · 미승차 · 미등원.
+class _RideChip extends StatelessWidget {
+  const new(this.ride);
+
+  final RideStatus ride;
+
+  @override
+  Widget build(BuildContext context) => switch (ride) {
+    RideStatus.waiting => const BaraedaStatusPill(
+      status: BaraedaStatus.waiting,
+      label: '대기',
+    ),
+    RideStatus.boarded => const BaraedaStatusPill(
+      status: BaraedaStatus.boarded,
+      label: '탑승',
+    ),
+    RideStatus.alighted => const BaraedaStatusPill(
+      status: BaraedaStatus.idle,
+      label: '하차',
+    ),
+    RideStatus.missed => const BaraedaStatusPill(
+      status: BaraedaStatus.missed,
+      label: '미승차',
+    ),
+    RideStatus.absent => const BaraedaStatusPill(
+      status: BaraedaStatus.idle,
+      label: '미등원',
+    ),
+  };
 }
