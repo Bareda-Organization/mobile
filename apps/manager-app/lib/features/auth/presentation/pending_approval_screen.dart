@@ -13,7 +13,6 @@ import 'package:manager_app/core/ui/academy_call_card.dart';
 import 'package:manager_app/core/ui/bottom_action_bar.dart';
 import 'package:manager_app/core/ui/info_rows_card.dart';
 import 'package:manager_app/core/ui/manager_header.dart';
-import 'package:manager_app/features/auth/presentation/widgets/academy_picker.dart';
 
 /// UF-X-02 — 승인 대기 · 거절 안내.
 ///
@@ -331,6 +330,7 @@ class _StatusBody extends StatelessWidget {
                 const SizedBox(height: BaraedaSpacing.space2),
                 if (academy == null)
                   AcademyPicker(
+                    style: AcademyPickerStyle.dropdown,
                     onSearch: onSearch,
                     selected: newAcademy,
                     onSelected: onAcademySelected,

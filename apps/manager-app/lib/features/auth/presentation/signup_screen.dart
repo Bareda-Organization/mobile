@@ -10,7 +10,6 @@ import 'package:manager_app/core/auth/account_session.dart';
 import 'package:manager_app/core/ui/bottom_action_bar.dart';
 import 'package:manager_app/core/ui/manager_header.dart';
 import 'package:manager_app/features/auth/domain/auth_repository.dart';
-import 'package:manager_app/features/auth/presentation/widgets/academy_picker.dart';
 
 /// UF-X-01 — 회원가입: 아이디·비밀번호·이름·연락처 → 역할 선택(버스기사·동승자) →
 /// 학원 검색·선택 → `POST /auth/signup` → `pending`.
@@ -237,6 +236,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   const SizedBox(height: BaraedaSpacing.space4),
                   if (academy == null)
                     AcademyPicker(
+                      style: AcademyPickerStyle.dropdown,
                       onSearch: repository.searchAcademies,
                       selected: academy,
                       onSelected: (picked) => setState(() => _academy = picked),

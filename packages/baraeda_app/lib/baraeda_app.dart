@@ -1,6 +1,7 @@
 /// 두 앱(manager-app · parent-app)이 함께 쓰는 앱 공통 코드.
 library;
 
+export 'auth/academy_picker.dart';
 export 'auth/credential_limits.dart';
 export 'map/map_surface.dart';
 export 'network/api_constants.dart';

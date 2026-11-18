@@ -13,7 +13,6 @@ import 'package:parent_app/core/devices/presentation/device_registration_panel.d
 import 'package:parent_app/core/runs/presentation/run_display.dart';
 import 'package:parent_app/core/ui/korean_particle.dart';
 import 'package:parent_app/core/ui/sticky_action_bar.dart';
-import 'package:parent_app/features/auth/presentation/widgets/academy_picker.dart';
 import 'package:parent_app/features/auth/presentation/widgets/approval_progress.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -354,6 +353,7 @@ class _StatusBody extends StatelessWidget {
           const Text('다니는 학원을 다시 골라 주세요', style: BaraedaTypography.h3),
           const SizedBox(height: BaraedaSpacing.space3),
           AcademyPicker(
+            style: AcademyPickerStyle.radioList,
             onSearch: onSearch,
             selected: newAcademy,
             onSelected: onAcademySelected,
