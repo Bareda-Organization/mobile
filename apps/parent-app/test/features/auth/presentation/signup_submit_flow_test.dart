@@ -225,4 +225,26 @@ void main() {
       );
     });
   });
+
+  group('비밀번호 최소 길이', () {
+    testWidgets('7자면 이유를 보이고 가입 단추가 꺼지며 8자면 켜진다', (tester) async {
+      await _pump(tester, _Repository());
+      await _fillAllButAcademy(tester);
+      await _pickAcademy(tester);
+      await tester.enterText(find.byType(TextField).at(1), 'pass123');
+      await tester.pump();
+
+      final button = find.widgetWithText(BaraedaButton, '가입 신청하기');
+      await tester.ensureVisible(button);
+      await tester.pumpAndSettle();
+      expect(find.text('비밀번호는 8자 이상이어야 합니다'), findsWidgets);
+      expect(tester.widget<BaraedaButton>(button).onPressed, isNull);
+
+      await tester.enterText(find.byType(TextField).at(1), 'pass1234');
+      await tester.pumpAndSettle();
+
+      expect(find.text('비밀번호는 8자 이상이어야 합니다'), findsNothing);
+      expect(tester.widget<BaraedaButton>(button).onPressed, isNotNull);
+    });
+  });
 }

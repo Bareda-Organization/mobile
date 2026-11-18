@@ -225,4 +225,21 @@ void main() {
 
     expect(find.text('PASSWORD_CHANGE_MARKER'), findsOneWidget);
   });
+
+  testWidgets('새 비밀번호가 7자면 이유를 보이고 단추가 꺼지며 8자면 켜진다', (tester) async {
+    await pumpScreen(tester, _RecordingAuthRepository());
+
+    await tester.enterText(find.byType(TextField).at(0), 'old-pass');
+    await tester.enterText(find.byType(TextField).at(1), 'pass123');
+    await tester.pump();
+
+    expect(find.text('비밀번호는 8자 이상이어야 합니다'), findsWidgets);
+    expect(changeButton(tester).onPressed, isNull);
+
+    await tester.enterText(find.byType(TextField).at(1), 'pass1234');
+    await tester.pump();
+
+    expect(find.text('비밀번호는 8자 이상이어야 합니다'), findsNothing);
+    expect(changeButton(tester).onPressed, isNotNull);
+  });
 }

@@ -13,4 +13,12 @@ void main() {
     expect(loginIdLengthError(' ${'a' * 50} '), isNull);
     expect(loginIdLengthError('a' * 51), isNotNull);
   });
+
+  test('비밀번호는 8자 이상 — 7자는 이유를 돌려주고 8자와 빈 값은 통과', () {
+    expect(passwordLengthError('a' * 7), '비밀번호는 8자 이상이어야 합니다');
+    expect(passwordLengthError('가' * 7), '비밀번호는 8자 이상이어야 합니다');
+    expect(passwordLengthError('a' * 8), isNull);
+    expect(passwordLengthError('가' * 8), isNull);
+    expect(passwordLengthError(''), isNull, reason: '빈 칸은 "채우지 않음" 이 따로 알린다');
+  });
 }

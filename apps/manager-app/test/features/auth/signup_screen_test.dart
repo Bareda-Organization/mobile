@@ -143,4 +143,22 @@ void main() {
     expect(find.text('비밀번호는 72바이트(한글 24자) 이하여야 해요'), findsOneWidget);
     expect(submit(tester).onPressed, isNull);
   });
+
+  testWidgets('비밀번호가 7자면 이유를 보이고 가입 단추가 꺼지며 8자면 켜진다', (tester) async {
+    await pumpScreen(tester);
+
+    await type(tester, 0, 'driverA2');
+    await type(tester, 1, 'pass123');
+    await type(tester, 2, '박정훈');
+    await type(tester, 3, '010-4821-7730');
+    await pickAcademy(tester);
+
+    expect(find.text('비밀번호는 8자 이상이어야 합니다'), findsWidgets);
+    expect(submit(tester).onPressed, isNull);
+
+    await type(tester, 1, 'pass1234');
+
+    expect(find.text('비밀번호는 8자 이상이어야 합니다'), findsNothing);
+    expect(submit(tester).onPressed, isNotNull);
+  });
 }

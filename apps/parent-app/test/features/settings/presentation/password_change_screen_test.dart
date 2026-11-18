@@ -361,4 +361,43 @@ void main() {
       expect(obscured(1), isTrue);
     });
   });
+
+  group('비밀번호 최소 길이', () {
+    test('새 비밀번호가 7자면 이유가 붙고 8자면 이유가 없다', () {
+      expect(
+        passwordChangeBlockedReason(current: 'old-pw', next: 'pass123'),
+        isNotNull,
+      );
+      expect(
+        passwordChangeBlockedReason(current: 'old-pw', next: 'pass1234'),
+        isNull,
+      );
+    });
+
+    testWidgets('7자면 입력란에 이유를 보이고 변경 단추가 꺼진다', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            authRepositoryProvider.overrideWithValue(_CountingAuthRepository()),
+          ],
+          child: const MaterialApp(home: PasswordChangeScreen()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField).at(0), 'old-pw-1');
+      await tester.enterText(find.byType(TextField).at(1), 'pass123');
+      await tester.pump();
+
+      expect(find.text('비밀번호는 8자 이상이어야 합니다'), findsWidgets);
+      final button = find.widgetWithText(BaraedaButton, '변경하기');
+      expect(tester.widget<BaraedaButton>(button).onPressed, isNull);
+
+      await tester.enterText(find.byType(TextField).at(1), 'pass1234');
+      await tester.pump();
+
+      expect(find.text('비밀번호는 8자 이상이어야 합니다'), findsNothing);
+      expect(tester.widget<BaraedaButton>(button).onPressed, isNotNull);
+    });
+  });
 }
