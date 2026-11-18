@@ -42,6 +42,7 @@ String? passwordChangeBlockedReason({
   }
   if (current.isEmpty) return '현재 비밀번호를 입력하면 눌러요';
   if (next.isEmpty) return '새 비밀번호를 입력하면 눌러요';
+  if (isPasswordTooShort(next)) return passwordTooShortMessage;
   if (passwordLengthError(next) != null) {
     return '새 비밀번호를 한도 안으로 줄이면 눌러요';
   }

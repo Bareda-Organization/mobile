@@ -213,7 +213,7 @@ void main() {
     expect(find.byType(CircularProgressIndicator), findsNothing);
 
     await tester.enterText(find.byType(TextField).at(0), 'current-pw');
-    await tester.enterText(find.byType(TextField).at(1), 'new-pw');
+    await tester.enterText(find.byType(TextField).at(1), 'new-pw-1');
     // 두 칸을 다 채우면 다음 프레임에 단추가 켜진다 — 그 프레임을 그린 뒤 누른다.
     await tester.pump();
     await tester.tap(find.text('변경하기'));
@@ -242,7 +242,7 @@ void main() {
         '새 비밀번호를 입력하면 눌러요',
       );
       expect(
-        passwordChangeBlockedReason(current: '', next: 'new-pw'),
+        passwordChangeBlockedReason(current: '', next: 'new-pw-1'),
         '현재 비밀번호를 입력하면 눌러요',
       );
       expect(
@@ -250,7 +250,7 @@ void main() {
         '새 비밀번호를 한도 안으로 줄이면 눌러요',
       );
       expect(
-        passwordChangeBlockedReason(current: 'old-pw', next: 'new-pw'),
+        passwordChangeBlockedReason(current: 'old-pw', next: 'new-pw-1'),
         isNull,
       );
     });
@@ -286,7 +286,7 @@ void main() {
       expect(find.text('새 비밀번호를 입력하면 눌러요'), findsOneWidget);
       expect(changeButton(tester).onPressed, isNull);
 
-      await tester.enterText(find.byType(TextField).at(1), 'new-pw');
+      await tester.enterText(find.byType(TextField).at(1), 'new-pw-1');
       await tester.pump();
       expect(changeButton(tester).onPressed, isNotNull);
       expect(find.textContaining('입력하면 눌러요'), findsNothing);

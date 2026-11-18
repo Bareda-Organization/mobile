@@ -70,6 +70,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   String? get _disabledReason {
     final missing = _missing;
     if (missing.isNotEmpty) return '아직 채우지 않은 항목 · ${missing.join(' · ')}';
+    if (isPasswordTooShort(_passwordController.text)) {
+      return passwordTooShortMessage;
+    }
     if (_tooLong) return '길이를 넘은 항목을 줄이면 눌러요';
     return null;
   }
