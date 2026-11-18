@@ -6,6 +6,7 @@ import 'package:baraeda_core/testing.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:parent_app/app/di.dart';
 import 'package:parent_app/core/auth/account_session.dart';
@@ -127,6 +128,9 @@ class _RejectRefreshAdapter implements HttpClientAdapter {
 }
 
 void main() {
+  // 로그아웃이 기기 보안 저장소의 선택 자녀 칸을 지운다 — 시험에서는 메모리 대역을 쓴다.
+  setUp(() => FlutterSecureStorage.setMockInitialValues({}));
+
   late _LifetimeWsClient wsClient;
 
   ProviderContainer makeContainer({List<Override> extra = const []}) {

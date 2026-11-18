@@ -18,4 +18,7 @@ class SelectedStudentStorage {
 
   // 기억하지 못해도 이번 실행의 선택은 메모리에 남는다.
   Future<void> save(String studentId) => _slot.write(studentId);
+
+  /// 로그아웃 때 지운다 — 같은 기기의 다음 계정이 앞 계정의 선택을 물려받지 않는다.
+  Future<void> clear() => _slot.delete();
 }

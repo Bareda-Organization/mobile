@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/legacy.dart';
 import 'package:parent_app/app/di.dart';
 import 'package:parent_app/core/auth/auth_providers.dart';
 import 'package:parent_app/core/auth/user_role.dart';
+import 'package:parent_app/core/students/presentation/selected_student.dart';
 
 /// 계정 **상태**(`pending`·`active`·`rejected`) 를 담는다.
 ///
@@ -114,7 +115,7 @@ final authBootstrapProvider = FutureProvider<void>(retry: (_, _) => null, (
 /// 비면 라우터가 로그인 화면으로 보낸다(판정은 라우터 한 곳). 토큰은 `AuthApi.logout` 이 성패와 무관하게
 /// 지운다 — 여기서 역할까지 비우지 않으면 토큰 없이 로그인된 화면에 갇혀 요청마다 401 이 난다.
 ///
-/// 실시간 연결(`webSocketClientProvider`)도 닫는다.
+/// 실시간 연결(`webSocketClientProvider`)도 닫고, 기기에 기억해 둔 선택 자녀도 지운다.
 ///
 /// provider 를 await 전에 모두 읽어 둔다 — 로그아웃하면서 화면이 사라지면 그 뒤의 `ref` 는 쓸 수 없다.
 Future<void> signOut(WidgetRef ref) async {
@@ -123,9 +124,11 @@ Future<void> signOut(WidgetRef ref) async {
   final role = ref.read(currentUserRoleProvider.notifier);
   final status = ref.read(currentAccountStatusProvider.notifier);
   final wsClient = ref.read(webSocketClientProvider);
+  final selectedStudent = ref.read(selectedStudentStorageProvider);
   try {
     await repository.logout();
   } finally {
+    await selectedStudent.clear();
     // 서버 호출이 실패해도 옛 계정의 실시간 연결은 닫는다 — 다음 로그인
     // 계정의 지도가 그 연결에 구독을 얹으면 안 된다(C-2).
     wsClient.disconnect();

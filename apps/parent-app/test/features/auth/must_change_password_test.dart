@@ -4,6 +4,7 @@ import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:parent_app/app/app.dart';
 import 'package:parent_app/app/di.dart';
@@ -86,6 +87,9 @@ Future<void> _loginAs(WidgetTester tester, String password) async {
 }
 
 void main() {
+  // 로그아웃이 기기 보안 저장소의 선택 자녀 칸을 지운다 — 시험에서는 메모리 대역을 쓴다.
+  setUp(() => FlutterSecureStorage.setMockInitialValues({}));
+
   for (final role in [AccountRole.parent, AccountRole.student]) {
     testWidgets('${role.wireValue} — 로그인 응답의 표식이 켜져 있으면 홈이 아니라 변경 화면으로 간다', (
       tester,

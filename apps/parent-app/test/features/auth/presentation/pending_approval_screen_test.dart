@@ -2,6 +2,7 @@ import 'package:baraeda_core/baraeda_core.dart';
 import 'package:baraeda_ui/baraeda_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:parent_app/app/di.dart';
 import 'package:parent_app/core/auth/academy_contact.dart';
@@ -189,6 +190,9 @@ Future<void> _scrollAndTap(WidgetTester tester, Finder finder) async {
 }
 
 void main() {
+  // 로그아웃이 기기 보안 저장소의 선택 자녀 칸을 지운다 — 시험에서는 메모리 대역을 쓴다.
+  setUp(() => FlutterSecureStorage.setMockInitialValues({}));
+
   // BR-301(Ruling 781) — 학원이 연락처를 등록하지 않아 academy_contact 가 null 이어도 화면이 뜬다.
   testWidgets('학원 문의처가 null 이면 대체 문구를 보여준다', (tester) async {
     final authRepository = _StubAuthRepository()..academyContactMissing = true;
