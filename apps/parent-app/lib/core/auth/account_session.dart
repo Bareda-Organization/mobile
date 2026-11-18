@@ -128,11 +128,12 @@ Future<void> signOut(WidgetRef ref) async {
   try {
     await repository.logout();
   } finally {
-    await selectedStudent.clear();
     // 서버 호출이 실패해도 옛 계정의 실시간 연결은 닫는다 — 다음 로그인
     // 계정의 지도가 그 연결에 구독을 얹으면 안 된다(C-2).
     wsClient.disconnect();
     applyRoleAndStatus(unsupported, role, status, role: null, status: null);
+    // 연결 닫기와 역할 비우기가 끝난 뒤에 지운다 — 저장소 오류가 나도 로그아웃은 이미 끝나 있다.
+    await selectedStudent.clear();
   }
 }
 
